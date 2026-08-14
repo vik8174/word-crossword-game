@@ -1,47 +1,48 @@
 # Contributing
 
+## Language: English only
+
+Everything committed to this repository is written in **English** — README, CHANGELOG, ADRs, all other documentation, code comments, JSDoc, commit messages, branch names, and pull request descriptions. A working session may be conducted in any language, but what lands in the repository is English.
+
 ## Branch → PR → Merge
 
-- Гілки за конвенцією `type/short-description` (`feat/`, `fix/`, `chore/`, `refactor/`, `test/`, `docs/`)
-- **Ніколи не комітити напряму в `main`** — виняток лише для першого bootstrap-коміту порожнього репозиторію
-- Кожна зміна йде через Pull Request у `main`
-- `main` захищений branch protection: прямі пуші заборонені, потрібен PR
+- Branch names follow `type/short-description` (`feat/`, `fix/`, `chore/`, `refactor/`, `test/`, `docs/`)
+- **Never commit directly to `main`** — the only exception was the initial bootstrap commit of the empty repository
+- Every change goes through a pull request into `main`
+- `main` is protected: direct pushes are rejected, a pull request is required
 
-## Перед відкриттям PR
+## Before opening a pull request
 
-1. Самоогляд: `git diff`
-2. Код-рев'ю: запустити агента `code-reviewer` (zero-context рев'ю з `~/.claude/rules/code-review.md`), усунути Critical/Important знахідки
-3. Локально мають проходити: лінтер, тести, перевірка покриття
+1. Self-review: `git diff`
+2. Code review: run the `code-reviewer` agent (zero-context review against `~/.claude/rules/code-review.md`) and address Critical/Important findings
+3. Linting, tests, and the coverage check must pass locally
 
 ## CI (GitHub Actions)
 
-При відкритті/оновленні PR у `main` автоматично запускаються:
+Opening or updating a pull request against `main` automatically runs:
 
 - **Lint** — ESLint + Prettier
-- **Test** — юніт-тести (Vitest)
-- **Coverage** — поріг **80%**, PR не мерджиться нижче порогу
+- **Test** — unit tests (Vitest)
+- **Coverage** — 80% threshold; a pull request below it cannot be merged
+- **Build** — `pnpm build` for both packages
 
-Усі три перевірки — обов'язкові status checks у branch protection. PR не можна змерджити, доки вони не позелені.
+All four are required status checks in branch protection. A pull request cannot be merged until they are green. The workflow also runs on `push` to `main`, so the state of `main` is verified after every merge.
 
-> CI-workflow і скрипти (`lint`, `test`, `test:coverage`, `build`) додаються разом зі скаффолдингом проєкту — [issue #2](https://github.com/vik8174/word-crossword-game/issues/2).
+## Architecture decisions (ADRs)
 
-## Архітектурні рішення (ADR)
+Every architecturally significant or hard-to-reverse decision gets its own file in [`docs/decisions/`](docs/decisions/), following the `0000-template.md` format. See [ADR 0001](docs/decisions/0001-record-architecture-decisions.md).
 
-Кожне архітектурно значиме або важко зворотне рішення — окремий файл у [`docs/decisions/`](docs/decisions/) за шаблоном `0000-template.md`. Дивись [ADR 0001](docs/decisions/0001-record-architecture-decisions.md).
-
-Додавай новий ADR у тому ж PR, що вносить архітектурну зміну — не окремим наступним PR.
+Add the ADR in the same pull request that makes the architectural change — not in a separate follow-up.
 
 ## Changelog
 
-Кожен user-facing PR додає рядок у `[Unreleased]` секцію [`CHANGELOG.md`](CHANGELOG.md) за форматом [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Every user-facing pull request adds a line to the `[Unreleased]` section of [`CHANGELOG.md`](CHANGELOG.md), following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Робочий процес: координатор + воркери
+## Working process: coordinator + workers
 
-Проєкт ведеться моделлю координатор + воркери (детальніше, включно з правилом визначення власної ролі — [`CLAUDE.md`](CLAUDE.md)):
+The project runs on a coordinator + workers model (see [`CLAUDE.md`](CLAUDE.md) for the full description, including how a session determines its own role):
 
-- **Воркер** — сесія, якій передали конкретний issue. Виконує рівно цей issue до відкритого PR, нічого не планує понад нього, свій PR не мерджить, наприкінці віддає стислий звіт. Модель: Sonnet 5
-- **Координатор** — одна окрема сесія, яку Віктор веде сам. Не імплементує тікети, а готує handoff-и, звіряє звіти й вирішує що далі. Модель: Opus 5
+- **Worker** — a session handed one specific issue. It implements exactly that issue up to an open pull request, plans nothing beyond it, does not merge its own pull request, and finishes with a concise report. Model: Sonnet 5
+- **Coordinator** — one separate session Viktor runs himself. It does not implement tickets; it prepares handoffs, verifies reports, and decides what comes next. Model: Opus 5
 
-Якщо сесії передали issue чи handoff — вона воркер, не координатор.
-
-Проміжні handoff-документи між сесіями лежать у `handoffs/` (в `.gitignore`, не частина історії проєкту) — довговічна пам'ять проєкту це git-історія, issues/PR і `docs/decisions/`.
+If a session was handed an issue or a handoff, it is a worker, not the coordinator.

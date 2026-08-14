@@ -1,17 +1,17 @@
-# 0003. Firestore замість Realtime Database
+# 0003. Firestore instead of Realtime Database
 
 Status: Accepted
 
 ## Context
 
-Firebase пропонує дві real-time бази даних: Realtime Database (RTDB) і Firestore. Обидві дають потрібну для гри синхронізацію в реальному часі.
+Firebase offers two real-time databases: Realtime Database (RTDB) and Firestore. Both provide the synchronization the game needs.
 
 ## Decision
 
-Використовуємо Firestore.
+Use Firestore.
 
 ## Consequences
 
-- Зручніша query-модель (знадобиться навіть у MVP — наприклад, майбутній список активних кімнат)
-- Природніша документна структура для "кімната → гравці → слова → стан клітинок"
-- Firestore — рекомендований Google вибір для нових проєктів; RTDB де-факто в режимі підтримки застарілих застосунків
+- A more convenient query model (useful even in the MVP — for example, a future list of active rooms)
+- A more natural document structure for "room → players → words → cell state"
+- Firestore is Google's recommended choice for new projects; RTDB is effectively in maintenance mode for legacy applications

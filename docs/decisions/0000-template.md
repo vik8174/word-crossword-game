@@ -1,15 +1,15 @@
-# NNNN. Назва рішення
+# NNNN. Decision title
 
 Status: Proposed | Accepted | Superseded by [NNNN](NNNN-title.md) | Deprecated
 
 ## Context
 
-Яка проблема чи ситуація змусила приймати це рішення. Які були розглянуті альтернативи.
+The problem or situation that forced this decision. Which alternatives were considered.
 
 ## Decision
 
-Що саме вирішено.
+What was decided.
 
 ## Consequences
 
-Що це означає для проєкту — компроміси, обмеження, наслідки (позитивні й негативні).
+What this means for the project — trade-offs, constraints, and outcomes both good and bad.

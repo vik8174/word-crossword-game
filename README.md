@@ -1,6 +1,6 @@
 # Word Crossword Game
 
-Кооперативна веб-гра для 2-4 гравців: кросворд, де кожен гравець пояснює приховані від інших слова (як в Alias/Taboo), а решта вгадують і вписують відповідь у спільну сітку. MVP націлений на розширення словникового запасу та розмовну практику англійської.
+A cooperative web game for 2-4 players: a crossword where each player explains the words hidden from the others (as in Alias/Taboo), while the rest guess and fill the answers into a shared grid. The MVP targets vocabulary growth and spoken English practice.
 
 ## Quick Start
 
@@ -19,7 +19,7 @@ pnpm dev
 - React (Vite + React Router), MUI
 - Firebase: Firestore, Anonymous Auth, Analytics, Hosting
 - Sentry
-- pnpm workspaces (монорепо, без Turborepo/Nx)
+- pnpm workspaces (monorepo, no Turborepo/Nx)
 
 ## Prerequisites
 
@@ -56,14 +56,14 @@ Run from the repo root (fans out to both workspaces via pnpm):
 ```
 word-crossword-game/
 ├── apps/web/            # React SPA
-├── packages/shared/     # Спільні типи + чиста ігрова логіка
-├── docs/decisions/      # ADR — архітектурні рішення
-├── CONTRIBUTING.md      # Процес розробки
-└── CLAUDE.md            # Контекст для AI-агентів, що працюють у репо
+├── packages/shared/     # Shared types + pure game logic
+├── docs/decisions/      # ADRs — architecture decisions
+├── CONTRIBUTING.md      # Development process
+└── CLAUDE.md            # Context for AI agents working in this repo
 ```
 
 ## Documentation
 
-- Продуктова специфікація: [PRD (issue #1)](https://github.com/vik8174/word-crossword-game/issues/1)
-- Архітектурні рішення: [`docs/decisions/`](docs/decisions/)
-- Процес розробки, тести, лінтер, CI: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- Product specification: [PRD (issue #1)](https://github.com/vik8174/word-crossword-game/issues/1)
+- Architecture decisions: [`docs/decisions/`](docs/decisions/)
+- Development process, tests, linting, CI: [`CONTRIBUTING.md`](CONTRIBUTING.md)

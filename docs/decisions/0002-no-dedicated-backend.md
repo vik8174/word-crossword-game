@@ -1,18 +1,18 @@
-# 0002. Без власного бекенд-сервера — клієнти пишуть напряму у Firestore
+# 0002. No backend of our own — clients write directly to Firestore
 
 Status: Accepted
 
 ## Context
 
-MVP потребує real-time синхронізації стану гри між 2-4 браузерними клієнтами (сітка кросворду, прогрес вгадування). Розглядались: (а) власний backend-сервер із WebSocket-каналом, (б) Firebase Cloud Functions як проміжний шар над Firestore, (в) клієнти напряму пишуть/читають Firestore через client SDK.
+The MVP needs real-time synchronization of game state across 2-4 browser clients (the crossword grid, guessing progress). Three options were considered: (a) a backend server of our own with a WebSocket channel, (b) Firebase Cloud Functions as an intermediate layer over Firestore, (c) clients reading and writing Firestore directly through the client SDK.
 
 ## Decision
 
-Клієнти взаємодіють напряму з Firestore через client SDK, без власного сервера чи Cloud Functions. Уся ігрова логіка (генерація кросворду, розподіл слів, перевірка відповіді) виконується на клієнті перед записом результату в Firestore.
+Clients talk to Firestore directly through the client SDK, with no server of our own and no Cloud Functions. All game logic (crossword generation, word assignment, guess checking) runs on the client before the result is written to Firestore.
 
 ## Consequences
 
-- Мінімум інфраструктури для MVP — немає сервера, який треба деплоїти й підтримувати
-- Немає єдиної точки контролю над коректністю запису (клієнт технічно може написати довільні дані) — прийнятно для гри для знайомих людей на довірі (див. [0004](0004-ui-only-word-visibility.md))
-- Очищення застарілих кімнат — через вбудований Firestore TTL, без cron/Cloud Function
-- Якщо продукт виросте за межі MVP (публічний матчмейкінг, античит, платні фічі) — це рішення доведеться переглянути
+- Minimal infrastructure for the MVP — there is no server to deploy or maintain
+- There is no single point of control over write correctness (a client can technically write arbitrary data) — acceptable for a game played among people who know each other (see [0004](0004-ui-only-word-visibility.md))
+- Stale rooms are cleaned up by Firestore's built-in TTL, with no cron job or Cloud Function
+- If the product outgrows the MVP (public matchmaking, anti-cheat, paid features), this decision will have to be revisited

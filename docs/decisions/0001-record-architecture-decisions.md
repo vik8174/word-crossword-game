@@ -1,15 +1,15 @@
-# 0001. Фіксувати архітектурні рішення через ADR
+# 0001. Record architecture decisions as ADRs
 
 Status: Accepted
 
 ## Context
 
-Проєкт розвивається через послідовні issue/PR, часто виконувані окремими агент-сесіями з чистим контекстом (див. [CLAUDE.md](../../CLAUDE.md)). Без явного журналу рішень кожна нова сесія змушена заново вгадувати "чому саме так", або рішення губляться й переприймаються суперечливо.
+The project moves forward through successive issues and pull requests, often carried out by separate agent sessions starting from a clean context (see [CLAUDE.md](../../CLAUDE.md)). Without an explicit record of decisions, every new session has to guess "why it was done this way" from scratch, or decisions get lost and are re-made inconsistently.
 
 ## Decision
 
-Кожне архітектурно значиме або важко зворотне рішення фіксується окремим ADR-файлом у `docs/decisions/` за форматом Nygard (`docs/decisions/0000-template.md`). Файли нумеруються послідовно, ніколи не видаляються — застаріле рішення позначається `Superseded by [NNNN]`, а не стирається.
+Every architecturally significant or hard-to-reverse decision is recorded as its own file in `docs/decisions/`, following the Nygard format (`docs/decisions/0000-template.md`). Files are numbered sequentially and never deleted — a decision that no longer holds is marked `Superseded by [NNNN]` rather than erased.
 
 ## Consequences
 
-Кожен PR, що вносить архітектурну зміну, повинен додавати або оновлювати відповідний ADR. Це трохи сповільнює процес, але робить рішення відновлюваними для будь-якої майбутньої агент-сесії чи людини без додаткового контексту.
+Any pull request that makes an architectural change must add or update the corresponding ADR. This slows the process slightly, but makes decisions recoverable for any future agent session or person without additional context.

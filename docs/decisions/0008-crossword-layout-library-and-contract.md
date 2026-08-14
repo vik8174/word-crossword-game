@@ -1,61 +1,61 @@
-# 0008. Бібліотека розкладки кросворду і контракт `CrosswordLayout`
+# 0008. Crossword layout library and the `CrosswordLayout` contract
 
 Status: Accepted
 
 ## Context
 
-PRD ([issue #1](https://github.com/vik8174/word-crossword-game/issues/1)) називав `crossword-layout-generator` як приклад бібліотеки розкладки, не як обов'язковий вибір. Обидва рішення — яка бібліотека будує сітку і яку форму має її результат — важко відмінити: `CrosswordLayout` пишеться в документ кімнати Firestore, і на нього зав'яжуться `word-assignment`, рендер сітки й перевірка відповідей.
+The PRD ([issue #1](https://github.com/vik8174/word-crossword-game/issues/1)) named `crossword-layout-generator` as an example layout library, not as a mandatory choice. Both decisions — which library builds the grid, and what shape its result takes — are hard to reverse: `CrosswordLayout` is written into the Firestore room document, and `word-assignment`, grid rendering, and guess checking will all bind to it.
 
-Оцінені кандидати (заміри — 120 наборів по 10/15/20 слів зі словника побутової лексики, плюс межові набори):
+Candidates evaluated (measurements over 120 sets of 10/15/20 words from everyday vocabulary, plus edge-case sets):
 
-|                             | `crossword-layout-generator@0.1.1` | `crossword-generator-x@1.0.0` | `crossword-generator@1.0.1` |
-| --------------------------- | ---------------------------------- | ----------------------------- | --------------------------- |
-| Останній реліз              | 2020                               | 2026-03                       | 2025-09                     |
-| Завантажень/міс             | ~8 200                             | ~86                           | ~1 200                      |
-| Типи TypeScript             | немає                              | є                             | є                           |
-| Формат                      | CJS                                | ESM + CJS                     | CJS                         |
-| Залежності                  | 0                                  | 0                             | 0                           |
-| Не влізло слів (сер./макс.) | 0.28 / 3                           | 0 / 0                         | —                           |
-| Слова по 3 літери (10 шт.)  | 4 з 10 не влізли                   | 0 з 10                        | —                           |
-| Детермінізм                 | так                                | ні (`Math.random`)            | ні                          |
+|                               | `crossword-layout-generator@0.1.1` | `crossword-generator-x@1.0.0` | `crossword-generator@1.0.1` |
+| ----------------------------- | ---------------------------------- | ----------------------------- | --------------------------- |
+| Latest release                | 2020                               | 2026-03                       | 2025-09                     |
+| Downloads/month               | ~8,200                             | ~86                           | ~1,200                      |
+| TypeScript types              | no                                 | yes                           | yes                         |
+| Format                        | CJS                                | ESM + CJS                     | CJS                         |
+| Dependencies                  | 0                                  | 0                             | 0                           |
+| Words unplaced (avg/max)      | 0.28 / 3                           | 0 / 0                         | —                           |
+| Three-letter words (10 given) | 4 of 10 unplaced                   | 0 of 10                       | —                           |
+| Deterministic                 | yes                                | no (`Math.random`)            | no                          |
 
-`crossword-generator@1.0.1` відпав одразу: він сам випадково **обирає підмножину** слів (`selectRandomWords`), тобто відкидає слова навіть тоді, коли вони влізли б — це прямо суперечить user story 17.
+`crossword-generator@1.0.1` was ruled out immediately: it randomly **selects a subset** of the words (`selectRandomWords`), discarding words that would have fit — which directly contradicts user story 17.
 
-`crossword-layout-generator` при кожному виклику безумовно пише в `console.log` рядок на кожне слово (`layout_generator.js:78`) — у продакшн-браузері це шум, вимкнути його бібліотека не дає.
+`crossword-layout-generator` unconditionally writes one line per word to `console.log` on every call (`layout_generator.js:78`) — noise in a production browser, and the library offers no way to turn it off.
 
 ## Decision
 
-**Бібліотека:** `crossword-generator-x@1.0.0` (точна версія, MIT, без залежностей). Це переписаний на TypeScript алгоритм `crossword-layout-generator` з доданим бектрекінгом; вихідний код (399 рядків) вичитано повністю — чисті обчислення, без I/O.
+**Library:** `crossword-generator-x@1.0.0` (exact version, MIT, no dependencies). It is the `crossword-layout-generator` algorithm rewritten in TypeScript with backtracking added; its source (399 lines) was read in full — pure computation, no I/O.
 
-Ціна вибору — молодий пакет із ~86 завантаженнями на місяць. Ризик прийнято свідомо і компенсується так:
+The cost of this choice is a young package with roughly 86 downloads per month. The risk is accepted deliberately and offset as follows:
 
-- модуль `crossword-generator` — єдина точка в кодовій базі, що знає про бібліотеку; заміна = один файл
-- вихід бібліотеки трактується як зовнішній вхід: використовується лише те, що вдалося звести до конкретного вхідного слова, а розміщення, яке суперечить уже записаній літері, відкидається (слово йде в `unplacedWords`, сітка не псується)
-- тести перевіряють інваріанти, не конкретну сітку, тож переживуть заміну бібліотеки
-- запасний варіант, якщо пакет виявиться проблемним: `crossword-layout-generator` із локальною декларацією типів і придушенням `console.log`
+- the `crossword-generator` module is the only place in the codebase that knows about the library; replacing it means changing one file
+- the library's output is treated as external input: only what can be traced back to a specific input word is used, and a placement that contradicts an already-written letter is rejected (the word goes to `unplacedWords`, the grid is not corrupted)
+- tests verify invariants rather than a specific grid, so they survive a library swap
+- fallback if the package turns out to be problematic: `crossword-layout-generator` with a local type declaration and its `console.log` suppressed
 
-**Контракт:**
+**Contract:**
 
 ```ts
 interface CrosswordLayout {
   rows: number;
   cols: number;
-  cells: CrosswordCell[]; // { row, col, letter } — лише клітинки з літерами
+  cells: CrosswordCell[]; // { row, col, letter } — lettered cells only
   placedWords: PlacedWord[]; // { word, orientation, cells: GridPosition[] }
   unplacedWords: string[];
 }
 ```
 
-- **Плоскі масиви замість двовимірної сітки.** Firestore не зберігає масив усередині масиву, а розкладка пишеться в документ кімнати як є — тому `string[][]` неможливий у принципі. `cells` — плоский список клітинок із координатами, порожні клітинки просто відсутні.
-- **Координати нульові**, `row`/`col`, сітка обрізана по словах (мінімум завжди 0).
-- **Перетини не зберігаються окремим списком** — перетин це клітинка, що входить у `cells` двох слів. Окреме поле дублювало б дані в документі, який редагується під час гри.
-- **Слова повертаються рівно так, як їх ввів овнер**, літери в сітці — у верхньому регістрі.
-- **`placedWords` + `unplacedWords` = вхідний список**, завжди. Слово не зникає мовчки. Слово, яке модуль не може зіставити з розкладкою (наприклад, з пробілами по краях — таке валідатор і так не пропустить), повертається в `unplacedWords`, а не ламає сітку.
-- **Валідація списку слів сюди не входить** (кількість, довжина, алфавіт, дублікати) — це `word-list-validator`.
+- **Flat arrays instead of a two-dimensional grid.** Firestore does not store an array directly inside another array, and the layout is written into the room document as is — so `string[][]` is impossible in principle. `cells` is a flat list of cells with coordinates; empty cells are simply absent.
+- **Zero-based coordinates**, `row`/`col`, with the grid cropped to the words (the minimum is always 0).
+- **Intersections are not stored as a separate list** — an intersection is a cell that belongs to the `cells` of two words. A separate field would duplicate data inside a document that is edited during play.
+- **Words are returned exactly as the owner typed them**; letters in the grid are uppercase.
+- **`placedWords` plus `unplacedWords` always equals the input list.** No word disappears silently. A word the module cannot match to the layout (for example one with surrounding whitespace, which the validator would reject anyway) comes back in `unplacedWords` rather than breaking the grid.
+- **Word-list validation does not belong here** (count, length, alphabet, duplicates) — that is `word-list-validator`.
 
 ## Consequences
 
-- Розкладка **не детермінована**: ті самі слова дають різні сітки між викликами. Для гри це нешкідливо (сітка генерується один раз і зберігається), але тести на точну сітку були б флакі — тому вони перевіряють інваріанти
-- Уся `CrosswordLayout` серіалізується в документ Firestore без перетворень
-- `cells` у `PlacedWord` дублюють інформацію, яку можна вивести з першої клітинки, орієнтації й довжини слова — свідомий компроміс: рендер і перевірка відповідей отримують прив'язку слова до клітинок без обчислень, а розкладка незмінна після створення кімнати
-- Набір слів, у якому нічого не перетинається, дає порожню розкладку (`rows: 0`, усі слова в `unplacedWords`) замість помилки — UI має показати це як попередження овнеру
+- The layout is **not deterministic**: the same words produce different grids across calls. Harmless for the game (the grid is generated once and stored), but tests against an exact grid would be flaky — hence the invariant-based tests
+- The whole `CrosswordLayout` serializes into the Firestore document with no transformation
+- `cells` inside `PlacedWord` duplicates information derivable from the first cell, the orientation, and the word length — a deliberate trade-off: rendering and guess checking get the word-to-cell binding without recomputation, and the layout never changes after the room is created
+- A word set where nothing intersects yields an empty layout (`rows: 0`, every word in `unplacedWords`) rather than an error — the UI must surface this as a warning to the owner
