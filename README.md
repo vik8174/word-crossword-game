@@ -25,6 +25,7 @@ pnpm dev
 
 - Node.js >= 22
 - pnpm 10.x (`corepack enable` picks up the version pinned in `package.json`)
+- A JDK, only for `pnpm test:rules` — the Firestore emulator runs on the JVM
 
 ## Configuration
 
@@ -39,6 +40,17 @@ cp apps/web/.env.example apps/web/.env
 
 `apps/web/.env` is git-ignored — never commit real values.
 
+## Firestore
+
+There is no backend in this project — browsers write to Firestore directly — so `firestore.rules` is the only access control there is.
+
+```bash
+pnpm test:rules                          # check the rules against the emulator
+firebase deploy --only firestore:rules   # deploy them (project alias lives in .firebaserc)
+```
+
+Deleting stale rooms relies on a Firestore **TTL policy** on the `expiresAt` field of the `rooms` collection. The app writes the field; the policy itself is enabled once in the Firebase console (Firestore > TTL policies) and is not part of this repository.
+
 ## Scripts
 
 Run from the repo root (fans out to both workspaces via pnpm):
@@ -50,6 +62,7 @@ Run from the repo root (fans out to both workspaces via pnpm):
 | `pnpm lint`          | ESLint + Prettier check across the repo                      |
 | `pnpm test`          | Run unit tests (Vitest) for both workspaces                  |
 | `pnpm test:coverage` | Run tests with coverage (80% threshold, hard-fails below it) |
+| `pnpm test:rules`    | Check `firestore.rules` against the Firestore emulator       |
 
 ## Project Structure
 
@@ -57,6 +70,8 @@ Run from the repo root (fans out to both workspaces via pnpm):
 word-crossword-game/
 ├── apps/web/            # React SPA
 ├── packages/shared/     # Shared types + pure game logic
+├── firestore.rules      # Firestore security rules (the only access control)
+├── firestore/           # Emulator checks for those rules
 ├── docs/decisions/      # ADRs — architecture decisions
 ├── CONTRIBUTING.md      # Development process
 └── CLAUDE.md            # Context for AI agents working in this repo

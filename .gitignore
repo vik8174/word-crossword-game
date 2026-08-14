@@ -6,6 +6,10 @@ dist/
 coverage/
 *.tsbuildinfo
 
+# Firebase emulator artifacts
+*-debug.log
+.firebase/
+
 # Coordinator/worker handoff docs — ephemeral, not part of project history
 handoffs/
 

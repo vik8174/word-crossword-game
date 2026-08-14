@@ -1,20 +1,26 @@
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
+
 import { HomePage } from './HomePage';
+
+const renderHomePage = () =>
+  render(
+    <MemoryRouter>
+      <HomePage />
+    </MemoryRouter>,
+  );
 
 describe('HomePage', () => {
   it('renders the game title', () => {
-    render(<HomePage />);
+    renderHomePage();
 
     expect(screen.getByRole('heading', { name: /word crossword game/i })).toBeInTheDocument();
   });
 
-  it('renders content sourced from the packages/shared workspace package', () => {
-    render(<HomePage />);
+  it('offers the way into a new game', () => {
+    renderHomePage();
 
-    // Proves apps/web can actually import from packages/shared end-to-end
-    // (module resolution + TS types + build), not just that both packages
-    // build independently side by side.
-    expect(screen.getByText(/shared/i)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /create a game/i })).toHaveAttribute('href', '/create');
   });
 });

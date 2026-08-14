@@ -16,6 +16,7 @@ Everything committed to this repository is written in **English** — README, CH
 1. Self-review: `git diff`
 2. Code review: run the `code-reviewer` agent (zero-context review against `~/.claude/rules/code-review.md`) and address Critical/Important findings
 3. Linting, tests, and the coverage check must pass locally
+4. If the change touches `firestore.rules`, run `pnpm test:rules` — CI has no emulator and cannot check them for you
 
 ## CI (GitHub Actions)
 
