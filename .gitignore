@@ -8,3 +8,7 @@ coverage/
 
 # Coordinator/worker handoff docs — ephemeral, not part of project history
 handoffs/
+
+# Local agent session artifacts (worktrees, local settings)
+.claude/worktrees/
+.claude/settings.local.json
