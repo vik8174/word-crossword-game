@@ -1,17 +1,17 @@
-# 0007. Лише stage-середовище для MVP, prod — пізніше
+# 0007. A stage environment only for the MVP, production later
 
 Status: Accepted
 
 ## Context
 
-Проєкт на стадії MVP, без реальних користувачів поза колом знайомих для тестування. Firebase-проєкт і Sentry-проєкт ще не створені (issue #2). Потрібно вирішити, чи створювати їх одразу як production-ресурси, чи явно позначити середовище як тимчасове.
+The project is at MVP stage, with no real users beyond a circle of acquaintances testing it. The Firebase and Sentry projects had not been created yet (issue #2). The question was whether to create them as production resources straight away, or to mark the environment explicitly as temporary.
 
 ## Decision
 
-Усі зовнішні сервіси (Firebase-проєкт, Sentry-проєкт) створюються зараз як **stage**-середовище — з явним позначенням у назві (наприклад, Firebase project ID `word-crossword-game-stage`, Sentry-проєкт `word-crossword-game-stage`). Production-середовище — окремий проєкт, буде створено окремим рішенням, коли зʼявиться реальна потреба (публічний запуск, реальні користувачі поза тестовим колом).
+All external services (the Firebase project, the Sentry project) are created now as a **stage** environment, marked explicitly in the name (for example, Firebase project ID `word-crossword-game-stage`, Sentry project `word-crossword-game-stage`). Production is a separate project, to be created as its own decision once a real need appears (public launch, real users beyond the test circle).
 
 ## Consequences
 
-- Не потрібен зараз multi-environment CI/CD (деплой у прод, окремі секрети прод-оточення) — це відкладено до моменту, коли prod дійсно знадобиться
-- `.env.example` / `.env` в `apps/web` наразі описують лише stage-конфіг, без явного `_STAGE`/`_PROD` суфікса в назвах змінних (сама наявність тільки одного середовища робить суфікс зайвим зараз)
-- Коли зʼявиться prod: буде потрібен новий Firebase-проєкт, окремий Sentry-проєкт або environment tag, розширення `.github/workflows/ci.yml` деплой-матрицею, і новий ADR, що описує стратегію переходу/розділення середовищ
+- Multi-environment CI/CD is not needed now (production deploys, separate production secrets) — that is deferred until production genuinely exists
+- `.env.example` and `.env` in `apps/web` currently describe the stage config only, with no explicit `_STAGE`/`_PROD` suffix in variable names (having exactly one environment makes the suffix redundant today)
+- When production arrives it will need: a new Firebase project, a separate Sentry project or environment tag, a deploy matrix added to `.github/workflows/ci.yml`, and a new ADR describing the environment split

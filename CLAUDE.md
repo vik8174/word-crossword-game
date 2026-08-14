@@ -1,43 +1,49 @@
 # Word Crossword Game
 
-Кооперативна веб-гра для 2-4 гравців: асиметричний кросворд у стилі Alias/Taboo для практики розмовної англійської. Повна специфікація — [PRD (issue #1)](https://github.com/vik8174/word-crossword-game/issues/1).
+A cooperative web game for 2-4 players: an asymmetric crossword in the style of Alias/Taboo, built for spoken English practice. Full specification — [PRD (issue #1)](https://github.com/vik8174/word-crossword-game/issues/1).
 
-## Архітектура (коротко)
+## Language: English only
+
+Everything committed to this repository is written in **English** — README, CHANGELOG, ADRs, all other documentation, code comments, JSDoc, commit messages, branch names, and pull request descriptions.
+
+This holds regardless of the language a session is being conducted in: a chat may run in Ukrainian, but what lands in the repository is English. The repository is public and serves as a portfolio piece, so it stays readable to anyone.
+
+## Architecture (in brief)
 
 - React SPA (Vite + React Router, MUI) + Firebase (Firestore, Anonymous Auth, Analytics) + Sentry
-- Без власного бекенда — клієнти пишуть напряму в Firestore
-- pnpm workspaces: `apps/web`, `packages/shared` (чиста ігрова логіка: `crossword-generator`, `word-assignment`, `word-list-validator`, `guess-checker`)
+- No backend of our own — clients write directly to Firestore
+- pnpm workspaces: `apps/web`, `packages/shared` (pure game logic: `crossword-generator`, `word-assignment`, `word-list-validator`, `guess-checker`)
 
-Чому саме так — див. [`docs/decisions/`](docs/decisions/), особливо [0002](docs/decisions/0002-no-dedicated-backend.md)-[0006](docs/decisions/0006-pnpm-workspaces-without-orchestrator.md).
+Why it is built this way — see [`docs/decisions/`](docs/decisions/), in particular [0002](docs/decisions/0002-no-dedicated-backend.md)-[0008](docs/decisions/0008-crossword-layout-library-and-contract.md).
 
-## Як тут працювати: координатор + воркери
+## How work happens here: coordinator + workers
 
-Проєкт ведеться двома різними ролями сесій. **Спершу визнач свою роль:**
+The project runs on two distinct session roles. **First, determine your role:**
 
-> Якщо тобі передали конкретний issue, handoff-документ або задачу на імплементацію — **ти ВОРКЕР**. Це стосується переважної більшості сесій у цьому репо.
+> If you were handed a specific issue, a handoff document, or an implementation task — **you are a WORKER**. This covers the overwhelming majority of sessions in this repo.
 >
-> Координатор — це рівно одна окрема сесія, яку Віктор веде сам. Якщо ти не отримав явної вказівки «ти координатор» — ти нею не є.
+> The coordinator is exactly one separate session that Viktor runs himself. If you were not explicitly told "you are the coordinator", you are not it.
 
-### Якщо ти воркер
+### If you are a worker
 
-- Виконуєш **один** переданий тобі issue — від гілки до відкритого PR
-- **Не** плануєш решту проєкту, не створюєш issue, не редагуєш чужі тікети, не роздаєш роботу іншим агентам, не запускаєш під-агентів для імплементації (виняток — агент `code-reviewer` на власний diff, це вимога процесу)
-- **Не** мерджиш свій PR — його рев'ює й мерджить Віктор
-- Наприкінці повертаєш стислий звіт: що зроблено з acceptance criteria, посилання на PR, ухвалені рішення, блокери й що потребує ручних дій людини
-- Модель для воркер-сесій: **Sonnet 5**
+- You implement **one** assigned issue — from branch to open pull request
+- You do **not** plan the rest of the project, create issues, edit other tickets, hand work to other agents, or spawn sub-agents to implement things (the one exception is the `code-reviewer` agent on your own diff, which the process requires)
+- You do **not** merge your own pull request — Viktor reviews and merges it
+- You finish by returning a concise report: which acceptance criteria are done, a link to the pull request, decisions made, blockers, and anything that needs a human's hands
+- Model for worker sessions: **Sonnet 5**
 
-### Якщо ти координатор
+### If you are the coordinator
 
-- Не імплементуєш тікети сам — тримаєш загальний стан, обираєш наступний issue, готуєш handoff, звіряєш звіти воркерів
-- Після звіту воркера оновлюєш стан проєкту (issue, ADR за потреби) і готуєш наступний handoff
-- Модель для координатора: **Opus 5**
+- You do not implement tickets yourself — you hold the overall state, pick the next issue, prepare handoffs, and verify worker reports
+- After a worker reports, you update project state (issues, ADRs as needed) and prepare the next handoff
+- Model for the coordinator: **Opus 5**
 
-Проміжні handoff-документи — у `handoffs/` (git-ignored). Довговічна памʼять проєкту — git-історія, GitHub issues/PR і `docs/decisions/`; окрема памʼять між сесіями не потрібна.
+Handoff documents live in `handoffs/` (git-ignored). The project's durable memory is git history, GitHub issues/PRs, and `docs/decisions/`; no separate cross-session memory is needed.
 
-## Процес розробки
+## Development process
 
-Гілки, код-рев'ю, CI, ADR, changelog — див. [`CONTRIBUTING.md`](CONTRIBUTING.md).
+Branches, code review, CI, ADRs, changelog — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
-## Тестування
+## Testing
 
-Юніт-тести обов'язкові для чистих модулів `packages/shared` (`crossword-generator`, `word-assignment`, `word-list-validator`, `guess-checker`). Тест перевіряє зовнішню поведінку (вхід → вихід), не деталі реалізації.
+Unit tests are mandatory for the pure modules in `packages/shared` (`crossword-generator`, `word-assignment`, `word-list-validator`, `guess-checker`). A test verifies external behavior (input → output), not implementation details.

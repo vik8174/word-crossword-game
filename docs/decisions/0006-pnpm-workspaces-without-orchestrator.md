@@ -1,17 +1,17 @@
-# 0006. pnpm workspaces без Turborepo/Nx
+# 0006. pnpm workspaces without Turborepo/Nx
 
 Status: Accepted
 
 ## Context
 
-Монорепо потребує способу зв'язати `apps/web` і `packages/shared`. Розглядались Turborepo, Nx, і чисті pnpm workspaces без додаткового build-оркестратора.
+The monorepo needs a way to link `apps/web` and `packages/shared`. Turborepo, Nx, and plain pnpm workspaces with no additional build orchestrator were considered.
 
 ## Decision
 
-pnpm workspaces без Turborepo/Nx.
+pnpm workspaces without Turborepo/Nx.
 
 ## Consequences
 
-- Для MVP-масштабу (2 пакети: `apps/web`, `packages/shared`) оркестратор — зайва конфігурація
-- Простіший поріг входу для будь-якої нової агент-сесії, що приєднається до роботи над кодом
-- Якщо build-часи чи кількість пакетів зростуть настільки, що це стане проблемою — додати Turborepo можна буде інкрементально, без переписування структури репозиторію
+- At MVP scale (two packages: `apps/web` and `packages/shared`) an orchestrator is configuration without a payoff
+- A lower barrier to entry for any new agent session joining work on the code
+- If build times or package count grow enough to become a problem, Turborepo can be added incrementally without restructuring the repository

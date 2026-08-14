@@ -1,10 +1,10 @@
-# 0005. Vite + React Router замість Next.js
+# 0005. Vite + React Router instead of Next.js
 
 Status: Accepted
 
 ## Context
 
-Проєкт — гра за лінком-запрошенням без публічного контенту. Розглядались Next.js (SSR/routing з коробки) і Vite + React Router (чистий SPA).
+The project is an invite-link game with no public content. Next.js (SSR and routing out of the box) and Vite + React Router (a plain SPA) were both considered.
 
 ## Decision
 
@@ -12,6 +12,6 @@ Vite + React Router.
 
 ## Consequences
 
-- SEO та SSR не дають жодної цінності для приватної гри за запрошенням — Next.js додав би зайву складність налаштування без вигоди
-- Простіша й швидша розробка/білд для чистого real-time SPA
-- Якщо в майбутньому зʼявиться публічна маркетингова сторінка з потребою в SEO — це окремий застосунок/рішення, не привід переглядати цей ADR для самої гри
+- SEO and SSR add no value to a private invite-only game — Next.js would have added configuration complexity without a payoff
+- Simpler and faster development and builds for a pure real-time SPA
+- If a public marketing page with SEO needs shows up later, that is a separate app and decision, not a reason to revisit this ADR for the game itself
