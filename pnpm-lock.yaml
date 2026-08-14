@@ -59,6 +59,9 @@ importers:
       react-router-dom:
         specifier: 7.18.2
         version: 7.18.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      shared:
+        specifier: workspace:*
+        version: link:../../packages/shared
     devDependencies:
       '@testing-library/jest-dom':
         specifier: 7.0.1
