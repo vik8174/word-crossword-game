@@ -1,18 +1,14 @@
+import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
-import { packageName } from 'shared';
+import { Link as RouterLink } from 'react-router-dom';
 
 /**
- * Placeholder landing page.
+ * Landing page — the way into a new game.
  *
- * Real room-creation / join flows are added by later issues (see PRD —
- * GitHub issue #1). This page only proves the app shell (router + MUI
- * theme) renders correctly, and that `apps/web` can import from the
- * `packages/shared` workspace package (module resolution, TS types, and
- * build all work across the package boundary) — see
- * `docs/decisions/0006-pnpm-workspaces-without-orchestrator.md`. The real
- * game-logic modules (`crossword-generator`, `word-assignment`, etc.) will
- * replace this placeholder import in later issues.
+ * Joining an existing game does not start here: players arrive straight at
+ * their room link (issue #5), so the only action this page offers is creating
+ * one.
  */
 export const HomePage = () => {
   return (
@@ -20,12 +16,12 @@ export const HomePage = () => {
       <Typography variant="h3" component="h1" gutterBottom>
         Word Crossword Game
       </Typography>
-      <Typography variant="body1" color="text.secondary">
+      <Typography variant="body1" color="text.secondary" gutterBottom>
         Cooperative word-crossword game for practicing spoken English.
       </Typography>
-      <Typography variant="caption" color="text.disabled" component="p" sx={{ mt: 4 }}>
-        Powered by the `{packageName}` workspace package.
-      </Typography>
+      <Button component={RouterLink} to="/create" variant="contained" size="large" sx={{ mt: 4 }}>
+        Create a game
+      </Button>
     </Container>
   );
 };
