@@ -13,5 +13,8 @@
   "devDependencies": {
     "@vitest/coverage-v8": "4.1.10",
     "vitest": "4.1.10"
+  },
+  "dependencies": {
+    "crossword-generator-x": "1.0.0"
   }
 }
