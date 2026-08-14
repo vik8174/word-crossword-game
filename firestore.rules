@@ -1,0 +1,106 @@
+rules_version = '2';
+
+// Security rules for the room documents this app writes directly from the
+// browser — there is no backend of ours between the players and the database
+// (see docs/decisions/0002-no-dedicated-backend.md), so these rules are the
+// only thing standing between a room and the open internet.
+//
+// What they deliberately do NOT do: hide a word from the player who has to
+// guess it. Every player fetches the whole room document, hidden words
+// included, and the UI is what keeps them out of sight — a conscious MVP
+// decision recorded in docs/decisions/0004-ui-only-word-visibility.md.
+//
+// The document shape they validate is fixed by
+// docs/decisions/0009-room-document-schema.md.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Every field a room document may hold, and no other.
+    function roomFields() {
+      return ['status', 'ownerId', 'layout', 'words', 'players', 'createdAt', 'expiresAt'];
+    }
+
+    function hasExactlyRoomFields(room) {
+      return room.keys().hasOnly(roomFields()) && room.keys().hasAll(roomFields());
+    }
+
+    // A room must expire, must not be born already expired (a badly skewed
+    // client clock would have the TTL policy delete it immediately), and must
+    // not outlive the 24-hour lifetime by any meaningful margin.
+    function expiresWithinLifetime(room) {
+      return room.expiresAt is timestamp
+        && room.expiresAt > request.time
+        && room.expiresAt < request.time + duration.value(25, 'h');
+    }
+
+    // A room is playable by 2-4 players; the owner alone is in it at creation.
+    function hasRoomForPlayers(room) {
+      return room.players.size() >= 1 && room.players.size() <= 4;
+    }
+
+    // A room moves forward: it waits, it is played, it is finished. A finished
+    // game stays finished — a player who opens the link afterwards must see
+    // the result, not a grid someone reopened.
+    function hasValidStatus(before, after) {
+      return after.status in ['lobby', 'playing', 'completed']
+        && (before.status != 'completed' || after.status == 'completed');
+    }
+
+    function isValidNewRoom() {
+      let room = request.resource.data;
+
+      return hasExactlyRoomFields(room)
+        && room.status == 'lobby'
+        && room.ownerId == request.auth.uid
+        && room.players.keys().hasOnly([request.auth.uid])
+        && room.players.keys().hasAll([request.auth.uid])
+        && room.createdAt is timestamp
+        && expiresWithinLifetime(room)
+        // A room with no grid is unplayable, and one word state per placed
+        // word is what the game reads and writes from then on.
+        && room.layout.placedWords.size() > 0
+        && room.layout.placedWords.size() <= 20
+        && room.words.size() == room.layout.placedWords.size();
+    }
+
+    // The crossword, the owner and the birth date are settled at creation.
+    // Everything a game does afterwards — players joining, words being
+    // assigned and guessed, the room staying alive — touches other fields.
+    function keepsRoomIdentity() {
+      let before = resource.data;
+      let after = request.resource.data;
+
+      return hasExactlyRoomFields(after)
+        && hasValidStatus(before, after)
+        && after.layout == before.layout
+        && after.ownerId == before.ownerId
+        && after.createdAt == before.createdAt
+        && after.words.size() == before.words.size()
+        && hasRoomForPlayers(after)
+        && expiresWithinLifetime(after);
+    }
+
+    match /rooms/{roomId} {
+      // Anyone who was given the link can read the room; nobody can walk the
+      // collection to discover rooms they were not invited to.
+      allow get: if isSignedIn();
+      allow list: if false;
+
+      allow create: if isSignedIn() && isValidNewRoom();
+      allow update: if isSignedIn() && keepsRoomIdentity();
+
+      // Rooms disappear only when the TTL policy on `expiresAt` collects them,
+      // never because a client asked — one player cannot end everyone's game.
+      allow delete: if false;
+    }
+
+    // Nothing else in this database is reachable from a browser.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
