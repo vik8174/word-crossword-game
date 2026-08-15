@@ -10,35 +10,52 @@ import { RoomBoard } from '../components/RoomBoard';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import { normalizeNickname } from '../rooms/nickname';
 import { roomAccessFor } from '../rooms/room-access';
-import { joinRoom } from '../rooms/room-service';
+import type { RoomDocument } from '../rooms/room-document';
+import { joinRoom, startGame } from '../rooms/room-service';
 import { useRoomConnection } from '../rooms/use-room-connection';
 
 const JOIN_FAILED_MESSAGE =
   'Could not join the game. Check your connection and try again — the room is still there.';
 
-/** How far the player got with entering the room they are looking at. */
-type JoinPhase =
+const START_FAILED_MESSAGE =
+  'Could not start the game. Check your connection and try again — nothing has been dealt out yet.';
+
+/**
+ * How far something the player asked for got. Both entering a room and starting
+ * a game stay `submitting` after they succeed: the write comes back through the
+ * subscription and replaces the screen, so clearing it here would only flicker.
+ */
+type ActionPhase =
   | { readonly phase: 'idle' }
   | { readonly phase: 'submitting' }
   | { readonly phase: 'failed'; readonly message: string };
 
 const Room = ({ roomId }: { readonly roomId: string }) => {
   const connection = useRoomConnection(roomId);
-  const [join, setJoin] = useState<JoinPhase>({ phase: 'idle' });
+  const [join, setJoin] = useState<ActionPhase>({ phase: 'idle' });
+  const [start, setStart] = useState<ActionPhase>({ phase: 'idle' });
 
   const submitJoin = async (playerId: string, rawNickname: string) => {
     setJoin({ phase: 'submitting' });
 
     try {
       await joinRoom({ roomId, playerId, nickname: normalizeNickname(rawNickname) });
-      // Deliberately left submitting: the write shows up in the subscription
-      // immediately, and this screen becomes the board. Clearing it here would
-      // only flash an empty form in between.
     } catch (error) {
       // "Missing or insufficient permissions" says nothing to a player, so they
       // get a plain message and the details go to the console.
       console.error('Joining the room failed', error);
       setJoin({ phase: 'failed', message: JOIN_FAILED_MESSAGE });
+    }
+  };
+
+  const submitStart = async (room: RoomDocument) => {
+    setStart({ phase: 'submitting' });
+
+    try {
+      await startGame({ roomId, room });
+    } catch (error) {
+      console.error('Starting the game failed', error);
+      setStart({ phase: 'failed', message: START_FAILED_MESSAGE });
     }
   };
 
@@ -76,7 +93,15 @@ const Room = ({ roomId }: { readonly roomId: string }) => {
   }
 
   if (access === 'joined') {
-    return <RoomBoard room={room} viewerId={playerId} />;
+    return (
+      <RoomBoard
+        room={room}
+        viewerId={playerId}
+        onStartGame={() => void submitStart(room)}
+        isStartingGame={start.phase === 'submitting'}
+        startGameError={start.phase === 'failed' ? start.message : undefined}
+      />
+    );
   }
 
   return (

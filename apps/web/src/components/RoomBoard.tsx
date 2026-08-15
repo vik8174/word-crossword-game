@@ -3,8 +3,11 @@ import Typography from '@mui/material/Typography';
 
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument, RoomStatus } from '../rooms/room-document';
+import { wordViewFor } from '../rooms/word-visibility';
 import { CrosswordGridOutline } from './CrosswordGridOutline';
 import { PlayerList } from './PlayerList';
+import { PlayerWordsPanel } from './PlayerWordsPanel';
+import { StartGamePanel } from './StartGamePanel';
 
 /** What the room is doing right now, said to a player rather than to a database. */
 const STATUS_MESSAGES: Readonly<Record<RoomStatus, string>> = {
@@ -18,35 +21,66 @@ interface RoomBoardProps {
   readonly room: RoomDocument;
   /** UID of the player looking at it. */
   readonly viewerId: string;
+  /** Deals the words out and opens the game; offered to the owner only. */
+  readonly onStartGame: () => void;
+  /** `true` while the deal is being written. */
+  readonly isStartingGame: boolean;
+  /** Why the last attempt to start did not go through, if it did not. */
+  readonly startGameError?: string;
 }
 
 /**
- * The room a player has joined: who else is in, and the crossword they will play.
+ * The room a player has joined: who else is in, their own words, and the grid.
  *
- * The grid is deliberately blank — see {@link CrosswordGridOutline}. Guessing
- * words is not here either; it arrives with issue #7.
+ * Every player reads the same document, so what separates them is drawn here
+ * and nowhere else: the words a player explains are theirs alone, and the grid
+ * gives away no letter of anyone's (see {@link CrosswordGridOutline}). Typing
+ * guesses into it arrives with issue #7.
  *
  * @param props.room - The room document
- * @param props.viewerId - Which player is reading, so they can be marked in the list
+ * @param props.viewerId - Which player is reading, so they see their own words
+ * @param props.onStartGame - Called when the owner starts the game
  *
  * @example
- * <RoomBoard room={room} viewerId={playerId} />
+ * <RoomBoard room={room} viewerId={playerId} onStartGame={start} isStartingGame={false} />
  */
-export const RoomBoard = ({ room, viewerId }: RoomBoardProps) => {
+export const RoomBoard = ({
+  room,
+  viewerId,
+  onStartGame,
+  isStartingGame,
+  startGameError,
+}: RoomBoardProps) => {
+  const players = playersInJoinOrder(room);
+  const wordView = wordViewFor(room, viewerId);
+  const isWaitingToStart = room.status === 'lobby';
+  const hasWords = wordView.toExplain.length > 0 || wordView.toGuessCount > 0;
+
   return (
     <Stack spacing={3}>
       <Typography variant="body1" role="status">
         {STATUS_MESSAGES[room.status]}
       </Typography>
 
-      <PlayerList players={playersInJoinOrder(room)} ownerId={room.ownerId} viewerId={viewerId} />
+      <PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />
+
+      {isWaitingToStart && viewerId === room.ownerId && (
+        <StartGamePanel
+          playerCount={players.length}
+          onStart={onStartGame}
+          isStarting={isStartingGame}
+          errorMessage={startGameError}
+        />
+      )}
+
+      {hasWords && <PlayerWordsPanel view={wordView} />}
 
       <section aria-labelledby="grid-heading">
         <Typography id="grid-heading" variant="h6" component="h2">
           The crossword
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {`${room.layout.placedWords.length} words are hidden in this grid. The letters stay covered until the game starts.`}
+          {`${room.layout.placedWords.length} words are hidden in this grid. A word's letters appear once it has been guessed — nobody's grid gives their own words away.`}
         </Typography>
 
         <CrosswordGridOutline layout={room.layout} />

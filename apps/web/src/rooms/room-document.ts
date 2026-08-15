@@ -1,5 +1,5 @@
 import type { Timestamp } from 'firebase/firestore';
-import type { CrosswordLayout } from 'shared';
+import type { CrosswordLayout, WordAssignment } from 'shared';
 
 /**
  * Shape of a room document in Firestore and the pure builder that produces a
@@ -144,6 +144,41 @@ export const buildRoomDocument = ({
     players: { [ownerId]: { nickname: ownerNickname, joinedAt: createdAt } },
     createdAt,
     expiresAt: new Date(createdAt.getTime() + ROOM_LIFETIME_MS),
+  };
+};
+
+/**
+ * The update that starts a game: the words are dealt out and the room begins.
+ *
+ * Written as one nested field per word (`words.w0.hiddenFromPlayerId`) rather
+ * than as a whole `words` map, because the security rules refuse an update that
+ * changes which words a room has — and because a player guessing a word at the
+ * same moment writes a neighbouring field of the same map without either write
+ * losing the other.
+ *
+ * @param assignment - Who guesses which word, by position in `layout.placedWords`
+ * @returns Field paths and values for a single `updateDoc` call
+ * @throws Error when the assignment covers no word — such a room cannot be played
+ *
+ * @example
+ * buildStartGameUpdate(['bob-uid', 'alice-uid']);
+ * // { status: 'playing', 'words.w0.hiddenFromPlayerId': 'bob-uid', ... }
+ */
+export const buildStartGameUpdate = (
+  assignment: WordAssignment,
+): Readonly<Record<string, unknown>> => {
+  if (assignment.length === 0) {
+    throw new Error('Cannot start a game in which no word was assigned to anyone.');
+  }
+
+  return {
+    status: 'playing',
+    ...Object.fromEntries(
+      assignment.map((playerId, index) => [
+        `words.${wordIdAt(index)}.hiddenFromPlayerId`,
+        playerId,
+      ]),
+    ),
   };
 };
 
