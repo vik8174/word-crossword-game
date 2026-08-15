@@ -7,11 +7,12 @@ import {
   updateDoc,
   type Unsubscribe,
 } from 'firebase/firestore';
-import type { CrosswordLayout } from 'shared';
+import { assignWords, type CrosswordLayout } from 'shared';
 
 import { auth, db } from '../firebase/config';
 import {
   buildRoomDocument,
+  buildStartGameUpdate,
   parseRoomDocument,
   ROOMS_COLLECTION,
   type RoomDocument,
@@ -128,4 +129,36 @@ export const joinRoom = async ({ roomId, playerId, nickname }: JoinRoomInput): P
   await updateDoc(doc(db, ROOMS_COLLECTION, roomId), {
     [`players.${playerId}`]: { nickname, joinedAt: new Date() },
   });
+};
+
+/** The room to start, as its owner currently sees it. */
+export interface StartGameInput {
+  readonly roomId: string;
+  /** The room document the players are looking at — its words and its players are dealt out. */
+  readonly room: RoomDocument;
+}
+
+/**
+ * Deals the words out among the players and opens the game.
+ *
+ * The assignment is drawn once, by the owner's browser, and written in a single
+ * update, so everyone reads the same deal from their next snapshot — nobody
+ * draws their own. Whoever joins between the draw and the write is not in it
+ * and would have nothing to guess; the owner is the one who decides when
+ * everybody is in, so the window is theirs to avoid.
+ *
+ * @param input - The room's id and the document as it stands
+ * @throws Error from `assignWords` when the room has fewer than two players or
+ * no words, and from Firebase when the write is rejected
+ *
+ * @example
+ * await startGame({ roomId, room });
+ */
+export const startGame = async ({ roomId, room }: StartGameInput): Promise<void> => {
+  const assignment = assignWords({
+    wordCount: room.layout.placedWords.length,
+    playerIds: Object.keys(room.players),
+  });
+
+  await updateDoc(doc(db, ROOMS_COLLECTION, roomId), buildStartGameUpdate(assignment));
 };

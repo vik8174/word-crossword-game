@@ -3,8 +3,8 @@ import { addDoc, collection, doc, onSnapshot, updateDoc } from 'firebase/firesto
 import type { CrosswordLayout } from 'shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ROOMS_COLLECTION } from './room-document';
-import { createRoom, joinRoom, subscribeToRoom } from './room-service';
+import { ROOMS_COLLECTION, type RoomDocument } from './room-document';
+import { createRoom, joinRoom, startGame, subscribeToRoom } from './room-service';
 
 // Firestore and Auth are the system boundary this module wraps: mocked here so
 // the wiring (sign in, then write, then hand back the id) can be asserted
@@ -204,5 +204,75 @@ describe('joinRoom', () => {
     await expect(
       joinRoom({ roomId: 'room-1', playerId: 'guest-uid', nickname: 'Bob' }),
     ).rejects.toThrow(/permissions/i);
+  });
+});
+
+/** A room of three words, as the owner's screen holds it when they press start. */
+const roomToStart = (playerIds: readonly string[]): RoomDocument =>
+  ({
+    ...storedRoom(),
+    layout: {
+      ...LAYOUT,
+      placedWords: ['cat', 'arc', 'tea'].map((word) => ({
+        word,
+        orientation: 'across',
+        cells: [{ row: 0, col: 0 }],
+      })),
+    },
+    words: Object.fromEntries(
+      ['w0', 'w1', 'w2'].map((id) => [id, { hiddenFromPlayerId: null, guessedByPlayerId: null }]),
+    ),
+    players: Object.fromEntries(
+      playerIds.map((id) => [id, { nickname: id, joinedAt: { toMillis: () => 1000 } }]),
+    ),
+  }) as unknown as RoomDocument;
+
+const start = (playerIds: readonly string[]) =>
+  startGame({ roomId: 'room-1', room: roomToStart(playerIds) });
+
+/** The assignment the given `updateDoc` call wrote, word by word. */
+const writtenAssignment = () => {
+  const [, update] = vi.mocked(updateDoc).mock.calls[0] as unknown as [
+    unknown,
+    Record<string, unknown>,
+  ];
+
+  return ['w0', 'w1', 'w2'].map((id) => update[`words.${id}.hiddenFromPlayerId`]);
+};
+
+describe('startGame', () => {
+  it('opens the game for guessing', async () => {
+    await start(['owner-uid', 'guest-uid']);
+
+    expect(updateDoc).toHaveBeenCalledWith(
+      ROOM_REFERENCE,
+      expect.objectContaining({ status: 'playing' }),
+    );
+  });
+
+  it('hides every word of the room from one of its players', async () => {
+    await start(['owner-uid', 'guest-uid']);
+
+    const assignment = writtenAssignment();
+
+    expect(assignment).toHaveLength(3);
+    assignment.forEach((playerId) => expect(['owner-uid', 'guest-uid']).toContain(playerId));
+  });
+
+  it('writes the whole deal at once, so every player reads the same one', async () => {
+    await start(['owner-uid', 'guest-uid', 'third-uid']);
+
+    expect(updateDoc).toHaveBeenCalledOnce();
+  });
+
+  it('refuses to start a game the owner would be sitting in alone', async () => {
+    await expect(start(['owner-uid'])).rejects.toThrow(/2 players/i);
+    expect(updateDoc).not.toHaveBeenCalled();
+  });
+
+  it('lets a refused write reach the caller instead of pretending the game began', async () => {
+    vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+
+    await expect(start(['owner-uid', 'guest-uid'])).rejects.toThrow(/permissions/i);
   });
 });

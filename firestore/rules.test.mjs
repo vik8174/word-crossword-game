@@ -68,10 +68,22 @@ const asOtherPlayer = () => testEnv.authenticatedContext(OTHER_PLAYER).firestore
 const asStranger = () => testEnv.unauthenticatedContext().firestore();
 
 /** Puts an existing room in place, bypassing the rules under test. */
-const seedRoom = () =>
+const seedRoom = (overrides = {}) =>
   testEnv.withSecurityRulesDisabled(async (context) => {
-    await setDoc(doc(context.firestore(), ROOM_PATH), roomOwnedBy(OWNER));
+    await setDoc(doc(context.firestore(), ROOM_PATH), roomOwnedBy(OWNER, overrides));
   });
+
+/** Both players in the room, as they are once someone has joined by the link. */
+const twoPlayers = {
+  [OWNER]: { nickname: 'Vik', joinedAt: Timestamp.now() },
+  [OTHER_PLAYER]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+};
+
+/** What starting a game writes: the deal, and the room opening for guesses. */
+const startGameUpdate = () => ({
+  status: 'playing',
+  'words.w0.hiddenFromPlayerId': OTHER_PLAYER,
+});
 
 before(async () => {
   testEnv = await initializeTestEnvironment({
@@ -319,6 +331,76 @@ describe('playing in a room', () => {
     await assertFails(
       updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
         'words.w1': { hiddenFromPlayerId: null, guessedByPlayerId: null },
+      }),
+    );
+  });
+
+  it('lets the owner deal the words out and open the game', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ players: twoPlayers });
+
+    await assertSucceeds(updateDoc(doc(asOwner(), ROOM_PATH), startGameUpdate()));
+  });
+
+  it('refuses to let anyone but the owner start the game', async () => {
+    // Without this the room screen would be the only thing keeping a player
+    // from dealing the words out on everybody else's behalf.
+    await testEnv.clearFirestore();
+    await seedRoom({ players: twoPlayers });
+
+    await assertFails(updateDoc(doc(asOtherPlayer(), ROOM_PATH), startGameUpdate()));
+  });
+
+  it('refuses to start a game the owner would be sitting in alone', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom();
+
+    await assertFails(updateDoc(doc(asOwner(), ROOM_PATH), startGameUpdate()));
+  });
+
+  it('refuses a newcomer joining a game that has already started', async () => {
+    // Every word of a started room is hidden from one of the players who were
+    // in at the deal, so a latecomer would be handed the whole word list.
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing' });
+
+    await assertFails(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+      }),
+    );
+  });
+
+  it('refuses a newcomer joining a game that is already over', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'completed' });
+
+    await assertFails(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+      }),
+    );
+  });
+
+  it('lets a player of a started game rewrite their own entry, which is how they come back', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: twoPlayers });
+
+    await assertSucceeds(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+      }),
+    );
+  });
+
+  it('lets any player finish a game that is already on, not only the owner', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: twoPlayers });
+
+    await assertSucceeds(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        'words.w0.guessedByPlayerId': OTHER_PLAYER,
+        status: 'completed',
       }),
     );
   });

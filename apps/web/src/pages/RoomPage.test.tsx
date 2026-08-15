@@ -50,6 +50,26 @@ const LAYOUT = {
   unplacedWords: [],
 };
 
+/** Two crossing words, so a player can have one to explain and one to guess. */
+const TWO_WORD_LAYOUT = {
+  rows: 3,
+  cols: 3,
+  cells: [...LAYOUT.cells, { row: 1, col: 0, letter: 'A' }, { row: 2, col: 0, letter: 'R' }],
+  placedWords: [
+    ...LAYOUT.placedWords,
+    {
+      word: 'car',
+      orientation: 'down',
+      cells: [
+        { row: 0, col: 0 },
+        { row: 1, col: 0 },
+        { row: 2, col: 0 },
+      ],
+    },
+  ],
+  unplacedWords: [],
+};
+
 const player = (nickname: string, joinedAtMillis = 1000) => ({
   nickname,
   joinedAt: timestamp(joinedAtMillis),
@@ -281,6 +301,149 @@ describe('RoomPage', () => {
     });
   });
 
+  describe('starting the game', () => {
+    const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
+    const assignedWords = { w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null } };
+    const startButton = () => screen.getByRole('button', { name: /start the game/i });
+
+    /** Opens the room as its owner rather than as the visitor everything else runs as. */
+    const openRoomAsOwner = async (room: unknown) => {
+      vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
+
+      await openRoom(room);
+    };
+
+    it('deals every word out to a player and opens the game', async () => {
+      await openRoomAsOwner(storedRoom({ layout: TWO_WORD_LAYOUT, players: bothPlayers }));
+
+      fireEvent.click(startButton());
+
+      await waitFor(() => expect(updateDoc).toHaveBeenCalled());
+      expect(updateDoc).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          status: 'playing',
+          'words.w0.hiddenFromPlayerId': expect.stringMatching(/^(owner|guest)-uid$/),
+        }),
+      );
+    });
+
+    it('keeps the game shut while the owner is waiting alone', async () => {
+      await openRoomAsOwner(storedRoom());
+
+      expect(startButton()).toBeDisabled();
+      expect(screen.getByText(/needs at least 2 players/i)).toBeInTheDocument();
+    });
+
+    it('keeps the game shut when the crossword has fewer words than players', async () => {
+      // One word between two players would leave one of them nothing to guess,
+      // and every word of the room readable.
+      await openRoomAsOwner(storedRoom({ players: bothPlayers }));
+
+      expect(startButton()).toBeDisabled();
+      expect(screen.getByText(/nothing to guess/i)).toBeInTheDocument();
+    });
+
+    it('offers the start to nobody but the owner', async () => {
+      await openRoom(storedRoom({ players: bothPlayers }));
+
+      expect(screen.queryByRole('button', { name: /start the game/i })).not.toBeInTheDocument();
+    });
+
+    it('explains a start the database refused, and lets the owner try again', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+      await openRoomAsOwner(storedRoom({ layout: TWO_WORD_LAYOUT, players: bothPlayers }));
+
+      fireEvent.click(startButton());
+
+      expect(await screen.findByText(/could not start the game/i)).toBeInTheDocument();
+      expect(startButton()).toBeEnabled();
+    });
+
+    it('takes the start away once the game is on', async () => {
+      await openRoomAsOwner(
+        storedRoom({ status: 'playing', players: bothPlayers, words: assignedWords }),
+      );
+
+      expect(screen.queryByRole('button', { name: /start the game/i })).not.toBeInTheDocument();
+      expect(screen.getByText(/the game is on/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('once the words are dealt out', () => {
+    const assignedRoom = storedRoom({
+      status: 'playing',
+      layout: TWO_WORD_LAYOUT,
+      players: { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) },
+      words: {
+        w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+        w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+      },
+    });
+
+    it('shows a player the words they have to explain', async () => {
+      await openRoom(assignedRoom);
+
+      expect(screen.getByText('car')).toBeInTheDocument();
+    });
+
+    it('never puts a word hidden from the player anywhere on their screen', async () => {
+      await openRoom(assignedRoom);
+
+      expect(screen.queryByText(/\bcat\b/i)).not.toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/\bcat\b/i);
+    });
+
+    it('tells a player how many words are theirs to guess, without naming them', async () => {
+      await openRoom(assignedRoom);
+
+      expect(screen.getByText(/hidden from you.*: 1\b/i)).toBeInTheDocument();
+    });
+
+    it('keeps the grid letterless while the game is being played', async () => {
+      await openRoom(assignedRoom);
+
+      expect(screen.getByRole('img', { name: /crossword grid/i }).textContent).toBe('');
+    });
+
+    it('shows no word at all to a player the deal did not cover', async () => {
+      // Joined in the instant between the owner reading the room and writing
+      // the deal: in the room, in nobody's assignment. Every word would read as
+      // theirs to explain, which is the whole crossword.
+      await openRoom(
+        storedRoom({
+          status: 'playing',
+          layout: TWO_WORD_LAYOUT,
+          players: {
+            'owner-uid': player('Vik'),
+            'third-uid': player('Cara', 2000),
+            'guest-uid': player('Bob', 3000),
+          },
+          words: {
+            w0: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+            w1: { hiddenFromPlayerId: 'third-uid', guessedByPlayerId: null },
+          },
+        }),
+      );
+
+      expect(document.body.textContent).not.toMatch(/\bcat\b|\bcar\b/i);
+      expect(screen.getByText(/running without you/i)).toBeInTheDocument();
+      // The rest of the room still behaves as it did.
+      expect(screen.getByText('Cara')).toBeInTheDocument();
+      expect(screen.getByRole('img', { name: /crossword grid/i })).toBeInTheDocument();
+    });
+
+    it('shows nobody any word while the room is still in the lobby', async () => {
+      await openRoom(
+        storedRoom({ layout: TWO_WORD_LAYOUT, players: { 'guest-uid': player('Bob') } }),
+      );
+
+      expect(screen.queryByText('car')).not.toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/\bcat\b/i);
+    });
+  });
+
   describe('a link that leads nowhere', () => {
     it('says so when the room was never there or has already been cleaned up', async () => {
       renderRoomPage();
@@ -323,6 +486,27 @@ describe('RoomPage', () => {
       );
 
       expect(screen.getByText(/room has expired/i)).toBeInTheDocument();
+    });
+
+    it('turns away a visitor who opened the link after the words were dealt out', async () => {
+      // Every word of a started room is hidden from one of the players who were
+      // in at the deal, so a latecomer allowed in would be shown all of them.
+      await openRoom(
+        storedRoom({
+          status: 'playing',
+          layout: TWO_WORD_LAYOUT,
+          players: { 'owner-uid': player('Vik'), 'third-uid': player('Cara', 2000) },
+          words: {
+            w0: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+            w1: { hiddenFromPlayerId: 'third-uid', guessedByPlayerId: null },
+          },
+        }),
+      );
+
+      expect(screen.getByText(/already begun/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/\bcat\b|\bcar\b/i);
+      expect(updateDoc).not.toHaveBeenCalled();
     });
 
     it('turns away a fifth player', async () => {

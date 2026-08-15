@@ -50,6 +50,32 @@ service cloud.firestore {
         && (before.status != 'completed' || after.status == 'completed');
     }
 
+    // The words are dealt out once, and only the owner deals them: they are the
+    // one who knows everybody invited has arrived, and the deal cannot be taken
+    // back. A room of one has nobody left to explain a hidden word, so two
+    // players are the floor — the same floor the room screen shows, spelled
+    // `MIN_PLAYERS` in packages/shared/src/word-assignment/types.ts. Rules
+    // cannot import it, so the two move together by hand.
+    function isValidStart(before, after) {
+      return before.status != 'lobby'
+        || after.status != 'playing'
+        || (request.auth.uid == before.ownerId && after.players.size() >= 2);
+    }
+
+    // A room takes new players only while it waits in the lobby. Once the words
+    // are dealt out, every one of them is hidden from somebody who was in at
+    // the deal — so a latecomer would be handed the entire word list as words
+    // to "explain", which is the game given away (see
+    // docs/decisions/0010-letterless-grid-and-private-word-list.md).
+    //
+    // What is refused is a player key that was not there before, not writing to
+    // `players` at all: a player already in the room rewrites their own entry
+    // when they come back to it, which is how reconnecting works (issue #9).
+    function keepsPlayersClosed(before, after) {
+      return before.status == 'lobby'
+        || after.players.keys().hasOnly(before.players.keys());
+    }
+
     function isValidNewRoom() {
       let room = request.resource.data;
 
@@ -76,6 +102,8 @@ service cloud.firestore {
 
       return hasExactlyRoomFields(after)
         && hasValidStatus(before, after)
+        && isValidStart(before, after)
+        && keepsPlayersClosed(before, after)
         && after.layout == before.layout
         && after.ownerId == before.ownerId
         && after.createdAt == before.createdAt

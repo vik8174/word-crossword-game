@@ -1,7 +1,13 @@
 import type { CrosswordLayout } from 'shared';
 import { describe, expect, it } from 'vitest';
 
-import { buildRoomDocument, parseRoomDocument, ROOM_LIFETIME_MS, wordIdAt } from './room-document';
+import {
+  buildRoomDocument,
+  buildStartGameUpdate,
+  parseRoomDocument,
+  ROOM_LIFETIME_MS,
+  wordIdAt,
+} from './room-document';
 
 const CREATED_AT = new Date('2026-01-01T10:00:00.000Z');
 
@@ -95,6 +101,49 @@ describe('buildRoomDocument', () => {
     };
 
     expect(() => buildDocument(emptyLayout)).toThrow(/no placed words/i);
+  });
+});
+
+describe('buildStartGameUpdate', () => {
+  const ASSIGNMENT = ['bob-uid', 'alice-uid', 'bob-uid'];
+
+  it('opens the game for guessing', () => {
+    expect(buildStartGameUpdate(ASSIGNMENT).status).toBe('playing');
+  });
+
+  it('hides each word from the player the assignment put on it', () => {
+    expect(buildStartGameUpdate(ASSIGNMENT)).toMatchObject({
+      [`words.${wordIdAt(0)}.hiddenFromPlayerId`]: 'bob-uid',
+      [`words.${wordIdAt(1)}.hiddenFromPlayerId`]: 'alice-uid',
+      [`words.${wordIdAt(2)}.hiddenFromPlayerId`]: 'bob-uid',
+    });
+  });
+
+  it('leaves the set of words alone, which is what the security rules insist on', () => {
+    // Writing the `words` map itself would replace it wholesale; the rules
+    // refuse an update that changes which words a room has, and a player
+    // guessing at that moment would lose their write.
+    const fields = Object.keys(buildStartGameUpdate(ASSIGNMENT));
+
+    expect(fields).not.toContain('words');
+    expect(fields.filter((field) => field !== 'status')).toEqual([
+      `words.${wordIdAt(0)}.hiddenFromPlayerId`,
+      `words.${wordIdAt(1)}.hiddenFromPlayerId`,
+      `words.${wordIdAt(2)}.hiddenFromPlayerId`,
+    ]);
+  });
+
+  it('touches nothing the room was created with', () => {
+    const fields = Object.keys(buildStartGameUpdate(ASSIGNMENT));
+
+    expect(fields).not.toContain('layout');
+    expect(fields).not.toContain('ownerId');
+    expect(fields).not.toContain('createdAt');
+    expect(fields).not.toContain('players');
+  });
+
+  it('refuses to start a game nobody was given a word in', () => {
+    expect(() => buildStartGameUpdate([])).toThrow(/no word was assigned/i);
   });
 });
 
