@@ -10,13 +10,13 @@ interface PlayerWordsPanelProps {
 }
 
 /**
- * The words this player explains, and how many are being explained to them.
+ * The words this player explains, and how far they have got with their own.
  *
  * This is the only place a word is ever spelled out on screen, and it holds
- * exactly the words hidden from someone else. The words hidden from the reader
- * are a number and nothing more: the grid stays letterless until a word is
- * guessed (see `docs/decisions/0010-letterless-grid-and-private-word-list.md`),
- * so nothing on this screen hands them a letter of their own words.
+ * exactly the words hidden from someone else. Of the words hidden from the
+ * reader there is a count and nothing more — their squares are in the grid, to
+ * be typed into, but no letter of them reaches this screen until the group has
+ * earned it (`docs/decisions/0010-letterless-grid-and-private-word-list.md`).
  *
  * It takes the one word view that holds words, so a player the deal never
  * covered cannot be rendered here by mistake — there is no such prop to pass.
@@ -27,6 +27,8 @@ interface PlayerWordsPanelProps {
  * <PlayerWordsPanel view={wordViewFor(room, viewerId)} />
  */
 export const PlayerWordsPanel = ({ view }: PlayerWordsPanelProps) => {
+  const solved = view.toGuess.filter((word) => word.isSolved).length;
+
   return (
     <section aria-labelledby="your-words-heading">
       <Typography id="your-words-heading" variant="h6" component="h2">
@@ -44,7 +46,7 @@ export const PlayerWordsPanel = ({ view }: PlayerWordsPanelProps) => {
       </Stack>
 
       <Typography variant="body2" role="status">
-        {`Words hidden from you, for the others to explain: ${view.toGuessCount}. Those are the ones you guess.`}
+        {`Words hidden from you, for the others to explain: ${view.toGuess.length}, of which ${solved} answered. Type them into the highlighted squares of the grid.`}
       </Typography>
     </section>
   );

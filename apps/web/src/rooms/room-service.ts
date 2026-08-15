@@ -11,6 +11,7 @@ import { assignWords, type CrosswordLayout } from 'shared';
 
 import { auth, db } from '../firebase/config';
 import {
+  buildGuessUpdate,
   buildRoomDocument,
   buildStartGameUpdate,
   parseRoomDocument,
@@ -161,4 +162,37 @@ export const startGame = async ({ roomId, room }: StartGameInput): Promise<void>
   });
 
   await updateDoc(doc(db, ROOMS_COLLECTION, roomId), buildStartGameUpdate(assignment));
+};
+
+/** A word one player has just answered. */
+export interface RecordGuessInput {
+  readonly roomId: string;
+  /** UID of the player the word was hidden from — the one who answered it. */
+  readonly playerId: string;
+  /** Key of the word in the room's `words` map. */
+  readonly wordId: string;
+}
+
+/**
+ * Writes down that a word has been answered, for every screen at once.
+ *
+ * The check itself already happened on this client: the answer travels in the
+ * room document that everybody fetched, so there is nobody else to ask
+ * (`docs/decisions/0004-ui-only-word-visibility.md`). What is written is only
+ * who solved it — the word's letters were in `layout` from the start, and it is
+ * this field that lets every other client show them.
+ *
+ * @param input - The room, the player who answered, and which word
+ * @throws Error from Firebase when the write is rejected — an expired room, or
+ * a connection that never came back
+ *
+ * @example
+ * await recordGuess({ roomId, playerId, wordId: 'w3' });
+ */
+export const recordGuess = async ({
+  roomId,
+  playerId,
+  wordId,
+}: RecordGuessInput): Promise<void> => {
+  await updateDoc(doc(db, ROOMS_COLLECTION, roomId), buildGuessUpdate(wordId, playerId));
 };

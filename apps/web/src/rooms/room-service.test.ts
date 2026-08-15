@@ -4,7 +4,7 @@ import type { CrosswordLayout } from 'shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ROOMS_COLLECTION, type RoomDocument } from './room-document';
-import { createRoom, joinRoom, startGame, subscribeToRoom } from './room-service';
+import { createRoom, joinRoom, recordGuess, startGame, subscribeToRoom } from './room-service';
 
 // Firestore and Auth are the system boundary this module wraps: mocked here so
 // the wiring (sign in, then write, then hand back the id) can be asserted
@@ -274,5 +274,24 @@ describe('startGame', () => {
     vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
 
     await expect(start(['owner-uid', 'guest-uid'])).rejects.toThrow(/permissions/i);
+  });
+});
+
+describe('recordGuess', () => {
+  const record = () => recordGuess({ roomId: 'room-1', playerId: 'guest-uid', wordId: 'w2' });
+
+  it('marks the one word as answered, in the room it was answered in', async () => {
+    await record();
+
+    expect(doc).toHaveBeenCalledWith(expect.anything(), ROOMS_COLLECTION, 'room-1');
+    expect(updateDoc).toHaveBeenCalledExactlyOnceWith(ROOM_REFERENCE, {
+      'words.w2.guessedByPlayerId': 'guest-uid',
+    });
+  });
+
+  it('lets a refused write reach the caller instead of losing the answer quietly', async () => {
+    vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+
+    await expect(record()).rejects.toThrow(/permissions/i);
   });
 });
