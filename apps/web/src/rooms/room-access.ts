@@ -24,17 +24,28 @@ export type ReadableRoom = RoomDocumentShape<MillisecondTimestamp>;
  * What a player may do with the room they just opened:
  * - `joined` — they are already in it and see the game
  * - `joinable` — there is a free seat and they may enter a nickname
+ * - `started` — the words have been dealt out; the room takes nobody else
  * - `full` — four players are already in
  * - `expired` — the room outlived its 24 hours; Firestore has not collected it
  *   yet, but every write to it is refused, so there is no game left to join
  */
-export type RoomAccess = 'joined' | 'joinable' | 'full' | 'expired';
+export type RoomAccess = 'joined' | 'joinable' | 'started' | 'full' | 'expired';
 
 /**
  * What the given player may do with the given room right now.
  *
- * Expiry is checked first: a room past `expiresAt` rejects every update, so
- * even a player already listed in it has nothing left to play.
+ * The order of the checks is the point. Expiry comes first: a room past
+ * `expiresAt` rejects every update, so even a player already listed in it has
+ * nothing left to play. Being in the room comes next, so nothing that follows
+ * can lock out somebody who is already playing — a player reopening their own
+ * link mid-game is exactly what has to keep working.
+ *
+ * A newcomer is turned away once the game has started, and not only because
+ * there would be nothing for them to guess: every word of a started room is
+ * hidden from one of the players who were in at the deal, so a latecomer joining
+ * would be handed the whole word list to "explain" (see
+ * `docs/decisions/0010-letterless-grid-and-private-word-list.md`). The security
+ * rules refuse the same write.
  *
  * @param room - The room document as read from Firestore
  * @param playerId - Firebase Auth UID of the player who opened the link
@@ -51,6 +62,10 @@ export const roomAccessFor = (room: ReadableRoom, playerId: string, now: Date): 
 
   if (Object.hasOwn(room.players, playerId)) {
     return 'joined';
+  }
+
+  if (room.status !== 'lobby') {
+    return 'started';
   }
 
   return Object.keys(room.players).length >= MAX_PLAYERS ? 'full' : 'joinable';

@@ -452,6 +452,27 @@ describe('RoomPage', () => {
       expect(screen.getByText(/room has expired/i)).toBeInTheDocument();
     });
 
+    it('turns away a visitor who opened the link after the words were dealt out', async () => {
+      // Every word of a started room is hidden from one of the players who were
+      // in at the deal, so a latecomer allowed in would be shown all of them.
+      await openRoom(
+        storedRoom({
+          status: 'playing',
+          layout: TWO_WORD_LAYOUT,
+          players: { 'owner-uid': player('Vik'), 'third-uid': player('Cara', 2000) },
+          words: {
+            w0: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+            w1: { hiddenFromPlayerId: 'third-uid', guessedByPlayerId: null },
+          },
+        }),
+      );
+
+      expect(screen.getByText(/already begun/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/\bcat\b|\bcar\b/i);
+      expect(updateDoc).not.toHaveBeenCalled();
+    });
+
     it('turns away a fifth player', async () => {
       const crowd = Object.fromEntries(
         ['a', 'b', 'c', 'd'].map((id, index) => [id, player(id.toUpperCase(), index)]),

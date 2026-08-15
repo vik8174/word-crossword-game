@@ -88,6 +88,10 @@ const Room = ({ roomId }: { readonly roomId: string }) => {
     return <RoomUnavailableNotice reason="expired" />;
   }
 
+  if (access === 'started') {
+    return <RoomUnavailableNotice reason="started" />;
+  }
+
   if (access === 'full') {
     return <RoomUnavailableNotice reason="full" />;
   }

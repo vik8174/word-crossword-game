@@ -19,8 +19,9 @@ const player = (nickname: string, joinedAtMillis = 0) => ({
 const roomWith = (
   players: Record<string, { nickname: string; joinedAt: MillisecondTimestamp }>,
   expiresAtMillis = NOW.getTime() + 1,
+  status: ReadableRoom['status'] = 'lobby',
 ): ReadableRoom => ({
-  status: 'lobby',
+  status,
   ownerId: 'owner-uid',
   layout: {
     rows: 1,
@@ -72,6 +73,26 @@ describe('roomAccessFor', () => {
 
   it('still lets the four who are in play', () => {
     expect(roomAccessFor(roomWith(fourPlayers), 'a', NOW)).toBe('joined');
+  });
+
+  it('turns away a newcomer once the words have been dealt out', () => {
+    // Every word of a started room is hidden from one of the players who were
+    // in at the deal, so a latecomer would be shown all of them at once.
+    const room = roomWith({ 'owner-uid': player('Vik') }, NOW.getTime() + 1, 'playing');
+
+    expect(roomAccessFor(room, 'guest-uid', NOW)).toBe('started');
+  });
+
+  it('turns away a newcomer arriving after the game is over', () => {
+    const room = roomWith({ 'owner-uid': player('Vik') }, NOW.getTime() + 1, 'completed');
+
+    expect(roomAccessFor(room, 'guest-uid', NOW)).toBe('started');
+  });
+
+  it('lets a player of a started room back in, which is how reconnecting works', () => {
+    const room = roomWith({ 'owner-uid': player('Vik') }, NOW.getTime() + 1, 'playing');
+
+    expect(roomAccessFor(room, 'owner-uid', NOW)).toBe('joined');
   });
 
   it('closes a room whose lifetime ran out, even to a player already in it', () => {

@@ -358,6 +358,41 @@ describe('playing in a room', () => {
     await assertFails(updateDoc(doc(asOwner(), ROOM_PATH), startGameUpdate()));
   });
 
+  it('refuses a newcomer joining a game that has already started', async () => {
+    // Every word of a started room is hidden from one of the players who were
+    // in at the deal, so a latecomer would be handed the whole word list.
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing' });
+
+    await assertFails(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+      }),
+    );
+  });
+
+  it('refuses a newcomer joining a game that is already over', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'completed' });
+
+    await assertFails(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+      }),
+    );
+  });
+
+  it('lets a player of a started game rewrite their own entry, which is how they come back', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: twoPlayers });
+
+    await assertSucceeds(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+      }),
+    );
+  });
+
   it('lets any player finish a game that is already on, not only the owner', async () => {
     await testEnv.clearFirestore();
     await seedRoom({ status: 'playing', players: twoPlayers });
