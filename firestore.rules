@@ -53,7 +53,9 @@ service cloud.firestore {
     // The words are dealt out once, and only the owner deals them: they are the
     // one who knows everybody invited has arrived, and the deal cannot be taken
     // back. A room of one has nobody left to explain a hidden word, so two
-    // players are the floor — the same floor the room screen shows.
+    // players are the floor — the same floor the room screen shows, spelled
+    // `MIN_PLAYERS` in packages/shared/src/word-assignment/types.ts. Rules
+    // cannot import it, so the two move together by hand.
     function isValidStart(before, after) {
       return before.status != 'lobby'
         || after.status != 'playing'
