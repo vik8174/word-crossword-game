@@ -14,7 +14,7 @@ This holds regardless of the language a session is being conducted in: a chat ma
 - No backend of our own — clients write directly to Firestore
 - pnpm workspaces: `apps/web`, `packages/shared` (pure game logic: `crossword-generator`, `word-assignment`, `word-list-validator`, `guess-checker`)
 
-Why it is built this way — see [`docs/decisions/`](docs/decisions/), in particular [0002](docs/decisions/0002-no-dedicated-backend.md)-[0011](docs/decisions/0011-typing-guesses-into-the-grid.md).
+Why it is built this way — see [`docs/decisions/`](docs/decisions/), in particular [0002](docs/decisions/0002-no-dedicated-backend.md)-[0012](docs/decisions/0012-ending-a-game-from-the-received-state.md).
 
 ## How work happens here: coordinator + workers
 
