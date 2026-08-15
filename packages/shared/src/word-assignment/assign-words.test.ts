@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { assignWords } from './assign-words';
+import { assignWords, wordAssignmentRefusal } from './assign-words';
 import type { RandomSource, WordAssignment } from './types';
 
 /**
@@ -113,12 +113,68 @@ describe('assignWords', () => {
     expect(assign([0.1, 0.9, 0.3, 0.7])).not.toBe(assign([0.8, 0.2, 0.6, 0.4]));
   });
 
+  it('leaves everybody at least one word to guess', () => {
+    [2, 3, 4].forEach((playerCount) => {
+      const counts = wordsPerPlayer(
+        assignWords({ wordCount: playerCount, playerIds: PLAYERS.slice(0, playerCount) }),
+      );
+
+      expect(Math.min(...counts)).toBeGreaterThan(0);
+    });
+  });
+
   it('refuses a room too small to play in — a hidden word needs an explainer', () => {
     expect(() => assignWords({ wordCount: 10, playerIds: ['alice-uid'] })).toThrow(/2 players/i);
     expect(() => assignWords({ wordCount: 10, playerIds: [] })).toThrow(/2 players/i);
   });
 
+  it('refuses to deal fewer words than there are players', () => {
+    // Somebody would be left with nothing hidden from them, which is not a
+    // smaller share of the game but the whole crossword laid open.
+    expect(() => assignWords({ wordCount: 3, playerIds: PLAYERS })).toThrow(/as many/i);
+  });
+
   it('refuses a crossword with no words in it', () => {
     expect(() => assignWords({ wordCount: 0, playerIds: PLAYERS })).toThrow(/word/i);
+  });
+});
+
+describe('wordAssignmentRefusal', () => {
+  it('lets a room that can be played be dealt out', () => {
+    expect(wordAssignmentRefusal({ wordCount: 10, playerCount: 4 })).toBeNull();
+  });
+
+  it('lets a room with exactly one word per player be dealt out', () => {
+    expect(wordAssignmentRefusal({ wordCount: 4, playerCount: 4 })).toBeNull();
+  });
+
+  it('names a room nobody could explain anything in', () => {
+    expect(wordAssignmentRefusal({ wordCount: 10, playerCount: 1 })).toBe('too-few-players');
+  });
+
+  it('names a crossword too small for the players in the room', () => {
+    expect(wordAssignmentRefusal({ wordCount: 3, playerCount: 4 })).toBe(
+      'fewer-words-than-players',
+    );
+  });
+
+  it('agrees with what assignWords will do, so a screen can ask before offering', () => {
+    const sizes = [
+      { wordCount: 10, playerCount: 2 },
+      { wordCount: 1, playerCount: 2 },
+      { wordCount: 10, playerCount: 1 },
+      { wordCount: 4, playerCount: 4 },
+    ];
+
+    sizes.forEach(({ wordCount, playerCount }) => {
+      const playerIds = PLAYERS.slice(0, playerCount);
+      const deals = () => assignWords({ wordCount, playerIds });
+
+      if (wordAssignmentRefusal({ wordCount, playerCount }) === null) {
+        expect(deals).not.toThrow();
+      } else {
+        expect(deals).toThrow();
+      }
+    });
   });
 });

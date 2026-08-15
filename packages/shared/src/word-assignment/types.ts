@@ -9,6 +9,20 @@
 /** Fewest players a game can be assigned to — a hidden word needs someone left to explain it. */
 export const MIN_PLAYERS = 2;
 
+/**
+ * Why a room's words cannot be dealt out as it stands:
+ * - `too-few-players` — one player has nobody to explain anything to them
+ * - `fewer-words-than-players` — somebody would end up with no word to guess,
+ *   which is not a smaller share of the game but no game at all
+ */
+export type WordAssignmentRefusal = 'too-few-players' | 'fewer-words-than-players';
+
+/** As much of a room as deciding whether it can be dealt out takes. */
+export interface RoomSize {
+  readonly wordCount: number;
+  readonly playerCount: number;
+}
+
 /** Source of randomness: returns a number in `[0, 1)`, exactly like `Math.random`. */
 export type RandomSource = () => number;
 
