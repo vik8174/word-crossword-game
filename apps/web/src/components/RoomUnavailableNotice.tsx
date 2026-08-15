@@ -19,7 +19,7 @@ const MESSAGES: Readonly<Record<RoomUnavailableReason, string>> = {
   expired:
     'This room has expired. Rooms are kept for 24 hours after they are created, and this one is past that, so nobody can join it any more. Ask whoever invited you to start a new game.',
   started:
-    'This game has already begun. The words were dealt out among the players who were in the room at the time, so it plays on without new arrivals — ask them for a link to the next one.',
+    'This game has already begun. The words were dealt out among the players who were in the room at the time, so it takes no new players — ask whoever invited you for a link to the next game.',
   full: 'This room is already full — a game takes at most four players.',
   connection:
     'Could not reach the game. Check your connection and reload the page — the room is still there.',
