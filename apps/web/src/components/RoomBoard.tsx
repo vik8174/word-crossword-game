@@ -1,3 +1,4 @@
+import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
@@ -15,6 +16,14 @@ const STATUS_MESSAGES: Readonly<Record<RoomStatus, string>> = {
   playing: 'The game is on.',
   completed: 'This game is finished — every word has been guessed.',
 };
+
+/**
+ * Said to a player who is in the room but in nobody's assignment — they joined
+ * in the instant between the owner reading the room and dealing the words out.
+ * Every word would read as theirs to explain, so they are shown none of them.
+ */
+const LEFT_OUT_MESSAGE =
+  'This game was dealt out just as you arrived, so it is running without you — none of its words are yours to explain or guess, and none of them are shown here. Ask the others for a link to the next game.';
 
 interface RoomBoardProps {
   /** The room as it stands, following live updates from Firestore. */
@@ -54,7 +63,6 @@ export const RoomBoard = ({
   const players = playersInJoinOrder(room);
   const wordView = wordViewFor(room, viewerId);
   const isWaitingToStart = room.status === 'lobby';
-  const hasWords = wordView.toExplain.length > 0 || wordView.toGuessCount > 0;
 
   return (
     <Stack spacing={3}>
@@ -67,13 +75,16 @@ export const RoomBoard = ({
       {isWaitingToStart && viewerId === room.ownerId && (
         <StartGamePanel
           playerCount={players.length}
+          wordCount={room.layout.placedWords.length}
           onStart={onStartGame}
           isStarting={isStartingGame}
           errorMessage={startGameError}
         />
       )}
 
-      {hasWords && <PlayerWordsPanel view={wordView} />}
+      {wordView.kind === 'dealt' && <PlayerWordsPanel view={wordView} />}
+
+      {wordView.kind === 'left-out' && <Alert severity="info">{LEFT_OUT_MESSAGE}</Alert>}
 
       <section aria-labelledby="grid-heading">
         <Typography id="grid-heading" variant="h6" component="h2">

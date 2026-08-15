@@ -2,11 +2,11 @@ import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import type { PlayerWordView } from '../rooms/word-visibility';
+import type { DealtWordView } from '../rooms/word-visibility';
 
 interface PlayerWordsPanelProps {
   /** This player's half of the room's words — never anybody else's. */
-  readonly view: PlayerWordView;
+  readonly view: DealtWordView;
 }
 
 /**
@@ -18,7 +18,10 @@ interface PlayerWordsPanelProps {
  * guessed (see `docs/decisions/0010-letterless-grid-and-private-word-list.md`),
  * so nothing on this screen hands them a letter of their own words.
  *
- * @param props.view - What {@link wordViewFor} worked out for this player
+ * It takes the one word view that holds words, so a player the deal never
+ * covered cannot be rendered here by mistake — there is no such prop to pass.
+ *
+ * @param props.view - The `dealt` view {@link wordViewFor} worked out for this player
  *
  * @example
  * <PlayerWordsPanel view={wordViewFor(room, viewerId)} />
