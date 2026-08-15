@@ -5,17 +5,21 @@ import { useMemo } from 'react';
 
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument, RoomStatus } from '../rooms/room-document';
-import { gridViewFor, wordViewFor } from '../rooms/word-visibility';
+import { finishedWordsOf, gridViewFor, wordViewFor } from '../rooms/word-visibility';
 import { CrosswordGrid } from './CrosswordGrid';
+import { GameCompletedPanel } from './GameCompletedPanel';
 import { PlayerList } from './PlayerList';
 import { PlayerWordsPanel } from './PlayerWordsPanel';
 import { StartGamePanel } from './StartGamePanel';
 
-/** What the room is doing right now, said to a player rather than to a database. */
-const STATUS_MESSAGES: Readonly<Record<RoomStatus, string>> = {
+/**
+ * What the room is doing right now, said to a player rather than to a database.
+ * A finished game is not in here: it has {@link GameCompletedPanel} to itself,
+ * and one line of its own would only say the same thing twice.
+ */
+const STATUS_MESSAGES: Readonly<Record<Exclude<RoomStatus, 'completed'>, string>> = {
   lobby: 'Waiting for the other players. The game starts once everyone is in.',
   playing: 'The game is on.',
-  completed: 'This game is finished — every word has been guessed.',
 };
 
 /**
@@ -74,13 +78,19 @@ export const RoomBoard = ({
   // the letters this player has typed so far — is not judged afresh every time
   // React redraws for some other reason.
   const gridView = useMemo(() => gridViewFor(room, viewerId), [room, viewerId]);
-  const isWaitingToStart = room.status === 'lobby';
+  const status = room.status;
+  const isWaitingToStart = status === 'lobby';
+  const isFinished = status === 'completed';
 
   return (
     <Stack spacing={3}>
-      <Typography variant="body1" role="status">
-        {STATUS_MESSAGES[room.status]}
-      </Typography>
+      {isFinished ? (
+        <GameCompletedPanel words={finishedWordsOf(room)} playerCount={players.length} />
+      ) : (
+        <Typography variant="body1" role="status">
+          {STATUS_MESSAGES[status]}
+        </Typography>
+      )}
 
       <PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />
 
@@ -94,16 +104,22 @@ export const RoomBoard = ({
         />
       )}
 
-      {wordView.kind === 'dealt' && <PlayerWordsPanel view={wordView} />}
+      {/* Both of these are about a game still being played — what each player
+          has left to do. A finished room says it all once, up top. */}
+      {!isFinished && wordView.kind === 'dealt' && <PlayerWordsPanel view={wordView} />}
 
-      {wordView.kind === 'left-out' && <Alert severity="info">{LEFT_OUT_MESSAGE}</Alert>}
+      {!isFinished && wordView.kind === 'left-out' && (
+        <Alert severity="info">{LEFT_OUT_MESSAGE}</Alert>
+      )}
 
       <section aria-labelledby="grid-heading">
         <Typography id="grid-heading" variant="h6" component="h2">
           The crossword
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {`${room.layout.placedWords.length} words are hidden in this grid. Type your own into the squares that take letters; a word's letters appear for everybody once it has been answered.`}
+          {isFinished
+            ? `All ${room.layout.placedWords.length} words of this grid are in place.`
+            : `${room.layout.placedWords.length} words are hidden in this grid. Type your own into the squares that take letters; a word's letters appear for everybody once it has been answered.`}
         </Typography>
 
         <CrosswordGrid view={gridView} onSolved={onSolveWord} />

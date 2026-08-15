@@ -83,10 +83,18 @@ describe('roomAccessFor', () => {
     expect(roomAccessFor(room, 'guest-uid', NOW)).toBe('started');
   });
 
-  it('turns away a newcomer arriving after the game is over', () => {
+  it('tells a newcomer arriving after the game is over that it is over', () => {
+    // Turned away either way, but "come back later" would be a lie about a
+    // room whose game has already been played to its last word.
     const room = roomWith({ 'owner-uid': player('Vik') }, NOW.getTime() + 1, 'completed');
 
-    expect(roomAccessFor(room, 'guest-uid', NOW)).toBe('started');
+    expect(roomAccessFor(room, 'guest-uid', NOW)).toBe('finished');
+  });
+
+  it('gives a player of a finished room their game back, not a refusal', () => {
+    const room = roomWith({ 'owner-uid': player('Vik') }, NOW.getTime() + 1, 'completed');
+
+    expect(roomAccessFor(room, 'owner-uid', NOW)).toBe('joined');
   });
 
   it('lets a player of a started room back in, which is how reconnecting works', () => {

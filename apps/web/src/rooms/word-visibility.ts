@@ -192,6 +192,25 @@ export const wordViewFor = (room: ReadableRoom, viewerId: string): PlayerWordVie
 };
 
 /**
+ * Every word of the crossword, spelled out — but only once the game is over.
+ *
+ * The one place a word hidden from the reader may be named to them, and the
+ * status is what makes it safe: a finished game has every word answered, so its
+ * letters are already in the grid on every screen and there is nothing left to
+ * work out. The guard lives here rather than in the caller for the same reason
+ * the rest of this module does — a component that renders whatever it is handed
+ * must not be the thing deciding whether the game is over.
+ *
+ * @param room - The room document as read from Firestore
+ * @returns The words in grid order, or nothing at all while the game is on
+ *
+ * @example
+ * finishedWordsOf(room); // ['cat', 'car', 'rat']
+ */
+export const finishedWordsOf = (room: ReadableRoom): readonly string[] =>
+  room.status === 'completed' ? room.layout.placedWords.map(({ word }) => word) : [];
+
+/**
  * The squares whose letters may be shown: those of words already solved.
  *
  * Solved words are shared progress, so this does not depend on who is looking —

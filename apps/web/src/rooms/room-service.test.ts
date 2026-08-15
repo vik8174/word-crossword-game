@@ -4,7 +4,14 @@ import type { CrosswordLayout } from 'shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ROOMS_COLLECTION, type RoomDocument } from './room-document';
-import { createRoom, joinRoom, recordGuess, startGame, subscribeToRoom } from './room-service';
+import {
+  completeGame,
+  createRoom,
+  joinRoom,
+  recordGuess,
+  startGame,
+  subscribeToRoom,
+} from './room-service';
 
 // Firestore and Auth are the system boundary this module wraps: mocked here so
 // the wiring (sign in, then write, then hand back the id) can be asserted
@@ -293,5 +300,31 @@ describe('recordGuess', () => {
     vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
 
     await expect(record()).rejects.toThrow(/permissions/i);
+  });
+});
+
+describe('completeGame', () => {
+  it('closes the game by writing the one field that says so', async () => {
+    await completeGame('room-1');
+
+    expect(doc).toHaveBeenCalledWith(expect.anything(), ROOMS_COLLECTION, 'room-1');
+    expect(updateDoc).toHaveBeenCalledExactlyOnceWith(ROOM_REFERENCE, { status: 'completed' });
+  });
+
+  it('writes the same thing however many clients call it', async () => {
+    // Every client that sees a full board closes the game, so the write has to
+    // be one several of them can make at once without the room noticing.
+    await completeGame('room-1');
+    await completeGame('room-1');
+
+    const updates = vi.mocked(updateDoc).mock.calls.map(([, update]) => update);
+
+    expect(updates).toEqual([{ status: 'completed' }, { status: 'completed' }]);
+  });
+
+  it('lets a refused write reach the caller instead of leaving the game half-closed', async () => {
+    vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+
+    await expect(completeGame('room-1')).rejects.toThrow(/permissions/i);
   });
 });

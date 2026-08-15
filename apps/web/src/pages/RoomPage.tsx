@@ -12,6 +12,7 @@ import { normalizeNickname } from '../rooms/nickname';
 import { roomAccessFor } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
 import { joinRoom, recordGuess, startGame } from '../rooms/room-service';
+import { useGameCompletion } from '../rooms/use-game-completion';
 import { useRoomConnection } from '../rooms/use-room-connection';
 
 const JOIN_FAILED_MESSAGE =
@@ -42,6 +43,11 @@ const Room = ({ roomId }: { readonly roomId: string }) => {
   // Only ever a failure: a right answer needs no confirmation on this screen —
   // it turns into letters in the grid, for everybody at once.
   const [guessError, setGuessError] = useState<string | null>(null);
+
+  // Watches the room that arrives rather than the answer this player sent: the
+  // client that answered last is not necessarily the one that can tell the game
+  // is over (`docs/decisions/0012-ending-a-game-from-the-received-state.md`).
+  useGameCompletion(roomId, connection.status === 'ready' ? connection.room : null);
 
   const submitJoin = async (playerId: string, rawNickname: string) => {
     setJoin({ phase: 'submitting' });
@@ -111,6 +117,10 @@ const Room = ({ roomId }: { readonly roomId: string }) => {
 
   if (access === 'started') {
     return <RoomUnavailableNotice reason="started" />;
+  }
+
+  if (access === 'finished') {
+    return <RoomUnavailableNotice reason="finished" />;
   }
 
   if (access === 'full') {

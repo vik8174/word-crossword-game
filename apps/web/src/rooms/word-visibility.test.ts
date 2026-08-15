@@ -2,7 +2,13 @@ import type { CrosswordLayout } from 'shared';
 import { describe, expect, it } from 'vitest';
 
 import type { ReadableRoom } from './room-access';
-import { cellKey, gridViewFor, type PlayerWordView, wordViewFor } from './word-visibility';
+import {
+  cellKey,
+  finishedWordsOf,
+  gridViewFor,
+  type PlayerWordView,
+  wordViewFor,
+} from './word-visibility';
 
 const wordAt = (word: string): CrosswordLayout['placedWords'][number] => ({
   word,
@@ -272,5 +278,24 @@ describe('gridViewFor', () => {
     } as unknown as ReadableRoom;
 
     expect(gridViewFor(room, 'bob-uid').cells.every((cell) => cell.letter === null)).toBe(true);
+  });
+});
+
+describe('finishedWordsOf', () => {
+  it('spells the whole crossword out once the game is over', () => {
+    const room = roomWith(['bob-uid', 'alice-uid', 'bob-uid'], 'completed');
+
+    expect(finishedWordsOf(room)).toEqual(['apple', 'bread', 'cheese']);
+  });
+
+  it('says nothing at all while the game is still on', () => {
+    // Every word here is one somebody still has to work out on their own.
+    const room = roomWith(['bob-uid', 'alice-uid', 'bob-uid'], 'playing');
+
+    expect(finishedWordsOf(room)).toEqual([]);
+  });
+
+  it('says nothing in a lobby either', () => {
+    expect(finishedWordsOf(roomWith([null, null, null], 'lobby'))).toEqual([]);
   });
 });
