@@ -1,7 +1,7 @@
 import { checkGuess, type GridPosition, type PlacedWord, type WordOrientation } from 'shared';
 
 import type { ReadableRoom } from './room-access';
-import { wordIdAt, type RoomWordState } from './room-document';
+import { isWordSolved, wordIdAt } from './room-document';
 
 /**
  * What one player may see of a room's words, and what the grid may draw.
@@ -106,10 +106,6 @@ export interface GridView {
  */
 export const cellKey = ({ row, col }: GridPosition): string => `${row}:${col}`;
 
-/** A word state only counts as solved when it names who solved it. */
-const isSolved = (state: RoomWordState | undefined): boolean =>
-  typeof state?.guessedByPlayerId === 'string' && state.guessedByPlayerId.length > 0;
-
 /** A placed word paired with the mutable state the game keeps for it. */
 interface AssignedWord {
   readonly id: string;
@@ -132,7 +128,7 @@ const assignedWordsOf = (room: ReadableRoom): readonly AssignedWord[] =>
       const id = wordIdAt(index);
       const state = room.words[id];
 
-      return { id, placed, hiddenFrom: state?.hiddenFromPlayerId, isSolved: isSolved(state) };
+      return { id, placed, hiddenFrom: state?.hiddenFromPlayerId, isSolved: isWordSolved(state) };
     })
     .filter((entry): entry is AssignedWord => typeof entry.hiddenFrom === 'string');
 
@@ -205,7 +201,7 @@ export const wordViewFor = (room: ReadableRoom, viewerId: string): PlayerWordVie
 const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
   new Set(
     room.layout.placedWords
-      .filter((_placed, index) => isSolved(room.words[wordIdAt(index)]))
+      .filter((_placed, index) => isWordSolved(room.words[wordIdAt(index)]))
       .flatMap((placed) => placed.cells.map(cellKey)),
   );
 

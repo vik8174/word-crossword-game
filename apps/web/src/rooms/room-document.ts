@@ -208,6 +208,21 @@ export const buildGuessUpdate = (
   [`words.${wordId}.guessedByPlayerId`]: playerId,
 });
 
+/**
+ * Whether a word has been answered.
+ *
+ * A word counts as answered only when its state names who answered it. The
+ * security rules do not look inside the `words` map (see
+ * `docs/decisions/0009-room-document-schema.md`), so a missing entry or an
+ * empty string can reach a reader, and neither is an answer — which matters
+ * most to the win condition, where one such word would end the game early.
+ *
+ * @param state - The room's state for one word, if it has one
+ * @returns `true` when a player is recorded as having answered it
+ */
+export const isWordSolved = (state: RoomWordState | undefined): boolean =>
+  typeof state?.guessedByPlayerId === 'string' && state.guessedByPlayerId.length > 0;
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
