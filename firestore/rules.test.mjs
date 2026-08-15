@@ -214,6 +214,36 @@ describe('playing in a room', () => {
     );
   });
 
+  it('refuses a player joining a room whose lifetime has run out', async () => {
+    // Firestore's TTL policy deletes lazily, so an expired room is still there
+    // to be opened. The rules are what keep a game from resuming inside it —
+    // the room screen checks the same expiry so a player is told why.
+    await testEnv.clearFirestore();
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), ROOM_PATH),
+        roomOwnedBy(OWNER, { expiresAt: hoursFromNow(-1) }),
+      );
+    });
+
+    await assertFails(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+      }),
+    );
+  });
+
+  it('accepts the plain JavaScript date a joining player actually writes', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom();
+
+    await assertSucceeds(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: { nickname: 'Bob', joinedAt: new Date() },
+      }),
+    );
+  });
+
   it('lets a guessed word be recorded', async () => {
     await testEnv.clearFirestore();
     await seedRoom();
