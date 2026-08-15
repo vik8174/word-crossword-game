@@ -1,11 +1,12 @@
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import { useMemo } from 'react';
 
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument, RoomStatus } from '../rooms/room-document';
-import { wordViewFor } from '../rooms/word-visibility';
-import { CrosswordGridOutline } from './CrosswordGridOutline';
+import { gridViewFor, wordViewFor } from '../rooms/word-visibility';
+import { CrosswordGrid } from './CrosswordGrid';
 import { PlayerList } from './PlayerList';
 import { PlayerWordsPanel } from './PlayerWordsPanel';
 import { StartGamePanel } from './StartGamePanel';
@@ -36,22 +37,27 @@ interface RoomBoardProps {
   readonly isStartingGame: boolean;
   /** Why the last attempt to start did not go through, if it did not. */
   readonly startGameError?: string;
+  /** Records a word this player has just answered, for every screen at once. */
+  readonly onSolveWord: (wordId: string) => Promise<void>;
+  /** Why an answer could not be written down, if one could not. */
+  readonly solveWordError?: string;
 }
 
 /**
  * The room a player has joined: who else is in, their own words, and the grid.
  *
  * Every player reads the same document, so what separates them is drawn here
- * and nowhere else: the words a player explains are theirs alone, and the grid
- * gives away no letter of anyone's (see {@link CrosswordGridOutline}). Typing
- * guesses into it arrives with issue #7.
+ * and nowhere else: the words a player explains are theirs alone, the squares
+ * they type into are their own, and no letter of anybody's word reaches the
+ * grid before the group has earned it (see {@link CrosswordGrid}).
  *
  * @param props.room - The room document
  * @param props.viewerId - Which player is reading, so they see their own words
  * @param props.onStartGame - Called when the owner starts the game
+ * @param props.onSolveWord - Called when this player has answered one of their words
  *
  * @example
- * <RoomBoard room={room} viewerId={playerId} onStartGame={start} isStartingGame={false} />
+ * <RoomBoard room={room} viewerId={playerId} onStartGame={start} onSolveWord={solve} isStartingGame={false} />
  */
 export const RoomBoard = ({
   room,
@@ -59,9 +65,15 @@ export const RoomBoard = ({
   onStartGame,
   isStartingGame,
   startGameError,
+  onSolveWord,
+  solveWordError,
 }: RoomBoardProps) => {
   const players = playersInJoinOrder(room);
   const wordView = wordViewFor(room, viewerId);
+  // Kept across renders the room did not change in, so the grid's own state —
+  // the letters this player has typed so far — is not judged afresh every time
+  // React redraws for some other reason.
+  const gridView = useMemo(() => gridViewFor(room, viewerId), [room, viewerId]);
   const isWaitingToStart = room.status === 'lobby';
 
   return (
@@ -91,10 +103,12 @@ export const RoomBoard = ({
           The crossword
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {`${room.layout.placedWords.length} words are hidden in this grid. A word's letters appear once it has been guessed — nobody's grid gives their own words away.`}
+          {`${room.layout.placedWords.length} words are hidden in this grid. Type your own into the squares that take letters; a word's letters appear for everybody once it has been answered.`}
         </Typography>
 
-        <CrosswordGridOutline layout={room.layout} />
+        <CrosswordGrid view={gridView} onSolved={onSolveWord} />
+
+        {solveWordError !== undefined && <Alert severity="error">{solveWordError}</Alert>}
       </section>
     </Stack>
   );

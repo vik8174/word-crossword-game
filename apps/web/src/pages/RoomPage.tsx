@@ -11,7 +11,7 @@ import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import { normalizeNickname } from '../rooms/nickname';
 import { roomAccessFor } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
-import { joinRoom, startGame } from '../rooms/room-service';
+import { joinRoom, recordGuess, startGame } from '../rooms/room-service';
 import { useRoomConnection } from '../rooms/use-room-connection';
 
 const JOIN_FAILED_MESSAGE =
@@ -19,6 +19,11 @@ const JOIN_FAILED_MESSAGE =
 
 const START_FAILED_MESSAGE =
   'Could not start the game. Check your connection and try again — nothing has been dealt out yet.';
+
+// Firestore keeps retrying a write it merely could not send, so a rejection
+// here means the database refused it outright — most likely an expired room.
+const GUESS_FAILED_MESSAGE =
+  'Your answer was right, but the others could not be told about it. The room may have expired — reload the page to see where the game stands.';
 
 /**
  * How far something the player asked for got. Both entering a room and starting
@@ -34,6 +39,9 @@ const Room = ({ roomId }: { readonly roomId: string }) => {
   const connection = useRoomConnection(roomId);
   const [join, setJoin] = useState<ActionPhase>({ phase: 'idle' });
   const [start, setStart] = useState<ActionPhase>({ phase: 'idle' });
+  // Only ever a failure: a right answer needs no confirmation on this screen —
+  // it turns into letters in the grid, for everybody at once.
+  const [guessError, setGuessError] = useState<string | null>(null);
 
   const submitJoin = async (playerId: string, rawNickname: string) => {
     setJoin({ phase: 'submitting' });
@@ -56,6 +64,19 @@ const Room = ({ roomId }: { readonly roomId: string }) => {
     } catch (error) {
       console.error('Starting the game failed', error);
       setStart({ phase: 'failed', message: START_FAILED_MESSAGE });
+    }
+  };
+
+  const submitGuess = async (playerId: string, wordId: string) => {
+    try {
+      await recordGuess({ roomId, playerId, wordId });
+      setGuessError(null);
+    } catch (error) {
+      console.error('Recording the answer failed', error);
+      setGuessError(GUESS_FAILED_MESSAGE);
+      // Rethrown so the grid stops counting this word as written down and can
+      // send it again; swallowing it here is what would lose the answer.
+      throw error;
     }
   };
 
@@ -104,6 +125,8 @@ const Room = ({ roomId }: { readonly roomId: string }) => {
         onStartGame={() => void submitStart(room)}
         isStartingGame={start.phase === 'submitting'}
         startGameError={start.phase === 'failed' ? start.message : undefined}
+        onSolveWord={(wordId) => submitGuess(playerId, wordId)}
+        solveWordError={guessError ?? undefined}
       />
     );
   }
