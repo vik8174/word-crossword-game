@@ -10,6 +10,7 @@ import {
 import { assignWords, type CrosswordLayout } from 'shared';
 
 import { auth, db } from '../firebase/config';
+import { COMPLETION_UPDATE } from './room-completion';
 import {
   buildGuessUpdate,
   buildRoomDocument,
@@ -195,4 +196,24 @@ export const recordGuess = async ({
   wordId,
 }: RecordGuessInput): Promise<void> => {
   await updateDoc(doc(db, ROOMS_COLLECTION, roomId), buildGuessUpdate(wordId, playerId));
+};
+
+/**
+ * Writes down that the game is over, for every screen at once.
+ *
+ * Deliberately not part of the write that records the last answer. Whether a
+ * game is finished is read from the room as it comes back, so this is called by
+ * whichever client sees a full board first — possibly by several of them within
+ * the same second, which the single field it writes makes harmless
+ * (`docs/decisions/0012-ending-a-game-from-the-received-state.md`).
+ *
+ * @param roomId - Id of the room that has just been finished
+ * @throws Error from Firebase when the write is rejected — an expired room, or
+ * a connection that never came back
+ *
+ * @example
+ * await completeGame('room-1');
+ */
+export const completeGame = async (roomId: string): Promise<void> => {
+  await updateDoc(doc(db, ROOMS_COLLECTION, roomId), COMPLETION_UPDATE);
 };

@@ -2,7 +2,13 @@ import type { CrosswordLayout } from 'shared';
 import { describe, expect, it } from 'vitest';
 
 import type { ReadableRoom } from './room-access';
-import { cellKey, gridViewFor, type PlayerWordView, wordViewFor } from './word-visibility';
+import {
+  cellKey,
+  finishedWordsOf,
+  gridViewFor,
+  type PlayerWordView,
+  wordViewFor,
+} from './word-visibility';
 
 const wordAt = (word: string): CrosswordLayout['placedWords'][number] => ({
   word,
@@ -262,6 +268,15 @@ describe('gridViewFor', () => {
     expect(view.toGuess).toEqual([]);
   });
 
+  it('gives nothing to type in a closed room, even with a word left open in it', () => {
+    // A room can be closed without its crossword having been finished, and it
+    // is finished with its players either way — a grid still taking answers
+    // under a notice saying the room is closed would be lying to them.
+    const room = roomWith(['bob-uid', 'alice-uid'], 'completed', CROSSING_LAYOUT);
+
+    expect(gridViewFor(room, 'alice-uid').toGuess).toEqual([]);
+  });
+
   it('ignores a guessed-by another client wrote nonsense into', () => {
     const room = {
       ...dealtCrossing(),
@@ -272,5 +287,35 @@ describe('gridViewFor', () => {
     } as unknown as ReadableRoom;
 
     expect(gridViewFor(room, 'bob-uid').cells.every((cell) => cell.letter === null)).toBe(true);
+  });
+});
+
+describe('finishedWordsOf', () => {
+  const ANSWERED = ['bob-uid', 'alice-uid', 'bob-uid'];
+
+  it('spells the whole crossword out once the game is over', () => {
+    const room = roomWith(DEALT, 'completed', LAYOUT, ANSWERED);
+
+    expect(finishedWordsOf(room)).toEqual(['apple', 'bread', 'cheese']);
+  });
+
+  it('says nothing at all while the game is still on', () => {
+    // Every word here is one somebody still has to work out on their own.
+    const room = roomWith(DEALT, 'playing', LAYOUT, ANSWERED);
+
+    expect(finishedWordsOf(room)).toEqual([]);
+  });
+
+  it('does not read the word list out of a room somebody merely marked finished', () => {
+    // A `completed` status is a client's word, which the security rules cannot
+    // check against the `words` map. Without an answer on every word it buys
+    // nothing here.
+    const room = roomWith(DEALT, 'completed', LAYOUT, ['bob-uid', null, null]);
+
+    expect(finishedWordsOf(room)).toEqual([]);
+  });
+
+  it('says nothing in a lobby either', () => {
+    expect(finishedWordsOf(roomWith([null, null, null], 'lobby'))).toEqual([]);
   });
 });

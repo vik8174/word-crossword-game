@@ -141,6 +141,12 @@ const openRoom = async (room: unknown = storedRoom()) => {
 
 const grid = () => screen.getByRole('group', { name: /crossword grid/i });
 
+/** Puts a letter in one square of the grid, as a player typing would. */
+const typeInto = (row: number, col: number, letter: string) =>
+  fireEvent.change(screen.getByLabelText(new RegExp(`row ${row + 1}, column ${col + 1}\\b`, 'i')), {
+    target: { value: letter },
+  });
+
 const joinAs = (nickname: string) => {
   fireEvent.change(screen.getByLabelText(/nickname/i), { target: { value: nickname } });
   fireEvent.click(screen.getByRole('button', { name: /join the game/i }));
@@ -496,12 +502,6 @@ describe('RoomPage', () => {
         },
       });
 
-    const typeInto = (row: number, col: number, letter: string) =>
-      fireEvent.change(
-        screen.getByLabelText(new RegExp(`row ${row + 1}, column ${col + 1}\\b`, 'i')),
-        { target: { value: letter } },
-      );
-
     const spellCat = async () => {
       await act(async () => {
         typeInto(0, 0, 'c');
@@ -639,6 +639,165 @@ describe('RoomPage', () => {
       expect(updateDoc).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
         'words.w1.guessedByPlayerId': 'guest-uid',
       });
+    });
+  });
+
+  describe('finishing the game', () => {
+    /** Bob (this browser) guesses `cat`; `car` is Vik's to guess. */
+    const withWords = (words: Record<string, unknown>, status = 'playing') =>
+      storedRoom({
+        status,
+        layout: TWO_WORD_LAYOUT,
+        players: { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) },
+        words,
+      });
+
+    const open = { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null };
+    const catAnswered = { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: 'guest-uid' };
+    const carOpen = { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null };
+    const carAnswered = { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: 'owner-uid' };
+
+    const emit = (room: unknown) =>
+      act(async () => {
+        emitRoom({ exists: () => true, data: () => room });
+      });
+
+    it('leaves the game open while a single word is still unanswered', async () => {
+      await openRoom(withWords({ w0: catAnswered, w1: carOpen }));
+
+      expect(updateDoc).not.toHaveBeenCalled();
+    });
+
+    it('closes the game the moment the room shows every word answered', async () => {
+      await openRoom(withWords({ w0: catAnswered, w1: carOpen }));
+
+      await emit(withWords({ w0: catAnswered, w1: carAnswered }));
+
+      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        status: 'completed',
+      });
+    });
+
+    it('closes it from the room that arrived, not from the answer this player sent', async () => {
+      // The trap this ticket turns on. Bob answers `cat` while Vik answers `car`
+      // in the same second: neither of them, looking at the room they answered
+      // in, was the last one. Read that way, nobody would ever close the game
+      // and a full grid would sit in `playing` for good.
+      await openRoom(withWords({ w0: open, w1: carOpen }));
+
+      await act(async () => {
+        typeInto(0, 0, 'c');
+        typeInto(0, 1, 'a');
+        typeInto(0, 2, 't');
+      });
+
+      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        'words.w0.guessedByPlayerId': 'guest-uid',
+      });
+
+      await emit(withWords({ w0: catAnswered, w1: carAnswered }));
+
+      expect(updateDoc).toHaveBeenLastCalledWith(expect.anything(), { status: 'completed' });
+      expect(updateDoc).toHaveBeenCalledTimes(2);
+    });
+
+    it('writes the finished status once, however many snapshots follow', async () => {
+      const finished = withWords({ w0: catAnswered, w1: carAnswered });
+
+      await openRoom(finished);
+      await emit(finished);
+      await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
+
+      expect(updateDoc).toHaveBeenCalledOnce();
+    });
+
+    it('writes nothing more once the room already says the game is over', async () => {
+      await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
+
+      expect(updateDoc).not.toHaveBeenCalled();
+    });
+
+    it('shows the finished game to a player who answered nothing, without a reload', async () => {
+      await openRoom(withWords({ w0: open, w1: carOpen }));
+      expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
+
+      await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
+
+      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.getByText(/all 2 of its words, between the 2 of you/i)).toBeInTheDocument();
+    });
+
+    it('spells the whole crossword out only once it is over', async () => {
+      await openRoom(withWords({ w0: open, w1: carOpen }));
+      // `cat` is Bob's to guess, so until the game ends it is nowhere on screen.
+      expect(document.body.textContent).not.toMatch(/\bcat\b/i);
+
+      await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
+
+      expect(screen.getByText('cat')).toBeInTheDocument();
+      expect(screen.getByText('car')).toBeInTheDocument();
+    });
+
+    it('gives a player who comes back to the link their finished game, not a refusal', async () => {
+      await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
+
+      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.queryByText(/this game is over/i)).not.toBeInTheDocument();
+    });
+
+    it('tells a visitor arriving after the game that it is over, not that it is on', async () => {
+      await openRoom(
+        storedRoom({
+          status: 'completed',
+          layout: TWO_WORD_LAYOUT,
+          players: { 'owner-uid': player('Vik'), 'third-uid': player('Cara', 2000) },
+          words: { w0: catAnswered, w1: carAnswered },
+        }),
+      );
+
+      expect(screen.getByText(/this game is over/i)).toBeInTheDocument();
+      expect(screen.queryByText(/already begun/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      expect(updateDoc).not.toHaveBeenCalled();
+    });
+
+    it('spells nothing out for a room merely marked finished, without a word answered', async () => {
+      // The security rules cannot walk the `words` map, so any client that
+      // knows the room id can write `completed` over a game nobody played. The
+      // word list must not follow that field: it follows the board.
+      await openRoom(withWords({ w0: open, w1: carOpen }, 'completed'));
+
+      expect(document.body.textContent).not.toMatch(/\bcat\b|\bcar\b/i);
+      expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/this room is closed/i)).toBeInTheDocument();
+    });
+
+    it('stops taking answers in a closed room, whatever it says about its words', async () => {
+      // The notice says the room is closed; a grid that went on accepting
+      // letters underneath it would be saying the opposite.
+      await openRoom(withWords({ w0: open, w1: carOpen }, 'completed'));
+
+      expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+      expect(updateDoc).not.toHaveBeenCalled();
+    });
+
+    it('keeps the celebration for a room that really did finish its crossword', async () => {
+      await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
+
+      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.queryByText(/this room is closed/i)).not.toBeInTheDocument();
+    });
+
+    it('says nothing about the finished game the room could not be told about', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+
+      await openRoom(withWords({ w0: catAnswered, w1: carAnswered }));
+
+      // The grid is full on this screen either way, and any other client in the
+      // room closes the game — a message here would only be noise.
+      await waitFor(() => expect(updateDoc).toHaveBeenCalled());
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
   });
 

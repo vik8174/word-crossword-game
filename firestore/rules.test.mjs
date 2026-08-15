@@ -268,6 +268,20 @@ describe('playing in a room', () => {
     );
   });
 
+  it('lets any player close a game on its own, without an answer alongside it', async () => {
+    // This is the write the win condition actually makes: the game is closed
+    // from the room as it arrived, so the client that closes it is rarely the
+    // one that sent the last answer, and several of them may do it at once
+    // (docs/decisions/0012-ending-a-game-from-the-received-state.md). The rules
+    // cannot walk the `words` map to check the grid is really full, and they
+    // are not asked to.
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: twoPlayers });
+
+    await assertSucceeds(updateDoc(doc(asOtherPlayer(), ROOM_PATH), { status: 'completed' }));
+    await assertSucceeds(updateDoc(doc(asOwner(), ROOM_PATH), { status: 'completed' }));
+  });
+
   it('keeps the room alive by pushing its expiry forward', async () => {
     await testEnv.clearFirestore();
     await seedRoom();

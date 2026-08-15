@@ -1,7 +1,8 @@
 import { checkGuess, type GridPosition, type PlacedWord, type WordOrientation } from 'shared';
 
 import type { ReadableRoom } from './room-access';
-import { wordIdAt, type RoomWordState } from './room-document';
+import { isGameFinished } from './room-completion';
+import { isWordSolved, wordIdAt } from './room-document';
 
 /**
  * What one player may see of a room's words, and what the grid may draw.
@@ -94,7 +95,10 @@ export interface GridView {
   readonly cols: number;
   /** Every square that holds a letter, whether or not that letter may be shown. */
   readonly cells: readonly GridCellView[];
-  /** Words this player answers. Empty for anyone the deal did not cover. */
+  /**
+   * Words this player answers. Empty for anyone the deal did not cover, and
+   * empty in a room that is no longer open for answers.
+   */
   readonly toGuess: readonly GuessableWord[];
 }
 
@@ -105,10 +109,6 @@ export interface GridView {
  * @returns A key unique to that square
  */
 export const cellKey = ({ row, col }: GridPosition): string => `${row}:${col}`;
-
-/** A word state only counts as solved when it names who solved it. */
-const isSolved = (state: RoomWordState | undefined): boolean =>
-  typeof state?.guessedByPlayerId === 'string' && state.guessedByPlayerId.length > 0;
 
 /** A placed word paired with the mutable state the game keeps for it. */
 interface AssignedWord {
@@ -132,7 +132,7 @@ const assignedWordsOf = (room: ReadableRoom): readonly AssignedWord[] =>
       const id = wordIdAt(index);
       const state = room.words[id];
 
-      return { id, placed, hiddenFrom: state?.hiddenFromPlayerId, isSolved: isSolved(state) };
+      return { id, placed, hiddenFrom: state?.hiddenFromPlayerId, isSolved: isWordSolved(state) };
     })
     .filter((entry): entry is AssignedWord => typeof entry.hiddenFrom === 'string');
 
@@ -196,6 +196,31 @@ export const wordViewFor = (room: ReadableRoom, viewerId: string): PlayerWordVie
 };
 
 /**
+ * Every word of the crossword, spelled out — but only once the game really is over.
+ *
+ * The one place a word hidden from the reader may be named to them, so what
+ * makes it safe has to be something the room cannot lie about. A `completed`
+ * status alone is not that: the security rules cannot walk the `words` map to
+ * check it, so any client that knows the room id can write it over a game that
+ * was never played, and this would then read the whole word list out. What is
+ * asked instead is {@link isGameFinished} — the status *and* an answer against
+ * every word. Then the letters are already in the grid on every screen and
+ * there is nothing here anybody could still be working out.
+ *
+ * The guard lives here rather than in the caller for the same reason the rest
+ * of this module does — a component that renders whatever it is handed must not
+ * be the thing deciding whether the game is over.
+ *
+ * @param room - The room document as read from Firestore
+ * @returns The words in grid order, or nothing at all unless the crossword is full
+ *
+ * @example
+ * finishedWordsOf(room); // ['cat', 'car', 'rat']
+ */
+export const finishedWordsOf = (room: ReadableRoom): readonly string[] =>
+  isGameFinished(room) ? room.layout.placedWords.map(({ word }) => word) : [];
+
+/**
  * The squares whose letters may be shown: those of words already solved.
  *
  * Solved words are shared progress, so this does not depend on who is looking —
@@ -205,7 +230,7 @@ export const wordViewFor = (room: ReadableRoom, viewerId: string): PlayerWordVie
 const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
   new Set(
     room.layout.placedWords
-      .filter((_placed, index) => isSolved(room.words[wordIdAt(index)]))
+      .filter((_placed, index) => isWordSolved(room.words[wordIdAt(index)]))
       .flatMap((placed) => placed.cells.map(cellKey)),
   );
 
@@ -217,6 +242,12 @@ const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
  * cannot give a word away — including the words it lets this player type into,
  * which come with coordinates and no spelling.
  *
+ * A closed room hands over nothing to type. In a game that ended the ordinary
+ * way this changes nothing — every word is answered, so there is nowhere left
+ * to type anyway — but a room closed with words still open is finished with its
+ * players all the same, and a grid that went on taking answers under a notice
+ * saying the room is closed would be lying to them.
+ *
  * @param room - The room document as read from Firestore
  * @param viewerId - Firebase Auth UID of the player looking at the screen
  * @returns The board, the letters that may be shown, and this player's own words
@@ -227,6 +258,7 @@ const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
 export const gridViewFor = (room: ReadableRoom, viewerId: string): GridView => {
   const solved = solvedCellKeys(room);
   const view = wordViewFor(room, viewerId);
+  const isOpenForAnswers = room.status === 'playing';
 
   return {
     rows: room.layout.rows,
@@ -236,6 +268,6 @@ export const gridViewFor = (room: ReadableRoom, viewerId: string): GridView => {
       col,
       letter: solved.has(cellKey({ row, col })) ? letter : null,
     })),
-    toGuess: view.kind === 'dealt' ? view.toGuess : [],
+    toGuess: view.kind === 'dealt' && isOpenForAnswers ? view.toGuess : [],
   };
 };
