@@ -49,6 +49,35 @@ const viewWith = (revealed: readonly string[], toGuess: readonly GuessableWord[]
   toGuess,
 });
 
+/**
+ * A plus-shaped board: `EAT` across the middle row, `OAK` down the middle
+ * column, sharing the `A` in the middle of both. Two words hidden from the same
+ * player crossing each other is what this shape is for.
+ */
+const EAT: readonly GridPosition[] = [
+  { row: 1, col: 0 },
+  { row: 1, col: 1 },
+  { row: 1, col: 2 },
+];
+const OAK: readonly GridPosition[] = [
+  { row: 0, col: 1 },
+  { row: 1, col: 1 },
+  { row: 2, col: 1 },
+];
+
+/** Both of these words are this player's own, in the order the layout holds them. */
+const crossingView = (): GridView => ({
+  rows: 3,
+  cols: 3,
+  cells: [...EAT, { row: 0, col: 1 }, { row: 2, col: 1 }]
+    .filter(
+      (cell, index, all) =>
+        all.findIndex((other) => other.row === cell.row && other.col === cell.col) === index,
+    )
+    .map((cell): GridCellView => ({ ...cell, letter: null })),
+  toGuess: [guessable('w0', EAT, 'eat'), guessable('w1', OAK, 'oak')],
+});
+
 const cellInput = (row: number, col: number) =>
   screen.getByLabelText(new RegExp(`Row ${row + 1}, column ${col + 1}\\b`, 'i'));
 
@@ -298,7 +327,7 @@ describe('CrosswordGrid', () => {
     expect(onSolved).not.toHaveBeenCalled();
   });
 
-  it('offers the word again when the database refused to take it down', async () => {
+  it('stops counting a refused write as done, so the next update sends it again', async () => {
     onSolved.mockRejectedValueOnce(new Error('Missing or insufficient permissions.'));
     const view = viewWith([], [guessable('w1', CAR, 'car')]);
     const { rerender } = renderGrid(view);
@@ -317,6 +346,118 @@ describe('CrosswordGrid', () => {
     });
 
     expect(onSolved).toHaveBeenCalledTimes(2);
+  });
+
+  describe('where two of the player own words cross', () => {
+    const focusCell = (row: number, col: number) => act(() => cellInput(row, col).focus());
+
+    it('follows the word being filled through the square the two of them share', () => {
+      // `OAK` runs down through the middle of `EAT`. Typing must carry on down
+      // at the shared square rather than turning along the other word.
+      renderGrid(crossingView());
+
+      focusCell(0, 1);
+      typeInto(0, 1, 'o');
+      expect(document.activeElement).toBe(cellInput(1, 1));
+
+      typeInto(1, 1, 'a');
+      expect(document.activeElement).toBe(cellInput(2, 1));
+
+      act(() => typeInto(2, 1, 'k'));
+
+      expect(onSolved).toHaveBeenCalledExactlyOnceWith('w1');
+    });
+
+    it('takes up the across word on a shared square, and swaps on a second click', () => {
+      renderGrid(crossingView());
+
+      focusCell(1, 1);
+      expect(cellInput(1, 1)).toHaveAccessibleName(/filled across, where two of them cross/i);
+
+      act(() => fireEvent.mouseDown(cellInput(1, 1)));
+      expect(cellInput(1, 1)).toHaveAccessibleName(/filled down/i);
+
+      act(() => fireEvent.mouseDown(cellInput(1, 1)));
+      expect(cellInput(1, 1)).toHaveAccessibleName(/filled across/i);
+    });
+
+    it('picks a square up on the first click without swapping anything', () => {
+      renderGrid(crossingView());
+
+      // The click that moves the cursor onto a square must not also turn it
+      // round: mousedown lands before the focus does.
+      act(() => fireEvent.mouseDown(cellInput(1, 1)));
+      focusCell(1, 1);
+
+      expect(cellInput(1, 1)).toHaveAccessibleName(/filled across/i);
+    });
+
+    it('swaps from the keyboard as well, since a space is not a letter', () => {
+      renderGrid(crossingView());
+
+      focusCell(1, 1);
+      act(() => fireEvent.keyDown(cellInput(1, 1), { key: ' ' }));
+
+      expect(cellInput(1, 1)).toHaveAccessibleName(/filled down/i);
+      expect(cellInput(1, 1)).toHaveValue('');
+    });
+
+    it('keeps what is typed in either word when the cursor swaps between them', () => {
+      renderGrid(crossingView());
+
+      focusCell(1, 0);
+      typeInto(1, 0, 'e');
+      typeInto(1, 1, 'a');
+
+      focusCell(0, 1);
+      act(() => typeInto(0, 1, 'o'));
+
+      expect(cellInput(1, 0)).toHaveValue('E');
+      expect(cellInput(1, 1)).toHaveValue('A');
+      expect(cellInput(0, 1)).toHaveValue('O');
+    });
+
+    it('records each of the two words on its own once it is filled', () => {
+      renderGrid(crossingView());
+
+      focusCell(1, 0);
+      typeInto(1, 0, 'e');
+      typeInto(1, 1, 'a');
+      act(() => typeInto(1, 2, 't'));
+
+      expect(onSolved).toHaveBeenCalledExactlyOnceWith('w0');
+
+      focusCell(0, 1);
+      typeInto(0, 1, 'o');
+      // The shared square already reads `A` from the across word — nothing to
+      // type there — so the last letter of `OAK` is the one below it.
+      act(() => typeInto(2, 1, 'k'));
+
+      expect(onSolved).toHaveBeenCalledTimes(2);
+      expect(onSolved).toHaveBeenLastCalledWith('w1');
+    });
+
+    it('explains the swap to a player who has a crossing, and to nobody else', () => {
+      const { unmount } = renderGrid(crossingView());
+
+      expect(screen.getByText(/press the space bar to swap/i)).toBeInTheDocument();
+      unmount();
+
+      renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
+
+      expect(screen.queryByText(/press the space bar to swap/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('leaves a square alone when the space bar has nothing to swap to', () => {
+    renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
+
+    act(() => cellInput(1, 0).focus());
+    act(() => fireEvent.keyDown(cellInput(1, 0), { key: ' ' }));
+
+    expect(cellInput(1, 0)).toHaveValue('');
+    expect(cellInput(1, 0)).toHaveAccessibleName(/filled down/i);
+    expect(cellInput(1, 0)).not.toHaveAccessibleName(/cross/i);
   });
 
   it('takes one letter per square and nothing that is not a letter', () => {

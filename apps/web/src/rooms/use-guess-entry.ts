@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { GridPosition } from 'shared';
+import type { GridPosition, WordOrientation } from 'shared';
 
 import { cellKey, type GridView, type GuessableWord } from './word-visibility';
 
@@ -19,6 +19,12 @@ import { cellKey, type GridView, type GuessableWord } from './word-visibility';
  * letter completed it. Which keeps the two ways a square can fill — typed, or
  * arriving through the subscription — from needing separate handling.
  *
+ * What does depend on the player is only where the cursor goes. Two words
+ * hidden from the same player can cross, and the shared square belongs to both;
+ * which of them typing runs along is decided by the word they are filling in,
+ * not by the square. That is the one piece of state here that is about a person
+ * rather than about the board.
+ *
  * The words are never spelled out here either. A filled word is offered to
  * {@link GuessableWord.accepts}, which is the only thing that knows the answer.
  */
@@ -32,8 +38,14 @@ export interface GuessEntryCell extends GridPosition {
   readonly letter: string;
   /** Whether this player may type here — false for every square already filled in. */
   readonly isEditable: boolean;
-  /** Square typing moves on to within the same word; `null` at the end of it. */
+  /** Square typing moves on to from here; `null` at the end of the word being filled. */
   readonly nextCellKey: string | null;
+  /** Which way typing runs from here, `null` where this player types nothing. */
+  readonly direction: WordOrientation | null;
+  /** `true` for the squares of the word this player is filling in right now. */
+  readonly isActive: boolean;
+  /** `true` when a second word of this player's own also runs through this square. */
+  readonly isCrossing: boolean;
   /** `true` while the word through this square is full and does not spell itself. */
   readonly isRefused: boolean;
 }
@@ -44,8 +56,14 @@ export interface GuessEntry {
   readonly cells: ReadonlyMap<string, GuessEntryCell>;
   /** Puts a letter in a square, or clears it when given nothing. */
   readonly type: (position: GridPosition, letter: string) => void;
+  /** Takes up a square: the word being filled follows the player's attention. */
+  readonly focus: (position: GridPosition) => void;
+  /** Moves to the next of this player's words through a square they are already on. */
+  readonly switchWordAt: (position: GridPosition) => void;
   /** `true` while a wrong answer is on the board, so the screen can say so once. */
   readonly hasRefusal: boolean;
+  /** `true` when two of this player's own words cross, so switching is worth explaining. */
+  readonly hasCrossings: boolean;
 }
 
 /** What the player typed, by square. Squares they left alone are absent. */
@@ -66,8 +84,9 @@ const unsolvedOf = (view: GridView): readonly GuessableWord[] =>
  * Drives the guess entry of one grid.
  *
  * @param view - The board as this player may see it, from `gridViewFor`
- * @param onSolved - Records a word as answered; rejecting it leaves the word
- * open so a later render can try again
+ * @param onSolved - Records a word as answered. Rejecting it stops the word
+ * counting as written down, so the next update of the board sends it again —
+ * it is not retried on its own in between
  * @returns The squares to draw and the handler that fills them
  *
  * @example
@@ -119,25 +138,79 @@ export const useGuessEntry = (
   );
 
   /**
-   * The word each square belongs to for the purpose of typing. A square where
-   * two of this player's own words cross belongs to the first of them, so
-   * typing always moves on somewhere and always moves on to the same place.
+   * Every word of this player's own that runs through each square they may type
+   * in, across before down.
+   *
+   * A square is rarely shared, but when two words hidden from the same player
+   * cross, it belongs to both of them equally — which is why this is a list and
+   * not an owner. Squares a solved word already filled in are left out: nobody
+   * types there.
    */
-  const wordOfCell = useMemo(() => {
-    const owners = new Map<string, GuessableWord>();
+  const wordsOfCell = useMemo(() => {
+    const through = new Map<string, GuessableWord[]>();
+    const acrossFirst = [...unsolvedOf(view)].sort((left, right) =>
+      left.orientation === right.orientation ? 0 : left.orientation === 'across' ? -1 : 1,
+    );
 
-    for (const word of unsolvedOf(view)) {
+    for (const word of acrossFirst) {
       for (const cell of word.cells) {
         const key = cellKey(cell);
 
-        if (!owners.has(key) && !solvedLetters.has(key)) {
-          owners.set(key, word);
+        if (!solvedLetters.has(key)) {
+          through.set(key, [...(through.get(key) ?? []), word]);
         }
       }
     }
 
-    return owners;
+    return through;
   }, [view, solvedLetters]);
+
+  /**
+   * The word being filled in right now.
+   *
+   * Typing runs along one word, and on a shared square there are two of them to
+   * run along. Which one is not a property of the square — it is what the player
+   * is doing, so it is remembered here and only changes when they move somewhere
+   * the current word does not reach (see
+   * `docs/decisions/0011-typing-guesses-into-the-grid.md`).
+   */
+  const [activeWordId, setActiveWordId] = useState<string | null>(null);
+
+  /** The word typing follows from a square: the active one when it reaches here. */
+  const wordFilledAt = useCallback(
+    (key: string): GuessableWord | undefined => {
+      const words = wordsOfCell.get(key);
+
+      return words?.find((word) => word.id === activeWordId) ?? words?.[0];
+    },
+    [wordsOfCell, activeWordId],
+  );
+
+  const focus = useCallback(
+    (position: GridPosition) => {
+      const word = wordFilledAt(cellKey(position));
+
+      if (word !== undefined) {
+        setActiveWordId(word.id);
+      }
+    },
+    [wordFilledAt],
+  );
+
+  const switchWordAt = useCallback(
+    (position: GridPosition) => {
+      const words = wordsOfCell.get(cellKey(position)) ?? [];
+
+      if (words.length < 2) {
+        return;
+      }
+
+      const current = words.findIndex((word) => word.id === activeWordId);
+
+      setActiveWordId(words[(current + 1) % words.length]!.id);
+    },
+    [wordsOfCell, activeWordId],
+  );
 
   /**
    * Words whose squares are full and do not spell them. Read off the board
@@ -186,7 +259,7 @@ export const useGuessEntry = (
 
     for (const cell of view.cells) {
       const key = cellKey(cell);
-      const word = wordOfCell.get(key);
+      const word = wordFilledAt(key);
 
       drawn.set(key, {
         row: cell.row,
@@ -200,6 +273,9 @@ export const useGuessEntry = (
                 word,
                 word.cells.findIndex((own) => cellKey(own) === key),
               ),
+        direction: word?.orientation ?? null,
+        isActive: word !== undefined && word.id === activeWordId,
+        isCrossing: (wordsOfCell.get(key)?.length ?? 0) > 1,
         // Marked as refused exactly where the letters are about to be taken
         // back, so a square held by a second, still-standing word looks the way
         // it will go on looking.
@@ -208,7 +284,7 @@ export const useGuessEntry = (
     }
 
     return drawn;
-  }, [view, wordOfCell, solvedLetters, letterAt, typed, refusedCells]);
+  }, [view, wordsOfCell, wordFilledAt, activeWordId, solvedLetters, letterAt, typed, refusedCells]);
 
   /** Takes the letters of the refused words back off the board. */
   const withdrawRefused = useCallback(
@@ -228,7 +304,7 @@ export const useGuessEntry = (
     (position: GridPosition, letter: string) => {
       const key = cellKey(position);
 
-      if (!wordOfCell.has(key)) {
+      if (!wordsOfCell.has(key)) {
         return;
       }
 
@@ -248,7 +324,7 @@ export const useGuessEntry = (
         return next;
       });
     },
-    [wordOfCell, withdrawRefused],
+    [wordsOfCell, withdrawRefused],
   );
 
   useEffect(() => {
@@ -281,5 +357,12 @@ export const useGuessEntry = (
     return () => clearTimeout(timer);
   }, [refusedCells, withdrawRefused]);
 
-  return { cells, type, hasRefusal: refused.length > 0 };
+  return {
+    cells,
+    type,
+    focus,
+    switchWordAt,
+    hasRefusal: refused.length > 0,
+    hasCrossings: [...wordsOfCell.values()].some((words) => words.length > 1),
+  };
 };

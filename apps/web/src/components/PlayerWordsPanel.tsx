@@ -36,12 +36,22 @@ export const PlayerWordsPanel = ({ view }: PlayerWordsPanelProps) => {
       </Typography>
 
       <Typography variant="body2" color="text.secondary" gutterBottom>
-        Explain these to the others out loud — say anything except the word itself.
+        Explain these to the others out loud — say anything except the word itself. The ones already
+        answered are crossed out.
       </Typography>
 
       <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1, mb: 2 }}>
         {view.toExplain.map((entry) => (
-          <Chip key={entry.id} label={entry.word} />
+          <Chip
+            key={entry.id}
+            label={entry.word}
+            // Struck through as well as recoloured: which words are done is not
+            // something to leave to whether a player can tell green from grey.
+            color={entry.isSolved ? 'success' : 'default'}
+            variant={entry.isSolved ? 'outlined' : 'filled'}
+            aria-label={entry.isSolved ? `${entry.word} — answered` : entry.word}
+            sx={entry.isSolved ? { textDecoration: 'line-through' } : undefined}
+          />
         ))}
       </Stack>
 

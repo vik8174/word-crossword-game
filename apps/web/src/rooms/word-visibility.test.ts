@@ -91,10 +91,20 @@ describe('wordViewFor', () => {
     expect(wordViewFor(roomWith(DEALT), 'alice-uid')).toMatchObject({
       kind: 'dealt',
       toExplain: [
-        { id: 'w0', word: 'apple' },
-        { id: 'w2', word: 'cheese' },
+        { id: 'w0', word: 'apple', isSolved: false },
+        { id: 'w2', word: 'cheese', isSolved: false },
       ],
     });
+  });
+
+  it('says which of the words a player explains have already been answered', () => {
+    const room = roomWith(DEALT, 'playing', LAYOUT, [null, null, 'bob-uid']);
+    const view = wordViewFor(room, 'alice-uid');
+
+    expect(view.kind === 'dealt' && view.toExplain.map((entry) => entry.isSolved)).toEqual([
+      false,
+      true,
+    ]);
   });
 
   it('hands over the words hidden from a player without ever spelling them out', () => {

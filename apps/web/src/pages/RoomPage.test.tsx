@@ -70,6 +70,34 @@ const TWO_WORD_LAYOUT = {
   unplacedWords: [],
 };
 
+/**
+ * Three words, of which two — `cat` across and `car` down — cross at the
+ * top-left square and are dealt to the same player, so that player has to fill
+ * two of their own words through one shared square.
+ */
+const CROSSING_LAYOUT = {
+  rows: 3,
+  cols: 3,
+  cells: [
+    ...TWO_WORD_LAYOUT.cells,
+    { row: 2, col: 1, letter: 'A' },
+    { row: 2, col: 2, letter: 'T' },
+  ],
+  placedWords: [
+    ...TWO_WORD_LAYOUT.placedWords,
+    {
+      word: 'rat',
+      orientation: 'across',
+      cells: [
+        { row: 2, col: 0 },
+        { row: 2, col: 1 },
+        { row: 2, col: 2 },
+      ],
+    },
+  ],
+  unplacedWords: [],
+};
+
 const player = (nickname: string, joinedAtMillis = 1000) => ({
   nickname,
   joinedAt: timestamp(joinedAtMillis),
@@ -560,6 +588,57 @@ describe('RoomPage', () => {
       await spellCat();
 
       expect(await screen.findByText(/could not be told about it/i)).toBeInTheDocument();
+    });
+
+    it('crosses out a word this player explains once its guesser has answered it', async () => {
+      await openRoom(
+        playing({
+          w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+          w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: 'owner-uid' },
+        }),
+      );
+
+      // `car` is Bob's to explain and Vik has just answered it: there is
+      // nothing left to explain, and the chip says so rather than only the grid.
+      expect(screen.getByLabelText('car — answered')).toBeInTheDocument();
+    });
+
+    it('fills two of a player own crossing words without the cursor going astray', async () => {
+      // `cat` across and `car` down are both Bob's, sharing the top-left
+      // square. Starting on that square gives him the across word; the space
+      // bar turns him down it, and the letters follow him rather than the grid.
+      await openRoom(
+        storedRoom({
+          status: 'playing',
+          layout: CROSSING_LAYOUT,
+          players: { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) },
+          words: {
+            w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+            w1: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+            w2: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+          },
+        }),
+      );
+
+      const shared = screen.getByLabelText(/row 1, column 1\b/i);
+
+      await act(async () => shared.focus());
+      expect(shared).toHaveAccessibleName(/filled across, where two of them cross/i);
+
+      await act(async () => {
+        fireEvent.keyDown(shared, { key: ' ' });
+      });
+      expect(shared).toHaveAccessibleName(/filled down/i);
+
+      await act(async () => {
+        typeInto(0, 0, 'c');
+        typeInto(1, 0, 'a');
+        typeInto(2, 0, 'r');
+      });
+
+      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        'words.w1.guessedByPlayerId': 'guest-uid',
+      });
     });
   });
 

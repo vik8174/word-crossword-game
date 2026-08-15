@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
+import { alpha } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
-import { useRef, type ChangeEvent } from 'react';
+import { useRef, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react';
 
 import { useGuessEntry, type GuessEntryCell } from '../rooms/use-guess-entry';
 import { cellKey, type GridView } from '../rooms/word-visibility';
@@ -10,6 +11,10 @@ const CELL_SIZE = 32;
 
 const REFUSAL_MESSAGE =
   'That is not the word — the letters clear in a moment. Try again as often as you like.';
+
+/** Said only to a player who actually has two words of their own crossing. */
+const CROSSING_HINT =
+  'Two of your words cross. On the shared square, click it again or press the space bar to swap between them.';
 
 interface CrosswordGridProps {
   /** The board as this player may see it, already stripped of every unearned letter. */
@@ -48,10 +53,29 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
   const handleTyped = (cell: GuessEntryCell) => (event: ChangeEvent<HTMLInputElement>) => {
     entry.type(cell, event.target.value);
 
-    // Typing runs along the word rather than along the row, so a down word can
-    // be entered without reaching for the mouse between letters.
+    // Typing runs along the word being filled rather than along the row, so a
+    // down word can be entered without reaching for the mouse between letters.
     if (event.target.value !== '' && cell.nextCellKey !== null) {
       inputs.current.get(cell.nextCellKey)?.focus();
+    }
+  };
+
+  // Clicking a square already under the cursor is what swaps between the two
+  // words crossing there — the classic crossword gesture. Read at mousedown,
+  // before the click has moved the focus, so the first click on a new square
+  // only picks it up.
+  const handlePressed = (cell: GuessEntryCell) => (event: MouseEvent<HTMLInputElement>) => {
+    if (event.currentTarget === document.activeElement) {
+      entry.switchWordAt(cell);
+    }
+  };
+
+  // The same swap from the keyboard, since a space is not a letter and the
+  // squares would otherwise be reachable only with a mouse.
+  const handleKeyDown = (cell: GuessEntryCell) => (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === ' ') {
+      event.preventDefault();
+      entry.switchWordAt(cell);
     }
   };
 
@@ -93,7 +117,12 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
         maxLength={1}
         value={cell.letter}
         onChange={handleTyped(cell)}
-        onFocus={(event: { target: HTMLInputElement }) => event.target.select()}
+        onMouseDown={handlePressed(cell)}
+        onKeyDown={handleKeyDown(cell)}
+        onFocus={(event: { target: HTMLInputElement }) => {
+          entry.focus(cell);
+          event.target.select();
+        }}
         ref={(input: HTMLInputElement | null) => {
           if (input === null) {
             inputs.current.delete(key);
@@ -101,18 +130,25 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
             inputs.current.set(key, input);
           }
         }}
-        aria-label={`Row ${row + 1}, column ${col + 1} — a letter of one of your words`}
+        aria-label={`Row ${row + 1}, column ${col + 1} — a letter of one of your words, filled ${cell.direction}${cell.isCrossing ? ', where two of them cross' : ''}`}
         sx={{
           ...square,
           // A square this player fills in is marked out from the ones that are
           // somebody else's to answer: the grid is shared, the typing is not.
+          // The word being filled is marked out again within that, so which way
+          // the next letter will go is on screen rather than guessed at.
           borderColor: cell.isRefused ? 'error.main' : 'primary.main',
           padding: 0,
           textAlign: 'center',
           font: 'inherit',
           fontWeight: 600,
           color: 'text.primary',
-          backgroundColor: cell.isRefused ? 'error.light' : 'action.selected',
+          backgroundColor: (theme) =>
+            cell.isRefused
+              ? theme.palette.error.light
+              : cell.isActive
+                ? alpha(theme.palette.primary.main, 0.22)
+                : theme.palette.action.selected,
           '&:focus': { outline: '2px solid', outlineColor: 'primary.main' },
         }}
       />
@@ -133,6 +169,12 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
       >
         {rows.map((row) => cols.map((col) => renderCell(row, col)))}
       </Box>
+
+      {entry.hasCrossings && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          {CROSSING_HINT}
+        </Typography>
+      )}
 
       <Typography variant="body2" color="error" role="status" sx={{ mt: 1, minHeight: '1.5em' }}>
         {entry.hasRefusal ? REFUSAL_MESSAGE : ''}

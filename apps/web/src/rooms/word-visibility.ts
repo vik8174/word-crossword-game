@@ -26,6 +26,8 @@ export interface ExplainedWord {
   /** Key of the word in the room's `words` map — stable across renders and updates. */
   readonly id: string;
   readonly word: string;
+  /** `true` once the player it was hidden from has answered it — nothing left to explain. */
+  readonly isSolved: boolean;
 }
 
 /**
@@ -188,7 +190,7 @@ export const wordViewFor = (room: ReadableRoom, viewerId: string): PlayerWordVie
     kind: 'dealt',
     toExplain: assigned
       .filter((entry) => entry.hiddenFrom !== viewerId)
-      .map(({ id, placed }) => ({ id, word: placed.word })),
+      .map(({ id, placed, isSolved: solved }) => ({ id, word: placed.word, isSolved: solved })),
     toGuess,
   };
 };
