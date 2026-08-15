@@ -53,6 +53,19 @@ pnpm exec firebase deploy --only firestore:rules    # deploy them (project alias
 
 Deleting stale rooms relies on a Firestore **TTL policy** on the `expiresAt` field of the `rooms` collection. The app writes the field; the policy itself is enabled once in the Firebase console (Firestore > TTL policies) and is not part of this repository.
 
+## Hosting
+
+The built app is served from Firebase Hosting, from the same project the database lives in:
+
+```bash
+pnpm build                                    # apps/web/dist is what gets uploaded
+pnpm exec firebase deploy --only hosting
+```
+
+An invite link points straight at `/room/<id>`, a route that exists only in the browser, so `firebase.json` rewrites every path to `index.html`. Without that rewrite an invite opened in a fresh tab is a 404 rather than a room.
+
+Stage is <https://word-crossword-game-stage.web.app>. There is no production project yet — see [ADR 0007](docs/decisions/0007-stage-only-environment.md).
+
 ## Scripts
 
 Run from the repo root (fans out to both workspaces via pnpm):
