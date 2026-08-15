@@ -230,6 +230,35 @@ describe('CrosswordGrid', () => {
     expect(screen.getAllByLabelText(/a letter of one of your words/i)).toHaveLength(5);
   });
 
+  it('takes a wrong answer back without emptying the word it crosses', async () => {
+    // Both words are this player's own and share the top-left square. Getting
+    // `CAR` wrong must not wipe the `C` they typed as part of `CAT`.
+    vi.useFakeTimers();
+    renderGrid(viewWith([], [guessable('w0', CAT, 'cat'), guessable('w1', CAR, 'car')]));
+
+    act(() => {
+      typeInto(0, 0, 'c');
+      typeInto(1, 0, 'x');
+      typeInto(2, 0, 'y');
+    });
+
+    expect(screen.getByRole('status')).toHaveTextContent(/not the word/i);
+    act(() => vi.advanceTimersByTime(2000));
+
+    expect(cellInput(0, 0)).toHaveValue('C');
+    expect(cellInput(1, 0)).toHaveValue('');
+    expect(cellInput(2, 0)).toHaveValue('');
+
+    // And the word that kept its letter can still be answered.
+    act(() => {
+      typeInto(0, 1, 'a');
+      typeInto(0, 2, 't');
+    });
+    vi.useRealTimers();
+
+    expect(onSolved).toHaveBeenCalledExactlyOnceWith('w0');
+  });
+
   it('moves along the word as letters are typed, not along the row', () => {
     renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
 

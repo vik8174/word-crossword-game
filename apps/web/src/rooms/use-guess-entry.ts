@@ -154,6 +154,27 @@ export const useGuessEntry = (
     [view, typed, spellingOf],
   );
 
+  /**
+   * Squares of the refused words that are theirs alone.
+   *
+   * A player's own two words can cross, and then the shared square carries a
+   * letter of both. Taking a wrong answer back must not take that letter with
+   * it: the word still standing has just as much claim to the square, and its
+   * owner typed it on purpose. Once the refused word's own squares are empty it
+   * is no longer full, so it stops being refused either way.
+   */
+  const refusedCells = useMemo(() => {
+    const shared = new Set(
+      unsolvedOf(view)
+        .filter((word) => !refused.includes(word))
+        .flatMap((word) => word.cells.map(cellKey)),
+    );
+
+    return new Set(
+      refused.flatMap((word) => word.cells.map(cellKey)).filter((key) => !shared.has(key)),
+    );
+  }, [view, refused]);
+
   const cells = useMemo(() => {
     const nextEditableAfter = (word: GuessableWord, position: number): string | null =>
       word.cells
@@ -179,27 +200,28 @@ export const useGuessEntry = (
                 word,
                 word.cells.findIndex((own) => cellKey(own) === key),
               ),
-        isRefused: word !== undefined && refused.includes(word),
+        // Marked as refused exactly where the letters are about to be taken
+        // back, so a square held by a second, still-standing word looks the way
+        // it will go on looking.
+        isRefused: word !== undefined && refusedCells.has(key),
       });
     }
 
     return drawn;
-  }, [view, wordOfCell, solvedLetters, letterAt, typed, refused]);
+  }, [view, wordOfCell, solvedLetters, letterAt, typed, refusedCells]);
 
   /** Takes the letters of the refused words back off the board. */
   const withdrawRefused = useCallback(
     (letters: TypedLetters): Record<string, string> => {
       const next = { ...letters };
 
-      for (const word of refused) {
-        for (const cell of word.cells) {
-          delete next[cellKey(cell)];
-        }
+      for (const key of refusedCells) {
+        delete next[key];
       }
 
       return next;
     },
-    [refused],
+    [refusedCells],
   );
 
   const type = useCallback(
@@ -245,7 +267,10 @@ export const useGuessEntry = (
   }, [view, typed, spellingOf]);
 
   useEffect(() => {
-    if (refused.length === 0) {
+    // Nothing to take back when every square of the wrong word is also held by
+    // one still standing. The word stays refused and says so, and its player
+    // clears it by typing — a timer that withdrew nothing would only fire again.
+    if (refusedCells.size === 0) {
       return;
     }
 
@@ -254,7 +279,7 @@ export const useGuessEntry = (
     const timer = setTimeout(() => setTyped(withdrawRefused), REFUSAL_FLASH_MS);
 
     return () => clearTimeout(timer);
-  }, [refused, withdrawRefused]);
+  }, [refusedCells, withdrawRefused]);
 
   return { cells, type, hasRefusal: refused.length > 0 };
 };
