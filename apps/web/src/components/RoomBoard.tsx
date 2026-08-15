@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import { useMemo } from 'react';
 
 import { playersInJoinOrder } from '../rooms/room-access';
+import { isGameFinished } from '../rooms/room-completion';
 import type { RoomDocument, RoomStatus } from '../rooms/room-document';
 import { finishedWordsOf, gridViewFor, wordViewFor } from '../rooms/word-visibility';
 import { CrosswordGrid } from './CrosswordGrid';
@@ -14,12 +15,40 @@ import { StartGamePanel } from './StartGamePanel';
 
 /**
  * What the room is doing right now, said to a player rather than to a database.
- * A finished game is not in here: it has {@link GameCompletedPanel} to itself,
- * and one line of its own would only say the same thing twice.
+ * A closed room is not in here: it has a panel or a notice of its own, and one
+ * line beside either would only say the same thing twice.
  */
 const STATUS_MESSAGES: Readonly<Record<Exclude<RoomStatus, 'completed'>, string>> = {
   lobby: 'Waiting for the other players. The game starts once everyone is in.',
   playing: 'The game is on.',
+};
+
+/**
+ * Said in a room that is closed without its crossword having been finished.
+ *
+ * Nothing an honest game does produces this: the game is closed by clients that
+ * can see a full board, so a full board is what a closed room normally has. It
+ * takes a client writing `completed` over a room that was never played, which
+ * the security rules cannot refuse (see
+ * `docs/decisions/0012-ending-a-game-from-the-received-state.md`). The room is
+ * closed for good either way — `completed` is terminal — so the players are
+ * told that plainly, and the words nobody answered are not spelled out, because
+ * from here there is no way to tell an odd game from a spoiled one.
+ */
+const CLOSED_UNFINISHED_MESSAGE =
+  'This room is closed. It was closed before every word had been answered, so the words that were never guessed are not shown — ask whoever invited you for a link to a new game.';
+
+/** The line under the grid, which is about what the squares are for right now. */
+const gridCaption = (wordCount: number, isFinished: boolean, isClosed: boolean): string => {
+  if (isFinished) {
+    return `All ${wordCount} words of this grid are in place.`;
+  }
+
+  if (isClosed) {
+    return `Of the ${wordCount} words of this grid, the ones that were answered are in place; the rest stay blank.`;
+  }
+
+  return `${wordCount} words are hidden in this grid. Type your own into the squares that take letters; a word's letters appear for everybody once it has been answered.`;
 };
 
 /**
@@ -80,13 +109,26 @@ export const RoomBoard = ({
   const gridView = useMemo(() => gridViewFor(room, viewerId), [room, viewerId]);
   const status = room.status;
   const isWaitingToStart = status === 'lobby';
-  const isFinished = status === 'completed';
+  // Two questions, and they come apart in the one case the rules cannot refuse:
+  // a room can be closed without its crossword having been finished. What the
+  // room is done with follows the status; what may be spelled out follows the
+  // board, which is the half a client cannot fake.
+  const isClosed = status === 'completed';
+  const isFinished = isGameFinished(room);
 
   return (
     <Stack spacing={3}>
-      {isFinished ? (
+      {isFinished && (
         <GameCompletedPanel words={finishedWordsOf(room)} playerCount={players.length} />
-      ) : (
+      )}
+
+      {isClosed && !isFinished && (
+        <Alert severity="info" role="status">
+          {CLOSED_UNFINISHED_MESSAGE}
+        </Alert>
+      )}
+
+      {!isClosed && (
         <Typography variant="body1" role="status">
           {STATUS_MESSAGES[status]}
         </Typography>
@@ -105,10 +147,12 @@ export const RoomBoard = ({
       )}
 
       {/* Both of these are about a game still being played — what each player
-          has left to do. A finished room says it all once, up top. */}
-      {!isFinished && wordView.kind === 'dealt' && <PlayerWordsPanel view={wordView} />}
+          has left to do. A closed room says it all once, up top, and asking
+          somebody to explain a word to a room that is finished with them would
+          be worse than saying nothing. */}
+      {!isClosed && wordView.kind === 'dealt' && <PlayerWordsPanel view={wordView} />}
 
-      {!isFinished && wordView.kind === 'left-out' && (
+      {!isClosed && wordView.kind === 'left-out' && (
         <Alert severity="info">{LEFT_OUT_MESSAGE}</Alert>
       )}
 
@@ -117,9 +161,7 @@ export const RoomBoard = ({
           The crossword
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {isFinished
-            ? `All ${room.layout.placedWords.length} words of this grid are in place.`
-            : `${room.layout.placedWords.length} words are hidden in this grid. Type your own into the squares that take letters; a word's letters appear for everybody once it has been answered.`}
+          {gridCaption(room.layout.placedWords.length, isFinished, isClosed)}
         </Typography>
 
         <CrosswordGrid view={gridView} onSolved={onSolveWord} />

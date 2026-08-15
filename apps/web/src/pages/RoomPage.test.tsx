@@ -761,6 +761,24 @@ describe('RoomPage', () => {
       expect(updateDoc).not.toHaveBeenCalled();
     });
 
+    it('spells nothing out for a room merely marked finished, without a word answered', async () => {
+      // The security rules cannot walk the `words` map, so any client that
+      // knows the room id can write `completed` over a game nobody played. The
+      // word list must not follow that field: it follows the board.
+      await openRoom(withWords({ w0: open, w1: carOpen }, 'completed'));
+
+      expect(document.body.textContent).not.toMatch(/\bcat\b|\bcar\b/i);
+      expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/this room is closed/i)).toBeInTheDocument();
+    });
+
+    it('keeps the celebration for a room that really did finish its crossword', async () => {
+      await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
+
+      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.queryByText(/this room is closed/i)).not.toBeInTheDocument();
+    });
+
     it('says nothing about the finished game the room could not be told about', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));

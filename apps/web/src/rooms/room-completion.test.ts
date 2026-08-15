@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MillisecondTimestamp, ReadableRoom } from './room-access';
-import { awaitsCompletion, COMPLETION_UPDATE, isEveryWordGuessed } from './room-completion';
+import {
+  awaitsCompletion,
+  COMPLETION_UPDATE,
+  isEveryWordGuessed,
+  isGameFinished,
+} from './room-completion';
 import type { RoomStatus, RoomWordState } from './room-document';
 
 const at = (millis: number): MillisecondTimestamp => ({ toMillis: () => millis });
@@ -112,6 +117,38 @@ describe('awaitsCompletion', () => {
     const byBoth = roomWith({ cat: guessedBy('owner-uid'), dog: guessedBy('guest-uid') });
 
     expect(awaitsCompletion(byOne)).toBe(awaitsCompletion(byBoth));
+  });
+});
+
+describe('isGameFinished', () => {
+  it('is true for a closed room whose every word was answered', () => {
+    const room = roomWith(
+      { cat: guessedBy('owner-uid'), dog: guessedBy('guest-uid') },
+      'completed',
+    );
+
+    expect(isGameFinished(room)).toBe(true);
+  });
+
+  it('does not take a closed status as proof the crossword was played', () => {
+    // The rules cannot walk the `words` map, so any client that knows the room
+    // id can write `completed` over a game nobody has answered a word of. What
+    // is shown on the strength of this must not follow that field alone.
+    const room = roomWith({ cat: unguessed, dog: unguessed }, 'completed');
+
+    expect(isGameFinished(room)).toBe(false);
+  });
+
+  it('is false for a full board that has not been closed yet', () => {
+    const room = roomWith({ cat: guessedBy('owner-uid'), dog: guessedBy('guest-uid') }, 'playing');
+
+    expect(isGameFinished(room)).toBe(false);
+  });
+
+  it('is false for a lobby somebody closed without dealing a single word', () => {
+    const room = roomWith({ cat: unguessed }, 'completed');
+
+    expect(isGameFinished(room)).toBe(false);
   });
 });
 

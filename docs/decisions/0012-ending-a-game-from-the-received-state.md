@@ -40,9 +40,20 @@ The split is in the client and stays there. The rules go on refusing both with t
 
 A player who is already in the room is unaffected: the check for membership comes first, so reopening the link after the end gives them their finished game, not a refusal.
 
+### What unlocks the word list is the board, not the status
+
+`status` is the first field in this project that could reveal words, and it is a field the rules cannot verify: they cannot walk the `words` map, so a client that knows a room id can write `completed` over a room whose game was never dealt out. A screen that spelled the crossword out on the strength of that alone would hand over the whole word list on request.
+
+So the reveal asks `isGameFinished(room)` — the status **and** an answer recorded against every word of `layout.placedWords`. `finishedWordsOf` is guarded by it inside `word-visibility.ts`, and the board component asks the same question before rendering the win screen. Two questions, kept apart, because they are genuinely different:
+
+- **Is this room closed?** `status === 'completed'`. Terminal in the rules, so the room is done with regardless of its grid: no more prompting anybody to explain or type, and newcomers are turned away with a notice that claims no more than that.
+- **Was this crossword finished?** The board itself. Only this unlocks the word list and the celebration.
+
+They come apart only in a room somebody closed early, and then the players are told exactly that and shown no unanswered word. From inside the app there is no way to tell a strange game from a spoiled one, and the honest reading is the one that gives nothing away.
+
 ### The win screen reports the room's result, not anyone's score
 
-The finished screen shows the completed grid, the crossword's full word list — no word is a secret once every one of them is in the grid — and a line saying the room finished it together.
+The finished screen shows the completed grid, the crossword's full word list — no word is a secret once every one of them really is in the grid — and a line saying the room finished it together.
 
 It deliberately shows no per-player tally. `guessedByPlayerId` is not a reliable record of who typed what: a word whose crossings filled it in entirely is recorded against the player it was hidden from, because otherwise it could never be closed at all ([0011](0011-typing-guesses-into-the-grid.md)). A table built on that field would be wrong most often in the densest, most enjoyable grids, and the game is cooperative — there is no score to keep.
 
@@ -54,4 +65,5 @@ It deliberately shows no per-player tally. `guessedByPlayerId` is not a reliable
 - The end of the game arrives one round trip after the last answer, so there is a visible beat between the grid filling in and the win screen appearing. It is the same beat on every screen, which is what the ticket asked for
 - Any client in the room can end the game early by writing `completed`, and the rules cannot tell that write from an honest one. Accepted, as [0004](0004-ui-only-word-visibility.md) accepted the larger version of the same thing
 - `completed` is a terminal state in the rules, so this is not a step that can be taken back. There is no "play again" in the room — a new game is a new room, and the win screen offers no button that pretends otherwise
-- `finishedWordsOf` is the one place a word hidden from the reader may be spelled out to them, and it is guarded by the status inside `word-visibility.ts` rather than by its caller, keeping that module the single answer to what a player may see ([0011](0011-typing-guesses-into-the-grid.md))
+- `finishedWordsOf` is the one place a word hidden from the reader may be spelled out to them, and it is guarded inside `word-visibility.ts` rather than by its caller, keeping that module the single answer to what a player may see ([0011](0011-typing-guesses-into-the-grid.md))
+- Any client can still close a room early, and that costs the room its game. What it does not buy is the word list: writing `completed` over a room that was never played reveals nothing, because the reveal is on the board and the board is the part a client cannot fake without doing the work of answering every word — which is the same as playing the game

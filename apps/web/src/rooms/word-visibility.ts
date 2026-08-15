@@ -1,6 +1,7 @@
 import { checkGuess, type GridPosition, type PlacedWord, type WordOrientation } from 'shared';
 
 import type { ReadableRoom } from './room-access';
+import { isGameFinished } from './room-completion';
 import { isWordSolved, wordIdAt } from './room-document';
 
 /**
@@ -192,23 +193,29 @@ export const wordViewFor = (room: ReadableRoom, viewerId: string): PlayerWordVie
 };
 
 /**
- * Every word of the crossword, spelled out — but only once the game is over.
+ * Every word of the crossword, spelled out — but only once the game really is over.
  *
- * The one place a word hidden from the reader may be named to them, and the
- * status is what makes it safe: a finished game has every word answered, so its
- * letters are already in the grid on every screen and there is nothing left to
- * work out. The guard lives here rather than in the caller for the same reason
- * the rest of this module does — a component that renders whatever it is handed
- * must not be the thing deciding whether the game is over.
+ * The one place a word hidden from the reader may be named to them, so what
+ * makes it safe has to be something the room cannot lie about. A `completed`
+ * status alone is not that: the security rules cannot walk the `words` map to
+ * check it, so any client that knows the room id can write it over a game that
+ * was never played, and this would then read the whole word list out. What is
+ * asked instead is {@link isGameFinished} — the status *and* an answer against
+ * every word. Then the letters are already in the grid on every screen and
+ * there is nothing here anybody could still be working out.
+ *
+ * The guard lives here rather than in the caller for the same reason the rest
+ * of this module does — a component that renders whatever it is handed must not
+ * be the thing deciding whether the game is over.
  *
  * @param room - The room document as read from Firestore
- * @returns The words in grid order, or nothing at all while the game is on
+ * @returns The words in grid order, or nothing at all unless the crossword is full
  *
  * @example
  * finishedWordsOf(room); // ['cat', 'car', 'rat']
  */
 export const finishedWordsOf = (room: ReadableRoom): readonly string[] =>
-  room.status === 'completed' ? room.layout.placedWords.map(({ word }) => word) : [];
+  isGameFinished(room) ? room.layout.placedWords.map(({ word }) => word) : [];
 
 /**
  * The squares whose letters may be shown: those of words already solved.

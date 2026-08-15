@@ -282,15 +282,26 @@ describe('gridViewFor', () => {
 });
 
 describe('finishedWordsOf', () => {
+  const ANSWERED = ['bob-uid', 'alice-uid', 'bob-uid'];
+
   it('spells the whole crossword out once the game is over', () => {
-    const room = roomWith(['bob-uid', 'alice-uid', 'bob-uid'], 'completed');
+    const room = roomWith(DEALT, 'completed', LAYOUT, ANSWERED);
 
     expect(finishedWordsOf(room)).toEqual(['apple', 'bread', 'cheese']);
   });
 
   it('says nothing at all while the game is still on', () => {
     // Every word here is one somebody still has to work out on their own.
-    const room = roomWith(['bob-uid', 'alice-uid', 'bob-uid'], 'playing');
+    const room = roomWith(DEALT, 'playing', LAYOUT, ANSWERED);
+
+    expect(finishedWordsOf(room)).toEqual([]);
+  });
+
+  it('does not read the word list out of a room somebody merely marked finished', () => {
+    // A `completed` status is a client's word, which the security rules cannot
+    // check against the `words` map. Without an answer on every word it buys
+    // nothing here.
+    const room = roomWith(DEALT, 'completed', LAYOUT, ['bob-uid', null, null]);
 
     expect(finishedWordsOf(room)).toEqual([]);
   });

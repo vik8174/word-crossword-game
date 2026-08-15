@@ -25,7 +25,7 @@ export type ReadableRoom = RoomDocumentShape<MillisecondTimestamp>;
  * - `joined` — they are already in it and see the game
  * - `joinable` — there is a free seat and they may enter a nickname
  * - `started` — the words have been dealt out; the room takes nobody else
- * - `finished` — the game in it has been played to its last word
+ * - `finished` — the room is closed for good; its game is over
  * - `full` — four players are already in
  * - `expired` — the room outlived its 24 hours; Firestore has not collected it
  *   yet, but every write to it is refused, so there is no game left to join
@@ -48,12 +48,17 @@ export type RoomAccess = 'joined' | 'joinable' | 'started' | 'finished' | 'full'
  * `docs/decisions/0010-letterless-grid-and-private-word-list.md`). The security
  * rules refuse the same write.
  *
- * A game that has been finished turns them away too, but it is told apart from
- * one still being played: the door is shut for the same reason, and yet "come
- * back later" and "there is nothing to come back to" are not the same news
+ * A closed room turns them away too, but it is told apart from one still being
+ * played: the door is shut for the same reason, and yet "come back later" and
+ * "there is nothing to come back to" are not the same news
  * (`docs/decisions/0012-ending-a-game-from-the-received-state.md`). The rules
  * know nothing of the difference and do not need to — both writes are refused
  * by the one condition that a started room takes no new player.
+ *
+ * This one reads `status` and not the board, unlike everything that reveals a
+ * word: `completed` is terminal in the rules, so a room carrying it is shut to
+ * newcomers whether or not its crossword was ever filled in, and what is said
+ * to them claims no more than that.
  *
  * @param room - The room document as read from Firestore
  * @param playerId - Firebase Auth UID of the player who opened the link

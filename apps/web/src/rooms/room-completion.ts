@@ -53,3 +53,27 @@ export const isEveryWordGuessed = (room: ReadableRoom): boolean =>
  */
 export const awaitsCompletion = (room: ReadableRoom): boolean =>
   room.status === 'playing' && isEveryWordGuessed(room);
+
+/**
+ * Whether this room really did finish its crossword.
+ *
+ * Both halves are needed, and the second is the one that is easy to forget.
+ * `status` is written by a client and the security rules cannot check it
+ * against the `words` map — they cannot walk it (see
+ * `docs/decisions/0009-room-document-schema.md`), so nothing stops any client
+ * that knows the room id from writing `completed` over a lobby. A screen that
+ * showed the crossword on the strength of that field alone would hand the whole
+ * word list to whoever asked, which is why anything that reveals words asks
+ * this rather than reading the status.
+ *
+ * The status is still half the answer: `completed` is terminal in the rules, so
+ * a room carrying it is closed whether or not its grid was ever filled.
+ *
+ * @param room - The room document as read from Firestore
+ * @returns `true` when the room is closed and its board really is full
+ *
+ * @example
+ * isGameFinished(room); // true — safe to spell the crossword out
+ */
+export const isGameFinished = (room: ReadableRoom): boolean =>
+  room.status === 'completed' && isEveryWordGuessed(room);
