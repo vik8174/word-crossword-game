@@ -8,7 +8,8 @@ import { cellKey, type GridView } from '../rooms/word-visibility';
 /** Side of one grid square, in pixels. */
 const CELL_SIZE = 32;
 
-const REFUSAL_MESSAGE = 'That is not the word. The letters were cleared — try again.';
+const REFUSAL_MESSAGE =
+  'That is not the word — the letters clear in a moment. Try again as often as you like.';
 
 interface CrosswordGridProps {
   /** The board as this player may see it, already stripped of every unearned letter. */
@@ -103,12 +104,15 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
         aria-label={`Row ${row + 1}, column ${col + 1} — a letter of one of your words`}
         sx={{
           ...square,
+          // A square this player fills in is marked out from the ones that are
+          // somebody else's to answer: the grid is shared, the typing is not.
+          borderColor: cell.isRefused ? 'error.main' : 'primary.main',
           padding: 0,
           textAlign: 'center',
           font: 'inherit',
           fontWeight: 600,
           color: 'text.primary',
-          backgroundColor: cell.isRefused ? 'error.light' : 'action.hover',
+          backgroundColor: cell.isRefused ? 'error.light' : 'action.selected',
           '&:focus': { outline: '2px solid', outlineColor: 'primary.main' },
         }}
       />
