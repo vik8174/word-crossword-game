@@ -1,6 +1,6 @@
 # 0010. A letterless grid and a private list of the words a player explains
 
-Status: Accepted
+Status: Accepted, amended by [0011](0011-typing-guesses-into-the-grid.md)
 
 ## Context
 
@@ -27,9 +27,9 @@ Starting a game belongs to the owner, from two players up, and `firestore.rules`
 
 ## Consequences
 
-- Issue #7 inherits a grid cell with two states — empty, or a guessed letter — instead of three, and no per-player divergence to keep in sync while several players type at once
+- Issue #7 inherits a grid cell with two states — empty, or a guessed letter — instead of three, and no per-player divergence to keep in sync while several players type at once. It turned out to bring back a divergence of its own: the squares a player types into are theirs alone, which is what [0011](0011-typing-guesses-into-the-grid.md) settles. The letters stay identical on every screen
 - Issue #8 reads the win from `words` alone, and the grid completes for everyone at the same moment
-- An explainer cannot see where their word sits in the grid or what it crosses. Accepted: explaining happens out loud and outside the app, and the word itself is all that takes
+- An explainer cannot see where their word sits in the grid or what it crosses. Accepted: explaining happens out loud and outside the app, and the word itself is all that takes. Still the decision after issue #7, though the input squares make the position partly inferable — see [0011](0011-typing-guesses-into-the-grid.md)
 - Guessing a word does hand its letters to whoever else crosses it — but only for words the group has already solved together, which is the cooperative progress the game is built on
 - Nothing is shown before the deal, so a room in the lobby gives away no word to anyone, including the owner who typed them
 - This remains a UI decision, not a security one: the hidden words are still in the document that every client fetched ([0004](0004-ui-only-word-visibility.md) stands)

@@ -2,6 +2,7 @@ import type { CrosswordLayout } from 'shared';
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildGuessUpdate,
   buildRoomDocument,
   buildStartGameUpdate,
   parseRoomDocument,
@@ -144,6 +145,27 @@ describe('buildStartGameUpdate', () => {
 
   it('refuses to start a game nobody was given a word in', () => {
     expect(() => buildStartGameUpdate([])).toThrow(/no word was assigned/i);
+  });
+});
+
+describe('buildGuessUpdate', () => {
+  it('records who answered the word, and touches nothing else', () => {
+    expect(buildGuessUpdate(wordIdAt(3), 'bob-uid')).toEqual({
+      'words.w3.guessedByPlayerId': 'bob-uid',
+    });
+  });
+
+  it('leaves the neighbouring words alone, so two players can answer at once', () => {
+    // Writing the `words` map itself would replace it wholesale: the rules
+    // refuse an update that changes which words a room has, and whoever
+    // answered another word in the same second would lose their write.
+    const fields = Object.keys(buildGuessUpdate(wordIdAt(0), 'bob-uid'));
+
+    expect(fields).toEqual(['words.w0.guessedByPlayerId']);
+  });
+
+  it('leaves finishing the game to the ticket that owns it', () => {
+    expect(Object.keys(buildGuessUpdate(wordIdAt(0), 'bob-uid'))).not.toContain('status');
   });
 });
 

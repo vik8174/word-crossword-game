@@ -182,6 +182,32 @@ export const buildStartGameUpdate = (
   };
 };
 
+/**
+ * The update that records a word as answered.
+ *
+ * One nested field and nothing else, for the same reason the deal is written
+ * that way: several players answer their own words within the same second, and
+ * `words.w3.guessedByPlayerId` cannot overwrite `words.w4.guessedByPlayerId`.
+ * Rewriting the whole `words` map would, and the security rules would refuse it
+ * anyway — they check that a room keeps the words it was created with.
+ *
+ * Whether the room is now finished is not decided here: `status` stays as it is
+ * (see GitHub issue #8).
+ *
+ * @param wordId - Key of the word in the room's `words` map, from {@link wordIdAt}
+ * @param playerId - UID of the player who answered it
+ * @returns Field path and value for a single `updateDoc` call
+ *
+ * @example
+ * buildGuessUpdate('w3', 'bob-uid'); // { 'words.w3.guessedByPlayerId': 'bob-uid' }
+ */
+export const buildGuessUpdate = (
+  wordId: string,
+  playerId: string,
+): Readonly<Record<string, unknown>> => ({
+  [`words.${wordId}.guessedByPlayerId`]: playerId,
+});
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -208,8 +234,9 @@ const isLayout = (value: unknown): boolean =>
  * for everyone else, so a document that does not look like a room is treated
  * as no room at all.
  *
- * `words` values are not inspected: nothing reads them yet, and the tickets
- * that do (#6, #7) are where their own invariants belong.
+ * `words` values are not inspected here: what a nonsense `hiddenFromPlayerId`
+ * or `guessedByPlayerId` means is a question about who may see what, and it is
+ * answered in `word-visibility.ts`, which drops both.
  *
  * @param data - Raw `snapshot.data()`, of unknown shape
  * @returns The document when it is a room this app understands, `null` otherwise

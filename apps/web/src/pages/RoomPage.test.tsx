@@ -70,6 +70,34 @@ const TWO_WORD_LAYOUT = {
   unplacedWords: [],
 };
 
+/**
+ * Three words, of which two — `cat` across and `car` down — cross at the
+ * top-left square and are dealt to the same player, so that player has to fill
+ * two of their own words through one shared square.
+ */
+const CROSSING_LAYOUT = {
+  rows: 3,
+  cols: 3,
+  cells: [
+    ...TWO_WORD_LAYOUT.cells,
+    { row: 2, col: 1, letter: 'A' },
+    { row: 2, col: 2, letter: 'T' },
+  ],
+  placedWords: [
+    ...TWO_WORD_LAYOUT.placedWords,
+    {
+      word: 'rat',
+      orientation: 'across',
+      cells: [
+        { row: 2, col: 0 },
+        { row: 2, col: 1 },
+        { row: 2, col: 2 },
+      ],
+    },
+  ],
+  unplacedWords: [],
+};
+
 const player = (nickname: string, joinedAtMillis = 1000) => ({
   nickname,
   joinedAt: timestamp(joinedAtMillis),
@@ -110,6 +138,8 @@ const openRoom = async (room: unknown = storedRoom()) => {
     emitRoom({ exists: () => true, data: () => room });
   });
 };
+
+const grid = () => screen.getByRole('group', { name: /crossword grid/i });
 
 const joinAs = (nickname: string) => {
   fireEvent.change(screen.getByLabelText(/nickname/i), { target: { value: nickname } });
@@ -293,10 +323,8 @@ describe('RoomPage', () => {
     it('draws the crossword without giving a single letter away', async () => {
       await openRoom(roomWithBoth);
 
-      const grid = screen.getByRole('img', { name: /crossword grid/i });
-
-      expect(grid).toBeInTheDocument();
-      expect(grid.textContent).toBe('');
+      expect(grid()).toBeInTheDocument();
+      expect(grid().textContent).toBe('');
       expect(screen.queryByText(/\bcat\b/i)).not.toBeInTheDocument();
     });
   });
@@ -401,10 +429,20 @@ describe('RoomPage', () => {
       expect(screen.getByText(/hidden from you.*: 1\b/i)).toBeInTheDocument();
     });
 
-    it('keeps the grid letterless while the game is being played', async () => {
+    it('keeps the grid letterless until a word has been answered', async () => {
       await openRoom(assignedRoom);
 
-      expect(screen.getByRole('img', { name: /crossword grid/i }).textContent).toBe('');
+      expect(grid().textContent).toBe('');
+    });
+
+    it('opens the squares of the words a player has to guess, and only those', async () => {
+      await openRoom(assignedRoom);
+
+      // `car` runs down the left column and is Bob's to explain; `cat` runs
+      // across the top and is his to guess, so those three squares take letters.
+      expect(screen.getAllByLabelText(/a letter of one of your words/i)).toHaveLength(3);
+      expect(screen.getByLabelText(/row 1, column 3/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/row 3, column 1/i)).not.toBeInTheDocument();
     });
 
     it('shows no word at all to a player the deal did not cover', async () => {
@@ -429,9 +467,10 @@ describe('RoomPage', () => {
 
       expect(document.body.textContent).not.toMatch(/\bcat\b|\bcar\b/i);
       expect(screen.getByText(/running without you/i)).toBeInTheDocument();
-      // The rest of the room still behaves as it did.
+      // The rest of the room still behaves as it did, minus anything to type in.
       expect(screen.getByText('Cara')).toBeInTheDocument();
-      expect(screen.getByRole('img', { name: /crossword grid/i })).toBeInTheDocument();
+      expect(grid()).toBeInTheDocument();
+      expect(screen.queryByLabelText(/a letter of one of your words/i)).not.toBeInTheDocument();
     });
 
     it('shows nobody any word while the room is still in the lobby', async () => {
@@ -441,6 +480,165 @@ describe('RoomPage', () => {
 
       expect(screen.queryByText('car')).not.toBeInTheDocument();
       expect(document.body.textContent).not.toMatch(/\bcat\b/i);
+    });
+  });
+
+  describe('answering a word', () => {
+    /** Bob guesses `cat` across the top row; `car` down the left is Vik's. */
+    const playing = (words?: Record<string, unknown>) =>
+      storedRoom({
+        status: 'playing',
+        layout: TWO_WORD_LAYOUT,
+        players: { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) },
+        words: words ?? {
+          w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+          w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+        },
+      });
+
+    const typeInto = (row: number, col: number, letter: string) =>
+      fireEvent.change(
+        screen.getByLabelText(new RegExp(`row ${row + 1}, column ${col + 1}\\b`, 'i')),
+        { target: { value: letter } },
+      );
+
+    const spellCat = async () => {
+      await act(async () => {
+        typeInto(0, 0, 'c');
+        typeInto(0, 1, 'a');
+        typeInto(0, 2, 't');
+      });
+    };
+
+    it('writes a right answer down under the answering player, and nothing else', async () => {
+      await openRoom(playing());
+
+      await spellCat();
+
+      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        'words.w0.guessedByPlayerId': 'guest-uid',
+      });
+    });
+
+    it('keeps a wrong answer to the player who made it', async () => {
+      await openRoom(playing());
+
+      await act(async () => {
+        typeInto(0, 0, 'b');
+        typeInto(0, 1, 'a');
+        typeInto(0, 2, 't');
+      });
+
+      expect(updateDoc).not.toHaveBeenCalled();
+      expect(screen.getByText(/not the word/i)).toBeInTheDocument();
+    });
+
+    it('fills the grid in for a player who answered nothing, without a reload', async () => {
+      await openRoom(playing());
+      expect(grid().textContent).toBe('');
+
+      await act(async () => {
+        emitRoom({
+          exists: () => true,
+          data: () =>
+            playing({
+              w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+              w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: 'owner-uid' },
+            }),
+        });
+      });
+
+      // `car` was Vik's to answer, and its letters are now on Bob's board too —
+      // including the `C` his own `cat` starts with.
+      expect(grid().textContent).toBe('CAR');
+      expect(screen.queryByLabelText(/row 1, column 1\b/i)).not.toBeInTheDocument();
+    });
+
+    it('locks the squares of a word once it has been answered', async () => {
+      await openRoom(
+        playing({
+          w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: 'guest-uid' },
+          w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+        }),
+      );
+
+      expect(grid().textContent).toBe('CAT');
+      expect(screen.queryByLabelText(/a letter of one of your words/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/hidden from you.*: 1, of which 1 answered/i)).toBeInTheDocument();
+    });
+
+    it('leaves the room to another ticket to finish', async () => {
+      // Every word of this room is now answered, but nothing here declares the
+      // game over: the win belongs to issue #8.
+      await openRoom(playing());
+
+      await spellCat();
+
+      expect(updateDoc).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ status: expect.anything() }),
+      );
+    });
+
+    it('explains an answer the database refused', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+      await openRoom(playing());
+
+      await spellCat();
+
+      expect(await screen.findByText(/could not be told about it/i)).toBeInTheDocument();
+    });
+
+    it('crosses out a word this player explains once its guesser has answered it', async () => {
+      await openRoom(
+        playing({
+          w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+          w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: 'owner-uid' },
+        }),
+      );
+
+      // `car` is Bob's to explain and Vik has just answered it: there is
+      // nothing left to explain, and the chip says so rather than only the grid.
+      expect(screen.getByLabelText('car — answered')).toBeInTheDocument();
+    });
+
+    it('fills two of a player own crossing words without the cursor going astray', async () => {
+      // `cat` across and `car` down are both Bob's, sharing the top-left
+      // square. Starting on that square gives him the across word; the space
+      // bar turns him down it, and the letters follow him rather than the grid.
+      await openRoom(
+        storedRoom({
+          status: 'playing',
+          layout: CROSSING_LAYOUT,
+          players: { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) },
+          words: {
+            w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+            w1: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+            w2: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+          },
+        }),
+      );
+
+      const shared = screen.getByLabelText(/row 1, column 1\b/i);
+
+      await act(async () => shared.focus());
+      expect(shared).toHaveAccessibleName(/filled across, where two of them cross/i);
+
+      await act(async () => {
+        fireEvent.keyDown(shared, { key: ' ' });
+      });
+      expect(shared).toHaveAccessibleName(/filled down/i);
+
+      await act(async () => {
+        typeInto(0, 0, 'c');
+        typeInto(1, 0, 'a');
+        typeInto(2, 0, 'r');
+      });
+
+      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        'words.w1.guessedByPlayerId': 'guest-uid',
+      });
     });
   });
 
