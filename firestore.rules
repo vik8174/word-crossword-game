@@ -50,6 +50,16 @@ service cloud.firestore {
         && (before.status != 'completed' || after.status == 'completed');
     }
 
+    // The words are dealt out once, and only the owner deals them: they are the
+    // one who knows everybody invited has arrived, and the deal cannot be taken
+    // back. A room of one has nobody left to explain a hidden word, so two
+    // players are the floor — the same floor the room screen shows.
+    function isValidStart(before, after) {
+      return before.status != 'lobby'
+        || after.status != 'playing'
+        || (request.auth.uid == before.ownerId && after.players.size() >= 2);
+    }
+
     function isValidNewRoom() {
       let room = request.resource.data;
 
@@ -76,6 +86,7 @@ service cloud.firestore {
 
       return hasExactlyRoomFields(after)
         && hasValidStatus(before, after)
+        && isValidStart(before, after)
         && after.layout == before.layout
         && after.ownerId == before.ownerId
         && after.createdAt == before.createdAt
