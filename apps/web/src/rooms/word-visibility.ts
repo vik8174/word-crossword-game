@@ -35,8 +35,11 @@ export interface PlayerWordView {
  * A word counts as neither until it has been assigned, so a room still in the
  * lobby shows nobody anything. A word assigned to a player who is not in the
  * room — nothing in the security rules prevents another client from writing
- * that — is treated as somebody else's word to guess, which gives away no
- * spelling to the reader either way.
+ * that — reads as somebody else's word to guess, and is therefore spelled out
+ * to everybody, including whoever was meant to guess it. That is the trust
+ * boundary `docs/decisions/0004-ui-only-word-visibility.md` accepts: a client
+ * already in the room can spoil the game for the room it is in, and no reading
+ * of the document can tell that write apart from an honest one.
  *
  * @param room - The room document as read from Firestore
  * @param viewerId - Firebase Auth UID of the player looking at the screen

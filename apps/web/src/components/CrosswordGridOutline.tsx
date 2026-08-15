@@ -17,9 +17,11 @@ const cellKey = (row: number, col: number) => `${row}:${col}`;
  *
  * The room document carries every word in plain text, so the grid is exactly
  * where the game can be given away. This component renders no text at all: a
- * square is drawn or it is not. Which player may see which letters is decided
- * later, when words are assigned (issue #6), and no letter is shown before
- * that.
+ * square is drawn or it is not. The grid stays letterless for everyone until a
+ * word has been guessed, because words cross each other and the letters of a
+ * word I can see would spell out part of every word I have to guess — see
+ * `docs/decisions/0010-letterless-grid-and-private-word-list.md`. Filling
+ * guessed words in is issue #7.
  *
  * @param props.layout - Layout stored in the room document
  *
