@@ -104,13 +104,14 @@ describe('awaitsCompletion', () => {
     expect(awaitsCompletion(room)).toBe(false);
   });
 
-  it('reads the finished board rather than who wrote the last answer', () => {
-    // Two players answer the last two words within the same second. Neither
-    // knew their own answer was the last one; both snapshots show it, so both
-    // clients close the game and the identical write costs nothing.
-    const room = roomWith({ cat: guessedBy('owner-uid'), dog: guessedBy('guest-uid') });
+  it('does not care which player answered which word', () => {
+    // The board is the whole question. Who was last to answer — the thing a
+    // client cannot know about a room two people are writing to at once — is
+    // asked nowhere here.
+    const byOne = roomWith({ cat: guessedBy('owner-uid'), dog: guessedBy('owner-uid') });
+    const byBoth = roomWith({ cat: guessedBy('owner-uid'), dog: guessedBy('guest-uid') });
 
-    expect(awaitsCompletion(room)).toBe(true);
+    expect(awaitsCompletion(byOne)).toBe(awaitsCompletion(byBoth));
   });
 });
 
