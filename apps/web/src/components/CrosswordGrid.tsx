@@ -170,6 +170,27 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
         {rows.map((row) => cols.map((col) => renderCell(row, col)))}
       </Box>
 
+      {/*
+        Swapping between two crossing words moves nothing and reveals nothing —
+        the only sign of it is which way the next letter will go, which is a
+        colour. Said here as well, so the gesture works for a reader who cannot
+        see the grid. Announced rather than shown: the direction is already
+        plain to anyone looking.
+      */}
+      <Typography
+        aria-live="polite"
+        sx={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+          clipPath: 'inset(50%)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {entry.activeDirection === null ? '' : `Now filling ${entry.activeDirection}.`}
+      </Typography>
+
       {entry.hasCrossings && (
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
           {CROSSING_HINT}

@@ -437,6 +437,64 @@ describe('CrosswordGrid', () => {
       expect(onSolved).toHaveBeenLastCalledWith('w1');
     });
 
+    it('carries typing along the word swapped to, not the one swapped from', () => {
+      renderGrid(crossingView());
+
+      focusCell(1, 1);
+      act(() => fireEvent.keyDown(cellInput(1, 1), { key: ' ' }));
+      typeInto(1, 1, 'a');
+
+      // Down was swapped to, so the letter after the shared square is below it
+      // rather than beside it.
+      expect(document.activeElement).toBe(cellInput(2, 1));
+    });
+
+    it('says which way it is now filling, for a reader who cannot see the grid', () => {
+      renderGrid(crossingView());
+      const announcement = () => screen.getByText(/now filling/i);
+
+      focusCell(1, 1);
+      expect(announcement()).toHaveTextContent('Now filling across.');
+
+      act(() => fireEvent.keyDown(cellInput(1, 1), { key: ' ' }));
+
+      expect(announcement()).toHaveTextContent('Now filling down.');
+    });
+
+    it('hands a shared square back to the word still open when the other is solved', () => {
+      // The player was filling `OAK` when it was answered. Its squares are no
+      // longer theirs to type in, and the word still open takes over without
+      // the cursor being left pointing at something that has gone.
+      const { rerender } = renderGrid(crossingView());
+
+      focusCell(1, 1);
+      act(() => fireEvent.keyDown(cellInput(1, 1), { key: ' ' }));
+      expect(cellInput(1, 1)).toHaveAccessibleName(/filled down/i);
+
+      act(() => {
+        rerender(
+          <CrosswordGrid
+            view={{
+              ...crossingView(),
+              cells: crossingView().cells.map((cell) =>
+                cell.col === 1 ? { ...cell, letter: 'OAK'[cell.row]! } : cell,
+              ),
+              toGuess: [guessable('w0', EAT, 'eat'), guessable('w1', OAK, 'oak', true)],
+            }}
+            onSolved={onSolved}
+          />,
+        );
+      });
+
+      expect(screen.queryByLabelText(/row 2, column 2\b/i)).not.toBeInTheDocument();
+      expect(cellInput(1, 0)).toHaveAccessibleName(/filled across/i);
+
+      act(() => typeInto(1, 0, 'e'));
+
+      // The shared square is filled in already, so typing skips straight past it.
+      expect(document.activeElement).toBe(cellInput(1, 2));
+    });
+
     it('explains the swap to a player who has a crossing, and to nobody else', () => {
       const { unmount } = renderGrid(crossingView());
 

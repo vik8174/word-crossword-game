@@ -60,6 +60,13 @@ export interface GuessEntry {
   readonly focus: (position: GridPosition) => void;
   /** Moves to the next of this player's words through a square they are already on. */
   readonly switchWordAt: (position: GridPosition) => void;
+  /**
+   * Which way the word being filled runs, `null` before the player has taken up
+   * a square. Said out loud by the screen, because swapping between two crossing
+   * words changes nothing a reader who cannot see the grid would otherwise
+   * notice.
+   */
+  readonly activeDirection: WordOrientation | null;
   /** `true` while a wrong answer is on the board, so the screen can say so once. */
   readonly hasRefusal: boolean;
   /** `true` when two of this player's own words cross, so switching is worth explaining. */
@@ -362,6 +369,7 @@ export const useGuessEntry = (
     type,
     focus,
     switchWordAt,
+    activeDirection: unsolvedOf(view).find((word) => word.id === activeWordId)?.orientation ?? null,
     hasRefusal: refused.length > 0,
     hasCrossings: [...wordsOfCell.values()].some((words) => words.length > 1),
   };
