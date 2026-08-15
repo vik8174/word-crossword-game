@@ -146,3 +146,55 @@ export const buildRoomDocument = ({
     expiresAt: new Date(createdAt.getTime() + ROOM_LIFETIME_MS),
   };
 };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const isTimestamp = (value: unknown): boolean =>
+  isRecord(value) && typeof value.toMillis === 'function';
+
+const isPlayer = (value: unknown): boolean =>
+  isRecord(value) && typeof value.nickname === 'string' && isTimestamp(value.joinedAt);
+
+const isLayout = (value: unknown): boolean =>
+  isRecord(value) &&
+  typeof value.rows === 'number' &&
+  typeof value.cols === 'number' &&
+  Array.isArray(value.cells) &&
+  Array.isArray(value.placedWords);
+
+/**
+ * Reads a room document out of whatever Firestore handed back.
+ *
+ * This is a trust boundary. The security rules check that a room keeps its
+ * shape, but deliberately not what is inside `players` and `words` (see
+ * `docs/decisions/0009`), so any client already in a room can write nonsense
+ * into a nickname. Rendering that unchecked would take the whole screen down
+ * for everyone else, so a document that does not look like a room is treated
+ * as no room at all.
+ *
+ * `words` values are not inspected: nothing reads them yet, and the tickets
+ * that do (#6, #7) are where their own invariants belong.
+ *
+ * @param data - Raw `snapshot.data()`, of unknown shape
+ * @returns The document when it is a room this app understands, `null` otherwise
+ */
+export const parseRoomDocument = (data: unknown): RoomDocument | null => {
+  if (!isRecord(data)) {
+    return null;
+  }
+
+  const isRoom =
+    (data.status === 'lobby' || data.status === 'playing' || data.status === 'completed') &&
+    typeof data.ownerId === 'string' &&
+    isLayout(data.layout) &&
+    isRecord(data.words) &&
+    isRecord(data.players) &&
+    Object.values(data.players).every(isPlayer) &&
+    isTimestamp(data.createdAt) &&
+    isTimestamp(data.expiresAt);
+
+  // Narrowed by the checks above, one field at a time — TypeScript cannot carry
+  // that through a single boolean, so the cast states what was just verified.
+  return isRoom ? (data as unknown as RoomDocument) : null;
+};

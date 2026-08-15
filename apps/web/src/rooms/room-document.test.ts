@@ -1,7 +1,7 @@
 import type { CrosswordLayout } from 'shared';
 import { describe, expect, it } from 'vitest';
 
-import { buildRoomDocument, ROOM_LIFETIME_MS, wordIdAt } from './room-document';
+import { buildRoomDocument, parseRoomDocument, ROOM_LIFETIME_MS, wordIdAt } from './room-document';
 
 const CREATED_AT = new Date('2026-01-01T10:00:00.000Z');
 
@@ -95,5 +95,57 @@ describe('buildRoomDocument', () => {
     };
 
     expect(() => buildDocument(emptyLayout)).toThrow(/no placed words/i);
+  });
+});
+
+/** A timestamp as the Firestore SDK hands one back. */
+const timestamp = (millis: number) => ({ toMillis: () => millis, seconds: millis / 1000 });
+
+/** A stored room, as `snapshot.data()` would return it. */
+const storedRoom = (overrides: Record<string, unknown> = {}) => ({
+  status: 'lobby',
+  ownerId: 'owner-uid',
+  layout: LAYOUT,
+  words: { w0: { hiddenFromPlayerId: null, guessedByPlayerId: null } },
+  players: { 'owner-uid': { nickname: 'Vik', joinedAt: timestamp(1000) } },
+  createdAt: timestamp(1000),
+  expiresAt: timestamp(2000),
+  ...overrides,
+});
+
+describe('parseRoomDocument', () => {
+  it('accepts a room written by this app', () => {
+    const stored = storedRoom();
+
+    expect(parseRoomDocument(stored)).toBe(stored);
+  });
+
+  it('accepts a room in any of the three states a game goes through', () => {
+    for (const status of ['lobby', 'playing', 'completed']) {
+      expect(parseRoomDocument(storedRoom({ status }))).not.toBeNull();
+    }
+  });
+
+  it.each([
+    ['nothing at all', undefined],
+    ['a value that is not an object', 'room-1'],
+    ['an array', []],
+    ['a status the game does not know', storedRoom({ status: 'paused' })],
+    ['no owner', storedRoom({ ownerId: 42 })],
+    ['no grid to play on', storedRoom({ layout: { rows: 1, cols: 1 } })],
+    ['words that are not a map', storedRoom({ words: [] })],
+    ['players that are not a map', storedRoom({ players: null })],
+    [
+      'a player whose nickname is not text',
+      storedRoom({ players: { a: { nickname: { evil: 1 } } } }),
+    ],
+    [
+      'a player who joined at no time',
+      storedRoom({ players: { a: { nickname: 'A', joinedAt: 5 } } }),
+    ],
+    ['no expiry', storedRoom({ expiresAt: '2026-01-01' })],
+    ['no birth date', storedRoom({ createdAt: null })],
+  ])('refuses %s', (_description, data) => {
+    expect(parseRoomDocument(data)).toBeNull();
   });
 });
