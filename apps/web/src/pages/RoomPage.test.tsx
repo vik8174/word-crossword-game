@@ -772,6 +772,15 @@ describe('RoomPage', () => {
       expect(screen.getByText(/this room is closed/i)).toBeInTheDocument();
     });
 
+    it('stops taking answers in a closed room, whatever it says about its words', async () => {
+      // The notice says the room is closed; a grid that went on accepting
+      // letters underneath it would be saying the opposite.
+      await openRoom(withWords({ w0: open, w1: carOpen }, 'completed'));
+
+      expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+      expect(updateDoc).not.toHaveBeenCalled();
+    });
+
     it('keeps the celebration for a room that really did finish its crossword', async () => {
       await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 

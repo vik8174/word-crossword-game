@@ -268,6 +268,15 @@ describe('gridViewFor', () => {
     expect(view.toGuess).toEqual([]);
   });
 
+  it('gives nothing to type in a closed room, even with a word left open in it', () => {
+    // A room can be closed without its crossword having been finished, and it
+    // is finished with its players either way — a grid still taking answers
+    // under a notice saying the room is closed would be lying to them.
+    const room = roomWith(['bob-uid', 'alice-uid'], 'completed', CROSSING_LAYOUT);
+
+    expect(gridViewFor(room, 'alice-uid').toGuess).toEqual([]);
+  });
+
   it('ignores a guessed-by another client wrote nonsense into', () => {
     const room = {
       ...dealtCrossing(),

@@ -46,7 +46,7 @@ A player who is already in the room is unaffected: the check for membership come
 
 So the reveal asks `isGameFinished(room)` — the status **and** an answer recorded against every word of `layout.placedWords`. `finishedWordsOf` is guarded by it inside `word-visibility.ts`, and the board component asks the same question before rendering the win screen. Two questions, kept apart, because they are genuinely different:
 
-- **Is this room closed?** `status === 'completed'`. Terminal in the rules, so the room is done with regardless of its grid: no more prompting anybody to explain or type, and newcomers are turned away with a notice that claims no more than that.
+- **Is this room closed?** `status === 'completed'`. Terminal in the rules, so the room is done with regardless of its grid: `gridViewFor` hands over nothing to type into, nobody is asked to explain anything, and newcomers are turned away with a notice that claims no more than that.
 - **Was this crossword finished?** The board itself. Only this unlocks the word list and the celebration.
 
 They come apart only in a room somebody closed early, and then the players are told exactly that and shown no unanswered word. From inside the app there is no way to tell a strange game from a spoiled one, and the honest reading is the one that gives nothing away.

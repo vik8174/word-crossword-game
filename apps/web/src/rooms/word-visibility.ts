@@ -95,7 +95,10 @@ export interface GridView {
   readonly cols: number;
   /** Every square that holds a letter, whether or not that letter may be shown. */
   readonly cells: readonly GridCellView[];
-  /** Words this player answers. Empty for anyone the deal did not cover. */
+  /**
+   * Words this player answers. Empty for anyone the deal did not cover, and
+   * empty in a room that is no longer open for answers.
+   */
   readonly toGuess: readonly GuessableWord[];
 }
 
@@ -239,6 +242,12 @@ const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
  * cannot give a word away — including the words it lets this player type into,
  * which come with coordinates and no spelling.
  *
+ * A closed room hands over nothing to type. In a game that ended the ordinary
+ * way this changes nothing — every word is answered, so there is nowhere left
+ * to type anyway — but a room closed with words still open is finished with its
+ * players all the same, and a grid that went on taking answers under a notice
+ * saying the room is closed would be lying to them.
+ *
  * @param room - The room document as read from Firestore
  * @param viewerId - Firebase Auth UID of the player looking at the screen
  * @returns The board, the letters that may be shown, and this player's own words
@@ -249,6 +258,7 @@ const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
 export const gridViewFor = (room: ReadableRoom, viewerId: string): GridView => {
   const solved = solvedCellKeys(room);
   const view = wordViewFor(room, viewerId);
+  const isOpenForAnswers = room.status === 'playing';
 
   return {
     rows: room.layout.rows,
@@ -258,6 +268,6 @@ export const gridViewFor = (room: ReadableRoom, viewerId: string): GridView => {
       col,
       letter: solved.has(cellKey({ row, col })) ? letter : null,
     })),
-    toGuess: view.kind === 'dealt' ? view.toGuess : [],
+    toGuess: view.kind === 'dealt' && isOpenForAnswers ? view.toGuess : [],
   };
 };
