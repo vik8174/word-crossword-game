@@ -16,7 +16,7 @@ Everything committed to this repository is written in **English** — README, CH
 1. Self-review: `git diff`
 2. Code review: run the `code-reviewer` agent (zero-context review against `~/.claude/rules/code-review.md`) and address Critical/Important findings
 3. Linting, tests, and the coverage check must pass locally
-4. If the change touches `firestore.rules`, run `pnpm test:rules` — CI has no emulator and cannot check them for you
+4. If the change touches `firestore.rules`, run `pnpm test:rules` locally as well — CI runs it too, but the emulator is slower to fail than you are
 
 ## CI (GitHub Actions)
 
@@ -26,8 +26,9 @@ Opening or updating a pull request against `main` automatically runs:
 - **Test** — unit tests (Vitest)
 - **Coverage** — 80% threshold; a pull request below it cannot be merged
 - **Build** — `pnpm build` for both packages
+- **Rules** — `pnpm test:rules`: `firestore.rules` checked against the Firestore emulator (needs a JDK, which the job installs)
 
-All four are required status checks in branch protection. A pull request cannot be merged until they are green. The workflow also runs on `push` to `main`, so the state of `main` is verified after every merge.
+All five are required status checks in branch protection. A pull request cannot be merged until they are green. The workflow also runs on `push` to `main`, so the state of `main` is verified after every merge.
 
 ## Architecture decisions (ADRs)
 

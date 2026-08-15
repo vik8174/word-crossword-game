@@ -64,3 +64,24 @@ jobs:
       # `pnpm -r build` covers both packages: `tsc --noEmit && vite build`
       # for web, `tsc -b` for shared.
       - run: pnpm build
+
+  rules:
+    name: Rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      # The Firestore emulator runs on the JVM. `firebase-tools` drops support
+      # for Java below 21 in its next major version.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: pnpm install --frozen-lockfile
+      # `pnpm test:rules` starts the emulator, runs firestore/rules.test.mjs
+      # against firestore.rules and shuts the emulator down again.
+      - run: pnpm test:rules

@@ -25,7 +25,7 @@ pnpm dev
 
 - Node.js >= 22
 - pnpm 10.x (`corepack enable` picks up the version pinned in `package.json`)
-- A JDK, only for `pnpm test:rules` — the Firestore emulator runs on the JVM
+- A JDK 21 or newer, only for `pnpm test:rules` — the Firestore emulator runs on the JVM
 
 ## Configuration
 
@@ -45,9 +45,11 @@ cp apps/web/.env.example apps/web/.env
 There is no backend in this project — browsers write to Firestore directly — so `firestore.rules` is the only access control there is.
 
 ```bash
-pnpm test:rules                          # check the rules against the emulator
-firebase deploy --only firestore:rules   # deploy them (project alias lives in .firebaserc)
+pnpm test:rules                                     # check the rules against the emulator
+pnpm exec firebase deploy --only firestore:rules    # deploy them (project alias lives in .firebaserc)
 ```
+
+`firebase-tools` is a dev dependency of the repo, so both commands work after `pnpm install` — no global install needed.
 
 Deleting stale rooms relies on a Firestore **TTL policy** on the `expiresAt` field of the `rooms` collection. The app writes the field; the policy itself is enabled once in the Firebase console (Firestore > TTL policies) and is not part of this repository.
 

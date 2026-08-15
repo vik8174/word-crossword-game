@@ -12,9 +12,9 @@ import { Timestamp } from 'firebase/firestore';
 /**
  * Behaviour tests for `firestore.rules`, run against the Firestore emulator.
  *
- * Not part of `pnpm test`: they need a running emulator (and a JVM), which CI
- * does not have. Run them with `pnpm test:rules`, which starts the emulator,
- * runs this file and shuts the emulator down again.
+ * Not part of `pnpm test`: they need a running emulator (and a JVM). Run them
+ * with `pnpm test:rules`, which starts the emulator, runs this file and shuts
+ * the emulator down again. CI runs the same command in its `Rules` job.
  *
  * They exist because these rules are the only access control the project has —
  * clients write to Firestore directly, with no backend of ours in between.
