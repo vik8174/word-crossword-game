@@ -12,7 +12,7 @@ This holds regardless of the language a session is being conducted in: a chat ma
 
 - React SPA (Vite + React Router, MUI) + Firebase (Firestore, Anonymous Auth, Analytics) + Sentry
 - No backend of our own — clients write directly to Firestore
-- pnpm workspaces: `apps/web`, `packages/shared` (pure game logic: `crossword-generator`, `word-assignment`, `word-list-validator`, `guess-checker`)
+- pnpm workspaces: `apps/web`, `packages/shared` (pure game logic: `crossword-generator`, `crossword-numbering`, `word-assignment`, `word-list-validator`, `guess-checker`)
 
 Why it is built this way — see [`docs/decisions/`](docs/decisions/), in particular [0002](docs/decisions/0002-no-dedicated-backend.md)-[0012](docs/decisions/0012-ending-a-game-from-the-received-state.md).
 
@@ -46,4 +46,4 @@ Branches, code review, CI, ADRs, changelog — see [`CONTRIBUTING.md`](CONTRIBUT
 
 ## Testing
 
-Unit tests are mandatory for the pure modules in `packages/shared` (`crossword-generator`, `word-assignment`, `word-list-validator`, `guess-checker`). A test verifies external behavior (input → output), not implementation details.
+Unit tests are mandatory for the pure modules in `packages/shared` (`crossword-generator`, `crossword-numbering`, `word-assignment`, `word-list-validator`, `guess-checker`). A test verifies external behavior (input → output), not implementation details.
