@@ -147,6 +147,67 @@ export const buildRoomDocument = ({
   };
 };
 
+declare const roomUpdateBrand: unique symbol;
+
+/**
+ * An update to an existing room — always one that postpones its expiry.
+ *
+ * The brand is a type-level marker and nothing carries it at runtime; what it
+ * buys is that {@link buildRoomUpdate} is the only thing able to produce this
+ * type. Since that is what the room service accepts, an update assembled by
+ * hand cannot reach Firestore, and a write that forgets to keep the room alive
+ * is a compile error rather than a room that dies mid-game (issue #9).
+ */
+export type RoomUpdate = Readonly<Record<string, unknown>> & {
+  readonly [roomUpdateBrand]: true;
+};
+
+/**
+ * An update to a room, with a fresh 24 hours added to its life.
+ *
+ * Every write a game makes goes through here, because `expiresAt` is not
+ * housekeeping: the security rules check it on every update, so a room whose
+ * expiry stopped moving stops accepting writes altogether — a game running past
+ * its first day would die in the middle of itself.
+ *
+ * The expiry is written last and cannot be passed in: what keeps a room alive
+ * is being played, never a value a caller chose.
+ *
+ * @param fields - Field paths and values the write is actually about
+ * @param now - The moment of the write; the new lifetime is measured from it
+ * @returns Those fields plus the postponed expiry, for a single `updateDoc` call
+ *
+ * @example
+ * buildRoomUpdate({ status: 'completed' }, new Date());
+ */
+export const buildRoomUpdate = (fields: Readonly<Record<string, unknown>>, now: Date): RoomUpdate =>
+  // The brand is not a property of the value, so the cast states the one thing
+  // the type system cannot see: this object came from here.
+  ({
+    ...fields,
+    expiresAt: new Date(now.getTime() + ROOM_LIFETIME_MS),
+  }) as unknown as RoomUpdate;
+
+/**
+ * The update that puts one player into a room.
+ *
+ * Written as the single nested field `players.<uid>` rather than as a whole
+ * `players` map, so two players arriving in the same second cannot overwrite
+ * each other — and so a player coming back to their own link rewrites nothing
+ * but their own entry, which is what the security rules allow and what makes
+ * reconnecting work (see `docs/decisions/0009-room-document-schema.md`).
+ *
+ * @param playerId - Firebase Auth UID of the joining player
+ * @param nickname - Already-normalised name the other players will see
+ * @param now - The moment they joined; also what the room's new expiry is measured from
+ * @returns Field path and value for a single `updateDoc` call
+ *
+ * @example
+ * buildJoinUpdate('bob-uid', 'Bob', new Date());
+ */
+export const buildJoinUpdate = (playerId: string, nickname: string, now: Date): RoomUpdate =>
+  buildRoomUpdate({ [`players.${playerId}`]: { nickname, joinedAt: now } }, now);
+
 /**
  * The update that starts a game: the words are dealt out and the room begins.
  *
@@ -157,29 +218,31 @@ export const buildRoomDocument = ({
  * losing the other.
  *
  * @param assignment - Who guesses which word, by position in `layout.placedWords`
+ * @param now - The moment the game started; the room's new expiry is measured from it
  * @returns Field paths and values for a single `updateDoc` call
  * @throws Error when the assignment covers no word — such a room cannot be played
  *
  * @example
- * buildStartGameUpdate(['bob-uid', 'alice-uid']);
+ * buildStartGameUpdate(['bob-uid', 'alice-uid'], new Date());
  * // { status: 'playing', 'words.w0.hiddenFromPlayerId': 'bob-uid', ... }
  */
-export const buildStartGameUpdate = (
-  assignment: WordAssignment,
-): Readonly<Record<string, unknown>> => {
+export const buildStartGameUpdate = (assignment: WordAssignment, now: Date): RoomUpdate => {
   if (assignment.length === 0) {
     throw new Error('Cannot start a game in which no word was assigned to anyone.');
   }
 
-  return {
-    status: 'playing',
-    ...Object.fromEntries(
-      assignment.map((playerId, index) => [
-        `words.${wordIdAt(index)}.hiddenFromPlayerId`,
-        playerId,
-      ]),
-    ),
-  };
+  return buildRoomUpdate(
+    {
+      status: 'playing',
+      ...Object.fromEntries(
+        assignment.map((playerId, index) => [
+          `words.${wordIdAt(index)}.hiddenFromPlayerId`,
+          playerId,
+        ]),
+      ),
+    },
+    now,
+  );
 };
 
 /**
@@ -196,17 +259,15 @@ export const buildStartGameUpdate = (
  *
  * @param wordId - Key of the word in the room's `words` map, from {@link wordIdAt}
  * @param playerId - UID of the player who answered it
+ * @param now - The moment it was answered; the room's new expiry is measured from it
  * @returns Field path and value for a single `updateDoc` call
  *
  * @example
- * buildGuessUpdate('w3', 'bob-uid'); // { 'words.w3.guessedByPlayerId': 'bob-uid' }
+ * buildGuessUpdate('w3', 'bob-uid', new Date());
+ * // { 'words.w3.guessedByPlayerId': 'bob-uid', expiresAt: ... }
  */
-export const buildGuessUpdate = (
-  wordId: string,
-  playerId: string,
-): Readonly<Record<string, unknown>> => ({
-  [`words.${wordId}.guessedByPlayerId`]: playerId,
-});
+export const buildGuessUpdate = (wordId: string, playerId: string, now: Date): RoomUpdate =>
+  buildRoomUpdate({ [`words.${wordId}.guessedByPlayerId`]: playerId }, now);
 
 /**
  * Whether a word has been answered.

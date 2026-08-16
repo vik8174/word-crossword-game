@@ -232,9 +232,12 @@ describe('RoomPage', () => {
       joinAs('Bob');
 
       await waitFor(() =>
-        expect(updateDoc).toHaveBeenCalledWith(expect.anything(), {
-          'players.guest-uid': { nickname: 'Bob', joinedAt: expect.any(Date) },
-        }),
+        expect(updateDoc).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.objectContaining({
+            'players.guest-uid': { nickname: 'Bob', joinedAt: expect.any(Date) },
+          }),
+        ),
       );
     });
 
@@ -332,6 +335,137 @@ describe('RoomPage', () => {
       expect(grid()).toBeInTheDocument();
       expect(grid().textContent).toBe('');
       expect(screen.queryByText(/\bcat\b/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('coming back to the link', () => {
+    // A player who closed the tab, lost the connection, or simply reloaded gets
+    // the same anonymous auth id back from the browser, so the room already
+    // holds them. Nothing on this screen may ask them who they are again, and
+    // nothing may be written to say they arrived: they never left.
+    const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
+
+    const assignedWords = {
+      w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+      w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+    };
+
+    it('puts a player waiting in the lobby back where they were', async () => {
+      await openRoom(storedRoom({ players: bothPlayers }));
+
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      expect(screen.getByText('Bob')).toBeInTheDocument();
+      expect(updateDoc).not.toHaveBeenCalled();
+    });
+
+    it('gives a player back their own half of a game in progress', async () => {
+      await openRoom(
+        storedRoom({
+          status: 'playing',
+          layout: TWO_WORD_LAYOUT,
+          players: bothPlayers,
+          words: assignedWords,
+        }),
+      );
+
+      // `car` is Bob's to explain and `cat` is his to guess: the same room he
+      // was looking at before the tab closed, secrets and all.
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      expect(screen.getByText('car')).toBeInTheDocument();
+      expect(document.body.textContent).not.toMatch(/\bcat\b/i);
+      expect(screen.getAllByLabelText(/a letter of one of your words/i)).toHaveLength(3);
+      expect(updateDoc).not.toHaveBeenCalled();
+    });
+
+    it('keeps the answers that were given while the player was away', async () => {
+      await openRoom(
+        storedRoom({
+          status: 'playing',
+          layout: TWO_WORD_LAYOUT,
+          players: bothPlayers,
+          words: {
+            w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+            w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: 'owner-uid' },
+          },
+        }),
+      );
+
+      // Vik answered `car` while Bob was gone; the grid he comes back to says so.
+      expect(grid().textContent).toBe('CAR');
+    });
+
+    it('gives a player back a game that finished while they were away', async () => {
+      await openRoom(
+        storedRoom({
+          status: 'completed',
+          layout: TWO_WORD_LAYOUT,
+          players: bothPlayers,
+          words: {
+            w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: 'guest-uid' },
+            w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: 'owner-uid' },
+          },
+        }),
+      );
+
+      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    });
+
+    it('knows the player by the id their browser came back with, not by a name', async () => {
+      // The nickname in the room is whatever they typed the first time. It is
+      // the auth id that says they are in, so a different name changes nothing.
+      await openRoom(
+        storedRoom({
+          players: { 'owner-uid': player('Vik'), 'guest-uid': player('Somebody Else', 2000) },
+        }),
+      );
+
+      expect(screen.getByText('Somebody Else')).toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    });
+
+    it('asks for a nickname when the browser comes back as somebody the room has never seen', async () => {
+      // Clearing the browser's storage loses the anonymous user, and the new id
+      // is a newcomer — which is what the nickname form is for.
+      await openRoom(storedRoom({ players: { 'owner-uid': player('Vik') } }));
+
+      expect(screen.getByLabelText(/nickname/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('keeping the room alive', () => {
+    it('pushes the expiry further out with the answer it writes', async () => {
+      // The security rules read `expiresAt` on every update, so a room that
+      // stopped being postponed refuses writes the moment its 24 hours are up —
+      // in the middle of a game that ran long. Every write postpones it.
+      const expiresAt = Date.now() + HOUR_MS;
+
+      await openRoom(
+        storedRoom({
+          status: 'playing',
+          layout: TWO_WORD_LAYOUT,
+          players: { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) },
+          words: {
+            w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+            w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+          },
+          expiresAt: timestamp(expiresAt),
+        }),
+      );
+
+      await act(async () => {
+        typeInto(0, 0, 'c');
+        typeInto(0, 1, 'a');
+        typeInto(0, 2, 't');
+      });
+
+      const [, update] = vi.mocked(updateDoc).mock.calls[0] as unknown as [
+        unknown,
+        Record<string, unknown>,
+      ];
+
+      expect(update.expiresAt).toBeInstanceOf(Date);
+      expect((update.expiresAt as Date).getTime()).toBeGreaterThan(expiresAt);
     });
   });
 
@@ -515,9 +649,10 @@ describe('RoomPage', () => {
 
       await spellCat();
 
-      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
-        'words.w0.guessedByPlayerId': 'guest-uid',
-      });
+      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        expect.objectContaining({ 'words.w0.guessedByPlayerId': 'guest-uid' }),
+      );
     });
 
     it('keeps a wrong answer to the player who made it', async () => {
@@ -636,9 +771,10 @@ describe('RoomPage', () => {
         typeInto(2, 0, 'r');
       });
 
-      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
-        'words.w1.guessedByPlayerId': 'guest-uid',
-      });
+      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        expect.objectContaining({ 'words.w1.guessedByPlayerId': 'guest-uid' }),
+      );
     });
   });
 
@@ -673,9 +809,10 @@ describe('RoomPage', () => {
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }));
 
-      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
-        status: 'completed',
-      });
+      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        expect.objectContaining({ status: 'completed' }),
+      );
     });
 
     it('closes it from the room that arrived, not from the answer this player sent', async () => {
@@ -691,13 +828,17 @@ describe('RoomPage', () => {
         typeInto(0, 2, 't');
       });
 
-      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
-        'words.w0.guessedByPlayerId': 'guest-uid',
-      });
+      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        expect.objectContaining({ 'words.w0.guessedByPlayerId': 'guest-uid' }),
+      );
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }));
 
-      expect(updateDoc).toHaveBeenLastCalledWith(expect.anything(), { status: 'completed' });
+      expect(updateDoc).toHaveBeenLastCalledWith(
+        expect.anything(),
+        expect.objectContaining({ status: 'completed' }),
+      );
       expect(updateDoc).toHaveBeenCalledTimes(2);
     });
 
@@ -811,6 +952,24 @@ describe('RoomPage', () => {
       });
 
       expect(screen.getByText(/no game at this link/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    });
+
+    it('says so when the room is collected while it is on the screen', async () => {
+      // The TTL policy deletes a room whenever it gets round to it, including
+      // with the game open in front of somebody. What follows must be a notice,
+      // not a screen drawing a room that is no longer there.
+      await openRoom(
+        storedRoom({ players: { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) } }),
+      );
+      expect(screen.getByText('Vik')).toBeInTheDocument();
+
+      await act(async () => {
+        emitRoom({ exists: () => false, data: () => undefined });
+      });
+
+      expect(screen.getByText(/no game at this link/i)).toBeInTheDocument();
+      expect(screen.queryByText('Vik')).not.toBeInTheDocument();
       expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
     });
 

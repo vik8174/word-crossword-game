@@ -291,6 +291,52 @@ describe('playing in a room', () => {
     );
   });
 
+  it('accepts the answer the client actually sends, with the room postponed alongside it', async () => {
+    // Every write the app makes carries a fresh `expiresAt`, because a room
+    // whose expiry stopped moving stops taking writes when it runs out.
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: twoPlayers });
+
+    await assertSucceeds(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        'words.w0.guessedByPlayerId': OTHER_PLAYER,
+        expiresAt: new Date(Date.now() + 24 * HOUR_MS),
+      }),
+    );
+  });
+
+  it('refuses a write that would stretch the room past its lifetime', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom();
+
+    await assertFails(updateDoc(doc(asOtherPlayer(), ROOM_PATH), { expiresAt: hoursFromNow(30) }));
+  });
+
+  it('refuses to bring an expired room back to life', async () => {
+    // The client never tries: the room screen turns everybody away from an
+    // expired room without writing anything. The rules refuse it anyway,
+    // because a room past its expiry is one the TTL policy has already been
+    // told to collect — it can vanish at any moment, and a game resumed inside
+    // it would disappear mid-word. Expiry is checked on what the room was, not
+    // only on what the write would make it.
+    await testEnv.clearFirestore();
+    await seedRoom({ expiresAt: hoursFromNow(-1) });
+
+    await assertFails(updateDoc(doc(asOwner(), ROOM_PATH), { expiresAt: hoursFromNow(24) }));
+  });
+
+  it('refuses every other write to an expired room too, expiry or no expiry', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: twoPlayers, expiresAt: hoursFromNow(-1) });
+
+    await assertFails(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        'words.w0.guessedByPlayerId': OTHER_PLAYER,
+        expiresAt: hoursFromNow(24),
+      }),
+    );
+  });
+
   it('refuses a status the game does not know', async () => {
     await testEnv.clearFirestore();
     await seedRoom();

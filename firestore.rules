@@ -30,11 +30,23 @@ service cloud.firestore {
 
     // A room must expire, must not be born already expired (a badly skewed
     // client clock would have the TTL policy delete it immediately), and must
-    // not outlive the 24-hour lifetime by any meaningful margin.
+    // not outlive the 24-hour lifetime by any meaningful margin. Every update
+    // pushes this value forward, which is how a game that runs long stays
+    // playable — see docs/decisions/0013-keeping-a-room-alive-on-every-write.md.
     function expiresWithinLifetime(room) {
       return room.expiresAt is timestamp
         && room.expiresAt > request.time
         && room.expiresAt < request.time + duration.value(25, 'h');
+    }
+
+    // A room whose time ran out stays out. Since every update now carries a
+    // fresh expiry, checking only the value being written would let any client
+    // revive a room the TTL policy has already been told to collect — and it
+    // may collect it at any moment, so the game resumed in it would disappear
+    // mid-word. The room screen refuses the same thing on its side, showing
+    // whoever opens the link that the room has expired.
+    function isStillAlive(room) {
+      return room.expiresAt > request.time;
     }
 
     // A room is playable by 2-4 players; the owner alone is in it at creation.
@@ -109,6 +121,7 @@ service cloud.firestore {
         && after.createdAt == before.createdAt
         && after.words.size() == before.words.size()
         && hasRoomForPlayers(after)
+        && isStillAlive(before)
         && expiresWithinLifetime(after);
     }
 

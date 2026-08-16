@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import type { MillisecondTimestamp, ReadableRoom } from './room-access';
 import {
   awaitsCompletion,
-  COMPLETION_UPDATE,
+  buildCompletionUpdate,
   isEveryWordGuessed,
   isGameFinished,
 } from './room-completion';
-import type { RoomStatus, RoomWordState } from './room-document';
+import { ROOM_LIFETIME_MS, type RoomStatus, type RoomWordState } from './room-document';
 
 const at = (millis: number): MillisecondTimestamp => ({ toMillis: () => millis });
 
@@ -152,8 +152,22 @@ describe('isGameFinished', () => {
   });
 });
 
-describe('COMPLETION_UPDATE', () => {
-  it('writes the finished status and nothing else', () => {
-    expect(COMPLETION_UPDATE).toEqual({ status: 'completed' });
+describe('buildCompletionUpdate', () => {
+  const CLOSED_AT = new Date('2026-01-02T09:00:00.000Z');
+
+  it('writes the finished status and nothing else about the game', () => {
+    expect(buildCompletionUpdate(CLOSED_AT)).toMatchObject({ status: 'completed' });
+    expect(
+      Object.keys(buildCompletionUpdate(CLOSED_AT)).filter((key) => key !== 'expiresAt'),
+    ).toEqual(['status']);
+  });
+
+  it('keeps the finished room alive long enough to be read back', () => {
+    // A finished game is still opened by its players — and by the rules'
+    // reckoning a room past its expiry refuses every write, so closing one
+    // without postponing it would be the last write it ever took.
+    expect(buildCompletionUpdate(CLOSED_AT).expiresAt).toEqual(
+      new Date(CLOSED_AT.getTime() + ROOM_LIFETIME_MS),
+    );
   });
 });
