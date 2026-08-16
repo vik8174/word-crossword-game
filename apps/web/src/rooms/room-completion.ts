@@ -1,5 +1,5 @@
 import type { ReadableRoom } from './room-access';
-import { isWordSolved, wordIdAt } from './room-document';
+import { buildRoomUpdate, isWordSolved, type RoomUpdate, wordIdAt } from './room-document';
 
 /**
  * When a game is over, and who says so.
@@ -18,8 +18,23 @@ import { isWordSolved, wordIdAt } from './room-document';
  * who wrote it (see `docs/decisions/0012-ending-a-game-from-the-received-state.md`).
  */
 
-/** The one field a finished game changes. Identical from whichever client writes it. */
-export const COMPLETION_UPDATE: Readonly<Record<string, unknown>> = { status: 'completed' };
+/**
+ * The update that closes a game.
+ *
+ * `status: 'completed'` is the whole of it, and it is the same value from
+ * whichever client writes it — which is what makes several of them writing it
+ * within the same second harmless. The expiry that travels with it (see
+ * {@link buildRoomUpdate}) differs between those clients by milliseconds, and
+ * the last one to land wins by the same margin.
+ *
+ * @param now - The moment the game was closed; the room's new expiry follows from it
+ * @returns Field and value for a single `updateDoc` call
+ *
+ * @example
+ * buildCompletionUpdate(new Date());
+ */
+export const buildCompletionUpdate = (now: Date): RoomUpdate =>
+  buildRoomUpdate({ status: 'completed' }, now);
 
 /**
  * Whether every word of the crossword has been answered.
@@ -43,7 +58,7 @@ export const isEveryWordGuessed = (room: ReadableRoom): boolean =>
  *
  * A room in the lobby has nothing answered and a room already `completed` has
  * nothing left to write, so only a game in progress can ask for this. The write
- * itself is {@link COMPLETION_UPDATE}.
+ * itself is {@link buildCompletionUpdate}.
  *
  * @param room - The room document as read from Firestore
  * @returns `true` when the board is full and the status has yet to catch up

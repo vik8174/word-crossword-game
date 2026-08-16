@@ -3,7 +3,7 @@ import { addDoc, collection, doc, onSnapshot, updateDoc } from 'firebase/firesto
 import type { CrosswordLayout } from 'shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ROOMS_COLLECTION, type RoomDocument } from './room-document';
+import { ROOM_LIFETIME_MS, ROOMS_COLLECTION, type RoomDocument } from './room-document';
 import {
   completeGame,
   createRoom,
@@ -81,6 +81,21 @@ const subscribeAndCapture = (subscriber: {
   ];
 
   return { onNext, onError };
+};
+
+/** Every update Firestore was handed, in the order they were written. */
+const writtenUpdates = (): Record<string, unknown>[] =>
+  vi.mocked(updateDoc).mock.calls.map(([, update]) => update as unknown as Record<string, unknown>);
+
+/** One of those updates, failing loudly rather than asserting against nothing. */
+const writtenUpdate = (index = 0): Record<string, unknown> => {
+  const update = writtenUpdates()[index];
+
+  if (update === undefined) {
+    throw new Error(`Firestore was handed no update number ${index}.`);
+  }
+
+  return update;
 };
 
 beforeEach(() => {
@@ -200,9 +215,12 @@ describe('joinRoom', () => {
     await joinRoom({ roomId: 'room-1', playerId: 'guest-uid', nickname: 'Bob' });
 
     expect(doc).toHaveBeenCalledWith(expect.anything(), ROOMS_COLLECTION, 'room-1');
-    expect(updateDoc).toHaveBeenCalledWith(ROOM_REFERENCE, {
-      'players.guest-uid': { nickname: 'Bob', joinedAt: expect.any(Date) },
-    });
+    expect(updateDoc).toHaveBeenCalledWith(
+      ROOM_REFERENCE,
+      expect.objectContaining({
+        'players.guest-uid': { nickname: 'Bob', joinedAt: expect.any(Date) },
+      }),
+    );
   });
 
   it('lets a refused join reach the caller instead of pretending the player is in', async () => {
@@ -237,15 +255,9 @@ const roomToStart = (playerIds: readonly string[]): RoomDocument =>
 const start = (playerIds: readonly string[]) =>
   startGame({ roomId: 'room-1', room: roomToStart(playerIds) });
 
-/** The assignment the given `updateDoc` call wrote, word by word. */
-const writtenAssignment = () => {
-  const [, update] = vi.mocked(updateDoc).mock.calls[0] as unknown as [
-    unknown,
-    Record<string, unknown>,
-  ];
-
-  return ['w0', 'w1', 'w2'].map((id) => update[`words.${id}.hiddenFromPlayerId`]);
-};
+/** The assignment the first `updateDoc` call wrote, word by word. */
+const writtenAssignment = () =>
+  ['w0', 'w1', 'w2'].map((id) => writtenUpdate()[`words.${id}.hiddenFromPlayerId`]);
 
 describe('startGame', () => {
   it('opens the game for guessing', async () => {
@@ -291,9 +303,10 @@ describe('recordGuess', () => {
     await record();
 
     expect(doc).toHaveBeenCalledWith(expect.anything(), ROOMS_COLLECTION, 'room-1');
-    expect(updateDoc).toHaveBeenCalledExactlyOnceWith(ROOM_REFERENCE, {
-      'words.w2.guessedByPlayerId': 'guest-uid',
-    });
+    expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
+      ROOM_REFERENCE,
+      expect.objectContaining({ 'words.w2.guessedByPlayerId': 'guest-uid' }),
+    );
   });
 
   it('lets a refused write reach the caller instead of losing the answer quietly', async () => {
@@ -308,23 +321,58 @@ describe('completeGame', () => {
     await completeGame('room-1');
 
     expect(doc).toHaveBeenCalledWith(expect.anything(), ROOMS_COLLECTION, 'room-1');
-    expect(updateDoc).toHaveBeenCalledExactlyOnceWith(ROOM_REFERENCE, { status: 'completed' });
+    expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
+      ROOM_REFERENCE,
+      expect.objectContaining({ status: 'completed' }),
+    );
   });
 
-  it('writes the same thing however many clients call it', async () => {
+  it('says the same thing about the game however many clients call it', async () => {
     // Every client that sees a full board closes the game, so the write has to
-    // be one several of them can make at once without the room noticing.
+    // be one several of them can make at once without the room noticing. Their
+    // expiries differ by the milliseconds between the calls, and the last one
+    // to land wins by that much.
     await completeGame('room-1');
     await completeGame('room-1');
 
-    const updates = vi.mocked(updateDoc).mock.calls.map(([, update]) => update);
+    const statuses = writtenUpdates().map((update) => update.status);
 
-    expect(updates).toEqual([{ status: 'completed' }, { status: 'completed' }]);
+    expect(statuses).toEqual(['completed', 'completed']);
   });
 
   it('lets a refused write reach the caller instead of leaving the game half-closed', async () => {
     vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
 
     await expect(completeGame('room-1')).rejects.toThrow(/permissions/i);
+  });
+});
+
+describe('keeping a room alive', () => {
+  // The security rules check `expiresAt` on every update, so a room whose
+  // expiry stopped moving stops taking writes the moment its 24 hours run out —
+  // a game played across a day would die in the middle of itself. Every write
+  // this module makes is therefore also a write that postpones the room.
+  const writes: readonly [string, () => Promise<void>][] = [
+    [
+      'a player joining',
+      () => joinRoom({ roomId: 'room-1', playerId: 'guest-uid', nickname: 'Bob' }),
+    ],
+    ['the game starting', () => start(['owner-uid', 'guest-uid'])],
+    [
+      'a word being answered',
+      () => recordGuess({ roomId: 'room-1', playerId: 'guest-uid', wordId: 'w2' }),
+    ],
+    ['the game being closed', () => completeGame('room-1')],
+  ];
+
+  it.each(writes)('pushes the expiry forward when %s', async (_description, write) => {
+    const before = Date.now();
+
+    await write();
+
+    const expiresAt = writtenUpdate().expiresAt;
+
+    expect(expiresAt).toBeInstanceOf(Date);
+    expect((expiresAt as Date).getTime()).toBeGreaterThanOrEqual(before + ROOM_LIFETIME_MS);
   });
 });

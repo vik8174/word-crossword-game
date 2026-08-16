@@ -10,15 +10,34 @@ import {
 import { assignWords, type CrosswordLayout } from 'shared';
 
 import { auth, db } from '../firebase/config';
-import { COMPLETION_UPDATE } from './room-completion';
+import { buildCompletionUpdate } from './room-completion';
 import {
   buildGuessUpdate,
+  buildJoinUpdate,
   buildRoomDocument,
   buildStartGameUpdate,
   parseRoomDocument,
   ROOMS_COLLECTION,
   type RoomDocument,
+  type RoomUpdate,
 } from './room-document';
+
+/**
+ * Writes one update to one room — the only path from this module to an existing
+ * room document.
+ *
+ * It takes a {@link RoomUpdate} and nothing else, and only the builders in
+ * `room-document.ts` produce one. That is what keeps the room's expiry moving:
+ * a new kind of write cannot be added here without going through a builder that
+ * postpones it, and a room whose expiry stopped moving would start refusing
+ * every write the moment its 24 hours ran out (issue #9).
+ *
+ * @param roomId - Id of the room being written to
+ * @param update - What to write, from one of the `build*Update` functions
+ * @throws Error from Firebase when the write is rejected
+ */
+const writeToRoom = (roomId: string, update: RoomUpdate): Promise<void> =>
+  updateDoc(doc(db, ROOMS_COLLECTION, roomId), update);
 
 /** Everything the caller supplies to open a new room. */
 export interface CreateRoomInput {
@@ -128,9 +147,7 @@ export interface JoinRoomInput {
  * await joinRoom({ roomId, playerId, nickname: 'Bob' });
  */
 export const joinRoom = async ({ roomId, playerId, nickname }: JoinRoomInput): Promise<void> => {
-  await updateDoc(doc(db, ROOMS_COLLECTION, roomId), {
-    [`players.${playerId}`]: { nickname, joinedAt: new Date() },
-  });
+  await writeToRoom(roomId, buildJoinUpdate(playerId, nickname, new Date()));
 };
 
 /** The room to start, as its owner currently sees it. */
@@ -162,7 +179,7 @@ export const startGame = async ({ roomId, room }: StartGameInput): Promise<void>
     playerIds: Object.keys(room.players),
   });
 
-  await updateDoc(doc(db, ROOMS_COLLECTION, roomId), buildStartGameUpdate(assignment));
+  await writeToRoom(roomId, buildStartGameUpdate(assignment, new Date()));
 };
 
 /** A word one player has just answered. */
@@ -195,7 +212,7 @@ export const recordGuess = async ({
   playerId,
   wordId,
 }: RecordGuessInput): Promise<void> => {
-  await updateDoc(doc(db, ROOMS_COLLECTION, roomId), buildGuessUpdate(wordId, playerId));
+  await writeToRoom(roomId, buildGuessUpdate(wordId, playerId, new Date()));
 };
 
 /**
@@ -215,5 +232,5 @@ export const recordGuess = async ({
  * await completeGame('room-1');
  */
 export const completeGame = async (roomId: string): Promise<void> => {
-  await updateDoc(doc(db, ROOMS_COLLECTION, roomId), COMPLETION_UPDATE);
+  await writeToRoom(roomId, buildCompletionUpdate(new Date()));
 };

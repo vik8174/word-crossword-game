@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildGuessUpdate,
+  buildJoinUpdate,
   buildRoomDocument,
+  buildRoomUpdate,
   buildStartGameUpdate,
   parseRoomDocument,
   ROOM_LIFETIME_MS,
@@ -11,6 +13,20 @@ import {
 } from './room-document';
 
 const CREATED_AT = new Date('2026-01-01T10:00:00.000Z');
+
+/** The moment every update in this file is made at. */
+const NOW = new Date('2026-01-02T09:00:00.000Z');
+
+/** How far into the future an update pushed the room's expiry. */
+const expiryOf = (update: Readonly<Record<string, unknown>>) => {
+  const expiresAt = update.expiresAt;
+
+  if (!(expiresAt instanceof Date)) {
+    throw new Error(`This update carries no expiry: ${JSON.stringify(update)}`);
+  }
+
+  return expiresAt.getTime() - NOW.getTime();
+};
 
 /** Two crossing words, one word the generator could not place. */
 const LAYOUT: CrosswordLayout = {
@@ -105,15 +121,56 @@ describe('buildRoomDocument', () => {
   });
 });
 
+describe('buildRoomUpdate', () => {
+  it('writes the fields it was given', () => {
+    expect(buildRoomUpdate({ status: 'completed' }, NOW)).toMatchObject({ status: 'completed' });
+  });
+
+  it('gives the room another full lifetime from the moment of the write', () => {
+    expect(expiryOf(buildRoomUpdate({ status: 'completed' }, NOW))).toBe(ROOM_LIFETIME_MS);
+  });
+
+  it('measures that lifetime from now, not from when the room was created', () => {
+    const later = new Date(NOW.getTime() + ROOM_LIFETIME_MS);
+    const expiresAt = buildRoomUpdate({}, later).expiresAt;
+
+    expect(expiresAt).toEqual(new Date(later.getTime() + ROOM_LIFETIME_MS));
+  });
+
+  it('refuses to let a caller decide the expiry itself', () => {
+    // A write that sets its own `expiresAt` is a room whose life no longer
+    // follows from being played, which is the one thing this must not allow.
+    const forged = new Date('2020-01-01T00:00:00.000Z');
+
+    expect(expiryOf(buildRoomUpdate({ expiresAt: forged }, NOW))).toBe(ROOM_LIFETIME_MS);
+  });
+});
+
+describe('buildJoinUpdate', () => {
+  const join = () => buildJoinUpdate('bob-uid', 'Bob', NOW);
+
+  it('adds only the joining player, leaving everyone else in place', () => {
+    // Writing the `players` map itself would replace it wholesale, and two
+    // players arriving in the same second would lose one of the two entries.
+    expect(join()).toMatchObject({ 'players.bob-uid': { nickname: 'Bob', joinedAt: NOW } });
+    expect(Object.keys(join())).not.toContain('players');
+  });
+
+  it('keeps the room alive, because arriving is playing', () => {
+    expect(expiryOf(join())).toBe(ROOM_LIFETIME_MS);
+  });
+});
+
 describe('buildStartGameUpdate', () => {
   const ASSIGNMENT = ['bob-uid', 'alice-uid', 'bob-uid'];
+  const startGame = () => buildStartGameUpdate(ASSIGNMENT, NOW);
 
   it('opens the game for guessing', () => {
-    expect(buildStartGameUpdate(ASSIGNMENT).status).toBe('playing');
+    expect(startGame().status).toBe('playing');
   });
 
   it('hides each word from the player the assignment put on it', () => {
-    expect(buildStartGameUpdate(ASSIGNMENT)).toMatchObject({
+    expect(startGame()).toMatchObject({
       [`words.${wordIdAt(0)}.hiddenFromPlayerId`]: 'bob-uid',
       [`words.${wordIdAt(1)}.hiddenFromPlayerId`]: 'alice-uid',
       [`words.${wordIdAt(2)}.hiddenFromPlayerId`]: 'bob-uid',
@@ -124,10 +181,10 @@ describe('buildStartGameUpdate', () => {
     // Writing the `words` map itself would replace it wholesale; the rules
     // refuse an update that changes which words a room has, and a player
     // guessing at that moment would lose their write.
-    const fields = Object.keys(buildStartGameUpdate(ASSIGNMENT));
+    const fields = Object.keys(startGame());
 
     expect(fields).not.toContain('words');
-    expect(fields.filter((field) => field !== 'status')).toEqual([
+    expect(fields.filter((field) => field !== 'status' && field !== 'expiresAt')).toEqual([
       `words.${wordIdAt(0)}.hiddenFromPlayerId`,
       `words.${wordIdAt(1)}.hiddenFromPlayerId`,
       `words.${wordIdAt(2)}.hiddenFromPlayerId`,
@@ -135,7 +192,7 @@ describe('buildStartGameUpdate', () => {
   });
 
   it('touches nothing the room was created with', () => {
-    const fields = Object.keys(buildStartGameUpdate(ASSIGNMENT));
+    const fields = Object.keys(startGame());
 
     expect(fields).not.toContain('layout');
     expect(fields).not.toContain('ownerId');
@@ -143,29 +200,37 @@ describe('buildStartGameUpdate', () => {
     expect(fields).not.toContain('players');
   });
 
+  it('keeps the room alive, because starting is playing', () => {
+    expect(expiryOf(startGame())).toBe(ROOM_LIFETIME_MS);
+  });
+
   it('refuses to start a game nobody was given a word in', () => {
-    expect(() => buildStartGameUpdate([])).toThrow(/no word was assigned/i);
+    expect(() => buildStartGameUpdate([], NOW)).toThrow(/no word was assigned/i);
   });
 });
 
 describe('buildGuessUpdate', () => {
+  const guess = (index = 3) => buildGuessUpdate(wordIdAt(index), 'bob-uid', NOW);
+
   it('records who answered the word, and touches nothing else', () => {
-    expect(buildGuessUpdate(wordIdAt(3), 'bob-uid')).toEqual({
-      'words.w3.guessedByPlayerId': 'bob-uid',
-    });
+    expect(guess()).toMatchObject({ 'words.w3.guessedByPlayerId': 'bob-uid' });
   });
 
   it('leaves the neighbouring words alone, so two players can answer at once', () => {
     // Writing the `words` map itself would replace it wholesale: the rules
     // refuse an update that changes which words a room has, and whoever
     // answered another word in the same second would lose their write.
-    const fields = Object.keys(buildGuessUpdate(wordIdAt(0), 'bob-uid'));
+    const fields = Object.keys(guess(0));
 
-    expect(fields).toEqual(['words.w0.guessedByPlayerId']);
+    expect(fields.filter((field) => field !== 'expiresAt')).toEqual(['words.w0.guessedByPlayerId']);
+  });
+
+  it('keeps the room alive, because answering is playing', () => {
+    expect(expiryOf(guess(0))).toBe(ROOM_LIFETIME_MS);
   });
 
   it('leaves finishing the game to the ticket that owns it', () => {
-    expect(Object.keys(buildGuessUpdate(wordIdAt(0), 'bob-uid'))).not.toContain('status');
+    expect(Object.keys(guess(0))).not.toContain('status');
   });
 });
 
