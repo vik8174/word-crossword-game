@@ -17,6 +17,7 @@ export default defineConfig({
       VITE_FIREBASE_APP_ID: '1:000000000000:web:0000000000000000000000',
       VITE_FIREBASE_MEASUREMENT_ID: 'G-TESTTESTTEST',
       VITE_SENTRY_DSN: 'https://test@o0.ingest.sentry.io/0',
+      VITE_SENTRY_ENVIRONMENT: 'test',
     },
     coverage: {
       provider: 'v8',

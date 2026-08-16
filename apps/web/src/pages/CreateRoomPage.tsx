@@ -8,6 +8,7 @@ import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm } from '../components/WordListForm';
 import { normalizeNickname } from '../rooms/nickname';
 import { createRoom } from '../rooms/room-service';
+import { logGameEvent } from '../telemetry/analytics';
 
 /**
  * Shown when no two words share a letter. Different from words being dropped:
@@ -55,6 +56,11 @@ export const CreateRoomPage = () => {
 
     try {
       const roomId = await createRoom({ layout, ownerNickname: normalizeNickname(nickname) });
+
+      // After the write came back, so a room that was never created is never
+      // counted as one. The size of the crossword travels with it; the id and
+      // the words do not, and could not — see `telemetry/analytics.ts`.
+      void logGameEvent('room_created', { word_count: layout.placedWords.length });
 
       setCreation({ phase: 'created', roomId });
     } catch (error) {

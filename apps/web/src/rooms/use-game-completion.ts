@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 
+import { logGameEvent } from '../telemetry/analytics';
 import { awaitsCompletion } from './room-completion';
 import type { RoomDocument } from './room-document';
 import { completeGame } from './room-service';
@@ -20,6 +21,9 @@ import { completeGame } from './room-service';
  * tried again, because a room stuck in `playing` with a full grid is a game
  * nobody can finish — and the next snapshot is what tries it.
  *
+ * A finished game is also the moment `game_completed` is reported, for the same
+ * reason it is written here: this is where a game is known to have ended.
+ *
  * @param roomId - Id of the room being followed
  * @param room - The room as it last arrived, or `null` when there is none
  *
@@ -38,12 +42,26 @@ export const useGameCompletion = (roomId: string, room: RoomDocument | null): vo
 
     isWriting.current = true;
 
-    completeGame(roomId).catch((error: unknown) => {
-      // Nothing is said to the player: the game is over on their screen either
-      // way — every word is in the grid — and any other client in the room, or
-      // this one on its next snapshot, still closes it.
-      console.error('Closing the finished game failed', error);
-      isWriting.current = false;
-    });
+    completeGame(roomId)
+      .then(() => {
+        // Reported by whichever client closed the game, which is not
+        // necessarily one client: several of them can see the full board at
+        // once and all write the same status, so a game can be counted more
+        // than once (`docs/decisions/0012-ending-a-game-from-the-received-state.md`).
+        // Nothing without a backend can make it exactly one, and the two
+        // counts it does report — how big the crossword was and how many
+        // played it — say nothing about the room either way.
+        void logGameEvent('game_completed', {
+          word_count: room.layout.placedWords.length,
+          player_count: Object.keys(room.players).length,
+        });
+      })
+      .catch((error: unknown) => {
+        // Nothing is said to the player: the game is over on their screen either
+        // way — every word is in the grid — and any other client in the room, or
+        // this one on its next snapshot, still closes it.
+        console.error('Closing the finished game failed', error);
+        isWriting.current = false;
+      });
   }, [room, roomId]);
 };

@@ -14,6 +14,7 @@ import type { RoomDocument } from '../rooms/room-document';
 import { joinRoom, recordGuess, startGame } from '../rooms/room-service';
 import { useGameCompletion } from '../rooms/use-game-completion';
 import { useRoomConnection } from '../rooms/use-room-connection';
+import { logGameEvent } from '../telemetry/analytics';
 
 const JOIN_FAILED_MESSAGE =
   'Could not join the game. Check your connection and try again — the room is still there.';
@@ -54,6 +55,12 @@ const Room = ({ roomId }: { readonly roomId: string }) => {
 
     try {
       await joinRoom({ roomId, playerId, nickname: normalizeNickname(rawNickname) });
+
+      // Only a player who is really in the room, and only the first time: this
+      // form is shown to somebody the room does not hold yet, so a player
+      // reopening their own link never reaches it. The nickname they chose is
+      // not part of the event, and could not be — see `telemetry/analytics.ts`.
+      void logGameEvent('player_joined');
     } catch (error) {
       // "Missing or insufficient permissions" says nothing to a player, so they
       // get a plain message and the details go to the console.
