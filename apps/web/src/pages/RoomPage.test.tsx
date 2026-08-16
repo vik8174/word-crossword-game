@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { type Analytics, initializeAnalytics, isSupported, logEvent } from 'firebase/analytics';
 import { signInAnonymously } from 'firebase/auth';
 import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -22,8 +23,21 @@ vi.mock('firebase/firestore', () => ({
   onSnapshot: vi.fn(),
   updateDoc: vi.fn(),
 }));
+vi.mock('firebase/analytics', () => ({
+  initializeAnalytics: vi.fn(),
+  isSupported: vi.fn(),
+  logEvent: vi.fn(),
+  setDefaultEventParameters: vi.fn(),
+}));
 
 const HOUR_MS = 60 * 60 * 1000;
+
+/** Stands in for the SDK's `Analytics` handle, which this app never inspects. */
+const FAKE_ANALYTICS = { app: 'fake-analytics' } as unknown as Analytics;
+
+/** Every analytics event reported so far, as name and parameters. */
+const reportedEvents = () =>
+  vi.mocked(logEvent).mock.calls.map(([, name, params]) => ({ name, params }));
 
 const timestamp = (millis: number) => ({ toMillis: () => millis });
 
@@ -158,6 +172,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'guest-uid' } } as never);
   vi.mocked(updateDoc).mockResolvedValue(undefined);
+  vi.mocked(isSupported).mockResolvedValue(true);
+  vi.mocked(initializeAnalytics).mockReturnValue(FAKE_ANALYTICS);
   vi.mocked(onSnapshot).mockImplementation(((
     _reference: unknown,
     onNext: typeof emitRoom,
@@ -283,6 +299,29 @@ describe('RoomPage', () => {
 
       expect(await screen.findByText(/could not join the game/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /join the game/i })).toBeEnabled();
+    });
+
+    it('reports a player who really got in, and never the name they got in under', async () => {
+      await openRoom();
+
+      joinAs('Bob');
+
+      await waitFor(() => {
+        expect(reportedEvents()).toEqual([{ name: 'player_joined', params: {} }]);
+      });
+      expect(JSON.stringify(reportedEvents())).not.toContain('Bob');
+      expect(JSON.stringify(reportedEvents())).not.toContain('room-1');
+    });
+
+    it('reports nothing when the join was refused', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+      await openRoom();
+
+      joinAs('Bob');
+
+      await screen.findByText(/could not join the game/i);
+      expect(reportedEvents()).toEqual([]);
     });
   });
 
@@ -856,6 +895,32 @@ describe('RoomPage', () => {
       await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
       expect(updateDoc).not.toHaveBeenCalled();
+    });
+
+    it('reports a finished game by its size and by how many played it', async () => {
+      await openRoom(withWords({ w0: catAnswered, w1: carOpen }));
+
+      await emit(withWords({ w0: catAnswered, w1: carAnswered }));
+
+      await waitFor(() => {
+        expect(reportedEvents()).toEqual([
+          { name: 'game_completed', params: { word_count: 2, player_count: 2 } },
+        ]);
+      });
+      expect(JSON.stringify(reportedEvents())).not.toContain('room-1');
+      // The words themselves are in the room document this screen is holding.
+      expect(JSON.stringify(reportedEvents())).not.toContain('cat');
+    });
+
+    it('reports nothing when closing the game was refused', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+      await openRoom(withWords({ w0: catAnswered, w1: carOpen }));
+
+      await emit(withWords({ w0: catAnswered, w1: carAnswered }));
+
+      await waitFor(() => expect(updateDoc).toHaveBeenCalled());
+      expect(reportedEvents()).toEqual([]);
     });
 
     it('shows the finished game to a player who answered nothing, without a reload', async () => {

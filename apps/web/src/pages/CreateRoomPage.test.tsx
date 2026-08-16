@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { logEvent } from 'firebase/analytics';
 import { signInAnonymously } from 'firebase/auth';
 import { addDoc } from 'firebase/firestore';
 import { MemoryRouter } from 'react-router-dom';
@@ -19,6 +20,12 @@ vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(() => ({ name: 'firestore' })),
   collection: vi.fn(() => ({ path: 'rooms' })),
   addDoc: vi.fn(),
+}));
+vi.mock('firebase/analytics', () => ({
+  initializeAnalytics: vi.fn(() => ({ app: 'fake-analytics' })),
+  isSupported: vi.fn(() => Promise.resolve(true)),
+  logEvent: vi.fn(),
+  setDefaultEventParameters: vi.fn(),
 }));
 
 // `generateCrossword` runs for real everywhere except the one test that needs a
@@ -62,6 +69,10 @@ const fillInValidGame = (words = TEN_WORDS) => {
 };
 
 const createButton = () => screen.getByRole('button', { name: /create room/i });
+
+/** Every analytics event reported so far, as name and parameters. */
+const reportedEvents = () =>
+  vi.mocked(logEvent).mock.calls.map(([, name, params]) => ({ name, params }));
 
 beforeEach(() => {
   vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
@@ -159,6 +170,38 @@ describe('CreateRoomPage', () => {
 
       expect(await screen.findByText(/could not be created/i)).toBeInTheDocument();
       expect(screen.queryByLabelText(/room link/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('what it reports', () => {
+    it('reports a created room by its size, and by nothing else about it', async () => {
+      renderPage();
+      fillInValidGame();
+
+      fireEvent.click(createButton());
+      await screen.findByLabelText(/room link/i);
+
+      await waitFor(() => {
+        expect(reportedEvents()).toEqual([
+          { name: 'room_created', params: { word_count: expect.any(Number) } },
+        ]);
+      });
+      // The two things this screen knows and must not tell: which room it is,
+      // and who its owner said they are.
+      expect(JSON.stringify(reportedEvents())).not.toContain('room-1');
+      expect(JSON.stringify(reportedEvents())).not.toContain('Vik');
+    });
+
+    it('reports nothing when the room was never written', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(addDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+      renderPage();
+      fillInValidGame();
+
+      fireEvent.click(createButton());
+
+      await screen.findByText(/could not be created/i);
+      expect(reportedEvents()).toEqual([]);
     });
   });
 

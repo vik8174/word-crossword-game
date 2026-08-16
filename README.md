@@ -36,9 +36,18 @@ cp apps/web/.env.example apps/web/.env
 ```
 
 - `VITE_FIREBASE_*` — from Firebase Console > Project settings > General > Your apps > SDK setup
-- `VITE_SENTRY_DSN` — from Sentry > Project Settings > Client Keys (DSN)
+- `VITE_SENTRY_DSN` — from Sentry > Project Settings > Client Keys (DSN). Left empty, error reporting does not start at all, which is what a local checkout wants
+- `VITE_SENTRY_ENVIRONMENT` — which deployment this build is (`stage` today). Not derived from the build mode: stage and production are both built as `production`, so nothing else tells them apart
 
 `apps/web/.env` is git-ignored — never commit real values.
+
+## Telemetry
+
+Firebase Analytics reports three moments — a room created, a player joined, a game finished — plus a page view per screen. Sentry reports JavaScript errors and unhandled promise rejections.
+
+Neither is allowed to name a room. The id in `/room/<id>` is the whole access control around a game — anyone holding it reads the room document, words included — so Firebase's automatic page view is switched off (it carries the address bar verbatim), analytics events are typed to carry numbers and nothing else, and every Sentry event is redacted on its way out. Browser tracing and session replay are deliberately not switched on. See [ADR 0014](docs/decisions/0014-telemetry-without-room-ids.md).
+
+Stack traces in Sentry are minified: uploading source maps needs a build plugin and an auth token in CI, and is its own piece of work.
 
 ## Firestore
 

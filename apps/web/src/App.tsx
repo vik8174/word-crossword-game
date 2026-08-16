@@ -6,7 +6,27 @@ import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { RoomPage } from './pages/RoomPage';
 import { ROOM_ROUTE_PATTERN } from './rooms/room-link';
+import { usePageView } from './telemetry/use-page-view';
 import { theme } from './theme';
+
+/**
+ * The routes, and the reporting of which of them is open.
+ *
+ * A component of its own because `usePageView` reads the current route, which
+ * only something inside the router can do.
+ */
+const RoutedPages = () => {
+  usePageView();
+
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/create" element={<CreateRoomPage />} />
+      <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
+      <Route path="*" element={<NotFoundPage />} />
+    </Routes>
+  );
+};
 
 /**
  * App root — wires up the MUI theme and client-side routing.
@@ -20,12 +40,7 @@ export const App = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/create" element={<CreateRoomPage />} />
-          <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+        <RoutedPages />
       </BrowserRouter>
     </ThemeProvider>
   );
