@@ -40,3 +40,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 ### Changed
 
 - All repository documentation and code comments are written in English
+
+### Fixed
+
+- The owner of a freshly created room can walk into it: the panel that hands them the invite link now also offers a link to the room itself, next to the link and its **Copy link** button rather than in place of them. They were a player of their own room all along — creation writes them into its `players` — but nothing on that screen led there, so the only way in was pasting the URL into the address bar by hand. Nothing takes them in on its own: the invitation is usually sent before its owner walks in, so the choice stays theirs ([issue #27](https://github.com/vik8174/word-crossword-game/issues/27))

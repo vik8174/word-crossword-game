@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { signInAnonymously } from 'firebase/auth';
 import { addDoc } from 'firebase/firestore';
+import { MemoryRouter } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword } from 'shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -43,6 +44,14 @@ const EMPTY_LAYOUT: CrosswordLayout = {
   unplacedWords: ['abc'],
 };
 
+/** The created-room panel offers a way into the room, so a router has to be in place. */
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <CreateRoomPage />
+    </MemoryRouter>,
+  );
+
 const fillIn = (label: RegExp, value: string) => {
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
 };
@@ -66,7 +75,7 @@ afterEach(() => {
 describe('CreateRoomPage', () => {
   describe('the word list', () => {
     it('keeps the room locked until the list and the nickname are both usable', () => {
-      render(<CreateRoomPage />);
+      renderPage();
 
       expect(createButton()).toBeDisabled();
 
@@ -78,7 +87,7 @@ describe('CreateRoomPage', () => {
     });
 
     it('says what is wrong with the list while the owner is still typing', () => {
-      render(<CreateRoomPage />);
+      renderPage();
 
       fillIn(/words/i, 'apple, ox, apple');
 
@@ -88,7 +97,7 @@ describe('CreateRoomPage', () => {
     });
 
     it('says nothing about a form nobody has typed into yet', () => {
-      render(<CreateRoomPage />);
+      renderPage();
 
       expect(screen.queryByText(/at least 10 words/i)).not.toBeInTheDocument();
     });
@@ -96,7 +105,7 @@ describe('CreateRoomPage', () => {
 
   describe('creating the room', () => {
     it('hands the owner a link to the room it just created', async () => {
-      render(<CreateRoomPage />);
+      renderPage();
       fillInValidGame();
 
       fireEvent.click(createButton());
@@ -108,7 +117,7 @@ describe('CreateRoomPage', () => {
     });
 
     it('joins the owner to their own room as its first player', async () => {
-      render(<CreateRoomPage />);
+      renderPage();
       fillInValidGame();
 
       fireEvent.click(createButton());
@@ -125,7 +134,7 @@ describe('CreateRoomPage', () => {
     });
 
     it('writes a room whose words are exactly the ones that made it into the grid', async () => {
-      render(<CreateRoomPage />);
+      renderPage();
       fillInValidGame();
 
       fireEvent.click(createButton());
@@ -143,7 +152,7 @@ describe('CreateRoomPage', () => {
     it('tells the owner when the room could not be written, and offers no link', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(addDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
-      render(<CreateRoomPage />);
+      renderPage();
       fillInValidGame();
 
       fireEvent.click(createButton());
@@ -155,7 +164,7 @@ describe('CreateRoomPage', () => {
 
   describe('words that did not fit into the grid', () => {
     it('warns the owner before anything is written', () => {
-      render(<CreateRoomPage />);
+      renderPage();
       fillInValidGame(WORDS_WITH_ONE_THAT_CANNOT_FIT);
 
       fireEvent.click(createButton());
@@ -166,7 +175,7 @@ describe('CreateRoomPage', () => {
     });
 
     it('creates the room once the owner accepts the loss', async () => {
-      render(<CreateRoomPage />);
+      renderPage();
       fillInValidGame(WORDS_WITH_ONE_THAT_CANNOT_FIT);
       fireEvent.click(createButton());
 
@@ -177,7 +186,7 @@ describe('CreateRoomPage', () => {
     });
 
     it('returns to the untouched word list when the owner would rather fix it', () => {
-      render(<CreateRoomPage />);
+      renderPage();
       fillInValidGame(WORDS_WITH_ONE_THAT_CANNOT_FIT);
       fireEvent.click(createButton());
 
@@ -191,7 +200,7 @@ describe('CreateRoomPage', () => {
   describe('a word list no crossword can be built from', () => {
     it('refuses to create the room and explains why', () => {
       vi.mocked(generateCrossword).mockReturnValueOnce(EMPTY_LAYOUT);
-      render(<CreateRoomPage />);
+      renderPage();
       fillInValidGame();
 
       fireEvent.click(createButton());
@@ -202,7 +211,7 @@ describe('CreateRoomPage', () => {
 
     it('drops the complaint as soon as the owner edits the list', async () => {
       vi.mocked(generateCrossword).mockReturnValueOnce(EMPTY_LAYOUT);
-      render(<CreateRoomPage />);
+      renderPage();
       fillInValidGame();
       fireEvent.click(createButton());
 
