@@ -32,7 +32,12 @@ export const PlayerList = ({ players, ownerId, viewerId }: PlayerListProps) => {
   return (
     <section aria-labelledby="players-heading">
       <Typography id="players-heading" variant="h6" component="h2">
-        {`Players (${players.length} of ${MAX_PLAYERS})`}
+        {`Players (${players.length})`}
+      </Typography>
+      {/* The ceiling, said as a ceiling. `N of 4` read as progress towards four,
+          and players waited for a fourth that a game never needed (issue #29). */}
+      <Typography variant="body2" color="text.secondary">
+        {`A room holds up to ${MAX_PLAYERS} players.`}
       </Typography>
 
       <List dense>

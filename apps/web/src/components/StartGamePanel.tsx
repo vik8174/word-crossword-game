@@ -1,8 +1,7 @@
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import { MIN_PLAYERS, wordAssignmentRefusal, type WordAssignmentRefusal } from 'shared';
+import { wordAssignmentRefusal } from 'shared';
 
 interface StartGamePanelProps {
   /** How many players are in the room right now. */
@@ -17,26 +16,19 @@ interface StartGamePanelProps {
   readonly errorMessage?: string;
 }
 
-/** What stands in the way of starting, said to the owner rather than to a caller. */
-const refusalMessage = (
-  refusal: WordAssignmentRefusal,
-  { playerCount, wordCount }: { playerCount: number; wordCount: number },
-): string => {
-  if (refusal === 'too-few-players') {
-    return `A game needs at least ${MIN_PLAYERS} players — share the link, so there is someone to explain the words you cannot see.`;
-  }
-
-  return `This crossword holds ${wordCount} words and the room holds ${playerCount} players, so somebody would have nothing to guess. Play it with fewer people, or start a new game from a longer word list.`;
-};
-
 /**
  * The owner's control over when the game begins.
  *
  * Only the owner sees it: they are the one who knows whether everybody invited
  * has arrived. Starting deals the words out, so it cannot be taken back — and
- * the button is offered only when the deal would actually work, asking
+ * the button is live only when the deal would actually work, asking
  * `wordAssignmentRefusal` the same question `assignWords` asks itself, so the
- * owner is told what is missing instead of pressing into a failure.
+ * owner cannot press into a failure.
+ *
+ * What is missing while it is not live is not said here: the room's status line
+ * says it already, and says it to everybody in the room rather than to the
+ * owner alone (see `lobby-status.ts` and issue #29). Two statements of the same
+ * refusal, one above the other, is how they come to disagree.
  *
  * @param props.playerCount - Players currently in the room
  * @param props.wordCount - Words in the room's crossword
@@ -57,12 +49,6 @@ export const StartGamePanel = ({
 
   return (
     <Stack spacing={2}>
-      {refusal !== null && (
-        <Typography variant="body2" color="text.secondary">
-          {refusalMessage(refusal, { playerCount, wordCount })}
-        </Typography>
-      )}
-
       {errorMessage !== undefined && <Alert severity="error">{errorMessage}</Alert>}
 
       <Button
