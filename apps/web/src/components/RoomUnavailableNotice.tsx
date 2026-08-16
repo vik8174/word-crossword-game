@@ -3,17 +3,7 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { Link as RouterLink } from 'react-router-dom';
 
-/**
- * Why a room cannot be entered:
- * - `missing` — nothing lives at this link, or nothing that is a room
- * - `expired` — the room outlived its 24 hours and refuses every write
- * - `started` — the words are dealt out; the game runs with the players it began with
- * - `finished` — the room is closed; the game it held is over
- * - `full` — four players are already in it
- * - `connection` — the app could not reach Firebase at all
- */
-export type RoomUnavailableReason =
-  'missing' | 'expired' | 'started' | 'finished' | 'full' | 'connection';
+import type { RoomUnavailableReason } from '../rooms/room-screen';
 
 const MESSAGES: Readonly<Record<RoomUnavailableReason, string>> = {
   missing:
