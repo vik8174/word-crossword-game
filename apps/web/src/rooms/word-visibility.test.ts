@@ -210,6 +210,9 @@ describe('gridViewFor', () => {
   const letterAt = (view: ReturnType<typeof gridViewFor>, row: number, col: number) =>
     view.cells.find((cell) => cellKey(cell) === cellKey({ row, col }))?.letter;
 
+  const numberAt = (view: ReturnType<typeof gridViewFor>, row: number, col: number) =>
+    view.cells.find((cell) => cellKey(cell) === cellKey({ row, col }))?.number;
+
   it('draws the whole board, so every player sees the same shape', () => {
     const view = gridViewFor(dealtCrossing(), 'bob-uid');
 
@@ -275,6 +278,26 @@ describe('gridViewFor', () => {
     const room = roomWith(['bob-uid', 'alice-uid'], 'completed', CROSSING_LAYOUT);
 
     expect(gridViewFor(room, 'alice-uid').toGuess).toEqual([]);
+  });
+
+  it('numbers the square a word begins in, with one number for the two that begin together', () => {
+    // `CAT` and `CAR` both start in the top-left square, so it carries a single
+    // number — and no square either word merely runs through carries one.
+    const view = gridViewFor(dealtCrossing(), 'bob-uid');
+
+    expect(numberAt(view, 0, 0)).toBe(1);
+    expect(view.cells.filter((cell) => cell.number !== null)).toHaveLength(1);
+  });
+
+  it('numbers the board the same way on every screen, whatever has been solved', () => {
+    const numbers = (room: ReadableRoom, viewerId: string) =>
+      gridViewFor(room, viewerId).cells.map(({ number }) => number);
+
+    // Derived from the layout, which never changes: not from who is looking,
+    // and not from how far the game has got.
+    expect(numbers(dealtCrossing(['bob-uid']), 'alice-uid')).toEqual(
+      numbers(dealtCrossing(), 'late-uid'),
+    );
   });
 
   it('ignores a guessed-by another client wrote nonsense into', () => {

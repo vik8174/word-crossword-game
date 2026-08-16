@@ -155,6 +155,17 @@ const openRoom = async (room: unknown = storedRoom()) => {
 
 const grid = () => screen.getByRole('group', { name: /crossword grid/i });
 
+/**
+ * What the board says with its numbering taken out — which is to say, the
+ * letters on it and nothing else.
+ *
+ * Every square a word begins in carries a crossword number, drawn in it and
+ * said again for a reader who cannot see it. Neither is a letter of anybody's
+ * word, and neither may hide one: what is left after they are removed is still
+ * asserted in full, so a letter that leaked would still be here.
+ */
+const gridLetters = () => (grid().textContent ?? '').replaceAll(/Number \d+\.|\d/g, '');
+
 /** Puts a letter in one square of the grid, as a player typing would. */
 const typeInto = (row: number, col: number, letter: string) =>
   fireEvent.change(screen.getByLabelText(new RegExp(`row ${row + 1}, column ${col + 1}\\b`, 'i')), {
@@ -372,7 +383,7 @@ describe('RoomPage', () => {
       await openRoom(roomWithBoth);
 
       expect(grid()).toBeInTheDocument();
-      expect(grid().textContent).toBe('');
+      expect(gridLetters()).toBe('');
       expect(screen.queryByText(/\bcat\b/i)).not.toBeInTheDocument();
     });
   });
@@ -430,7 +441,7 @@ describe('RoomPage', () => {
       );
 
       // Vik answered `car` while Bob was gone; the grid he comes back to says so.
-      expect(grid().textContent).toBe('CAR');
+      expect(gridLetters()).toBe('CAR');
     });
 
     it('gives a player back a game that finished while they were away', async () => {
@@ -611,7 +622,16 @@ describe('RoomPage', () => {
     it('keeps the grid letterless until a word has been answered', async () => {
       await openRoom(assignedRoom);
 
-      expect(grid().textContent).toBe('');
+      expect(gridLetters()).toBe('');
+    });
+
+    it('numbers the board, so a player can say which word they mean', async () => {
+      await openRoom(assignedRoom);
+
+      // `cat` and `car` both begin in the top-left square, and one number
+      // covers the two of them — as it would in a printed crossword.
+      expect(screen.getByLabelText(/number 1, row 1, column 1\b/i)).toBeInTheDocument();
+      expect(grid().textContent).toContain('1');
     });
 
     it('opens the squares of the words a player has to guess, and only those', async () => {
@@ -709,7 +729,7 @@ describe('RoomPage', () => {
 
     it('fills the grid in for a player who answered nothing, without a reload', async () => {
       await openRoom(playing());
-      expect(grid().textContent).toBe('');
+      expect(gridLetters()).toBe('');
 
       await act(async () => {
         emitRoom({
@@ -724,7 +744,7 @@ describe('RoomPage', () => {
 
       // `car` was Vik's to answer, and its letters are now on Bob's board too —
       // including the `C` his own `cat` starts with.
-      expect(grid().textContent).toBe('CAR');
+      expect(gridLetters()).toBe('CAR');
       expect(screen.queryByLabelText(/row 1, column 1\b/i)).not.toBeInTheDocument();
     });
 
@@ -736,7 +756,7 @@ describe('RoomPage', () => {
         }),
       );
 
-      expect(grid().textContent).toBe('CAT');
+      expect(gridLetters()).toBe('CAT');
       expect(screen.queryByLabelText(/a letter of one of your words/i)).not.toBeInTheDocument();
       expect(screen.getByText(/hidden from you.*: 1, of which 1 answered/i)).toBeInTheDocument();
     });

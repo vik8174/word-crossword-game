@@ -1,4 +1,10 @@
-import { checkGuess, type GridPosition, type PlacedWord, type WordOrientation } from 'shared';
+import {
+  checkGuess,
+  type GridPosition,
+  numberCrossword,
+  type PlacedWord,
+  type WordOrientation,
+} from 'shared';
 
 import type { ReadableRoom } from './room-access';
 import { isGameFinished } from './room-completion';
@@ -84,6 +90,13 @@ export type DealtWordView = Extract<PlayerWordView, { kind: 'dealt' }>;
 export interface GridCellView extends GridPosition {
   /** Its letter once a solved word passes through it, `null` while none does. */
   readonly letter: string | null;
+  /**
+   * The crossword number printed in it, `null` unless a word begins here.
+   *
+   * Safe on any screen: it says that a word starts in this square, which the
+   * outlines of the squares already show.
+   */
+  readonly number: number | null;
 }
 
 /**
@@ -235,12 +248,27 @@ const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
   );
 
 /**
+ * The number printed in each square that begins a word, keyed by {@link cellKey}.
+ *
+ * Worked out from the layout on every screen rather than read from the document
+ * (see {@link numberCrossword}), and the same on all of them for the same
+ * reason the board is: the layout is written once, when the room is created.
+ */
+const numberedCellKeys = (room: ReadableRoom): ReadonlyMap<string, number> =>
+  new Map(
+    numberCrossword(room.layout.placedWords).map(({ start, number }) => [cellKey(start), number]),
+  );
+
+/**
  * The crossword as this player's screen may draw it.
  *
  * A square keeps its letter only once a solved word runs through it. Everything
  * else arrives as `null`, so a component that renders whatever it is handed
  * cannot give a word away — including the words it lets this player type into,
  * which come with coordinates and no spelling.
+ *
+ * Its number comes with it, because the numbers are how the players name the
+ * words to each other and every screen must carry the same ones.
  *
  * A closed room hands over nothing to type. In a game that ended the ordinary
  * way this changes nothing — every word is answered, so there is nowhere left
@@ -257,6 +285,7 @@ const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
  */
 export const gridViewFor = (room: ReadableRoom, viewerId: string): GridView => {
   const solved = solvedCellKeys(room);
+  const numbers = numberedCellKeys(room);
   const view = wordViewFor(room, viewerId);
   const isOpenForAnswers = room.status === 'playing';
 
@@ -267,6 +296,7 @@ export const gridViewFor = (room: ReadableRoom, viewerId: string): GridView => {
       row,
       col,
       letter: solved.has(cellKey({ row, col })) ? letter : null,
+      number: numbers.get(cellKey({ row, col })) ?? null,
     })),
     toGuess: view.kind === 'dealt' && isOpenForAnswers ? view.toGuess : [],
   };
