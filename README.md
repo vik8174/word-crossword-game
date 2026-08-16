@@ -51,7 +51,9 @@ pnpm exec firebase deploy --only firestore:rules    # deploy them (project alias
 
 `firebase-tools` is a dev dependency of the repo, so both commands work after `pnpm install` — no global install needed.
 
-Deleting stale rooms relies on a Firestore **TTL policy** on the `expiresAt` field of the `rooms` collection. The app writes the field; the policy itself is enabled once in the Firebase console (Firestore > TTL policies) and is not part of this repository.
+Deleting stale rooms relies on a Firestore **TTL policy** on the `expiresAt` field of the `rooms` collection. The app writes that field and pushes it another 24 hours out on every write to the room, so a room is collected only after a full day in which nobody touched it ([ADR 0013](docs/decisions/0013-keeping-a-room-alive-on-every-write.md)). The policy itself is enabled once by hand in the Google Cloud console (Firestore > TTL policies) and is not part of this repository — **it still has to be created**.
+
+The policy deletes lazily: Firestore's guarantee is deletion within about 24 hours of the expiry, not at the second it passes. A room that has expired but is still in the database is therefore normal, and the app handles it — the room screen explains the expiry to whoever opens the link, and the security rules refuse every write to such a room rather than letting a game resume in one that may vanish at any moment.
 
 ## Hosting
 
