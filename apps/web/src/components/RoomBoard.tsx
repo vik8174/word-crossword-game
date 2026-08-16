@@ -3,9 +3,10 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useMemo } from 'react';
 
+import { lobbyStatusMessage } from '../rooms/lobby-status';
 import { playersInJoinOrder } from '../rooms/room-access';
 import { isGameFinished } from '../rooms/room-completion';
-import type { RoomDocument, RoomStatus } from '../rooms/room-document';
+import type { RoomDocument } from '../rooms/room-document';
 import { finishedWordsOf, gridViewFor, wordViewFor } from '../rooms/word-visibility';
 import { CrosswordGrid } from './CrosswordGrid';
 import { GameCompletedPanel } from './GameCompletedPanel';
@@ -14,14 +15,14 @@ import { PlayerWordsPanel } from './PlayerWordsPanel';
 import { StartGamePanel } from './StartGamePanel';
 
 /**
- * What the room is doing right now, said to a player rather than to a database.
- * A closed room is not in here: it has a panel or a notice of its own, and one
- * line beside either would only say the same thing twice.
+ * Said in a room whose words have been dealt out and is being played.
+ *
+ * The room's other two states have no line of their own here: a lobby says
+ * different things to the owner and to everybody else, so it is put together by
+ * {@link lobbyStatusMessage}, and a closed room has a panel or a notice of its
+ * own, beside which one more line would only say the same thing twice.
  */
-const STATUS_MESSAGES: Readonly<Record<Exclude<RoomStatus, 'completed'>, string>> = {
-  lobby: 'Waiting for the other players. The game starts once everyone is in.',
-  playing: 'The game is on.',
-};
+const PLAYING_MESSAGE = 'The game is on.';
 
 /**
  * Said in a room that is closed without its crossword having been finished.
@@ -109,6 +110,8 @@ export const RoomBoard = ({
   const gridView = useMemo(() => gridViewFor(room, viewerId), [room, viewerId]);
   const status = room.status;
   const isWaitingToStart = status === 'lobby';
+  const isOwner = viewerId === room.ownerId;
+  const wordCount = room.layout.placedWords.length;
   // Two questions, and they come apart in the one case the rules cannot refuse:
   // a room can be closed without its crossword having been finished. What the
   // room is done with follows the status; what may be spelled out follows the
@@ -130,16 +133,18 @@ export const RoomBoard = ({
 
       {!isClosed && (
         <Typography variant="body1" role="status">
-          {STATUS_MESSAGES[status]}
+          {isWaitingToStart
+            ? lobbyStatusMessage({ isOwner, playerCount: players.length, wordCount })
+            : PLAYING_MESSAGE}
         </Typography>
       )}
 
       <PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />
 
-      {isWaitingToStart && viewerId === room.ownerId && (
+      {isWaitingToStart && isOwner && (
         <StartGamePanel
           playerCount={players.length}
-          wordCount={room.layout.placedWords.length}
+          wordCount={wordCount}
           onStart={onStartGame}
           isStarting={isStartingGame}
           errorMessage={startGameError}
@@ -161,7 +166,7 @@ export const RoomBoard = ({
           The crossword
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {gridCaption(room.layout.placedWords.length, isFinished, isClosed)}
+          {gridCaption(wordCount, isFinished, isClosed)}
         </Typography>
 
         <CrosswordGrid view={gridView} onSolved={onSolveWord} />

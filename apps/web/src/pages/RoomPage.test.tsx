@@ -366,7 +366,7 @@ describe('RoomPage', () => {
       await openRoomAsOwner(storedRoom());
 
       expect(startButton()).toBeDisabled();
-      expect(screen.getByText(/needs at least 2 players/i)).toBeInTheDocument();
+      expect(screen.getByText(/this room needs 1 more/i)).toBeInTheDocument();
     });
 
     it('keeps the game shut when the crossword has fewer words than players', async () => {
