@@ -1,0 +1,121 @@
+import { roomAccessFor } from './room-access';
+import { isGameFinished } from './room-completion';
+import type { RoomDocument } from './room-document';
+import type { RoomConnection } from './use-room-connection';
+
+/**
+ * Which screen the room behind a link is showing, decided as a value.
+ *
+ * The room screen has seven of them and they are mutually exclusive, so this
+ * module answers with one — never with a set of flags a caller has to combine.
+ * It is the same reasoning `docs/decisions/0009-room-document-schema.md` applies
+ * to the document itself ("one field with three values, not a set of booleans,
+ * so illegal combinations cannot be expressed"), applied to what is rendered.
+ *
+ * Nothing here reaches for the DOM or for Firebase: it composes what
+ * {@link RoomConnection}, {@link roomAccessFor} and {@link isGameFinished}
+ * already worked out, so the screen a given room shows a given viewer can be
+ * checked with a table and no rendering at all.
+ */
+
+/**
+ * Why a room cannot be entered:
+ * - `missing` — nothing lives at this link, or nothing that is a room
+ * - `expired` — the room outlived its 24 hours and refuses every write
+ * - `started` — the words are dealt out; the game runs with the players it began with
+ * - `finished` — the room is closed; the game it held is over
+ * - `full` — four players are already in it
+ * - `connection` — the app could not reach Firebase at all
+ *
+ * The four in the middle are exactly the refusals {@link roomAccessFor} names,
+ * and {@link roomScreenFor} hands them straight over: a refusal this list has no
+ * wording for stops compiling there rather than reaching a player as a blank
+ * notice.
+ */
+export type RoomUnavailableReason =
+  'missing' | 'expired' | 'started' | 'finished' | 'full' | 'connection';
+
+/**
+ * What the room screen is showing right now:
+ * - `connecting` — signing in and waiting for the first snapshot
+ * - `unavailable` — there is no room to show, and this is why
+ * - `join` — a free seat and a nickname to enter
+ * - `lobby` — in the room, waiting for the owner to deal the words out
+ * - `playing` — the game is on
+ * - `finished` — the crossword was filled in and the room is closed
+ * - `closed-early` — the room is closed with words still unanswered
+ *
+ * The last two are one status apart from nothing: `completed` is written by a
+ * client and the security rules cannot check it against the board, so the two
+ * are told apart by {@link isGameFinished} rather than by the status alone (see
+ * `docs/decisions/0012-ending-a-game-from-the-received-state.md`).
+ */
+export type RoomScreen =
+  | { readonly kind: 'connecting' }
+  | { readonly kind: 'unavailable'; readonly reason: RoomUnavailableReason }
+  | { readonly kind: 'join'; readonly playerId: string }
+  | { readonly kind: 'lobby'; readonly room: RoomDocument; readonly viewerId: string }
+  | { readonly kind: 'playing'; readonly room: RoomDocument; readonly viewerId: string }
+  | { readonly kind: 'finished'; readonly room: RoomDocument; readonly viewerId: string }
+  | { readonly kind: 'closed-early'; readonly room: RoomDocument; readonly viewerId: string };
+
+/** Which of the three screens a room this player is already in has to show. */
+const screenInsideRoom = (room: RoomDocument, viewerId: string): RoomScreen => {
+  switch (room.status) {
+    case 'lobby':
+      return { kind: 'lobby', room, viewerId };
+    case 'playing':
+      return { kind: 'playing', room, viewerId };
+    case 'completed':
+      return isGameFinished(room)
+        ? { kind: 'finished', room, viewerId }
+        : { kind: 'closed-early', room, viewerId };
+  }
+};
+
+/**
+ * The screen this connection is showing this viewer.
+ *
+ * The order is the one the screen has always followed: how far the connection
+ * got comes first, because a room nobody has read yet cannot be judged; then
+ * what this player may do with the room, which is {@link roomAccessFor}'s
+ * question and not one this module re-answers; and only then, for a player who
+ * is in, which phase of the game they are in.
+ *
+ * @param connection - The room as {@link RoomConnection} last reported it
+ * @param now - The moment to judge expiry against
+ * @returns The one screen to render, with what that screen needs and nothing else
+ *
+ * @example
+ * roomScreenFor(connection, new Date()); // { kind: 'lobby', room, viewerId }
+ */
+export const roomScreenFor = (connection: RoomConnection, now: Date): RoomScreen => {
+  if (connection.status === 'connecting') {
+    return { kind: 'connecting' };
+  }
+
+  if (connection.status === 'failed') {
+    return { kind: 'unavailable', reason: 'connection' };
+  }
+
+  if (connection.status === 'missing') {
+    return { kind: 'unavailable', reason: 'missing' };
+  }
+
+  const { room, playerId } = connection;
+  // Judged on every render, and a render follows every snapshot — good enough
+  // for a room whose lifetime is measured in hours.
+  const access = roomAccessFor(room, playerId, now);
+
+  if (access === 'joined') {
+    return screenInsideRoom(room, playerId);
+  }
+
+  if (access === 'joinable') {
+    return { kind: 'join', playerId };
+  }
+
+  // Every refusal `roomAccessFor` can answer with is a reason the notice has
+  // wording for, and this line is where the compiler checks that it stays so.
+  return { kind: 'unavailable', reason: access };
+};

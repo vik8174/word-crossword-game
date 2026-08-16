@@ -2,7 +2,22 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { RoomDocument } from '../rooms/room-document';
-import { RoomBoard } from './RoomBoard';
+import { RoomLobby } from './RoomLobby';
+
+// Firebase is the system boundary. This screen owns the write that starts a
+// game, so the SDK is mocked away; nothing below asks it to write anything.
+vi.mock('firebase/auth', () => ({
+  getAuth: vi.fn(() => ({ name: 'auth' })),
+  signInAnonymously: vi.fn(),
+}));
+vi.mock('firebase/firestore', () => ({
+  getFirestore: vi.fn(() => ({ name: 'firestore' })),
+  collection: vi.fn(),
+  addDoc: vi.fn(),
+  doc: vi.fn(() => ({ path: 'rooms/room-1' })),
+  onSnapshot: vi.fn(),
+  updateDoc: vi.fn(),
+}));
 
 const OWNER_ID = 'owner-uid';
 const GUEST_ID = 'guest-uid';
@@ -55,19 +70,11 @@ const lobbyRoom = ({
     expiresAt: at(1_000_000),
   }) as unknown as RoomDocument;
 
-const renderBoard = (viewerId: string, room: RoomDocument) =>
-  render(
-    <RoomBoard
-      room={room}
-      viewerId={viewerId}
-      onStartGame={vi.fn()}
-      isStartingGame={false}
-      onSolveWord={vi.fn().mockResolvedValue(undefined)}
-    />,
-  );
+const renderLobby = (viewerId: string, room: RoomDocument) =>
+  render(<RoomLobby roomId="room-1" room={room} viewerId={viewerId} />);
 
 /**
- * The room's own line about what it is doing, which the board renders above
+ * The room's own line about what it is doing, which the lobby renders above
  * everything else — the grid below keeps a live region of its own, so the role
  * alone does not name one element.
  */
@@ -75,9 +82,9 @@ const statusLine = (): string => screen.getAllByRole('status')[0]?.textContent ?
 
 const startButton = () => screen.queryByRole('button', { name: /start the game/i });
 
-describe('RoomBoard in a lobby', () => {
+describe('RoomLobby', () => {
   it('tells the owner of a room that cannot start yet what is missing', () => {
-    renderBoard(OWNER_ID, lobbyRoom({ playerCount: 1 }));
+    renderLobby(OWNER_ID, lobbyRoom({ playerCount: 1 }));
 
     expect(statusLine()).toMatch(/needs 1 more\b/);
     expect(statusLine()).toMatch(/share the room link/i);
@@ -85,7 +92,7 @@ describe('RoomBoard in a lobby', () => {
   });
 
   it('stops telling the owner about a wait the moment they can start', () => {
-    renderBoard(OWNER_ID, lobbyRoom({ playerCount: 2 }));
+    renderLobby(OWNER_ID, lobbyRoom({ playerCount: 2 }));
 
     expect(statusLine()).toMatch(/can start now/i);
     expect(statusLine()).not.toMatch(/wait/i);
@@ -95,7 +102,7 @@ describe('RoomBoard in a lobby', () => {
   });
 
   it('tells a guest who starts the game, since they have no control of their own', () => {
-    renderBoard(GUEST_ID, lobbyRoom({ playerCount: 2 }));
+    renderLobby(GUEST_ID, lobbyRoom({ playerCount: 2 }));
 
     expect(statusLine()).toMatch(/the host is the one who starts it/i);
     expect(statusLine()).not.toMatch(/needs \d+ more/i);
@@ -103,14 +110,14 @@ describe('RoomBoard in a lobby', () => {
   });
 
   it('tells a guest of a room that cannot start why, rather than leaving them counting', () => {
-    renderBoard(GUEST_ID, lobbyRoom({ playerCount: 3, wordCount: 2 }));
+    renderLobby(GUEST_ID, lobbyRoom({ playerCount: 3, wordCount: 2 }));
 
     expect(statusLine()).toMatch(/the host cannot start this game/i);
     expect(startButton()).toBeNull();
   });
 
   it('shows the room filling up without reading as a count towards four', () => {
-    renderBoard(GUEST_ID, lobbyRoom({ playerCount: 2 }));
+    renderLobby(GUEST_ID, lobbyRoom({ playerCount: 2 }));
 
     expect(screen.getByRole('heading', { name: /players/i })).toHaveTextContent('Players (2)');
     expect(screen.getByText(/holds up to 4 players/i)).toBeInTheDocument();

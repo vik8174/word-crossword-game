@@ -2,159 +2,56 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useState } from 'react';
+import type { ReactElement } from 'react';
 import { useParams } from 'react-router-dom';
 
-import { JoinRoomForm } from '../components/JoinRoomForm';
-import { RoomBoard } from '../components/RoomBoard';
+import { RoomClosedEarly } from '../components/RoomClosedEarly';
+import { RoomFinished } from '../components/RoomFinished';
+import { RoomGame } from '../components/RoomGame';
+import { RoomJoin } from '../components/RoomJoin';
+import { RoomLobby } from '../components/RoomLobby';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
-import { normalizeNickname } from '../rooms/nickname';
-import { roomAccessFor } from '../rooms/room-access';
-import type { RoomDocument } from '../rooms/room-document';
-import { joinRoom, recordGuess, startGame } from '../rooms/room-service';
-import { useGameCompletion } from '../rooms/use-game-completion';
+import { roomScreenFor } from '../rooms/room-screen';
 import { useRoomConnection } from '../rooms/use-room-connection';
-import { logGameEvent } from '../telemetry/analytics';
 
-const JOIN_FAILED_MESSAGE =
-  'Could not join the game. Check your connection and try again — the room is still there.';
-
-const START_FAILED_MESSAGE =
-  'Could not start the game. Check your connection and try again — nothing has been dealt out yet.';
-
-// Firestore keeps retrying a write it merely could not send, so a rejection
-// here means the database refused it outright — most likely an expired room.
-const GUESS_FAILED_MESSAGE =
-  'Your answer was right, but the others could not be told about it. The room may have expired — reload the page to see where the game stands.';
+/** Shown while the visitor is being signed in and the first snapshot is on its way. */
+const Connecting = () => (
+  <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+    <CircularProgress size={24} />
+    <Typography variant="body1" role="status">
+      Connecting to the game...
+    </Typography>
+  </Stack>
+);
 
 /**
- * How far something the player asked for got. Both entering a room and starting
- * a game stay `submitting` after they succeed: the write comes back through the
- * subscription and replaces the screen, so clearing it here would only flicker.
+ * Picks the one screen this room is showing, and hands it what it needs.
+ *
+ * Which screen that is, is not decided here: `roomScreenFor` works it out as a
+ * value and this is only the switch that renders it. A phase added to
+ * `RoomScreen` and not handled below fails to compile, so nothing can be added
+ * to the room and quietly forgotten on the way to the player.
  */
-type ActionPhase =
-  | { readonly phase: 'idle' }
-  | { readonly phase: 'submitting' }
-  | { readonly phase: 'failed'; readonly message: string };
-
-const Room = ({ roomId }: { readonly roomId: string }) => {
+const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
   const connection = useRoomConnection(roomId);
-  const [join, setJoin] = useState<ActionPhase>({ phase: 'idle' });
-  const [start, setStart] = useState<ActionPhase>({ phase: 'idle' });
-  // Only ever a failure: a right answer needs no confirmation on this screen —
-  // it turns into letters in the grid, for everybody at once.
-  const [guessError, setGuessError] = useState<string | null>(null);
+  const screen = roomScreenFor(connection, new Date());
 
-  // Watches the room that arrives rather than the answer this player sent: the
-  // client that answered last is not necessarily the one that can tell the game
-  // is over (`docs/decisions/0012-ending-a-game-from-the-received-state.md`).
-  useGameCompletion(roomId, connection.status === 'ready' ? connection.room : null);
-
-  const submitJoin = async (playerId: string, rawNickname: string) => {
-    setJoin({ phase: 'submitting' });
-
-    try {
-      await joinRoom({ roomId, playerId, nickname: normalizeNickname(rawNickname) });
-
-      // Only a player who is really in the room, and only the first time: this
-      // form is shown to somebody the room does not hold yet, so a player
-      // reopening their own link never reaches it. The nickname they chose is
-      // not part of the event, and could not be — see `telemetry/analytics.ts`.
-      void logGameEvent('player_joined');
-    } catch (error) {
-      // "Missing or insufficient permissions" says nothing to a player, so they
-      // get a plain message and the details go to the console.
-      console.error('Joining the room failed', error);
-      setJoin({ phase: 'failed', message: JOIN_FAILED_MESSAGE });
-    }
-  };
-
-  const submitStart = async (room: RoomDocument) => {
-    setStart({ phase: 'submitting' });
-
-    try {
-      await startGame({ roomId, room });
-    } catch (error) {
-      console.error('Starting the game failed', error);
-      setStart({ phase: 'failed', message: START_FAILED_MESSAGE });
-    }
-  };
-
-  const submitGuess = async (playerId: string, wordId: string) => {
-    try {
-      await recordGuess({ roomId, playerId, wordId });
-      setGuessError(null);
-    } catch (error) {
-      console.error('Recording the answer failed', error);
-      setGuessError(GUESS_FAILED_MESSAGE);
-      // Rethrown so the grid stops counting this word as written down and can
-      // send it again; swallowing it here is what would lose the answer.
-      throw error;
-    }
-  };
-
-  if (connection.status === 'connecting') {
-    return (
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-        <CircularProgress size={24} />
-        <Typography variant="body1" role="status">
-          Connecting to the game...
-        </Typography>
-      </Stack>
-    );
+  switch (screen.kind) {
+    case 'connecting':
+      return <Connecting />;
+    case 'unavailable':
+      return <RoomUnavailableNotice reason={screen.reason} />;
+    case 'join':
+      return <RoomJoin roomId={roomId} playerId={screen.playerId} />;
+    case 'lobby':
+      return <RoomLobby roomId={roomId} room={screen.room} viewerId={screen.viewerId} />;
+    case 'playing':
+      return <RoomGame roomId={roomId} room={screen.room} viewerId={screen.viewerId} />;
+    case 'finished':
+      return <RoomFinished room={screen.room} viewerId={screen.viewerId} />;
+    case 'closed-early':
+      return <RoomClosedEarly room={screen.room} viewerId={screen.viewerId} />;
   }
-
-  if (connection.status === 'failed') {
-    return <RoomUnavailableNotice reason="connection" />;
-  }
-
-  if (connection.status === 'missing') {
-    return <RoomUnavailableNotice reason="missing" />;
-  }
-
-  const { room, playerId } = connection;
-  // Judged on every render, and a render follows every snapshot — good enough
-  // for a room whose lifetime is measured in hours. Keeping a room alive while
-  // it is being played is issue #9.
-  const access = roomAccessFor(room, playerId, new Date());
-
-  if (access === 'expired') {
-    return <RoomUnavailableNotice reason="expired" />;
-  }
-
-  if (access === 'started') {
-    return <RoomUnavailableNotice reason="started" />;
-  }
-
-  if (access === 'finished') {
-    return <RoomUnavailableNotice reason="finished" />;
-  }
-
-  if (access === 'full') {
-    return <RoomUnavailableNotice reason="full" />;
-  }
-
-  if (access === 'joined') {
-    return (
-      <RoomBoard
-        room={room}
-        viewerId={playerId}
-        onStartGame={() => void submitStart(room)}
-        isStartingGame={start.phase === 'submitting'}
-        startGameError={start.phase === 'failed' ? start.message : undefined}
-        onSolveWord={(wordId) => submitGuess(playerId, wordId)}
-        solveWordError={guessError ?? undefined}
-      />
-    );
-  }
-
-  return (
-    <JoinRoomForm
-      onJoin={(nickname) => void submitJoin(playerId, nickname)}
-      isJoining={join.phase === 'submitting'}
-      errorMessage={join.phase === 'failed' ? join.message : undefined}
-    />
-  );
 };
 
 /**
