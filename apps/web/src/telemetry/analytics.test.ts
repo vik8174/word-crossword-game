@@ -126,6 +126,25 @@ describe('logPageView', () => {
     );
   });
 
+  it('names the page before Analytics starts, not after', async () => {
+    const { logPageView, setDefaultEventParameters, initializeAnalytics } = await loadAnalytics();
+    const order: string[] = [];
+    setDefaultEventParameters.mockImplementation(() => order.push('page named'));
+    initializeAnalytics.mockImplementation(() => {
+      order.push('Analytics started');
+
+      return FAKE_ANALYTICS;
+    });
+
+    await logPageView(
+      pageViewFor({ origin: 'https://example.com', pathname: `/room/${ROOM_ID}`, referrer: '' }),
+    );
+
+    // The other way round, the events GA4 opens a session with would go out
+    // between the two, carrying the address bar as `gtag` read it.
+    expect(order).toEqual(['page named', 'Analytics started']);
+  });
+
   it('sends nothing where Analytics is not supported', async () => {
     const { logPageView, isSupported, logEvent } = await loadAnalytics();
     isSupported.mockResolvedValue(false);

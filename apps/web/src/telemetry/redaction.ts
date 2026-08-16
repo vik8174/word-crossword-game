@@ -66,13 +66,14 @@ export const redactRoomId = (text: string): Redacted =>
   ) as Redacted;
 
 /**
- * How deep the recursion below goes before it stops looking.
+ * What a value referring back to itself is replaced with.
  *
- * A Sentry event is a handful of levels deep, so this is a backstop rather
- * than a limit: what it really guarantees is that a structure referring back to
- * itself terminates instead of hanging the browser.
+ * The reference itself cannot be kept: it would point at the original value,
+ * whose strings are exactly the ones that were not redacted. Sentry's own
+ * serializer marks circular references much like this, so an event carrying one
+ * would have arrived cut short either way.
  */
-const MAX_DEPTH = 12;
+const CIRCULAR = '[Circular]';
 
 /**
  * Whether this is a bag of data rather than an instance of something.
@@ -91,26 +92,39 @@ const isPlainRecord = (value: unknown): value is Record<string, unknown> => {
   return prototype === Object.prototype || prototype === null;
 };
 
-const redactWithin = (value: unknown, depth: number): unknown => {
+/**
+ * @param value - The value being redacted
+ * @param enclosing - The values this one sits inside, to recognise a cycle by
+ */
+const redactWithin = (value: unknown, enclosing: Set<object>): unknown => {
   if (typeof value === 'string') {
     return redactRoomId(value);
   }
 
-  if (depth >= MAX_DEPTH) {
+  const isArray = Array.isArray(value);
+
+  if (!isArray && !isPlainRecord(value)) {
     return value;
   }
 
-  if (Array.isArray(value)) {
-    return value.map((item: unknown) => redactWithin(item, depth + 1));
+  if (enclosing.has(value)) {
+    return CIRCULAR;
   }
 
-  if (isPlainRecord(value)) {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, item]) => [key, redactWithin(item, depth + 1)]),
-    );
-  }
+  // Only what this value sits inside counts as a cycle. A value reached twice
+  // by two different routes is redacted twice, which is the point: it is a
+  // second place its strings would be read from.
+  enclosing.add(value);
 
-  return value;
+  const redacted = isArray
+    ? value.map((item: unknown) => redactWithin(item, enclosing))
+    : Object.fromEntries(
+        Object.entries(value).map(([key, item]) => [key, redactWithin(item, enclosing)]),
+      );
+
+  enclosing.delete(value);
+
+  return redacted;
 };
 
 /**
@@ -120,7 +134,8 @@ const redactWithin = (value: unknown, depth: number): unknown => {
  * fields known today to hold a URL. An SDK release that starts reporting the
  * address somewhere new — a new breadcrumb, a new context — is then already
  * covered, which is the opposite of a list of field names that silently stops
- * being complete.
+ * being complete. There is no depth at which it gives up looking, for the same
+ * reason: a limit would be a place a room id could sit and be sent.
  *
  * @param value - Anything about to be sent; a Sentry event in practice
  * @returns The same structure, with room ids taken out of every string in it
@@ -131,4 +146,4 @@ const redactWithin = (value: unknown, depth: number): unknown => {
 export const redactRoomIdsDeep = <TValue>(value: TValue): TValue =>
   // Strings stay strings and every container keeps its shape, so the result is
   // the same type as what came in — which the recursion cannot say in types.
-  redactWithin(value, 0) as TValue;
+  redactWithin(value, new Set()) as TValue;

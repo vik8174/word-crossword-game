@@ -65,10 +65,35 @@ describe('redactRoomIdsDeep', () => {
     );
   });
 
-  it('survives a structure that refers back to itself', () => {
+  it('has no depth at which it gives up looking', () => {
+    // Far deeper than any event the SDK assembles. A limit would be a place a
+    // room id could sit and still be sent, so there is not one.
+    const buried = Array.from({ length: 40 }).reduce<Record<string, unknown>>(
+      (nested) => ({ nested }),
+      { url: roomPath(ROOM_ID) },
+    );
+
+    expect(JSON.stringify(redactRoomIdsDeep(buried))).not.toContain(ROOM_ID);
+  });
+
+  it('redacts a value reached twice by two different routes, both times', () => {
+    const shared = { url: roomPath(ROOM_ID) };
+
+    const redacted = redactRoomIdsDeep({ request: shared, context: { original: shared } });
+
+    expect(JSON.stringify(redacted)).not.toContain(ROOM_ID);
+    expect(redacted.context.original.url).toBe(ROOM_ROUTE_PATTERN);
+  });
+
+  it('cuts a structure that refers back to itself, rather than sending it whole', () => {
     const event: Record<string, unknown> = { url: roomPath(ROOM_ID) };
     event.itself = event;
 
-    expect(() => redactRoomIdsDeep(event)).not.toThrow();
+    const redacted = redactRoomIdsDeep(event);
+
+    // Keeping the reference would have kept the original object, whose strings
+    // are precisely the ones that were never redacted.
+    expect(() => JSON.stringify(redacted)).not.toThrow();
+    expect(JSON.stringify(redacted)).not.toContain(ROOM_ID);
   });
 });

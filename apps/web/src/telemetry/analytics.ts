@@ -69,23 +69,18 @@ const analyticsWhenAvailable = (): Promise<Analytics | null> => {
 };
 
 /**
- * Runs one piece of reporting against Analytics, if there is any to run it
- * against, and lets nothing out of it reach the game.
+ * Runs one piece of reporting and lets nothing out of it reach the game.
  *
- * @param name - Event being reported, for the warning if it goes wrong
- * @param report - What to do once Analytics is known to exist
+ * @param what - What was being done, for the warning if it goes wrong
+ * @param report - The call to Analytics
  */
-const quietly = async (name: string, report: (instance: Analytics) => void): Promise<void> => {
+const quietly = (what: string, report: () => void): void => {
   try {
-    const instance = await analyticsWhenAvailable();
-
-    if (instance !== null) {
-      report(instance);
-    }
+    report();
   } catch (error) {
     // An event that did not arrive is not worth a broken screen, and the player
     // has nothing to do about it either way.
-    console.warn(`Sending the "${name}" analytics event failed`, error);
+    console.warn(`Analytics: ${what} failed`, error);
   }
 };
 
@@ -98,10 +93,18 @@ const quietly = async (name: string, report: (instance: Analytics) => void): Pro
  * @example
  * void logGameEvent('room_created', { word_count: layout.placedWords.length });
  */
-export const logGameEvent = (event: GameEvent, params: GameEventParams = {}): Promise<void> =>
-  quietly(event, (instance) => {
-    logEvent(instance, event, params);
-  });
+export const logGameEvent = async (
+  event: GameEvent,
+  params: GameEventParams = {},
+): Promise<void> => {
+  const instance = await analyticsWhenAvailable();
+
+  if (instance !== null) {
+    quietly(`sending "${event}"`, () => {
+      logEvent(instance, event, params);
+    });
+  }
+};
 
 /**
  * Reports that a page was opened.
@@ -114,14 +117,23 @@ export const logGameEvent = (event: GameEvent, params: GameEventParams = {}): Pr
  * @example
  * void logPageView(pageViewFor({ origin, pathname, referrer }));
  */
-export const logPageView = ({ location, path, referrer }: PageView): Promise<void> => {
+export const logPageView = async ({ location, path, referrer }: PageView): Promise<void> => {
   const page = { page_location: location, page_path: path, page_referrer: referrer };
 
-  return quietly('page_view', (instance) => {
-    // Made the default for every later event as well, not only for this one:
-    // `gtag` fills `page_location` in from the address bar by itself otherwise,
-    // and the address bar is where the room id is.
+  // Before Analytics is asked for, not after it answers: Firebase holds these
+  // until it starts and applies them to its very first `gtag` call, so not even
+  // the events GA4 opens a session with can carry the address bar as `gtag`
+  // read it. They are the default for every later event too, for the same
+  // reason — `gtag` fills `page_location` in by itself otherwise.
+  quietly('setting the page for later events', () => {
     setDefaultEventParameters(page);
-    logEvent(instance, 'page_view', page);
   });
+
+  const instance = await analyticsWhenAvailable();
+
+  if (instance !== null) {
+    quietly('sending "page_view"', () => {
+      logEvent(instance, 'page_view', page);
+    });
+  }
 };
