@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { checkGuess, type GridPosition } from 'shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { GridCellView, GridView, GuessableWord } from '../rooms/word-visibility';
+import type { GridCellView, GridView, GuessableWord, WordLocation } from '../rooms/word-visibility';
 import { CrosswordGrid } from './CrosswordGrid';
 
 /** `CAT` across the top row, `CAR` down the left column, sharing the `C`. */
@@ -113,11 +113,27 @@ const crossingView = (): GridView => ({
   toGuess: [guessable('w0', EAT, 'eat'), guessable('w1', OAK, 'oak')],
 });
 
-const cellInput = (row: number, col: number) =>
+/**
+ * One square of the board, whoever it belongs to.
+ *
+ * Every square says where it is, because every square can be moved onto — the
+ * arrows cross the whole grid. What tells the player's own squares apart is
+ * what the rest of the label says, which is what {@link typeableSquares} asks.
+ */
+const squareAt = (row: number, col: number) =>
   screen.getByLabelText(new RegExp(`Row ${row + 1}, column ${col + 1}\\b`, 'i'));
 
+/** Every square this player may type in, and no other. */
+const typeableSquares = () => screen.getAllByLabelText(/a letter of one of your words/i);
+
 const typeInto = (row: number, col: number, letter: string) =>
-  fireEvent.change(cellInput(row, col), { target: { value: letter } });
+  fireEvent.change(squareAt(row, col), { target: { value: letter } });
+
+/** Presses a key on the square the cursor is standing on, as a player would. */
+const press = (key: string) =>
+  act(() => {
+    fireEvent.keyDown(document.activeElement ?? document.body, { key });
+  });
 
 const onSolved = vi.fn<(wordId: string) => Promise<void>>();
 
@@ -127,11 +143,11 @@ const renderGrid = (view: GridView) => render(<CrosswordGrid view={view} onSolve
 const board = () => screen.getByRole('group', { name: /crossword grid/i });
 
 /**
- * What the board says with its numbering and its spoken markers taken out —
- * which is to say, the letters on it and nothing else.
+ * What the board says with its numbering taken out — which is to say, the
+ * letters on it and nothing else. What a square is beyond its letter is said in
+ * its label rather than written on the board.
  */
-const boardLetters = () =>
-  (board().textContent ?? '').replaceAll(/Number \d+\.|Yours to explain: |\d/g, '');
+const boardLetters = () => (board().textContent ?? '').replaceAll(/\d/g, '');
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -153,21 +169,23 @@ describe('CrosswordGrid', () => {
     renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
 
     expect(board().textContent).toBe('');
-    expect(cellInput(0, 0)).toHaveValue('');
+    expect(squareAt(0, 0)).toHaveValue('');
   });
 
   it('shows a solved word as letters nobody can type over', () => {
     renderGrid(viewWith(['0:0', '0:1', '0:2'], [guessable('w1', CAR, 'car')]));
 
     expect(board().textContent).toContain('CAT');
-    expect(screen.queryByLabelText(/Row 1, column 2\b/i)).not.toBeInTheDocument();
+    // The square is on the board and can be moved onto; it is simply not this
+    // player's to type in, and says so.
+    expect(squareAt(0, 1)).toHaveAccessibleName(/^row 1, column 2 — A$/i);
   });
 
   it('lets a player type only into the squares of their own words', () => {
     renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
 
-    expect(screen.getAllByLabelText(/a letter of one of your words/i)).toHaveLength(CAR.length);
-    expect(screen.queryByLabelText(/Row 1, column 3\b/i)).not.toBeInTheDocument();
+    expect(typeableSquares()).toHaveLength(CAR.length);
+    expect(squareAt(0, 2)).toHaveAccessibleName(/^row 1, column 3 — empty$/i);
   });
 
   it('offers nothing to type to a player with no word of their own', () => {
@@ -193,29 +211,28 @@ describe('CrosswordGrid', () => {
     it('adds no letter to the board along with the numbers', () => {
       renderGrid(viewWith([], [guessable('w1', CAR, 'car')], NUMBERED));
 
-      // Everything the board says, in full: the number this player types under,
-      // the number of a square that is somebody else's — said out loud there,
-      // since a square nobody types into has no label of its own — and nothing
+      // Everything the board says, in full: the number this player types
+      // under, the number of a square that is somebody else's, and nothing
       // else at all.
-      expect(board().textContent).toBe('1Number 2.2');
+      expect(board().textContent).toBe('12');
     });
 
     it('says the number to a player typing into that square', () => {
       renderGrid(viewWith([], [guessable('w1', CAR, 'car')], NUMBERED));
 
       // The number leads: it is what the players call the word by out loud.
-      expect(cellInput(0, 0)).toHaveAccessibleName(
+      expect(squareAt(0, 0)).toHaveAccessibleName(
         /^Number 1, row 1, column 1 — a letter of one of your words/i,
       );
-      expect(cellInput(1, 0)).toHaveAccessibleName(/^Row 2, column 1\b/i);
+      expect(squareAt(1, 0)).toHaveAccessibleName(/^Row 2, column 1\b/i);
     });
 
     it("says the number over a square that is nobody's to type in", () => {
       renderGrid(viewWith(['0:0', '0:1', '0:2'], [guessable('w1', CAR, 'car')], NUMBERED));
 
-      // A solved square is a plain letter with no label of its own, so the
-      // number has to be spoken beside it or a reader loses it.
-      expect(screen.getByText('Number 1.')).toBeInTheDocument();
+      // A solved square holds nothing but a letter, so its number has to be in
+      // what the square says of itself or a reader loses it.
+      expect(squareAt(0, 0)).toHaveAccessibleName(/^Number 1, row 1, column 1 — C$/i);
       expect(board().textContent).toMatch(/C.*A.*T/);
     });
   });
@@ -239,8 +256,8 @@ describe('CrosswordGrid', () => {
 
       // `CAR` starts in the square the explained `CAT` already fills, so what
       // is left of it to type is the two squares below.
-      expect(screen.getAllByLabelText(/a letter of one of your words/i)).toHaveLength(2);
-      expect(screen.queryByLabelText(/row 1, column 1\b/i)).not.toBeInTheDocument();
+      expect(typeableSquares()).toHaveLength(2);
+      expect(squareAt(0, 0)).toHaveAccessibleName(/^row 1, column 1 — C, yours to explain$/i);
     });
 
     it('counts a letter it wrote in towards the word crossing it', async () => {
@@ -259,7 +276,7 @@ describe('CrosswordGrid', () => {
     it('says which squares are this player own to explain, for a reader who cannot see them', () => {
       renderGrid(explainingCat());
 
-      expect(screen.getAllByText(/yours to explain/i)).toHaveLength(3);
+      expect(screen.getAllByLabelText(/yours to explain/i)).toHaveLength(3);
     });
 
     it('draws it apart from a word the group answered, without relying on colour', () => {
@@ -279,21 +296,23 @@ describe('CrosswordGrid', () => {
       renderGrid(viewWith([], [guessable('w1', CAR, 'car')], { '0:0': 1 }, ['0:0', '0:1', '0:2']));
 
       // The number is drawn over an explained square as over any other, and
-      // said beside it, since the square itself carries no label.
+      // said in what the square says of itself.
       expect(board().textContent).toContain('1');
-      expect(screen.getByText('Number 1.')).toBeInTheDocument();
+      expect(squareAt(0, 0)).toHaveAccessibleName(
+        /^Number 1, row 1, column 1 — C, yours to explain$/i,
+      );
     });
 
     it('turns the word plain once its guesser has answered it', () => {
       const { rerender } = renderGrid(explainingCat());
-      expect(screen.getAllByText(/yours to explain/i)).toHaveLength(3);
+      expect(screen.getAllByLabelText(/yours to explain/i)).toHaveLength(3);
 
       rerender(<CrosswordGrid view={solvedCat()} onSolved={onSolved} />);
 
       // Nothing new appears — the letters were already there — but they stop
       // being this player's alone, which is what tells them to stop explaining.
       expect(boardLetters()).toBe('CAT');
-      expect(screen.queryByText(/yours to explain/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/yours to explain/i)).not.toBeInTheDocument();
       expect(screen.getByText('T')).toHaveStyle({ borderStyle: 'solid' });
     });
   });
@@ -334,7 +353,7 @@ describe('CrosswordGrid', () => {
     expect(onSolved).not.toHaveBeenCalled();
     expect(screen.getByRole('status')).toHaveTextContent(/not the word/i);
     // Still readable, so the player can see what they got wrong.
-    expect(cellInput(0, 0)).toHaveValue('B');
+    expect(squareAt(0, 0)).toHaveValue('B');
   });
 
   it('takes a refused answer back off the board on its own', async () => {
@@ -348,8 +367,8 @@ describe('CrosswordGrid', () => {
     });
     act(() => vi.advanceTimersByTime(2000));
 
-    expect(cellInput(0, 0)).toHaveValue('');
-    expect(cellInput(1, 0)).toHaveValue('');
+    expect(squareAt(0, 0)).toHaveValue('');
+    expect(squareAt(1, 0)).toHaveValue('');
     expect(screen.getByRole('status')).toHaveTextContent('');
     vi.useRealTimers();
   });
@@ -366,7 +385,7 @@ describe('CrosswordGrid', () => {
     // Typing again clears the refused word rather than making the player
     // delete it letter by letter.
     await act(async () => typeInto(0, 0, 'c'));
-    expect(cellInput(1, 0)).toHaveValue('');
+    expect(squareAt(1, 0)).toHaveValue('');
 
     await act(async () => {
       typeInto(1, 0, 'a');
@@ -391,7 +410,7 @@ describe('CrosswordGrid', () => {
     act(() => vi.advanceTimersByTime(2000));
 
     expect(board().textContent).toContain('CAT');
-    expect(cellInput(1, 0)).toHaveValue('');
+    expect(squareAt(1, 0)).toHaveValue('');
     vi.useRealTimers();
   });
 
@@ -441,9 +460,9 @@ describe('CrosswordGrid', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/not the word/i);
     act(() => vi.advanceTimersByTime(2000));
 
-    expect(cellInput(0, 0)).toHaveValue('C');
-    expect(cellInput(1, 0)).toHaveValue('');
-    expect(cellInput(2, 0)).toHaveValue('');
+    expect(squareAt(0, 0)).toHaveValue('C');
+    expect(squareAt(1, 0)).toHaveValue('');
+    expect(squareAt(2, 0)).toHaveValue('');
 
     // And the word that kept its letter can still be answered.
     act(() => {
@@ -458,10 +477,10 @@ describe('CrosswordGrid', () => {
   it('moves along the word as letters are typed, not along the row', () => {
     renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
 
-    cellInput(0, 0).focus();
+    squareAt(0, 0).focus();
     typeInto(0, 0, 'c');
 
-    expect(document.activeElement).toBe(cellInput(1, 0));
+    expect(document.activeElement).toBe(squareAt(1, 0));
   });
 
   it('skips over a square a crossing word already filled in', async () => {
@@ -469,10 +488,10 @@ describe('CrosswordGrid', () => {
     // type in is the second one.
     renderGrid(viewWith(['0:0', '0:1', '0:2'], [guessable('w1', CAR, 'car')]));
 
-    cellInput(1, 0).focus();
+    squareAt(1, 0).focus();
     await act(async () => typeInto(1, 0, 'a'));
 
-    expect(document.activeElement).toBe(cellInput(2, 0));
+    expect(document.activeElement).toBe(squareAt(2, 0));
   });
 
   it('counts a word its crossings finished as answered, though nobody typed into it', async () => {
@@ -516,7 +535,7 @@ describe('CrosswordGrid', () => {
   });
 
   describe('where two of the player own words cross', () => {
-    const focusCell = (row: number, col: number) => act(() => cellInput(row, col).focus());
+    const focusCell = (row: number, col: number) => act(() => squareAt(row, col).focus());
 
     it('follows the word being filled through the square the two of them share', () => {
       // `OAK` runs down through the middle of `EAT`. Typing must carry on down
@@ -525,10 +544,10 @@ describe('CrosswordGrid', () => {
 
       focusCell(0, 1);
       typeInto(0, 1, 'o');
-      expect(document.activeElement).toBe(cellInput(1, 1));
+      expect(document.activeElement).toBe(squareAt(1, 1));
 
       typeInto(1, 1, 'a');
-      expect(document.activeElement).toBe(cellInput(2, 1));
+      expect(document.activeElement).toBe(squareAt(2, 1));
 
       act(() => typeInto(2, 1, 'k'));
 
@@ -539,13 +558,13 @@ describe('CrosswordGrid', () => {
       renderGrid(crossingView());
 
       focusCell(1, 1);
-      expect(cellInput(1, 1)).toHaveAccessibleName(/filled across, where two of them cross/i);
+      expect(squareAt(1, 1)).toHaveAccessibleName(/filled across, where two of them cross/i);
 
-      act(() => fireEvent.mouseDown(cellInput(1, 1)));
-      expect(cellInput(1, 1)).toHaveAccessibleName(/filled down/i);
+      act(() => fireEvent.mouseDown(squareAt(1, 1)));
+      expect(squareAt(1, 1)).toHaveAccessibleName(/filled down/i);
 
-      act(() => fireEvent.mouseDown(cellInput(1, 1)));
-      expect(cellInput(1, 1)).toHaveAccessibleName(/filled across/i);
+      act(() => fireEvent.mouseDown(squareAt(1, 1)));
+      expect(squareAt(1, 1)).toHaveAccessibleName(/filled across/i);
     });
 
     it('picks a square up on the first click without swapping anything', () => {
@@ -553,20 +572,20 @@ describe('CrosswordGrid', () => {
 
       // The click that moves the cursor onto a square must not also turn it
       // round: mousedown lands before the focus does.
-      act(() => fireEvent.mouseDown(cellInput(1, 1)));
+      act(() => fireEvent.mouseDown(squareAt(1, 1)));
       focusCell(1, 1);
 
-      expect(cellInput(1, 1)).toHaveAccessibleName(/filled across/i);
+      expect(squareAt(1, 1)).toHaveAccessibleName(/filled across/i);
     });
 
     it('swaps from the keyboard as well, since a space is not a letter', () => {
       renderGrid(crossingView());
 
       focusCell(1, 1);
-      act(() => fireEvent.keyDown(cellInput(1, 1), { key: ' ' }));
+      act(() => fireEvent.keyDown(squareAt(1, 1), { key: ' ' }));
 
-      expect(cellInput(1, 1)).toHaveAccessibleName(/filled down/i);
-      expect(cellInput(1, 1)).toHaveValue('');
+      expect(squareAt(1, 1)).toHaveAccessibleName(/filled down/i);
+      expect(squareAt(1, 1)).toHaveValue('');
     });
 
     it('keeps what is typed in either word when the cursor swaps between them', () => {
@@ -579,9 +598,9 @@ describe('CrosswordGrid', () => {
       focusCell(0, 1);
       act(() => typeInto(0, 1, 'o'));
 
-      expect(cellInput(1, 0)).toHaveValue('E');
-      expect(cellInput(1, 1)).toHaveValue('A');
-      expect(cellInput(0, 1)).toHaveValue('O');
+      expect(squareAt(1, 0)).toHaveValue('E');
+      expect(squareAt(1, 1)).toHaveValue('A');
+      expect(squareAt(0, 1)).toHaveValue('O');
     });
 
     it('records each of the two words on its own once it is filled', () => {
@@ -608,12 +627,12 @@ describe('CrosswordGrid', () => {
       renderGrid(crossingView());
 
       focusCell(1, 1);
-      act(() => fireEvent.keyDown(cellInput(1, 1), { key: ' ' }));
+      act(() => fireEvent.keyDown(squareAt(1, 1), { key: ' ' }));
       typeInto(1, 1, 'a');
 
       // Down was swapped to, so the letter after the shared square is below it
       // rather than beside it.
-      expect(document.activeElement).toBe(cellInput(2, 1));
+      expect(document.activeElement).toBe(squareAt(2, 1));
     });
 
     it('says which way it is now filling, for a reader who cannot see the grid', () => {
@@ -623,7 +642,7 @@ describe('CrosswordGrid', () => {
       focusCell(1, 1);
       expect(announcement()).toHaveTextContent('Now filling across.');
 
-      act(() => fireEvent.keyDown(cellInput(1, 1), { key: ' ' }));
+      act(() => fireEvent.keyDown(squareAt(1, 1), { key: ' ' }));
 
       expect(announcement()).toHaveTextContent('Now filling down.');
     });
@@ -635,8 +654,8 @@ describe('CrosswordGrid', () => {
       const { rerender } = renderGrid(crossingView());
 
       focusCell(1, 1);
-      act(() => fireEvent.keyDown(cellInput(1, 1), { key: ' ' }));
-      expect(cellInput(1, 1)).toHaveAccessibleName(/filled down/i);
+      act(() => fireEvent.keyDown(squareAt(1, 1), { key: ' ' }));
+      expect(squareAt(1, 1)).toHaveAccessibleName(/filled down/i);
 
       act(() => {
         rerender(
@@ -655,13 +674,13 @@ describe('CrosswordGrid', () => {
         );
       });
 
-      expect(screen.queryByLabelText(/row 2, column 2\b/i)).not.toBeInTheDocument();
-      expect(cellInput(1, 0)).toHaveAccessibleName(/filled across/i);
+      expect(squareAt(1, 1)).toHaveAccessibleName(/^row 2, column 2 — A$/i);
+      expect(squareAt(1, 0)).toHaveAccessibleName(/filled across/i);
 
       act(() => typeInto(1, 0, 'e'));
 
       // The shared square is filled in already, so typing skips straight past it.
-      expect(document.activeElement).toBe(cellInput(1, 2));
+      expect(document.activeElement).toBe(squareAt(1, 2));
     });
 
     it('explains the swap to a player who has a crossing, and to nobody else', () => {
@@ -679,27 +698,276 @@ describe('CrosswordGrid', () => {
   it('leaves a square alone when the space bar has nothing to swap to', () => {
     renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
 
-    act(() => cellInput(1, 0).focus());
-    act(() => fireEvent.keyDown(cellInput(1, 0), { key: ' ' }));
+    act(() => squareAt(1, 0).focus());
+    act(() => fireEvent.keyDown(squareAt(1, 0), { key: ' ' }));
 
-    expect(cellInput(1, 0)).toHaveValue('');
-    expect(cellInput(1, 0)).toHaveAccessibleName(/filled down/i);
-    expect(cellInput(1, 0)).not.toHaveAccessibleName(/cross/i);
+    expect(squareAt(1, 0)).toHaveValue('');
+    expect(squareAt(1, 0)).toHaveAccessibleName(/filled down/i);
+    expect(squareAt(1, 0)).not.toHaveAccessibleName(/cross/i);
+  });
+
+  describe('moving about the board', () => {
+    /** Puts the cursor on a square, as clicking it does. */
+    const takeUp = (row: number, col: number) => act(() => squareAt(row, col).focus());
+
+    /** What the grid says it is filling right now, said for a reader, not drawn. */
+    const announcement = () => screen.queryByText(/now filling/i);
+
+    it('crosses squares that are nobody to type in', () => {
+      renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
+
+      takeUp(0, 0);
+      press('ArrowRight');
+
+      // `CAR` runs down the left column; the square to the right of its first
+      // is part of a word somebody else is filling in. The cursor goes there
+      // all the same, and there is nothing to type when it arrives.
+      expect(document.activeElement).toBe(squareAt(0, 1));
+      expect(squareAt(0, 1)).toHaveAccessibleName(/^row 1, column 2 — empty$/i);
+      expect(boardLetters()).toBe('');
+    });
+
+    it('keeps the keys alive when the square under the cursor is answered', () => {
+      // The moment a word is answered its squares stop being inputs and become
+      // letters, and the one under the cursor is replaced while it holds the
+      // focus. Left there, the focus falls to the document and the arrows go
+      // dead until the player reaches for the mouse.
+      const view = viewWith([], [guessable('w1', CAR, 'car')]);
+      const { rerender } = renderGrid(view);
+
+      takeUp(1, 0);
+
+      act(() => {
+        rerender(
+          <CrosswordGrid
+            view={viewWith(['1:0'], [guessable('w1', CAR, 'car')])}
+            onSolved={onSolved}
+          />,
+        );
+      });
+
+      expect(document.activeElement).toBe(squareAt(1, 0));
+
+      press('ArrowUp');
+
+      expect(document.activeElement).toBe(squareAt(0, 0));
+    });
+
+    it('holds the word being filled where this player has none running that way', () => {
+      renderGrid(viewWith([], [guessable('w0', CAT, 'cat')]));
+
+      takeUp(0, 0);
+      press('ArrowDown');
+
+      // Nothing of this player's runs down from there, so the arrow moves the
+      // cursor and leaves the word they were filling in alone.
+      expect(document.activeElement).toBe(squareAt(1, 0));
+      expect(announcement()).toHaveTextContent('Now filling across.');
+    });
+
+    it('stays where it is when the board ends that way', () => {
+      renderGrid(crossingView());
+
+      takeUp(1, 0);
+      press('ArrowDown');
+
+      expect(document.activeElement).toBe(squareAt(1, 0));
+    });
+
+    it('says the square it arrived at, for a reader who cannot see the grid', () => {
+      renderGrid(viewWith([], [guessable('w1', CAR, 'car')], {}, ['0:0', '0:1', '0:2']));
+
+      takeUp(1, 0);
+      press('ArrowUp');
+
+      // The cursor is state, but the browser's focus follows it — which is the
+      // whole of how a move is heard rather than only seen.
+      expect(document.activeElement).toHaveAccessibleName(
+        /^row 1, column 1 — C, yours to explain$/i,
+      );
+    });
+
+    it('marks the square the next letter lands in, apart from the word being filled', () => {
+      renderGrid(crossingView());
+
+      takeUp(1, 0);
+
+      // Both squares are of the word being filled and are tinted alike; only
+      // the one the letter is about to land in carries the ring.
+      expect(squareAt(1, 0)).toHaveStyle({ outlineStyle: 'solid', outlineWidth: '3px' });
+      expect(squareAt(1, 2)).not.toHaveStyle({ outlineStyle: 'solid' });
+      expect(getComputedStyle(squareAt(1, 2)).backgroundColor).toBe(
+        getComputedStyle(squareAt(1, 0)).backgroundColor,
+      );
+    });
+
+    it('is one stop for the Tab key, wherever the cursor stands', () => {
+      renderGrid(crossingView());
+      const tabStops = () => [...board().querySelectorAll('[tabindex="0"]')];
+
+      // Eighty squares would otherwise be eighty stops on the way past the grid.
+      expect(tabStops()).toHaveLength(1);
+
+      takeUp(1, 2);
+
+      expect(tabStops()).toEqual([squareAt(1, 2)]);
+    });
+
+    describe('where two of the player own words cross', () => {
+      it('switches to the word running the way the arrow went', () => {
+        renderGrid(crossingView());
+
+        takeUp(1, 1);
+        press('ArrowUp');
+
+        expect(document.activeElement).toBe(squareAt(0, 1));
+        expect(announcement()).toHaveTextContent('Now filling down.');
+      });
+
+      it('keeps the cursor and the next letter together across a crossing', () => {
+        // The defect PR #26 fixed once, arriving from the other side: press
+        // down while filling an across word, and if the across word stayed
+        // active the next letter lands to the right of where the cursor now is.
+        renderGrid(crossingView());
+
+        takeUp(1, 0);
+        typeInto(1, 0, 'e');
+        press('ArrowDown');
+        expect(document.activeElement).toBe(squareAt(2, 1));
+
+        press('ArrowUp');
+        act(() => typeInto(1, 1, 'a'));
+
+        expect(document.activeElement).toBe(squareAt(2, 1));
+        expect(squareAt(1, 2)).toHaveValue('');
+      });
+    });
+
+    describe('backspace', () => {
+      it('clears the letter in the square the cursor is in', () => {
+        renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
+
+        takeUp(0, 0);
+        typeInto(0, 0, 'c');
+        press('ArrowUp');
+        press('Backspace');
+
+        expect(squareAt(0, 0)).toHaveValue('');
+        expect(document.activeElement).toBe(squareAt(0, 0));
+      });
+
+      it('steps back along the word and clears there when the square is empty', () => {
+        renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
+
+        takeUp(0, 0);
+        typeInto(0, 0, 'c');
+        typeInto(1, 0, 'a');
+        press('Backspace');
+
+        expect(squareAt(1, 0)).toHaveValue('');
+        expect(squareAt(0, 0)).toHaveValue('C');
+        expect(document.activeElement).toBe(squareAt(1, 0));
+      });
+
+      it('has nowhere to step back to at the start of a word', () => {
+        renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
+
+        takeUp(0, 0);
+        press('Backspace');
+
+        expect(document.activeElement).toBe(squareAt(0, 0));
+        expect(squareAt(0, 0)).toHaveValue('');
+      });
+
+      it('never takes back a letter that was written in rather than typed', () => {
+        renderGrid(viewWith([], [guessable('w1', CAR, 'car')], {}, ['0:0', '0:1', '0:2']));
+
+        takeUp(1, 0);
+        press('ArrowUp');
+        press('Backspace');
+
+        // The `C` belongs to the word this player explains. It is not theirs to
+        // lose, and stepping back over it is what typing forward already does.
+        expect(boardLetters()).toBe('CAT');
+      });
+    });
+  });
+
+  describe('reaching a word by name', () => {
+    const reachFor = (view: GridView, word: WordLocation) =>
+      render(<CrosswordGrid view={view} onSolved={onSolved} wordToReach={word} />);
+
+    it('goes to a word of this player own, ready for the next letter', () => {
+      reachFor(crossingView(), { cells: OAK, orientation: 'down' });
+
+      expect(document.activeElement).toBe(squareAt(0, 1));
+
+      typeInto(0, 1, 'o');
+
+      expect(document.activeElement).toBe(squareAt(1, 1));
+    });
+
+    it('skips to the first square of it that is still open', () => {
+      // `CAR` begins in the square the explained `CAT` already fills, and that
+      // letter is nobody's to type over.
+      reachFor(viewWith([], [guessable('w1', CAR, 'car')], {}, ['0:0', '0:1', '0:2']), {
+        cells: CAR,
+        orientation: 'down',
+      });
+
+      expect(document.activeElement).toBe(squareAt(1, 0));
+    });
+
+    it('brings a word this player explains into view without making it typeable', () => {
+      reachFor(viewWith([], [guessable('w1', CAR, 'car')], {}, ['0:0', '0:1', '0:2']), {
+        cells: CAT,
+        orientation: 'across',
+      });
+
+      expect(document.activeElement).toHaveAccessibleName(/yours to explain/i);
+      // Nothing has been taken up to fill: the word is read, not answered.
+      expect(screen.queryByText(/now filling/i)).not.toBeInTheDocument();
+      expect(typeableSquares()).toHaveLength(2);
+    });
+
+    it('takes the player back to a word they ask for a second time', () => {
+      const view = crossingView();
+      const { rerender } = render(
+        <CrosswordGrid
+          view={view}
+          onSolved={onSolved}
+          wordToReach={{ cells: OAK, orientation: 'down' }}
+        />,
+      );
+
+      act(() => squareAt(1, 0).focus());
+      expect(document.activeElement).toBe(squareAt(1, 0));
+
+      rerender(
+        <CrosswordGrid
+          view={view}
+          onSolved={onSolved}
+          wordToReach={{ cells: OAK, orientation: 'down' }}
+        />,
+      );
+
+      expect(document.activeElement).toBe(squareAt(0, 1));
+    });
   });
 
   it('takes one letter per square and nothing that is not a letter', () => {
     renderGrid(viewWith([], [guessable('w1', CAR, 'car')]));
 
     typeInto(0, 0, '4');
-    expect(cellInput(0, 0)).toHaveValue('');
+    expect(squareAt(0, 0)).toHaveValue('');
 
     typeInto(0, 0, ' ');
-    expect(cellInput(0, 0)).toHaveValue('');
+    expect(squareAt(0, 0)).toHaveValue('');
 
     typeInto(0, 0, 'q');
-    expect(cellInput(0, 0)).toHaveValue('Q');
+    expect(squareAt(0, 0)).toHaveValue('Q');
 
     typeInto(0, 0, '');
-    expect(cellInput(0, 0)).toHaveValue('');
+    expect(squareAt(0, 0)).toHaveValue('');
   });
 });

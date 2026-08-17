@@ -156,17 +156,16 @@ const openRoom = async (room: unknown = storedRoom()) => {
 const grid = () => screen.getByRole('group', { name: /crossword grid/i });
 
 /**
- * What the board says with its numbering and its markers taken out — which is
- * to say, the letters on it and nothing else.
+ * What the board says with its numbering taken out — which is to say, the
+ * letters on it and nothing else.
  *
- * Every square a word begins in carries a crossword number, drawn in it and
- * said again for a reader who cannot see it, and a square holding a word this
- * player explains says so too. None of that is a letter of anybody's word, and
- * none of it may hide one: what is left after they are removed is still
- * asserted in full, so a letter that leaked would still be here.
+ * Every square a word begins in carries a crossword number. It is no letter of
+ * anybody's word and it may hide none: what is left after the digits are
+ * removed is still asserted in full, so a letter that leaked would still be
+ * here. What a square is beyond its letter is said in its own label rather than
+ * written on the board, so nothing else has to be taken out.
  */
-const gridLetters = () =>
-  (grid().textContent ?? '').replaceAll(/Number \d+\.|Yours to explain: |\d/g, '');
+const gridLetters = () => (grid().textContent ?? '').replaceAll(/\d/g, '');
 
 /** This browser is signed in as `guest-uid`, so every room here is read as Bob. */
 const VIEWER_ID = 'guest-uid';
@@ -651,7 +650,7 @@ describe('RoomPage', () => {
       // `car` runs down the left column and is Bob's to explain, so he reads it
       // where it sits and can say what it crosses.
       expect(gridLetters()).toBe('CAR');
-      expect(within(grid()).getAllByText(/yours to explain/i)).toHaveLength(3);
+      expect(within(grid()).getAllByLabelText(/yours to explain/i)).toHaveLength(3);
     });
 
     it('never puts a word hidden from the player anywhere on their screen', async () => {
@@ -675,8 +674,9 @@ describe('RoomPage', () => {
 
       // `cat` and `car` both begin in the top-left square, and one number
       // covers the two of them — as it would in a printed crossword. That
-      // square holds a word Bob explains, so its number is spoken beside it.
-      expect(screen.getByText('Number 1.')).toBeInTheDocument();
+      // square holds a word Bob explains, so its number is said in what the
+      // square says of itself.
+      expect(screen.getByLabelText(/row 1, column 1\b/i)).toHaveAccessibleName(/^Number 1, /i);
       expect(grid().textContent).toContain('1');
     });
 
@@ -687,9 +687,12 @@ describe('RoomPage', () => {
       // the one the `car` he explains starts in, and that letter is already in
       // front of him — so the two after it are what he types.
       expect(screen.getAllByLabelText(/a letter of one of your words/i)).toHaveLength(2);
-      expect(screen.getByLabelText(/row 1, column 3/i)).toBeInTheDocument();
-      expect(screen.queryByLabelText(/row 1, column 1\b/i)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/row 3, column 1/i)).not.toBeInTheDocument();
+      expect(screen.getByLabelText(/row 1, column 3/i)).toHaveAccessibleName(/one of your words/i);
+      // Every square can be moved onto; these two are simply not his to fill.
+      expect(screen.getByLabelText(/row 1, column 1\b/i)).toHaveAccessibleName(/yours to explain/i);
+      expect(screen.getByLabelText(/row 3, column 1/i)).not.toHaveAccessibleName(
+        /one of your words/i,
+      );
     });
 
     it('shows no word at all to a player the deal did not cover', async () => {
@@ -789,7 +792,7 @@ describe('RoomPage', () => {
       // while everybody waits.
       await openRoom(playing());
       expect(gridLetters()).toBe('CAR');
-      expect(within(grid()).getAllByText(/yours to explain/i)).toHaveLength(3);
+      expect(within(grid()).getAllByLabelText(/yours to explain/i)).toHaveLength(3);
 
       await act(async () => {
         emitRoom({
@@ -803,9 +806,11 @@ describe('RoomPage', () => {
       });
 
       expect(gridLetters()).toBe('CAR');
-      expect(within(grid()).queryByText(/yours to explain/i)).not.toBeInTheDocument();
+      expect(within(grid()).queryByLabelText(/yours to explain/i)).not.toBeInTheDocument();
       expect(screen.getByText(/1 down — car — answered/i)).toBeInTheDocument();
-      expect(screen.queryByLabelText(/row 1, column 1\b/i)).not.toBeInTheDocument();
+      expect(screen.getByLabelText(/row 1, column 1\b/i)).not.toHaveAccessibleName(
+        /one of your words/i,
+      );
     });
 
     it('locks the squares of a word once it has been answered', async () => {
@@ -899,6 +904,88 @@ describe('RoomPage', () => {
         expect.anything(),
         expect.objectContaining({ 'words.w1.guessedByPlayerId': 'guest-uid' }),
       );
+    });
+
+    /** `cat` across and `car` down are both Bob's; `rat` along the bottom is his to explain. */
+    const crossingRoom = () =>
+      storedRoom({
+        status: 'playing',
+        layout: CROSSING_LAYOUT,
+        players: { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) },
+        words: {
+          w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+          w1: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+          w2: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+        },
+      });
+
+    /** Presses a key where the cursor is, as a player with both hands on the keys does. */
+    const press = (key: string) =>
+      act(async () => {
+        fireEvent.keyDown(document.activeElement ?? document.body, { key });
+      });
+
+    it('plays two of a player own crossing words from the keyboard alone', async () => {
+      const room = crossingRoom();
+
+      await openRoom(room);
+
+      // Where the Tab key lands: the first square of the board this player may
+      // fill, which is the one `cat` and `car` share.
+      const start = screen.getByLabelText(/row 1, column 1\b/i);
+      await act(async () => start.focus());
+
+      await act(async () => {
+        typeInto(0, 0, 'c');
+        typeInto(0, 1, 'a');
+        typeInto(0, 2, 't');
+      });
+
+      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
+        expect.anything(),
+        expect.objectContaining({ 'words.w0.guessedByPlayerId': 'guest-uid' }),
+      );
+
+      // Back along the row and down into the other word, without a mouse: the
+      // arrow down takes the word running that way through the square it
+      // arrives at, which is what keeps the next letter under the cursor.
+      await press('ArrowLeft');
+      await press('ArrowLeft');
+      await press('ArrowDown');
+      await act(async () => typeInto(1, 0, 'x'));
+      await press('Backspace');
+      expect(screen.getByLabelText(/row 2, column 1\b/i)).toHaveValue('');
+
+      // `rat` is Bob's to explain and it runs along the bottom row, so the last
+      // square of `car` arrives written and this is its last empty one.
+      await act(async () => typeInto(1, 0, 'a'));
+
+      expect(updateDoc).toHaveBeenCalledTimes(2);
+      expect(updateDoc).toHaveBeenLastCalledWith(
+        expect.anything(),
+        expect.objectContaining({ 'words.w1.guessedByPlayerId': 'guest-uid' }),
+      );
+      expectNoHiddenWordOnScreen(room);
+    });
+
+    it('takes the player to a word they tap in either half of the panel', async () => {
+      // Half the board is off a phone screen, so the panel is how a word named
+      // out loud is found. Bob explains `car` down the left and guesses `cat`
+      // across the top.
+      await openRoom(playing());
+
+      fireEvent.click(screen.getByRole('button', { name: /1 across — still to answer/i }));
+
+      // The first square of `cat` holds the `C` of the `car` he explains, so
+      // the word is reached at the first square that is still his to fill.
+      expect(document.activeElement).toHaveAccessibleName(
+        /row 1, column 2 — a letter of one of your words/i,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: /1 down — car/i }));
+
+      // A word he explains is brought into view and stays nobody's to type in.
+      expect(document.activeElement).toHaveAccessibleName(/row 1, column 1 — C, yours to explain/i);
     });
   });
 

@@ -1,17 +1,23 @@
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
 import Typography from '@mui/material/Typography';
 import type { WordOrientation } from 'shared';
 
-import type { DealtWordView, ExplainedWord, GuessableWord } from '../rooms/word-visibility';
+import type {
+  DealtWordView,
+  ExplainedWord,
+  GuessableWord,
+  WordLocation,
+} from '../rooms/word-visibility';
 
 /** Said over the words this player explains out loud. */
 const EXPLAIN_HINT =
-  'These are written into the grid for you alone, in italics on the dashed squares. Explain each one out loud — say anything except the word itself. The ones already answered are crossed out.';
+  'These are written into the grid for you alone, in italics on the dashed squares. Explain each one out loud — say anything except the word itself. The ones already answered are crossed out. Tap one to find it in the grid.';
 
 /** Said over the words the others are explaining to this player. */
 const GUESS_HINT =
-  'The others explain these to you. Type them into the highlighted squares, and name one by its number to ask for it again.';
+  'The others explain these to you. Type them into the highlighted squares, and name one by its number to ask for it again. Tap one to go to its first empty square.';
 
 /** How a word is named out loud: its crossword number and the way it runs. */
 const nameOf = (word: { readonly number: number; readonly orientation: WordOrientation }): string =>
@@ -20,6 +26,17 @@ const nameOf = (word: { readonly number: number; readonly orientation: WordOrien
 interface PlayerWordsPanelProps {
   /** This player's half of the room's words — never anybody else's. */
   readonly view: DealtWordView;
+  /**
+   * Called with where the word behind a tapped entry runs, so the grid can take
+   * the player to it.
+   *
+   * Only a location leaves this panel, never a word. Both halves report the
+   * same way and neither could report a spelling: where a word sits is drawn in
+   * the outlines of the squares already, and what is on this side of the call
+   * is what makes that so rather than the caller's care
+   * (`docs/decisions/0016-the-cursor-lives-in-the-grid.md`).
+   */
+  readonly onSelectWord: (location: WordLocation) => void;
 }
 
 /**
@@ -43,12 +60,18 @@ interface PlayerWordsPanelProps {
  * It takes the one word view that holds words, so a player the deal never
  * covered cannot be rendered here by mistake — there is no such prop to pass.
  *
+ * Every entry is a button, because for twenty words the grid is wider than a
+ * phone and half the board is off screen: the numbers in the grid are there to
+ * find a word once somebody names it, and this is what does the finding
+ * (`docs/decisions/0016-the-cursor-lives-in-the-grid.md`).
+ *
  * @param props.view - The `dealt` view {@link wordViewFor} worked out for this player
+ * @param props.onSelectWord - Called with where the word behind a tapped entry runs
  *
  * @example
- * <PlayerWordsPanel view={wordViewFor(room, viewerId)} />
+ * <PlayerWordsPanel view={wordViewFor(room, viewerId)} onSelectWord={goTo} />
  */
-export const PlayerWordsPanel = ({ view }: PlayerWordsPanelProps) => {
+export const PlayerWordsPanel = ({ view, onSelectWord }: PlayerWordsPanelProps) => {
   const answered = view.toGuess.filter((word) => word.isSolved).length;
 
   const entrySx = (isSolved: boolean) =>
@@ -56,12 +79,18 @@ export const PlayerWordsPanel = ({ view }: PlayerWordsPanelProps) => {
 
   // One unbroken line per word rather than a number in its own element: the
   // number, the direction and the state are read together, and a reader moving
-  // through the list by line should never be handed half of one.
+  // through the list by line should never be handed half of one. That line is
+  // also the button's whole name, so tapping it is offered in the same words.
   const entry = (word: ExplainedWord | GuessableWord, rest: string) => (
-    <ListItem key={word.id} disableGutters sx={{ py: 0.25 }}>
-      <Typography variant="body2" sx={entrySx(word.isSolved)}>
-        {`${nameOf(word)}${rest}`}
-      </Typography>
+    <ListItem key={word.id} disableGutters disablePadding>
+      <ListItemButton
+        onClick={() => onSelectWord({ cells: word.cells, orientation: word.orientation })}
+        sx={{ py: 0.25, px: 0.5 }}
+      >
+        <Typography variant="body2" sx={entrySx(word.isSolved)}>
+          {`${nameOf(word)}${rest}`}
+        </Typography>
+      </ListItemButton>
     </ListItem>
   );
 
