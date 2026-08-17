@@ -1,10 +1,12 @@
 # 0011. Typing guesses into the grid
 
-Status: Accepted, amended by [0015](0015-explained-words-in-the-grid.md)
+Status: Accepted, amended by [0015](0015-explained-words-in-the-grid.md), refined by [0016](0016-the-cursor-lives-in-the-grid.md)
 
 Amends [0010](0010-letterless-grid-and-private-word-list.md).
 
 [0015](0015-explained-words-in-the-grid.md) overturns two things below: "the grid diverges in what it accepts, never in what it shows", and "an explainer still cannot see where their word sits". Everything else here stands — in particular the rule that a word is answered when its squares are full and spell it, which 0015 applies unchanged to the letters it writes in.
+
+[0016](0016-the-cursor-lives-in-the-grid.md) refines "where the cursor goes is a property of the player, not of the square". Every rule below still holds; 0016 answers the cases the arrow keys added — a perpendicular arrow, and a cursor on a square this player has no word through at all — and records that the cursor stopped being the browser's focus and became state of the grid.
 
 ## Context
 
