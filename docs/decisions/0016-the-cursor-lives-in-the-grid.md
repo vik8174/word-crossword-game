@@ -1,8 +1,10 @@
 # 0016. The cursor lives in the grid, not in the DOM
 
-Status: Accepted
+Status: Accepted, refined by [0017](0017-desktop-first-while-the-grid-outgrows-a-phone.md)
 
 Refines [0011](0011-typing-guesses-into-the-grid.md).
+
+[0017](0017-desktop-first-while-the-grid-outgrows-a-phone.md) puts the premise below on hold: the phone is what this record reasons from, and the grid does not fit one. The shapes kept for its sake — the `input` squares, reaching a word from the panel — stand for their own reasons.
 
 ## Context
 
