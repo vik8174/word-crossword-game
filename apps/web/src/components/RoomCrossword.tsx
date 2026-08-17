@@ -38,8 +38,9 @@ interface RoomCrosswordProps {
  * Every phase of a room shows the board — a lobby shows it empty, a closed room
  * shows how far it got — so the section itself is one component and what
  * differs between them is the caption and whether anything may be typed. What
- * may be drawn is not decided here: `gridViewFor` strips every unearned letter
- * before this component sees the board (`docs/decisions/0010-letterless-grid-and-private-word-list.md`).
+ * may be drawn is not decided here: `gridViewFor` strips every letter this
+ * reader has not earned and does not explain before this component sees the
+ * board (`docs/decisions/0015-explained-words-in-the-grid.md`).
  *
  * @param props.room - The room document
  * @param props.viewerId - Which player is reading, so they get their own squares

@@ -18,9 +18,16 @@ import { RoomCrossword } from './RoomCrossword';
  * closed for good either way — `completed` is terminal — so the players are
  * told that plainly, and the words nobody answered are not spelled out, because
  * from here there is no way to tell an odd game from a spoiled one.
+ *
+ * With one exception, which the sentence has to name rather than leave the
+ * reader to notice: the words *they* were explaining are still written into
+ * their own grid, as they were all game
+ * (`docs/decisions/0015-explained-words-in-the-grid.md`). Those were never
+ * theirs to guess, so nothing is given away — but a message promising a blank
+ * board over a board that is not blank would simply be untrue.
  */
 const CLOSED_UNFINISHED_MESSAGE =
-  'This room is closed. It was closed before every word had been answered, so the words that were never guessed are not shown — ask whoever invited you for a link to a new game.';
+  'This room is closed. It was closed before every word had been answered, so the words nobody guessed are not spelled out — apart from the ones that were yours to explain, which were on your screen all along. Ask whoever invited you for a link to a new game.';
 
 interface RoomClosedEarlyProps {
   /** The room, closed with words still unanswered. */

@@ -1,6 +1,8 @@
 # 0010. A letterless grid and a private list of the words a player explains
 
-Status: Accepted, amended by [0011](0011-typing-guesses-into-the-grid.md)
+Status: Superseded by [0015](0015-explained-words-in-the-grid.md)
+
+Was: Accepted, amended by [0011](0011-typing-guesses-into-the-grid.md). [0015](0015-explained-words-in-the-grid.md) takes option (a) below, which this record rejected — the leak it feared is measured there rather than estimated.
 
 ## Context
 

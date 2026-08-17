@@ -28,15 +28,36 @@ const LETTERS: Readonly<Record<string, string>> = {
 const guessable = (id: string, cells: readonly GridPosition[], word: string, isSolved = false) =>
   ({
     id,
+    // The grid draws the number a *square* carries, handed to it per cell, so
+    // the number on a word is never read here. One will do for all of them.
+    number: 1,
     orientation: cells[0]?.row === cells[1]?.row ? 'across' : 'down',
     cells,
     isSolved,
     accepts: (guess: string) => checkGuess(guess, word),
   }) satisfies GuessableWord;
 
+/** What one square holds, with a solved word taking the square from an explained one. */
+const contentFor = (
+  key: string,
+  revealed: readonly string[],
+  explained: readonly string[],
+): GridCellView['content'] => {
+  if (revealed.includes(key)) {
+    return { kind: 'solved', letter: LETTERS[key]! };
+  }
+
+  if (explained.includes(key)) {
+    return { kind: 'explained', letter: LETTERS[key]! };
+  }
+
+  return { kind: 'empty' };
+};
+
 /**
- * A board whose squares show a letter only when named in `revealed` — exactly
- * what `gridViewFor` hands over once the words covering them have been solved.
+ * A board whose squares show a letter only when named in `revealed` or in
+ * `explained` — exactly what `gridViewFor` hands over for the words the group
+ * has answered and for the ones this player explains.
  *
  * Numbers are handed over the same way: a square carries one when `numbered`
  * names it, and the grid draws what it is given rather than working out where
@@ -46,6 +67,7 @@ const viewWith = (
   revealed: readonly string[],
   toGuess: readonly GuessableWord[],
   numbered: Readonly<Record<string, number>> = {},
+  explained: readonly string[] = [],
 ): GridView => ({
   rows: 3,
   cols: 3,
@@ -55,7 +77,7 @@ const viewWith = (
     return {
       row: row!,
       col: col!,
-      letter: revealed.includes(key) ? LETTERS[key]! : null,
+      content: contentFor(key, revealed, explained),
       number: numbered[key] ?? null,
     };
   }),
@@ -87,7 +109,7 @@ const crossingView = (): GridView => ({
       (cell, index, all) =>
         all.findIndex((other) => other.row === cell.row && other.col === cell.col) === index,
     )
-    .map((cell): GridCellView => ({ ...cell, letter: null, number: null })),
+    .map((cell): GridCellView => ({ ...cell, content: { kind: 'empty' }, number: null })),
   toGuess: [guessable('w0', EAT, 'eat'), guessable('w1', OAK, 'oak')],
 });
 
@@ -103,6 +125,13 @@ const renderGrid = (view: GridView) => render(<CrosswordGrid view={view} onSolve
 
 /** Everything the board itself says, numbers and letters alike. */
 const board = () => screen.getByRole('group', { name: /crossword grid/i });
+
+/**
+ * What the board says with its numbering and its spoken markers taken out —
+ * which is to say, the letters on it and nothing else.
+ */
+const boardLetters = () =>
+  (board().textContent ?? '').replaceAll(/Number \d+\.|Yours to explain: |\d/g, '');
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -188,6 +217,84 @@ describe('CrosswordGrid', () => {
       // number has to be spoken beside it or a reader loses it.
       expect(screen.getByText('Number 1.')).toBeInTheDocument();
       expect(board().textContent).toMatch(/C.*A.*T/);
+    });
+  });
+
+  describe('the words this player explains', () => {
+    /** `CAT` across the top is this player's to explain; `CAR` down is theirs to guess. */
+    const explainingCat = () =>
+      viewWith([], [guessable('w1', CAR, 'car')], {}, ['0:0', '0:1', '0:2']);
+
+    /** The same three squares, but answered by the group rather than explained. */
+    const solvedCat = () => viewWith(['0:0', '0:1', '0:2'], [guessable('w1', CAR, 'car')]);
+
+    it('writes the word into the grid, in place, and adds nothing else to the board', () => {
+      renderGrid(explainingCat());
+
+      expect(boardLetters()).toBe('CAT');
+    });
+
+    it('lets nobody type over a letter it has written in', () => {
+      renderGrid(explainingCat());
+
+      // `CAR` starts in the square the explained `CAT` already fills, so what
+      // is left of it to type is the two squares below.
+      expect(screen.getAllByLabelText(/a letter of one of your words/i)).toHaveLength(2);
+      expect(screen.queryByLabelText(/row 1, column 1\b/i)).not.toBeInTheDocument();
+    });
+
+    it('counts a letter it wrote in towards the word crossing it', async () => {
+      // The `C` is in front of the player and it is right; asking them to
+      // retype it would be asking them to copy what they can already read.
+      renderGrid(explainingCat());
+
+      await act(async () => {
+        typeInto(1, 0, 'a');
+        typeInto(2, 0, 'r');
+      });
+
+      expect(onSolved).toHaveBeenCalledExactlyOnceWith('w1');
+    });
+
+    it('says which squares are this player own to explain, for a reader who cannot see them', () => {
+      renderGrid(explainingCat());
+
+      expect(screen.getAllByText(/yours to explain/i)).toHaveLength(3);
+    });
+
+    it('draws it apart from a word the group answered, without relying on colour', () => {
+      const { unmount } = renderGrid(explainingCat());
+
+      // A dashed outline and a slanted letter, either of which survives a
+      // screen read in greyscale by somebody who cannot tell the tints apart.
+      expect(screen.getByText('T')).toHaveStyle({ borderStyle: 'dashed', fontStyle: 'italic' });
+      unmount();
+
+      renderGrid(solvedCat());
+
+      expect(screen.getByText('T')).toHaveStyle({ borderStyle: 'solid', fontStyle: 'normal' });
+    });
+
+    it('keeps the number of the square readable over it', () => {
+      renderGrid(viewWith([], [guessable('w1', CAR, 'car')], { '0:0': 1 }, ['0:0', '0:1', '0:2']));
+
+      // The number is drawn over an explained square as over any other, and
+      // said beside it, since the square itself carries no label.
+      expect(board().textContent).toContain('1');
+      expect(screen.getByText('Number 1.')).toBeInTheDocument();
+    });
+
+    it('turns the word plain once its guesser has answered it', () => {
+      const { rerender } = renderGrid(explainingCat());
+      expect(screen.getAllByText(/yours to explain/i)).toHaveLength(3);
+
+      rerender(<CrosswordGrid view={solvedCat()} onSolved={onSolved} />);
+
+      // Nothing new appears — the letters were already there — but they stop
+      // being this player's alone, which is what tells them to stop explaining.
+      expect(boardLetters()).toBe('CAT');
+      expect(screen.queryByText(/yours to explain/i)).not.toBeInTheDocument();
+      expect(screen.getByText('T')).toHaveStyle({ borderStyle: 'solid' });
     });
   });
 
@@ -537,7 +644,9 @@ describe('CrosswordGrid', () => {
             view={{
               ...crossingView(),
               cells: crossingView().cells.map((cell) =>
-                cell.col === 1 ? { ...cell, letter: 'OAK'[cell.row]! } : cell,
+                cell.col === 1
+                  ? { ...cell, content: { kind: 'solved' as const, letter: 'OAK'[cell.row]! } }
+                  : cell,
               ),
               toGuess: [guessable('w0', EAT, 'eat'), guessable('w1', OAK, 'oak', true)],
             }}

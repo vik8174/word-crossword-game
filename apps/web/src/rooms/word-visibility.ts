@@ -26,13 +26,33 @@ import { isWordSolved, wordIdAt } from './room-document';
  * function that answers whether some letters spell it. The spelling itself
  * never crosses the boundary (see
  * `docs/decisions/0011-typing-guesses-into-the-grid.md`).
+ *
+ * The line is now drawn on both sides rather than on one. The words a player
+ * explains are written into their grid, so what this module guarantees is not
+ * that no word reaches a screen but that **no word hidden from this viewer
+ * does, while the ones they explain do**
+ * (`docs/decisions/0015-explained-words-in-the-grid.md`). That is why the
+ * letters of an explained word are taken from {@link wordViewFor} rather than
+ * read off the layout: a player the deal never covered explains nothing, and a
+ * shortcut through `layout.placedWords` would hand them the whole crossword.
  */
 
 /** A word the viewer can see, and must explain to the others without saying it. */
 export interface ExplainedWord {
   /** Key of the word in the room's `words` map — stable across renders and updates. */
   readonly id: string;
+  /**
+   * The crossword number of the square it begins in.
+   *
+   * How the players name a word to each other out loud, and the same number the
+   * grid prints in that square — both come from {@link numberCrossword}, so
+   * there is one numbering rather than two that could drift.
+   */
+  readonly number: number;
+  readonly orientation: WordOrientation;
   readonly word: string;
+  /** The squares that spell it, in reading order, so the grid can write it in. */
+  readonly cells: readonly GridPosition[];
   /** `true` once the player it was hidden from has answered it — nothing left to explain. */
   readonly isSolved: boolean;
 }
@@ -47,6 +67,12 @@ export interface ExplainedWord {
 export interface GuessableWord {
   /** Key of the word in the room's `words` map. */
   readonly id: string;
+  /**
+   * The crossword number of the square it begins in — safe to say to anybody,
+   * since the outlines of the squares already show where the word starts. It is
+   * what lets this player ask for one of their own words to be explained again.
+   */
+  readonly number: number;
   readonly orientation: WordOrientation;
   /** The squares that spell it, in reading order. */
   readonly cells: readonly GridPosition[];
@@ -86,10 +112,31 @@ export type PlayerWordView =
 /** The one case that holds words, for whatever is allowed to render them. */
 export type DealtWordView = Extract<PlayerWordView, { kind: 'dealt' }>;
 
+/**
+ * What a square holds, and why it holds it.
+ *
+ * A letter and a reason, or no letter at all — never a letter whose reason has
+ * been lost. `string | null` could not tell "the group solved this" from
+ * "written in for me alone", and the difference is functional rather than
+ * decorative: a player who reads their own word as one the group has already
+ * answered stops explaining it, and the game stalls with everybody waiting.
+ *
+ * The three cases are separate shapes rather than one shape with a nullable
+ * letter, so a screen cannot draw an empty square holding a letter, and cannot
+ * forget to ask which of the two lettered cases it is looking at.
+ */
+export type GridCellContent =
+  /** Nothing in it: no word through it has been answered, and none is this viewer's to explain. */
+  | { readonly kind: 'empty' }
+  /** A word the group has answered runs through it. The same on every screen. */
+  | { readonly kind: 'solved'; readonly letter: string }
+  /** A word this viewer explains runs through it. On their screen alone, until it is answered. */
+  | { readonly kind: 'explained'; readonly letter: string };
+
 /** One square of the grid as it may be drawn right now. */
 export interface GridCellView extends GridPosition {
-  /** Its letter once a solved word passes through it, `null` while none does. */
-  readonly letter: string | null;
+  /** Its letter and where the letter comes from. */
+  readonly content: GridCellContent;
   /**
    * The crossword number printed in it, `null` unless a word begins here.
    *
@@ -106,7 +153,7 @@ export interface GridCellView extends GridPosition {
 export interface GridView {
   readonly rows: number;
   readonly cols: number;
-  /** Every square that holds a letter, whether or not that letter may be shown. */
+  /** Every square of the board, each saying what it holds and why. */
   readonly cells: readonly GridCellView[];
   /**
    * Words this player answers. Empty for anyone the deal did not cover, and
@@ -126,6 +173,8 @@ export const cellKey = ({ row, col }: GridPosition): string => `${row}:${col}`;
 /** A placed word paired with the mutable state the game keeps for it. */
 interface AssignedWord {
   readonly id: string;
+  /** The number the crossword prints in the square it begins in. */
+  readonly number: number;
   readonly placed: PlacedWord;
   /** UID of the player who has to guess it — the reason this entry exists. */
   readonly hiddenFrom: string;
@@ -133,28 +182,63 @@ interface AssignedWord {
 }
 
 /**
- * The room's words that have actually been dealt to somebody.
+ * The room's words that have actually been dealt to somebody, each with its number.
  *
  * A word whose `hiddenFromPlayerId` is missing, `null`, or something another
  * client wrote nonsense into belongs to nobody and is dropped here, so no
  * caller downstream has to wonder what an unassigned word means.
+ *
+ * A word occupying no square at all is dropped for the same reason: it carries
+ * no number, has nowhere to be drawn and nowhere to be typed, so an entry for
+ * it would only be a line in a panel that names nothing on the board. The
+ * generator produces no such word; a layout read back out of a document another
+ * client wrote is where one could come from.
  */
-const assignedWordsOf = (room: ReadableRoom): readonly AssignedWord[] =>
-  room.layout.placedWords
+const assignedWordsOf = (room: ReadableRoom): readonly AssignedWord[] => {
+  const numbers = new Map(
+    numberCrossword(room.layout.placedWords).map(({ wordIndex, number }) => [wordIndex, number]),
+  );
+
+  return room.layout.placedWords
     .map((placed, index) => {
       const id = wordIdAt(index);
       const state = room.words[id];
 
-      return { id, placed, hiddenFrom: state?.hiddenFromPlayerId, isSolved: isWordSolved(state) };
+      return {
+        id,
+        number: numbers.get(index),
+        placed,
+        hiddenFrom: state?.hiddenFromPlayerId,
+        isSolved: isWordSolved(state),
+      };
     })
-    .filter((entry): entry is AssignedWord => typeof entry.hiddenFrom === 'string');
+    .filter(
+      (entry): entry is AssignedWord =>
+        typeof entry.hiddenFrom === 'string' && entry.number !== undefined,
+    );
+};
 
-const guessableFrom = ({ id, placed, isSolved: solved }: AssignedWord): GuessableWord => ({
+const guessableFrom = ({ id, number, placed, isSolved: solved }: AssignedWord): GuessableWord => ({
   id,
+  number,
   orientation: placed.orientation,
   cells: placed.cells,
   isSolved: solved,
   accepts: (guess: string) => checkGuess(guess, placed.word),
+});
+
+const explainableFrom = ({
+  id,
+  number,
+  placed,
+  isSolved: solved,
+}: AssignedWord): ExplainedWord => ({
+  id,
+  number,
+  orientation: placed.orientation,
+  word: placed.word,
+  cells: placed.cells,
+  isSolved: solved,
 });
 
 /**
@@ -201,9 +285,7 @@ export const wordViewFor = (room: ReadableRoom, viewerId: string): PlayerWordVie
 
   return {
     kind: 'dealt',
-    toExplain: assigned
-      .filter((entry) => entry.hiddenFrom !== viewerId)
-      .map(({ id, placed, isSolved: solved }) => ({ id, word: placed.word, isSolved: solved })),
+    toExplain: assigned.filter((entry) => entry.hiddenFrom !== viewerId).map(explainableFrom),
     toGuess,
   };
 };
@@ -234,11 +316,12 @@ export const finishedWordsOf = (room: ReadableRoom): readonly string[] =>
   isGameFinished(room) ? room.layout.placedWords.map(({ word }) => word) : [];
 
 /**
- * The squares whose letters may be shown: those of words already solved.
+ * The squares of the words the group has already answered.
  *
  * Solved words are shared progress, so this does not depend on who is looking —
- * the filled-in part of the grid is the same on every screen
- * (`docs/decisions/0010-letterless-grid-and-private-word-list.md`).
+ * the answered part of the grid is the same on every screen, which is what lets
+ * a player tell it apart from the part only they can see
+ * (`docs/decisions/0015-explained-words-in-the-grid.md`).
  */
 const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
   new Set(
@@ -246,6 +329,36 @@ const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
       .filter((_placed, index) => isWordSolved(room.words[wordIdAt(index)]))
       .flatMap((placed) => placed.cells.map(cellKey)),
   );
+
+/**
+ * The squares of the words this viewer explains, keyed by {@link cellKey}.
+ *
+ * Taken from the view rather than from the layout, and that is the whole of its
+ * safety: a player the deal never covered explains nothing, and asking
+ * `layout.placedWords` which words are "not hidden from me" would answer *all
+ * of them* and write the crossword out in front of them.
+ */
+const explainedCellKeys = (view: PlayerWordView): ReadonlySet<string> =>
+  new Set(view.kind === 'dealt' ? view.toExplain.flatMap(({ cells }) => cells.map(cellKey)) : []);
+
+/**
+ * What a square holds, given what the group has answered and what this viewer explains.
+ *
+ * Solved comes first where a square is both. That is what moves a word from
+ * "only I can see this" to "the group has this" the moment its guesser answers
+ * it: the same letter, drawn for a different reason, on every screen at once.
+ */
+const contentOf = (letter: string, isSolved: boolean, isExplained: boolean): GridCellContent => {
+  if (isSolved) {
+    return { kind: 'solved', letter };
+  }
+
+  if (isExplained) {
+    return { kind: 'explained', letter };
+  }
+
+  return { kind: 'empty' };
+};
 
 /**
  * The number printed in each square that begins a word, keyed by {@link cellKey}.
@@ -262,10 +375,17 @@ const numberedCellKeys = (room: ReadableRoom): ReadonlyMap<string, number> =>
 /**
  * The crossword as this player's screen may draw it.
  *
- * A square keeps its letter only once a solved word runs through it. Everything
- * else arrives as `null`, so a component that renders whatever it is handed
- * cannot give a word away — including the words it lets this player type into,
- * which come with coordinates and no spelling.
+ * A square keeps its letter when a solved word runs through it, and when a word
+ * this player explains does — and it says which of the two it is, so the screen
+ * can draw them apart. Every other square arrives empty, so a component that
+ * renders whatever it is handed cannot give a word away — including the words
+ * it lets this player type into, which come with coordinates and no spelling.
+ *
+ * The letters of an explained word do fill squares of words hidden from this
+ * player, wherever the two cross. That is measured and accepted rather than
+ * overlooked: `docs/decisions/0015-explained-words-in-the-grid.md` carries the
+ * numbers. What is *not* accepted, and is what this function exists to prevent,
+ * is a letter of a word hidden from the viewer arriving from anywhere else.
  *
  * Its number comes with it, because the numbers are how the players name the
  * words to each other and every screen must carry the same ones.
@@ -287,17 +407,22 @@ export const gridViewFor = (room: ReadableRoom, viewerId: string): GridView => {
   const solved = solvedCellKeys(room);
   const numbers = numberedCellKeys(room);
   const view = wordViewFor(room, viewerId);
+  const explained = explainedCellKeys(view);
   const isOpenForAnswers = room.status === 'playing';
 
   return {
     rows: room.layout.rows,
     cols: room.layout.cols,
-    cells: room.layout.cells.map(({ row, col, letter }) => ({
-      row,
-      col,
-      letter: solved.has(cellKey({ row, col })) ? letter : null,
-      number: numbers.get(cellKey({ row, col })) ?? null,
-    })),
+    cells: room.layout.cells.map(({ row, col, letter }) => {
+      const key = cellKey({ row, col });
+
+      return {
+        row,
+        col,
+        content: contentOf(letter, solved.has(key), explained.has(key)),
+        number: numbers.get(key) ?? null,
+      };
+    }),
     toGuess: view.kind === 'dealt' && isOpenForAnswers ? view.toGuess : [],
   };
 };

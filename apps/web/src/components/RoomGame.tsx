@@ -42,9 +42,10 @@ interface RoomGameProps {
  * A game in progress: this player's own words, and the grid they type into.
  *
  * Every player reads the same document, so what separates them is drawn here
- * and nowhere else: the words a player explains are theirs alone, the squares
- * they type into are their own, and no letter of anybody's word reaches the
- * grid before the group has earned it (see {@link RoomCrossword}).
+ * and nowhere else: the words a player explains are written into their own grid
+ * and nobody else's, the squares they type into are their own, and no letter of
+ * a word hidden from them reaches their screen before it has been answered (see
+ * {@link RoomCrossword}).
  *
  * Both writes a game makes belong to this screen. Answers are one of them; the
  * other is the ending, which is watched for here rather than one screen up, so

@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GridPosition, WordOrientation } from 'shared';
 
-import { cellKey, type GridView, type GuessableWord } from './word-visibility';
+import {
+  cellKey,
+  type GridCellContent,
+  type GridView,
+  type GuessableWord,
+} from './word-visibility';
 
 /**
  * Typing answers into the crossword: what stands in each square right now, and
@@ -32,12 +37,30 @@ import { cellKey, type GridView, type GuessableWord } from './word-visibility';
 /** How long a refused word stays on screen before its letters are taken back. */
 const REFUSAL_FLASH_MS = 1200;
 
+/**
+ * Where the letter drawn in a square comes from, and so what the square is.
+ *
+ * A square already holding a letter is nobody's to type in, whether the letter
+ * was earned by the group or written in for this player alone — but a screen
+ * still has to draw those two apart, so this says which it is rather than only
+ * whether the square takes input.
+ */
+export type CellSource =
+  /** A word the group has answered runs through it. */
+  | 'solved'
+  /** A word this player explains runs through it: written in for them alone. */
+  | 'explained'
+  /** One of this player's own words, still open — the only square they may type in. */
+  | 'own'
+  /** Nothing of this player's runs through it, and nothing has been answered there. */
+  | 'blank';
+
 /** One square of the grid, ready to be drawn. */
 export interface GuessEntryCell extends GridPosition {
-  /** What stands in it: a solved letter, this player's own, or `''` when blank. */
+  /** What stands in it: a letter already on the board, this player's own, or `''` when blank. */
   readonly letter: string;
-  /** Whether this player may type here — false for every square already filled in. */
-  readonly isEditable: boolean;
+  /** Why the letter is there — and `own` is exactly the square this player types in. */
+  readonly source: CellSource;
   /** Square typing moves on to from here; `null` at the end of the word being filled. */
   readonly nextCellKey: string | null;
   /** Which way typing runs from here, `null` where this player types nothing. */
@@ -75,6 +98,21 @@ export interface GuessEntry {
 
 /** What the player typed, by square. Squares they left alone are absent. */
 type TypedLetters = Readonly<Record<string, string>>;
+
+/**
+ * What a square is, given what it already holds and whether this player has a
+ * word of their own still open through it.
+ *
+ * A letter already on the board settles it: nobody types over a letter that is
+ * there, so `own` is left for the squares that are genuinely empty.
+ */
+const sourceOf = (content: GridCellContent, isOwn: boolean): CellSource => {
+  if (content.kind !== 'empty') {
+    return content.kind;
+  }
+
+  return isOwn ? 'own' : 'blank';
+};
 
 /** A single letter, as it is drawn in the grid — anything else is not typing. */
 const letterTyped = (value: string): string => {
@@ -116,13 +154,23 @@ export const useGuessEntry = (
     solve.current = onSolved;
   }, [onSolved]);
 
-  /** Letters already in the grid for everyone: solved words, and nothing else. */
-  const solvedLetters = useMemo(() => {
+  /**
+   * Letters already on this player's board: the words the group has answered,
+   * and the words this player explains.
+   *
+   * The two are one thing here on purpose. Whichever of them wrote the letter,
+   * it is right, it is in front of the player, and nobody is going to type over
+   * it — so a word of theirs that crosses it is that much nearer being full,
+   * exactly as `docs/decisions/0011-typing-guesses-into-the-grid.md` decided for
+   * solved crossings. Where the letter came from matters to the screen, not to
+   * the typing, so the difference is kept for drawing and dropped here.
+   */
+  const writtenLetters = useMemo(() => {
     const letters = new Map<string, string>();
 
     for (const cell of view.cells) {
-      if (cell.letter !== null) {
-        letters.set(cellKey(cell), cell.letter);
+      if (cell.content.kind !== 'empty') {
+        letters.set(cellKey(cell), cell.content.letter);
       }
     }
 
@@ -130,8 +178,8 @@ export const useGuessEntry = (
   }, [view]);
 
   const letterAt = useCallback(
-    (key: string, letters: TypedLetters) => solvedLetters.get(key) ?? letters[key] ?? '',
-    [solvedLetters],
+    (key: string, letters: TypedLetters) => writtenLetters.get(key) ?? letters[key] ?? '',
+    [writtenLetters],
   );
 
   /** How a word reads right now, `null` while any of its squares is still blank. */
@@ -150,8 +198,9 @@ export const useGuessEntry = (
    *
    * A square is rarely shared, but when two words hidden from the same player
    * cross, it belongs to both of them equally — which is why this is a list and
-   * not an owner. Squares a solved word already filled in are left out: nobody
-   * types there.
+   * not an owner. Squares that already hold a letter are left out: nobody types
+   * there, whether the letter was answered by the group or written in because
+   * this player explains the word crossing it.
    */
   const wordsOfCell = useMemo(() => {
     const through = new Map<string, GuessableWord[]>();
@@ -163,14 +212,14 @@ export const useGuessEntry = (
       for (const cell of word.cells) {
         const key = cellKey(cell);
 
-        if (!solvedLetters.has(key)) {
+        if (!writtenLetters.has(key)) {
           through.set(key, [...(through.get(key) ?? []), word]);
         }
       }
     }
 
     return through;
-  }, [view, solvedLetters]);
+  }, [view, writtenLetters]);
 
   /**
    * The word being filled in right now.
@@ -260,7 +309,7 @@ export const useGuessEntry = (
       word.cells
         .slice(position + 1)
         .map(cellKey)
-        .find((key) => !solvedLetters.has(key)) ?? null;
+        .find((key) => !writtenLetters.has(key)) ?? null;
 
     const drawn = new Map<string, GuessEntryCell>();
 
@@ -272,7 +321,7 @@ export const useGuessEntry = (
         row: cell.row,
         col: cell.col,
         letter: letterAt(key, typed),
-        isEditable: word !== undefined,
+        source: sourceOf(cell.content, word !== undefined),
         nextCellKey:
           word === undefined
             ? null
@@ -291,7 +340,16 @@ export const useGuessEntry = (
     }
 
     return drawn;
-  }, [view, wordsOfCell, wordFilledAt, activeWordId, solvedLetters, letterAt, typed, refusedCells]);
+  }, [
+    view,
+    wordsOfCell,
+    wordFilledAt,
+    activeWordId,
+    writtenLetters,
+    letterAt,
+    typed,
+    refusedCells,
+  ]);
 
   /** Takes the letters of the refused words back off the board. */
   const withdrawRefused = useCallback(

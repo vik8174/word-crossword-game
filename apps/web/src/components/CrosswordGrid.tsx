@@ -37,6 +37,29 @@ const NUMBER_SX: SxProps<Theme> = {
   pointerEvents: 'none',
 };
 
+/**
+ * How a square holding a word this player explains is drawn.
+ *
+ * Three cues, none of which is a colour on its own: a dashed outline where every
+ * other square has a solid one, the letter in italics where every other letter
+ * is upright, and a word said out loud for a reader who sees neither. A player
+ * who cannot tell this from a square the group has answered stops explaining a
+ * word nobody has guessed, and the game stalls with everyone waiting — so the
+ * distinction has to survive a screen read in greyscale
+ * (`docs/decisions/0015-explained-words-in-the-grid.md`).
+ *
+ * The tint stays faint so the crossword number keeps its dark ink on top of it.
+ */
+const EXPLAINED_SQUARE_SX: SxProps<Theme> = {
+  backgroundColor: (theme) => alpha(theme.palette.secondary.main, 0.16),
+  borderStyle: 'dashed',
+  borderColor: 'secondary.main',
+  fontStyle: 'italic',
+};
+
+/** Said before the letter of a square this player explains, and drawn nowhere. */
+const EXPLAINED_SPOKEN = 'Yours to explain: ';
+
 const REFUSAL_MESSAGE =
   'That is not the word — the letters clear in a moment. Try again as often as you like.';
 
@@ -52,17 +75,22 @@ interface CrosswordGridProps {
 }
 
 /**
- * The crossword: the squares that exist, the letters that have been earned, and
- * the ones this player is filling in.
+ * The crossword: the squares that exist, the letters this player may see, and
+ * the ones they are filling in.
  *
  * The room document carries every word in plain text, so the grid is exactly
  * where the game can be given away. This component is handed no word and no
- * unearned letter: `gridViewFor` decides what may be drawn and hands over the
- * squares of this player's own words as bare coordinates
- * (`docs/decisions/0011-typing-guesses-into-the-grid.md`). A square is
- * therefore blank, or it holds a letter the group has already solved, or it is
- * a box this player types into — and there is nothing here that could render a
- * fourth thing by mistake.
+ * letter that is not already this player's to see: `gridViewFor` decides what
+ * may be drawn and hands over the squares of this player's own words as bare
+ * coordinates (`docs/decisions/0011-typing-guesses-into-the-grid.md`).
+ *
+ * A square is therefore blank, or a box this player types into, or it holds a
+ * letter — and a letter arrives saying which of two things it is: a word the
+ * group has answered, or a word this player explains, written in for them alone
+ * (`docs/decisions/0015-explained-words-in-the-grid.md`). Those two are drawn
+ * apart by an outline and a slant as well as by a tint, because telling them
+ * apart is what keeps a player explaining a word nobody has guessed yet. There
+ * is nothing here that could render a fifth thing by mistake.
  *
  * One thing a square may carry whatever else it is doing: the crossword number
  * of the word that begins in it, which is how the players name a word to each
@@ -155,16 +183,33 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
         </Box>
       );
 
-    if (!cell.isEditable) {
+    if (cell.source !== 'own') {
+      const isExplained = cell.source === 'explained';
+
       return (
         <Box key={key} sx={{ position: 'relative', height: CELL_SIZE, width: CELL_SIZE }}>
           {/*
             A square nobody types into has no label of its own — it is a letter
             or it is blank — so its number is said here, before the letter, or a
-            reader who cannot see the grid has no way to hear it.
+            reader who cannot see the grid has no way to hear it. What the square
+            is follows, and only where it is not the ordinary case: a letter said
+            plainly is one the group has answered.
           */}
           {number !== null && <Box component="span" sx={SPOKEN_ONLY}>{`Number ${number}.`}</Box>}
-          <Box sx={{ ...square, backgroundColor: 'background.paper' }}>{cell.letter}</Box>
+          {isExplained && (
+            <Box component="span" sx={SPOKEN_ONLY}>
+              {EXPLAINED_SPOKEN}
+            </Box>
+          )}
+          <Box
+            sx={
+              isExplained
+                ? { ...square, ...EXPLAINED_SQUARE_SX }
+                : { ...square, backgroundColor: 'background.paper' }
+            }
+          >
+            {cell.letter}
+          </Box>
           {numberDrawn}
         </Box>
       );
