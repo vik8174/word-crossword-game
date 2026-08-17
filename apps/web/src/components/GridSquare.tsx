@@ -136,6 +136,9 @@ export const GridSquare = ({
   onPressed,
 }: GridSquareProps) => {
   const element = useRef<HTMLElement | null>(null);
+  // What this square last was. A square is an `input` or it is not, so a change
+  // here means the element itself was replaced rather than redrawn.
+  const wasSource = useRef(cell.source);
 
   useLayoutEffect(() => {
     // Before the browser paints rather than after, so that a square reached by
@@ -145,6 +148,21 @@ export const GridSquare = ({
       element.current?.focus();
     }
   }, [isCursor]);
+
+  useLayoutEffect(() => {
+    const wasReplaced = wasSource.current !== cell.source;
+
+    wasSource.current = cell.source;
+
+    // The square under the cursor can be replaced beneath it: answering a word
+    // turns its inputs into letters, and the focus then falls to the document
+    // with nothing to catch it — the arrows would go dead until the player
+    // reached for the mouse. Taken back only where it was genuinely lost, so a
+    // player who has moved on to something else on the page keeps it.
+    if (wasReplaced && isCursor && document.activeElement === document.body) {
+      element.current?.focus();
+    }
+  });
 
   const label = labelFor(cell, number);
   const tabIndex = isCursor || isTabStop ? 0 : -1;

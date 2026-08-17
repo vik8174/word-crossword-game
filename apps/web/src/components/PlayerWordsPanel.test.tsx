@@ -2,7 +2,12 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { checkGuess, type GridPosition } from 'shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { DealtWordView, ExplainedWord, GuessableWord } from '../rooms/word-visibility';
+import type {
+  DealtWordView,
+  ExplainedWord,
+  GuessableWord,
+  WordLocation,
+} from '../rooms/word-visibility';
 import { PlayerWordsPanel } from './PlayerWordsPanel';
 
 const CELLS: readonly GridPosition[] = [
@@ -29,7 +34,7 @@ const guessable = (id: string, number: number, word: string, isSolved = false): 
   accepts: (guess: string) => checkGuess(guess, word),
 });
 
-const onSelectWord = vi.fn<(word: ExplainedWord | GuessableWord) => void>();
+const onSelectWord = vi.fn<(location: WordLocation) => void>();
 
 const renderPanel = (view: DealtWordView) =>
   render(<PlayerWordsPanel view={view} onSelectWord={onSelectWord} />);
@@ -79,20 +84,18 @@ describe('PlayerWordsPanel', () => {
   });
 
   describe('reaching a word from its entry', () => {
-    it('reports the word behind a tapped entry, from either half of the game', () => {
+    it('reports where the word behind a tapped entry runs, from either half of the game', () => {
       renderPanel(dealt([explained('w0', 3, 'apple')], [guessable('w1', 4, 'cheese')]));
 
       fireEvent.click(screen.getByRole('button', { name: '3 across — apple' }));
 
-      expect(onSelectWord).toHaveBeenCalledExactlyOnceWith(
-        expect.objectContaining({ id: 'w0', orientation: 'across', cells: CELLS }),
-      );
+      // Where it runs and nothing else — a word this player explains is spelled
+      // out on their own screen, and it stops at this call all the same.
+      expect(onSelectWord).toHaveBeenCalledExactlyOnceWith({ orientation: 'across', cells: CELLS });
 
       fireEvent.click(screen.getByRole('button', { name: '4 down — still to answer' }));
 
-      expect(onSelectWord).toHaveBeenLastCalledWith(
-        expect.objectContaining({ id: 'w1', orientation: 'down', cells: CELLS }),
-      );
+      expect(onSelectWord).toHaveBeenLastCalledWith({ orientation: 'down', cells: CELLS });
     });
 
     it('reports the same word again when its entry is tapped again', () => {

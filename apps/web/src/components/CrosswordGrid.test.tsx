@@ -727,6 +727,32 @@ describe('CrosswordGrid', () => {
       expect(boardLetters()).toBe('');
     });
 
+    it('keeps the keys alive when the square under the cursor is answered', () => {
+      // The moment a word is answered its squares stop being inputs and become
+      // letters, and the one under the cursor is replaced while it holds the
+      // focus. Left there, the focus falls to the document and the arrows go
+      // dead until the player reaches for the mouse.
+      const view = viewWith([], [guessable('w1', CAR, 'car')]);
+      const { rerender } = renderGrid(view);
+
+      takeUp(1, 0);
+
+      act(() => {
+        rerender(
+          <CrosswordGrid
+            view={viewWith(['1:0'], [guessable('w1', CAR, 'car')])}
+            onSolved={onSolved}
+          />,
+        );
+      });
+
+      expect(document.activeElement).toBe(squareAt(1, 0));
+
+      press('ArrowUp');
+
+      expect(document.activeElement).toBe(squareAt(0, 0));
+    });
+
     it('holds the word being filled where this player has none running that way', () => {
       renderGrid(viewWith([], [guessable('w0', CAT, 'cat')]));
 

@@ -105,10 +105,7 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
       <PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />
 
       {wordView.kind === 'dealt' && (
-        <PlayerWordsPanel
-          view={wordView}
-          onSelectWord={({ cells, orientation }) => setWordToReach({ cells, orientation })}
-        />
+        <PlayerWordsPanel view={wordView} onSelectWord={setWordToReach} />
       )}
 
       {wordView.kind === 'left-out' && <Alert severity="info">{LEFT_OUT_MESSAGE}</Alert>}

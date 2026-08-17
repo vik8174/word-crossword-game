@@ -4,7 +4,12 @@ import ListItemButton from '@mui/material/ListItemButton';
 import Typography from '@mui/material/Typography';
 import type { WordOrientation } from 'shared';
 
-import type { DealtWordView, ExplainedWord, GuessableWord } from '../rooms/word-visibility';
+import type {
+  DealtWordView,
+  ExplainedWord,
+  GuessableWord,
+  WordLocation,
+} from '../rooms/word-visibility';
 
 /** Said over the words this player explains out loud. */
 const EXPLAIN_HINT =
@@ -22,12 +27,16 @@ interface PlayerWordsPanelProps {
   /** This player's half of the room's words — never anybody else's. */
   readonly view: DealtWordView;
   /**
-   * Called with the word behind an entry the player tapped, so the grid can
-   * take them to it. Both halves report the same way: where the word runs is
-   * safe to hand over for a word this player guesses, since it is drawn in the
-   * outlines of the squares already.
+   * Called with where the word behind a tapped entry runs, so the grid can take
+   * the player to it.
+   *
+   * Only a location leaves this panel, never a word. Both halves report the
+   * same way and neither could report a spelling: where a word sits is drawn in
+   * the outlines of the squares already, and what is on this side of the call
+   * is what makes that so rather than the caller's care
+   * (`docs/decisions/0016-the-cursor-lives-in-the-grid.md`).
    */
-  readonly onSelectWord: (word: ExplainedWord | GuessableWord) => void;
+  readonly onSelectWord: (location: WordLocation) => void;
 }
 
 /**
@@ -57,7 +66,7 @@ interface PlayerWordsPanelProps {
  * (`docs/decisions/0016-the-cursor-lives-in-the-grid.md`).
  *
  * @param props.view - The `dealt` view {@link wordViewFor} worked out for this player
- * @param props.onSelectWord - Called with the word behind a tapped entry
+ * @param props.onSelectWord - Called with where the word behind a tapped entry runs
  *
  * @example
  * <PlayerWordsPanel view={wordViewFor(room, viewerId)} onSelectWord={goTo} />
@@ -74,7 +83,10 @@ export const PlayerWordsPanel = ({ view, onSelectWord }: PlayerWordsPanelProps) 
   // also the button's whole name, so tapping it is offered in the same words.
   const entry = (word: ExplainedWord | GuessableWord, rest: string) => (
     <ListItem key={word.id} disableGutters disablePadding>
-      <ListItemButton onClick={() => onSelectWord(word)} sx={{ py: 0.25, px: 0.5 }}>
+      <ListItemButton
+        onClick={() => onSelectWord({ cells: word.cells, orientation: word.orientation })}
+        sx={{ py: 0.25, px: 0.5 }}
+      >
         <Typography variant="body2" sx={entrySx(word.isSolved)}>
           {`${nameOf(word)}${rest}`}
         </Typography>

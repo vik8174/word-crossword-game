@@ -73,19 +73,18 @@ export interface GuessEntryCell extends GridPosition {
   readonly isRefused: boolean;
 }
 
-/** Everything the squares of one board are worked out from. */
+/**
+ * Everything the squares of one board are worked out from: the board itself,
+ * the letters already on it ({@link writtenLettersOf}), this player's own open
+ * words by square ({@link wordsOfCellIn}), what they have typed, the word they
+ * are filling in, and the squares about to be cleared ({@link refusedCellsOf}).
+ */
 interface BoardReading {
-  /** The board as this player may see it, from `gridViewFor`. */
   readonly view: GridView;
-  /** Letters already on the board, from {@link writtenLettersOf}. */
   readonly written: ReadonlyMap<string, string>;
-  /** This player's own open words by square, from {@link wordsOfCellIn}. */
   readonly wordsOfCell: ReadonlyMap<string, readonly GuessableWord[]>;
-  /** What the player has typed so far. */
   readonly typed: TypedLetters;
-  /** The word they are filling in, `null` before they have taken one up. */
   readonly activeWordId: string | null;
-  /** Squares about to be cleared, from {@link refusedCellsOf}. */
   readonly refusedCells: ReadonlySet<string>;
 }
 
@@ -291,9 +290,8 @@ export const squaresOf = ({
       direction: word?.orientation ?? null,
       isActive: word !== undefined && word.id === activeWordId,
       isCrossing: (wordsOfCell.get(key)?.length ?? 0) > 1,
-      // Marked as refused exactly where the letters are about to be taken back,
-      // so a square held by a second, still-standing word looks the way it will
-      // go on looking.
+      // Refused exactly where the letters are about to be taken back, so a
+      // square a second, still-standing word holds looks as it will go on looking.
       isRefused: word !== undefined && refusedCells.has(key),
     });
   }
