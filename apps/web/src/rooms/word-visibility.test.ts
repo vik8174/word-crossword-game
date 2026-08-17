@@ -2,9 +2,11 @@ import type { CrosswordLayout } from 'shared';
 import { describe, expect, it } from 'vitest';
 
 import type { ReadableRoom } from './room-access';
+import { wordIdAt } from './room-document';
 import {
   cellKey,
   finishedWordsOf,
+  type GridView,
   gridViewFor,
   type PlayerWordView,
   wordViewFor,
@@ -101,6 +103,50 @@ describe('wordViewFor', () => {
         { id: 'w2', word: 'cheese', isSolved: false },
       ],
     });
+  });
+
+  it('says where a word to explain sits and what it is called, so the grid can write it in', () => {
+    const room = roomWith(['bob-uid', 'alice-uid'], 'playing', CROSSING_LAYOUT);
+    const view = wordViewFor(room, 'bob-uid');
+
+    // `CAR` runs down from the top-left square, which `CAT` also begins in —
+    // one number covers both, as a printed crossword would have it.
+    expect(view.kind === 'dealt' && view.toExplain[0]).toMatchObject({
+      id: 'w1',
+      number: 1,
+      orientation: 'down',
+      word: 'car',
+      cells: [
+        { row: 0, col: 0 },
+        { row: 1, col: 0 },
+        { row: 2, col: 0 },
+      ],
+    });
+  });
+
+  it('numbers a word to guess without saying anything else about it', () => {
+    const room = roomWith(['bob-uid', 'alice-uid'], 'playing', CROSSING_LAYOUT);
+    const view = wordViewFor(room, 'alice-uid');
+
+    // The number is what lets a guesser ask for a word again by name. It says
+    // where the word starts, which the outlines of the squares already show.
+    expect(view.kind === 'dealt' && view.toGuess[0]).toMatchObject({ id: 'w1', number: 1 });
+  });
+
+  it('drops a word that occupies no square at all', () => {
+    // Nothing the generator makes, but a layout comes back out of a document
+    // another client wrote. Such a word carries no number, has nowhere to be
+    // drawn and nowhere to be typed, so an entry for it would name nothing.
+    const layout: CrosswordLayout = {
+      ...LAYOUT,
+      placedWords: [{ word: 'ghost', orientation: 'across', cells: [] }, wordAt('bread')],
+    };
+
+    const room = roomWith(['bob-uid', 'alice-uid'], 'playing', layout);
+
+    expect(wordViewFor(room, 'alice-uid')).toMatchObject({ kind: 'dealt', toExplain: [] });
+    // Bob had nothing else, so what is left of his game is nothing at all.
+    expect(wordViewFor(room, 'bob-uid')).toEqual({ kind: 'left-out' });
   });
 
   it('says which of the words a player explains have already been answered', () => {
@@ -207,11 +253,29 @@ describe('gridViewFor', () => {
   const dealtCrossing = (guessedBy: readonly (string | null)[] = []) =>
     roomWith(['bob-uid', 'alice-uid'], 'playing', CROSSING_LAYOUT, guessedBy);
 
-  const letterAt = (view: ReturnType<typeof gridViewFor>, row: number, col: number) =>
-    view.cells.find((cell) => cellKey(cell) === cellKey({ row, col }))?.letter;
+  const contentAt = (view: GridView, row: number, col: number) =>
+    view.cells.find((cell) => cellKey(cell) === cellKey({ row, col }))?.content;
 
-  const numberAt = (view: ReturnType<typeof gridViewFor>, row: number, col: number) =>
+  const numberAt = (view: GridView, row: number, col: number) =>
     view.cells.find((cell) => cellKey(cell) === cellKey({ row, col }))?.number;
+
+  /** How the whole board reads, square by square, for whoever is looking. */
+  const boardOf = (view: GridView) =>
+    view.cells.map((cell) => [cellKey(cell), cell.content.kind === 'empty' ? '' : cell.content]);
+
+  /**
+   * Every word of the layout that is hidden from this viewer and still open.
+   *
+   * Read straight off the fixture rather than from the module under test, and
+   * off the whole layout rather than a list written into a test — a word added
+   * to a fixture later is covered without anybody remembering to add it here.
+   */
+  const stillHiddenFrom = (room: ReadableRoom, viewerId: string) =>
+    room.layout.placedWords.filter((_placed, index) => {
+      const state = room.words[wordIdAt(index)];
+
+      return state?.hiddenFromPlayerId === viewerId && state?.guessedByPlayerId == null;
+    });
 
   it('draws the whole board, so every player sees the same shape', () => {
     const view = gridViewFor(dealtCrossing(), 'bob-uid');
@@ -221,22 +285,120 @@ describe('gridViewFor', () => {
     expect(view.cells).toHaveLength(CROSSING_LAYOUT.cells.length);
   });
 
-  it('holds back every letter while nothing has been solved', () => {
-    const view = gridViewFor(dealtCrossing(), 'bob-uid');
+  describe('what a square holds, and why', () => {
+    // Alice explains `CAT` across the top and guesses the `CAR` running down
+    // from its first square, so one board carries all three cases at once.
+    const cases = [
+      {
+        situation: 'a square of a word the group has answered',
+        guessedBy: ['bob-uid'],
+        at: { row: 0, col: 1 },
+        content: { kind: 'solved', letter: 'A' },
+      },
+      {
+        situation: 'a square of a word this viewer explains',
+        guessedBy: [],
+        at: { row: 0, col: 1 },
+        content: { kind: 'explained', letter: 'A' },
+      },
+      {
+        situation: 'a square only a word hidden from this viewer runs through',
+        guessedBy: [],
+        at: { row: 2, col: 0 },
+        content: { kind: 'empty' },
+      },
+      {
+        situation: 'a square both an answered and an explained word run through',
+        guessedBy: ['bob-uid'],
+        at: { row: 0, col: 0 },
+        content: { kind: 'solved', letter: 'C' },
+      },
+    ] as const;
 
-    expect(view.cells.every((cell) => cell.letter === null)).toBe(true);
+    it.each(cases)('$situation', ({ guessedBy, at, content }) => {
+      expect(contentAt(gridViewFor(dealtCrossing(guessedBy), 'alice-uid'), at.row, at.col)).toEqual(
+        content,
+      );
+    });
+  });
+
+  it('never leaves a word hidden from the viewer readable off the board', () => {
+    // The invariant the whole module exists for, stated over every word of the
+    // layout rather than over the ones this file happens to name: a word still
+    // to be guessed always has a square its guesser has to work out. Crossings
+    // may hand them some of it — that is measured and accepted in
+    // `docs/decisions/0015-explained-words-in-the-grid.md` — but never all.
+    for (const room of [dealtCrossing(), dealtCrossing(['bob-uid'])]) {
+      for (const viewerId of ['alice-uid', 'bob-uid', 'late-uid']) {
+        const view = gridViewFor(room, viewerId);
+
+        for (const word of stillHiddenFrom(room, viewerId)) {
+          expect(
+            word.cells.some((cell) => contentAt(view, cell.row, cell.col)?.kind === 'empty'),
+          ).toBe(true);
+        }
+      }
+    }
+  });
+
+  it('writes the words a player explains into their own grid, and says why they are there', () => {
+    // `CAT` is Alice's to explain: she reads it in place, crossing the `CAR`
+    // she still has to guess — which is what makes it a crossword rather than
+    // a diagram beside a list.
+    const view = gridViewFor(dealtCrossing(), 'alice-uid');
+
+    expect([contentAt(view, 0, 0), contentAt(view, 0, 1), contentAt(view, 0, 2)]).toEqual([
+      { kind: 'explained', letter: 'C' },
+      { kind: 'explained', letter: 'A' },
+      { kind: 'explained', letter: 'T' },
+    ]);
+  });
+
+  it('leaves the squares of a word the viewer guesses empty, bar the ones it shares', () => {
+    const view = gridViewFor(dealtCrossing(), 'alice-uid');
+
+    // `CAR` runs down from the `C` of the `CAT` Alice explains, so its first
+    // square arrives written and the two below it do not.
+    expect(contentAt(view, 1, 0)).toEqual({ kind: 'empty' });
+    expect(contentAt(view, 2, 0)).toEqual({ kind: 'empty' });
+  });
+
+  it('gives the two players of a room opposite boards of the same crossword', () => {
+    const room = dealtCrossing();
+
+    // `CAT` across for Alice, `CAR` down for Bob — the same squares, written in
+    // for one player and blank for the other.
+    expect(contentAt(gridViewFor(room, 'bob-uid'), 2, 0)).toEqual({
+      kind: 'explained',
+      letter: 'R',
+    });
+    expect(contentAt(gridViewFor(room, 'bob-uid'), 0, 2)).toEqual({ kind: 'empty' });
+  });
+
+  it('moves a word from the viewer alone to the whole group when its guesser answers it', () => {
+    // Alice explains `CAT` and Bob has just answered it. Nothing new appears on
+    // her screen — the letters were already there — but they stop being hers
+    // alone, which is the difference between "explain this" and "this is done".
+    const answered = gridViewFor(dealtCrossing(['bob-uid']), 'alice-uid');
+
+    expect([contentAt(answered, 0, 1), contentAt(answered, 0, 2)]).toEqual([
+      { kind: 'solved', letter: 'A' },
+      { kind: 'solved', letter: 'T' },
+    ]);
   });
 
   it('shows the letters of a solved word to everyone at once', () => {
     const solvedCat = dealtCrossing(['bob-uid']);
 
+    // Bob had none of `CAT` before he answered it; now it reads the same on his
+    // board as on the board of the player who was explaining it.
     for (const viewerId of ['bob-uid', 'alice-uid']) {
       const view = gridViewFor(solvedCat, viewerId);
 
-      expect([letterAt(view, 0, 0), letterAt(view, 0, 1), letterAt(view, 0, 2)]).toEqual([
-        'C',
-        'A',
-        'T',
+      expect([contentAt(view, 0, 0), contentAt(view, 0, 1), contentAt(view, 0, 2)]).toEqual([
+        { kind: 'solved', letter: 'C' },
+        { kind: 'solved', letter: 'A' },
+        { kind: 'solved', letter: 'T' },
       ]);
     }
   });
@@ -246,29 +408,47 @@ describe('gridViewFor', () => {
     // owner a letter they never typed — the crossword doing what it is for.
     const view = gridViewFor(dealtCrossing(['bob-uid']), 'alice-uid');
 
-    expect(letterAt(view, 0, 0)).toBe('C');
-    expect(letterAt(view, 1, 0)).toBeNull();
-    expect(letterAt(view, 2, 0)).toBeNull();
+    expect(contentAt(view, 0, 0)).toEqual({ kind: 'solved', letter: 'C' });
+    expect(contentAt(view, 1, 0)).toEqual({ kind: 'empty' });
+    expect(contentAt(view, 2, 0)).toEqual({ kind: 'empty' });
   });
 
   it('gives a player the squares of their own words and of no others', () => {
     const view = gridViewFor(dealtCrossing(), 'alice-uid');
 
     expect(view.toGuess.map(({ id }) => id)).toEqual(['w1']);
-    expect(JSON.stringify(view)).not.toMatch(/\bcar\b/i);
+    expect(JSON.stringify(view.toGuess)).not.toMatch(/\bcar\b/i);
   });
 
-  it('gives nothing to type to a player the deal did not cover', () => {
+  it('gives a player the number of each word of their own, so they can ask for it', () => {
+    const view = gridViewFor(dealtCrossing(), 'alice-uid');
+
+    // `CAT` and `CAR` begin in the same square and share its number, so Alice
+    // guesses "one down" and explains "one across".
+    expect(view.toGuess.map(({ number, orientation }) => `${number} ${orientation}`)).toEqual([
+      '1 down',
+    ]);
+  });
+
+  it('shows a player the deal did not cover nothing at all', () => {
+    // The case the inverted invariant breaks in most easily: every word of the
+    // crossword is one this player does not have to guess, so a grid that asked
+    // "which words are not hidden from me?" would write the whole thing out.
     const view = gridViewFor(dealtCrossing(), 'late-uid');
 
     expect(view.toGuess).toEqual([]);
-    expect(view.cells.every((cell) => cell.letter === null)).toBe(true);
+    expect(view.cells.every((cell) => cell.content.kind === 'empty')).toBe(true);
   });
 
-  it('gives nothing to type while the room is still in the lobby', () => {
-    const view = gridViewFor(roomWith([null, null], 'lobby', CROSSING_LAYOUT), 'alice-uid');
+  it('shows nothing, and offers nothing to type, while the room is still in the lobby', () => {
+    const lobby = roomWith([null, null], 'lobby', CROSSING_LAYOUT);
+    const view = gridViewFor(lobby, 'alice-uid');
 
+    // Nothing has been dealt, so nobody explains anything yet — and the owner
+    // who typed the words in sees exactly what a stranger does.
     expect(view.toGuess).toEqual([]);
+    expect(view.cells.every((cell) => cell.content.kind === 'empty')).toBe(true);
+    expect(boardOf(view)).toEqual(boardOf(gridViewFor(lobby, 'nobody-uid')));
   });
 
   it('gives nothing to type in a closed room, even with a word left open in it', () => {
@@ -309,7 +489,12 @@ describe('gridViewFor', () => {
       },
     } as unknown as ReadableRoom;
 
-    expect(gridViewFor(room, 'bob-uid').cells.every((cell) => cell.letter === null)).toBe(true);
+    // `CAT` is Bob's to guess and nobody has answered it, so no square of it
+    // has been earned; the `CAR` he explains is still written in for him.
+    expect(contentAt(gridViewFor(room, 'bob-uid'), 0, 1)).toEqual({ kind: 'empty' });
+    expect(gridViewFor(room, 'bob-uid').cells.some((cell) => cell.content.kind === 'solved')).toBe(
+      false,
+    );
   });
 });
 

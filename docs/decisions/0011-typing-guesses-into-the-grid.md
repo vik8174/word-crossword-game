@@ -1,8 +1,10 @@
 # 0011. Typing guesses into the grid
 
-Status: Accepted
+Status: Accepted, amended by [0015](0015-explained-words-in-the-grid.md)
 
 Amends [0010](0010-letterless-grid-and-private-word-list.md).
+
+[0015](0015-explained-words-in-the-grid.md) overturns two things below: "the grid diverges in what it accepts, never in what it shows", and "an explainer still cannot see where their word sits". Everything else here stands — in particular the rule that a word is answered when its squares are full and spell it, which 0015 applies unchanged to the letters it writes in.
 
 ## Context
 

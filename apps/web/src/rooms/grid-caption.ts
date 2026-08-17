@@ -15,14 +15,18 @@
  * this anyway: what the squares are for does not change between waiting for the
  * game and playing it, and the board below is the same board either way.
  *
+ * It doubles as the key to the board, which is why it names the two kinds of
+ * letter on it: what a dashed square in italics means has to be said somewhere,
+ * and it belongs beside the grid rather than in a legend of its own.
+ *
  * @param wordCount - How many words made it into the grid
  * @returns The caption for a board that is still to be filled in
  *
  * @example
- * openGridCaption(6); // '6 words are hidden in this grid. Type your own ...'
+ * openGridCaption(6); // '6 words are hidden in this grid. The ones you explain ...'
  */
 export const openGridCaption = (wordCount: number): string =>
-  `${wordCount} words are hidden in this grid. Type your own into the squares that take letters; a word's letters appear for everybody once it has been answered.`;
+  `${wordCount} words are hidden in this grid. The ones you explain are written in for you alone: italic letters on dashed squares. Type your own into the highlighted squares. A word's letters turn plain for everybody once it has been answered.`;
 
 /**
  * Said over a crossword that really was finished — every word is on the board.
@@ -39,6 +43,10 @@ export const finishedGridCaption = (wordCount: number): string =>
 /**
  * Said over a crossword whose room was closed with words still unanswered.
  *
+ * The words this reader was explaining are still written in for them, as they
+ * were all game — their own words, never anybody's to guess — so the caption
+ * says so rather than promising a blank board it does not show.
+ *
  * @param wordCount - How many words made it into the grid
  * @returns The caption for a board that will stay half empty
  *
@@ -46,4 +54,4 @@ export const finishedGridCaption = (wordCount: number): string =>
  * closedGridCaption(6); // 'Of the 6 words of this grid, the ones that were answered ...'
  */
 export const closedGridCaption = (wordCount: number): string =>
-  `Of the ${wordCount} words of this grid, the ones that were answered are in place; the rest stay blank.`;
+  `Of the ${wordCount} words of this grid, the ones that were answered are in place; the rest stay blank, apart from any that were yours to explain.`;
