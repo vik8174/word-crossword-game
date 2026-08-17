@@ -3,7 +3,7 @@ import Typography from '@mui/material/Typography';
 import { useMemo } from 'react';
 
 import type { RoomDocument } from '../rooms/room-document';
-import { gridViewFor } from '../rooms/word-visibility';
+import { gridViewFor, type WordLocation } from '../rooms/word-visibility';
 import { CrosswordGrid } from './CrosswordGrid';
 
 /**
@@ -30,6 +30,8 @@ interface RoomCrosswordProps {
   readonly onSolved?: (wordId: string) => Promise<void>;
   /** Why an answer could not be written down, if one could not. */
   readonly errorMessage?: string;
+  /** A word the player asked to be taken to, from the panel beside the grid. */
+  readonly wordToReach?: WordLocation | null;
 }
 
 /**
@@ -56,6 +58,7 @@ export const RoomCrossword = ({
   caption,
   onSolved,
   errorMessage,
+  wordToReach,
 }: RoomCrosswordProps) => {
   // Kept across renders the room did not change in, so the grid's own state —
   // the letters this player has typed so far — is not judged afresh every time
@@ -71,7 +74,11 @@ export const RoomCrossword = ({
         {caption}
       </Typography>
 
-      <CrosswordGrid view={view} onSolved={onSolved ?? TAKES_NO_ANSWERS} />
+      <CrosswordGrid
+        view={view}
+        onSolved={onSolved ?? TAKES_NO_ANSWERS}
+        wordToReach={wordToReach}
+      />
 
       {errorMessage !== undefined && <Alert severity="error">{errorMessage}</Alert>}
     </section>

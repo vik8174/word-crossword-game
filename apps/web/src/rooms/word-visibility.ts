@@ -37,8 +37,21 @@ import { isWordSolved, wordIdAt } from './room-document';
  * shortcut through `layout.placedWords` would hand them the whole crossword.
  */
 
+/**
+ * Where a word runs in the grid: the squares it fills, and which way.
+ *
+ * Says nothing about how it reads, so it is safe to hand to anybody — it is
+ * what a screen needs to bring a word into view when a player names it, whether
+ * that word is theirs to explain or theirs to guess. Both of those carry it.
+ */
+export interface WordLocation {
+  readonly orientation: WordOrientation;
+  /** The squares that spell it, in reading order. */
+  readonly cells: readonly GridPosition[];
+}
+
 /** A word the viewer can see, and must explain to the others without saying it. */
-export interface ExplainedWord {
+export interface ExplainedWord extends WordLocation {
   /** Key of the word in the room's `words` map — stable across renders and updates. */
   readonly id: string;
   /**
@@ -49,10 +62,7 @@ export interface ExplainedWord {
    * there is one numbering rather than two that could drift.
    */
   readonly number: number;
-  readonly orientation: WordOrientation;
   readonly word: string;
-  /** The squares that spell it, in reading order, so the grid can write it in. */
-  readonly cells: readonly GridPosition[];
   /** `true` once the player it was hidden from has answered it — nothing left to explain. */
   readonly isSolved: boolean;
 }
@@ -64,7 +74,7 @@ export interface ExplainedWord {
  * Working the spelling out is the whole of this player's game, so the only way
  * to learn anything about it from here is to propose it and be told.
  */
-export interface GuessableWord {
+export interface GuessableWord extends WordLocation {
   /** Key of the word in the room's `words` map. */
   readonly id: string;
   /**
@@ -73,9 +83,6 @@ export interface GuessableWord {
    * what lets this player ask for one of their own words to be explained again.
    */
   readonly number: number;
-  readonly orientation: WordOrientation;
-  /** The squares that spell it, in reading order. */
-  readonly cells: readonly GridPosition[];
   /** `true` once somebody has solved it — its letters are then in the grid for everyone. */
   readonly isSolved: boolean;
   /**

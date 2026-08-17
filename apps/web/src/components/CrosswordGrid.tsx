@@ -1,13 +1,13 @@
 import Box from '@mui/material/Box';
-import { alpha, type SxProps, type Theme } from '@mui/material/styles';
+import { type SxProps, type Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
-import { useMemo, useRef, type ChangeEvent, type KeyboardEvent, type MouseEvent } from 'react';
+import { type KeyboardEvent, useEffect, useMemo, useRef } from 'react';
 
-import { useGuessEntry, type GuessEntryCell } from '../rooms/use-guess-entry';
-import { cellKey, type GridView } from '../rooms/word-visibility';
-
-/** Side of one grid square, in pixels. */
-const CELL_SIZE = 32;
+import type { GuessEntryCell } from '../rooms/guess-board';
+import { isArrowKey, useGridCursor } from '../rooms/use-grid-cursor';
+import { useGuessEntry } from '../rooms/use-guess-entry';
+import { cellKey, type GridView, type WordLocation } from '../rooms/word-visibility';
+import { CELL_SIZE, GridSquare } from './GridSquare';
 
 /** Text that is read out but not drawn — for what the grid says in colour alone. */
 const SPOKEN_ONLY: SxProps<Theme> = {
@@ -19,47 +19,6 @@ const SPOKEN_ONLY: SxProps<Theme> = {
   whiteSpace: 'nowrap',
 };
 
-/**
- * The crossword number of a square, in its top-left corner, as a crossword
- * prints it: small enough to leave the middle of the square to the letter, and
- * in the same dark ink whatever the square is doing underneath — a number has
- * to stay readable on a square being typed into and on one showing a wrong
- * answer in red. It takes no clicks: the square below it is the thing to press.
- */
-const NUMBER_SX: SxProps<Theme> = {
-  position: 'absolute',
-  top: '1px',
-  left: '2px',
-  fontSize: '0.55rem',
-  fontWeight: 700,
-  lineHeight: 1,
-  color: 'text.primary',
-  pointerEvents: 'none',
-};
-
-/**
- * How a square holding a word this player explains is drawn.
- *
- * Three cues, none of which is a colour on its own: a dashed outline where every
- * other square has a solid one, the letter in italics where every other letter
- * is upright, and a word said out loud for a reader who sees neither. A player
- * who cannot tell this from a square the group has answered stops explaining a
- * word nobody has guessed, and the game stalls with everyone waiting — so the
- * distinction has to survive a screen read in greyscale
- * (`docs/decisions/0015-explained-words-in-the-grid.md`).
- *
- * The tint stays faint so the crossword number keeps its dark ink on top of it.
- */
-const EXPLAINED_SQUARE_SX: SxProps<Theme> = {
-  backgroundColor: (theme) => alpha(theme.palette.secondary.main, 0.16),
-  borderStyle: 'dashed',
-  borderColor: 'secondary.main',
-  fontStyle: 'italic',
-};
-
-/** Said before the letter of a square this player explains, and drawn nowhere. */
-const EXPLAINED_SPOKEN = 'Yours to explain: ';
-
 const REFUSAL_MESSAGE =
   'That is not the word — the letters clear in a moment. Try again as often as you like.';
 
@@ -67,11 +26,24 @@ const REFUSAL_MESSAGE =
 const CROSSING_HINT =
   'Two of your words cross. On the shared square, click it again or press the space bar to swap between them.';
 
+/** How the board is played from the keyboard, once a square has been taken up. */
+const KEYBOARD_HINT =
+  'The arrow keys move around the whole grid, square by square. Backspace clears the square you are in, or steps back when it is already empty.';
+
 interface CrosswordGridProps {
   /** The board as this player may see it, already stripped of every unearned letter. */
   readonly view: GridView;
   /** Records a word this player has just answered. */
   readonly onSolved: (wordId: string) => Promise<void>;
+  /**
+   * A word to go to, as a player naming one from the panel asks for.
+   *
+   * It is the value arriving anew that is the request, so asking for the same
+   * word twice means handing over a second value equal to the first — which is
+   * what lets a player tap an entry, wander off across the grid, and tap it
+   * again to come back.
+   */
+  readonly wordToReach?: WordLocation | null;
 }
 
 /**
@@ -92,6 +64,12 @@ interface CrosswordGridProps {
  * apart is what keeps a player explaining a word nobody has guessed yet. There
  * is nothing here that could render a fifth thing by mistake.
  *
+ * What it holds of its own is where the player is: the cursor, which crosses
+ * every square of the board whoever owns it, and which the browser's focus
+ * follows rather than decides
+ * (`docs/decisions/0016-the-cursor-lives-in-the-grid.md`). The board is one
+ * stop for the Tab key, and the arrows move within it.
+ *
  * One thing a square may carry whatever else it is doing: the crossword number
  * of the word that begins in it, which is how the players name a word to each
  * other out loud. It gives nothing away — where the words begin and how long
@@ -99,13 +77,27 @@ interface CrosswordGridProps {
  *
  * @param props.view - What this player's screen may draw, from `gridViewFor`
  * @param props.onSolved - Called once a word of theirs has been answered
+ * @param props.wordToReach - A word the player asked to be taken to
  *
  * @example
  * <CrosswordGrid view={gridViewFor(room, viewerId)} onSolved={submitGuess} />
  */
-export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
+export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProps) => {
   const entry = useGuessEntry(view, onSolved);
-  const inputs = useRef(new Map<string, HTMLInputElement>());
+  const cursor = useGridCursor(entry, view);
+  // Held in a ref rather than watched as a dependency: what asks for a word is
+  // the player tapping the panel, never the grid redrawing around them.
+  const reach = useRef(cursor.reach);
+
+  useEffect(() => {
+    reach.current = cursor.reach;
+  });
+
+  useEffect(() => {
+    if (wordToReach !== undefined && wordToReach !== null) {
+      reach.current(wordToReach);
+    }
+  }, [wordToReach]);
 
   /** The crossword numbers, by square — no square is numbered but a word's first. */
   const numbers = useMemo(
@@ -118,36 +110,78 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
     [view],
   );
 
+  /**
+   * The square the Tab key lands on before the player has taken one up: the
+   * first they can type in, or the first there is. Afterwards the cursor is the
+   * one stop, so the grid never holds two.
+   */
+  const firstTabStop = useMemo(() => {
+    const squares = [...entry.cells.values()];
+
+    return squares.find((cell) => cell.source === 'own') ?? squares[0];
+  }, [entry.cells]);
+
+  /** Whether this player has a square of their own left at all — a lobby has none. */
+  const hasSquaresToFill = firstTabStop?.source === 'own';
   const rows = Array.from({ length: view.rows }, (_unused, row) => row);
   const cols = Array.from({ length: view.cols }, (_unused, col) => col);
   const filledIn = [...entry.cells.values()].filter((cell) => cell.letter !== '').length;
 
-  const handleTyped = (cell: GuessEntryCell) => (event: ChangeEvent<HTMLInputElement>) => {
-    entry.type(cell, event.target.value);
+  const handleTyped = (cell: GuessEntryCell) => (letter: string) => {
+    entry.type(cell, letter);
+
+    const next = cell.nextCellKey === null ? undefined : entry.cells.get(cell.nextCellKey);
 
     // Typing runs along the word being filled rather than along the row, so a
     // down word can be entered without reaching for the mouse between letters.
-    if (event.target.value !== '' && cell.nextCellKey !== null) {
-      inputs.current.get(cell.nextCellKey)?.focus();
+    if (letter !== '' && next !== undefined) {
+      cursor.moveTo({ row: next.row, col: next.col });
     }
   };
 
   // Clicking a square already under the cursor is what swaps between the two
-  // words crossing there — the classic crossword gesture. Read at mousedown,
-  // before the click has moved the focus, so the first click on a new square
-  // only picks it up.
-  const handlePressed = (cell: GuessEntryCell) => (event: MouseEvent<HTMLInputElement>) => {
-    if (event.currentTarget === document.activeElement) {
+  // words crossing there — the classic crossword gesture. The first click on a
+  // square only picks it up, which is what the cursor being state rather than
+  // focus makes plain: it has not arrived yet.
+  const handlePressed = (cell: GuessEntryCell) => () => {
+    if (cursor.key === cellKey(cell)) {
       entry.switchWordAt(cell);
     }
   };
 
-  // The same swap from the keyboard, since a space is not a letter and the
-  // squares would otherwise be reachable only with a mouse.
-  const handleKeyDown = (cell: GuessEntryCell) => (event: KeyboardEvent<HTMLInputElement>) => {
+  const handleTakenUp = (cell: GuessEntryCell) => () =>
+    cursor.moveTo({ row: cell.row, col: cell.col });
+
+  /**
+   * Everything the keyboard does to the board, read where the board is rather
+   * than on each square: the keys move the cursor, and the cursor is the grid's.
+   */
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (cursor.at === null) {
+      return;
+    }
+
+    // A space is not a letter and had nothing else to do, so it swaps between
+    // two crossing words — the same gesture as the second click, from the keys.
     if (event.key === ' ') {
       event.preventDefault();
-      entry.switchWordAt(cell);
+      entry.switchWordAt(cursor.at);
+
+      return;
+    }
+
+    if (isArrowKey(event.key)) {
+      event.preventDefault();
+      cursor.moveBy(event.key);
+
+      return;
+    }
+
+    if (event.key === 'Backspace') {
+      // Taken over from the input under the cursor: a backspace on an empty
+      // square has to step back along the word, which no single input can do.
+      event.preventDefault();
+      cursor.eraseBack();
     }
   };
 
@@ -159,111 +193,17 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
       return <Box key={key} sx={{ height: CELL_SIZE, width: CELL_SIZE }} />;
     }
 
-    const number = numbers.get(key) ?? null;
-
-    const square = {
-      height: CELL_SIZE,
-      width: CELL_SIZE,
-      borderRadius: '2px',
-      border: '1px solid',
-      borderColor: cell.isRefused ? 'error.main' : 'divider',
-      display: 'grid',
-      placeItems: 'center',
-      fontSize: '0.95rem',
-      fontWeight: 600,
-      textTransform: 'uppercase',
-    } as const;
-
-    // The number goes over the square rather than in it: a square this player
-    // types into is an `input`, which cannot hold anything.
-    const numberDrawn =
-      number === null ? null : (
-        <Box component="span" aria-hidden="true" sx={NUMBER_SX}>
-          {number}
-        </Box>
-      );
-
-    if (cell.source !== 'own') {
-      const isExplained = cell.source === 'explained';
-
-      return (
-        <Box key={key} sx={{ position: 'relative', height: CELL_SIZE, width: CELL_SIZE }}>
-          {/*
-            A square nobody types into has no label of its own — it is a letter
-            or it is blank — so its number is said here, before the letter, or a
-            reader who cannot see the grid has no way to hear it. What the square
-            is follows, and only where it is not the ordinary case: a letter said
-            plainly is one the group has answered.
-          */}
-          {number !== null && <Box component="span" sx={SPOKEN_ONLY}>{`Number ${number}.`}</Box>}
-          {isExplained && (
-            <Box component="span" sx={SPOKEN_ONLY}>
-              {EXPLAINED_SPOKEN}
-            </Box>
-          )}
-          <Box
-            sx={
-              isExplained
-                ? { ...square, ...EXPLAINED_SQUARE_SX }
-                : { ...square, backgroundColor: 'background.paper' }
-            }
-          >
-            {cell.letter}
-          </Box>
-          {numberDrawn}
-        </Box>
-      );
-    }
-
     return (
-      <Box key={key} sx={{ position: 'relative', height: CELL_SIZE, width: CELL_SIZE }}>
-        <Box
-          component="input"
-          inputMode="text"
-          autoComplete="off"
-          maxLength={1}
-          value={cell.letter}
-          onChange={handleTyped(cell)}
-          onMouseDown={handlePressed(cell)}
-          onKeyDown={handleKeyDown(cell)}
-          onFocus={(event: { target: HTMLInputElement }) => {
-            entry.focus(cell);
-            event.target.select();
-          }}
-          ref={(input: HTMLInputElement | null) => {
-            if (input === null) {
-              inputs.current.delete(key);
-            } else {
-              inputs.current.set(key, input);
-            }
-          }}
-          // The number comes first, because it is what the players call the word
-          // by out loud — and it is left out of the squares that carry none
-          // rather than said to be absent.
-          aria-label={`${number === null ? '' : `Number ${number}, `}Row ${row + 1}, column ${col + 1} — a letter of one of your words, filled ${cell.direction}${cell.isCrossing ? ', where two of them cross' : ''}`}
-          sx={{
-            ...square,
-            // A square this player fills in is marked out from the ones that are
-            // somebody else's to answer: the grid is shared, the typing is not.
-            // The word being filled is marked out again within that, so which way
-            // the next letter will go is on screen rather than guessed at.
-            borderColor: cell.isRefused ? 'error.main' : 'primary.main',
-            padding: 0,
-            textAlign: 'center',
-            font: 'inherit',
-            fontWeight: 600,
-            color: 'text.primary',
-            backgroundColor: (theme) =>
-              cell.isRefused
-                ? theme.palette.error.light
-                : cell.isActive
-                  ? alpha(theme.palette.primary.main, 0.22)
-                  : theme.palette.action.selected,
-            '&:focus': { outline: '2px solid', outlineColor: 'primary.main' },
-          }}
-        />
-        {numberDrawn}
-      </Box>
+      <GridSquare
+        key={key}
+        cell={cell}
+        number={numbers.get(key) ?? null}
+        isCursor={cursor.key === key}
+        isTabStop={cursor.key === null && firstTabStop === cell}
+        onTyped={handleTyped(cell)}
+        onTakenUp={handleTakenUp(cell)}
+        onPressed={handlePressed(cell)}
+      />
     );
   };
 
@@ -272,6 +212,7 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
       <Box
         role="group"
         aria-label={`Crossword grid, ${view.rows} by ${view.cols}, ${entry.cells.size} squares, ${filledIn} of them filled in`}
+        onKeyDown={handleKeyDown}
         sx={{
           display: 'grid',
           gridTemplateColumns: `repeat(${view.cols}, ${CELL_SIZE}px)`,
@@ -292,6 +233,12 @@ export const CrosswordGrid = ({ view, onSolved }: CrosswordGridProps) => {
       <Typography aria-live="polite" sx={SPOKEN_ONLY}>
         {entry.activeDirection === null ? '' : `Now filling ${entry.activeDirection}.`}
       </Typography>
+
+      {hasSquaresToFill && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          {KEYBOARD_HINT}
+        </Typography>
+      )}
 
       {entry.hasCrossings && (
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>

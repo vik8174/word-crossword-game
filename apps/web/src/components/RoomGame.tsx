@@ -8,7 +8,7 @@ import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
 import { recordGuess } from '../rooms/room-service';
 import { useGameCompletion } from '../rooms/use-game-completion';
-import { wordViewFor } from '../rooms/word-visibility';
+import { type WordLocation, wordViewFor } from '../rooms/word-visibility';
 import { PlayerList } from './PlayerList';
 import { PlayerWordsPanel } from './PlayerWordsPanel';
 import { RoomCrossword } from './RoomCrossword';
@@ -53,6 +53,12 @@ interface RoomGameProps {
  * (`docs/decisions/0012-ending-a-game-from-the-received-state.md` says who may
  * write it, not who has to be watching).
  *
+ * It also holds the one thing the panel and the grid have to agree on: which
+ * word the player last asked to be taken to. They are two components side by
+ * side, so the request passes through here — as a location and never as a
+ * word, so nothing that could be spelled out travels between them
+ * (`docs/decisions/0016-the-cursor-lives-in-the-grid.md`).
+ *
  * @param props.roomId - Id of the room being played
  * @param props.room - The room document
  * @param props.viewerId - Which player is reading, so they see their own words
@@ -64,6 +70,11 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
   // Only ever a failure: a right answer needs no confirmation on this screen —
   // it turns into letters in the grid, for everybody at once.
   const [guessError, setGuessError] = useState<string | null>(null);
+  // Where the panel last sent the player. Kept as a value of its own rather
+  // than as the word it came from: the words are worked out afresh on every
+  // update of the room, and the grid would then be dragged back to the same
+  // square every time anybody answered anything.
+  const [wordToReach, setWordToReach] = useState<WordLocation | null>(null);
   const players = playersInJoinOrder(room);
   const wordView = wordViewFor(room, viewerId);
 
@@ -93,7 +104,12 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
 
       <PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />
 
-      {wordView.kind === 'dealt' && <PlayerWordsPanel view={wordView} />}
+      {wordView.kind === 'dealt' && (
+        <PlayerWordsPanel
+          view={wordView}
+          onSelectWord={({ cells, orientation }) => setWordToReach({ cells, orientation })}
+        />
+      )}
 
       {wordView.kind === 'left-out' && <Alert severity="info">{LEFT_OUT_MESSAGE}</Alert>}
 
@@ -103,6 +119,7 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
         caption={openGridCaption(room.layout.placedWords.length)}
         onSolved={submitGuess}
         errorMessage={guessError ?? undefined}
+        wordToReach={wordToReach}
       />
     </Stack>
   );
