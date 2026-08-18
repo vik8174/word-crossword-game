@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 
 import { readGitRevision, resolveReleaseName } from './build/release-name.ts';
+import { shouldUploadSourceMaps } from './build/source-map-upload.ts';
 
 /** Where the maps go. Neither is a secret; both are stage-only (ADR 0007). */
 const SENTRY_ORG = 'kurysh-labs';
@@ -21,17 +22,10 @@ export default defineConfig(({ mode }) => {
   // leave Sentry holding maps and events it cannot match.
   const release = resolveReleaseName(readGitRevision);
 
-  // Uploading is what deletes the maps again, so a build that cannot upload
-  // must not generate them either: nothing would clean them out of `dist`, and
-  // Firebase Hosting publishes `dist` whole. No token, no maps at all — the
-  // build still succeeds, exactly as the app runs without a DSN.
-  //
-  // A build that could not name itself does not upload either, and that is the
-  // point of saying it here rather than leaving `release.name` undefined: left
-  // to itself the plugin looks for a revision of its own, in CI variables this
-  // config never read, and would file the maps under a name the bundle has no
-  // idea about. Maps and events would both arrive and never meet.
-  const uploadsSourceMaps = Boolean(SENTRY_AUTH_TOKEN) && release !== undefined;
+  // Either the build writes maps and sends them, or it writes none at all. A
+  // build missing the token or the name still succeeds, exactly as the app runs
+  // without a DSN.
+  const uploadsSourceMaps = shouldUploadSourceMaps(SENTRY_AUTH_TOKEN, release);
 
   return {
     plugins: [
