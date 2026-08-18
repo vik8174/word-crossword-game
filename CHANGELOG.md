@@ -4,9 +4,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+### Changed
+
+- Creating a room takes the owner into it. A room has one address, `/room/<id>`, and creation replaces `/create` with it in history rather than pushing, so Back leads out of the flow instead of to a filled-in word list — going back to one invites creating a second room the guests were never sent to. The invite link travels with the owner: it is on the room screen now, above whatever the room is showing, so every player can pass it on, and it is there while the room is still being read because the link is built from the address and waits for no snapshot. It goes once the words are dealt out, when sharing it would only send a friend to a refusal ([issue #48](https://github.com/vik8174/word-crossword-game/issues/48), [ADR 0021](docs/decisions/0021-one-room-address.md))
+
 ### Fixed
 
 - Setting up a deploy no longer costs a failed deploy to find out what the runbook left out. The service account needs a fourth role — Service Usage Consumer — because publishing `firestore.rules` makes the CLI ask whether the Firestore API is enabled, which the three roles listed before did not allow; the failure named neither the role nor the step, arriving as `403 Permission denied to get service [firestore.googleapis.com]` after everything else had succeeded. The deploy also checks the service account key before it builds: that it is JSON, that it is a service account key rather than a field of one or a path to the file, and that it belongs to the project being deployed to — so a key pasted wrongly, or a production key left in the stage environment, is named as such instead of surfacing at the last command as `Failed to authenticate, have you run firebase login?` ([issue #53](https://github.com/vik8174/word-crossword-game/issues/53))
+- Reloading after creating a room no longer loses the room. The room id and the words that built it were held in component state on `/create`, so a reload, a closed tab or a crash destroyed the owner's only way into the game they had just made — the one player who could not get the link back out of an address bar. The owner is now inside the room at its own address, and every screen there is derived from the room document, so coming back to the link is safe at every point of a game ([issue #48](https://github.com/vik8174/word-crossword-game/issues/48), [ADR 0021](docs/decisions/0021-one-room-address.md))
 
 ## [1.0.0] - 2026-08-18
 
