@@ -4,6 +4,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+### Fixed
+
+- Setting up a deploy no longer costs a failed deploy to find out what the runbook left out. The service account needs a fourth role — Service Usage Consumer — because publishing `firestore.rules` makes the CLI ask whether the Firestore API is enabled, which the three roles listed before did not allow; the failure named neither the role nor the step, arriving as `403 Permission denied to get service [firestore.googleapis.com]` after everything else had succeeded. The deploy also checks the service account key before it builds: that it is JSON, that it is a service account key rather than a field of one or a path to the file, and that it belongs to the project being deployed to — so a key pasted wrongly, or a production key left in the stage environment, is named as such instead of surfacing at the last command as `Failed to authenticate, have you run firebase login?` ([issue #53](https://github.com/vik8174/word-crossword-game/issues/53))
+
 ## [1.0.0] - 2026-08-18
 
 ### Added
