@@ -38,6 +38,7 @@ cp apps/web/.env.example apps/web/.env
 - `VITE_FIREBASE_*` — from Firebase Console > Project settings > General > Your apps > SDK setup
 - `VITE_SENTRY_DSN` — from Sentry > Project Settings > Client Keys (DSN). Left empty, error reporting does not start at all, which is what a local checkout wants
 - `VITE_SENTRY_ENVIRONMENT` — which deployment this build is (`stage` today). Not derived from the build mode: stage and production are both built as `production`, so nothing else tells them apart
+- `SENTRY_AUTH_TOKEN` — an organization token, from Sentry > Settings > Developer Settings > Organization Tokens > **Create New Token**. Its scope is fixed at `org:ci` — source map upload, release creation, code mappings — and it is shown once, at creation. It also carries the organization's region in it, which a personal token does not; on this EU-region organization a personal token would additionally need the plugin's `url` set. Note the missing `VITE_` prefix: Vite embeds every `VITE_` variable into the bundle in plain text, and this bundle is public, so the prefix would publish the token. Only the build reads it, and only on the Node side. Left empty the build still succeeds — see [Source maps](#source-maps)
 
 `apps/web/.env` is git-ignored — never commit real values.
 
@@ -47,7 +48,18 @@ Firebase Analytics reports three moments — a room created, a player joined, a 
 
 Neither is allowed to name a room. The id in `/room/<id>` is the whole access control around a game — anyone holding it reads the room document, words included — so Firebase's automatic page view is switched off (it carries the address bar verbatim), analytics events are typed to carry numbers and nothing else, and every Sentry event is redacted on its way out. Browser tracing and session replay are deliberately not switched on. See [ADR 0014](docs/decisions/0014-telemetry-without-room-ids.md).
 
-Stack traces in Sentry are minified: uploading source maps needs a build plugin and an auth token in CI, and is its own piece of work.
+### Source maps
+
+A production build minifies the whole app into one bundle, so a stack trace out of it names a column in that bundle rather than a line of source. Sentry translates it back only when it holds the source maps for the build the error came from, which is what `@sentry/vite-plugin` uploads.
+
+The plugin runs only when `SENTRY_AUTH_TOKEN` is set and the build could name itself:
+
+- **With a token** the build generates maps, uploads them, and deletes them from `apps/web/dist` again. They are for Sentry, not for players — Firebase Hosting publishes `dist` whole, so a map left behind would serve everyone the unminified source. `apps/web/scripts/assert-no-source-maps.mjs` runs at the end of every build and fails it if any `.map` survived.
+- **Without a token** — a fresh clone, or CI on a pull request — no maps are generated in the first place and nothing is uploaded. The build succeeds, in the same way the app runs without a DSN.
+
+Both halves agree on one release name: `vite.config.ts` resolves it once from `git rev-parse HEAD`, files the uploaded maps under it, and puts the same value into `import.meta.env.VITE_SENTRY_RELEASE`, which is where `initializeErrorReporting` reads it. Two names, and Sentry ends up holding maps and events with no way to match them — the trace stays minified and nothing says why. A build with no revision to read — a source archive rather than a checkout — therefore uploads nothing even when it has a token, rather than letting the plugin invent a name of its own.
+
+There is no deploy job in CI yet, so maps reach Sentry from whichever build is run by hand. The token therefore has to exist on the machine that builds, not only in GitHub Actions secrets.
 
 ## Firestore
 
