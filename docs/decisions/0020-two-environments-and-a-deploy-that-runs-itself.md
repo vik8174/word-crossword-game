@@ -23,7 +23,9 @@ Two smaller things were already loaded and would have gone off on the first prod
 
 ### Two Firebase projects, one Sentry project
 
-`word-crossword-game` alongside `word-crossword-game-stage`: two databases, two key sets, two hosting sites. Promoting stage to production instead would have left nowhere to break a rules change, and would have mixed a year of test traffic into the analytics of the real thing.
+`word-crossword-game-prod` alongside `word-crossword-game-stage`: two databases, two key sets, two hosting sites. Promoting stage to production instead would have left nowhere to break a rules change, and would have mixed a year of test traffic into the analytics of the real thing.
+
+Both ids name their environment, rather than [0007](0007-stage-only-environment.md)'s pattern of marking only the exception. A project id is permanent and is read from console lists and command lines where the two sit side by side, and a bare name there would be the one that has to be remembered rather than read. The price is that it is also the address — `word-crossword-game-prod.web.app` is what an invite link says until a custom domain covers it.
 
 Sentry is **not** split the same way. One project, and the two deployments separated by the environment tag `VITE_SENTRY_ENVIRONMENT` already carries — the tag exists precisely because both are built in Vite's `production` mode and nothing else tells them apart ([0014](0014-telemetry-without-room-ids.md)). A second Sentry project would double the source map uploads and split one release's history across two places to look; the environment is what alerts and filters are written against anyway, and Sentry creates one the first time an event arrives carrying it.
 

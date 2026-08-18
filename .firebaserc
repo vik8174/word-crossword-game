@@ -1,6 +1,6 @@
 {
   "projects": {
     "stage": "word-crossword-game-stage",
-    "production": "word-crossword-game"
+    "production": "word-crossword-game-prod"
   }
 }
