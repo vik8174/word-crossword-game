@@ -8,10 +8,11 @@ import { useParams } from 'react-router-dom';
 import { RoomClosedEarly } from '../components/RoomClosedEarly';
 import { RoomFinished } from '../components/RoomFinished';
 import { RoomGame } from '../components/RoomGame';
+import { RoomInvitePanel } from '../components/RoomInvitePanel';
 import { RoomJoin } from '../components/RoomJoin';
 import { RoomLobby } from '../components/RoomLobby';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
-import { roomScreenFor } from '../rooms/room-screen';
+import { isOpenToNewPlayers, type RoomScreen, roomScreenFor } from '../rooms/room-screen';
 import { useRoomConnection } from '../rooms/use-room-connection';
 
 /** Shown while the visitor is being signed in and the first snapshot is on its way. */
@@ -32,10 +33,13 @@ const Connecting = () => (
  * `RoomScreen` and not handled below fails to compile, so nothing can be added
  * to the room and quietly forgotten on the way to the player.
  */
-const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
-  const connection = useRoomConnection(roomId);
-  const screen = roomScreenFor(connection, new Date());
-
+const RoomScreenView = ({
+  roomId,
+  screen,
+}: {
+  readonly roomId: string;
+  readonly screen: RoomScreen;
+}): ReactElement => {
   switch (screen.kind) {
     case 'connecting':
       return <Connecting />;
@@ -52,6 +56,30 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
     case 'closed-early':
       return <RoomClosedEarly room={screen.room} viewerId={screen.viewerId} />;
   }
+};
+
+/**
+ * The room behind the link: the invitation, and whatever the room is doing.
+ *
+ * The invite link sits above the screen switch rather than inside the lobby,
+ * because it is built from the address and nothing else — a player who has just
+ * arrived can pass it on while the first snapshot is still on its way. It goes
+ * once the room stops taking anybody: sharing a link into a game already under
+ * way only sends a friend to a refusal.
+ */
+const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
+  const connection = useRoomConnection(roomId);
+  const screen = roomScreenFor(connection, new Date());
+
+  return (
+    <Stack spacing={3}>
+      {isOpenToNewPlayers(screen) && (
+        <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
+      )}
+
+      <RoomScreenView roomId={roomId} screen={screen} />
+    </Stack>
+  );
 };
 
 /**

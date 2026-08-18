@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { RoomDocument } from './room-document';
-import { roomScreenFor } from './room-screen';
+import { isOpenToNewPlayers, type RoomScreen, roomScreenFor } from './room-screen';
 import type { RoomConnection } from './use-room-connection';
 
 const NOW = new Date(1_000_000);
@@ -208,5 +208,33 @@ describe('roomScreenFor', () => {
         roomScreenFor(ready(roomWith({ players, expiresAtMillis: NOW.getTime() })), NOW),
       ).toEqual({ kind: 'unavailable', reason: 'expired' });
     });
+  });
+});
+
+describe('isOpenToNewPlayers', () => {
+  const room = roomWith({ players: bothPlayers });
+  const viewerId = 'guest-uid';
+
+  const cases: readonly [string, RoomScreen, boolean][] = [
+    ['nobody has read the room yet', { kind: 'connecting' }, true],
+    ['a newcomer is being asked for a nickname', { kind: 'join', playerId: viewerId }, true],
+    ['the room is waiting to be started', { kind: 'lobby', room, viewerId }, true],
+    ['the words are dealt out', { kind: 'playing', room, viewerId }, false],
+    ['the crossword is filled in', { kind: 'finished', room, viewerId }, false],
+    ['the room closed with words open', { kind: 'closed-early', room, viewerId }, false],
+    ['there is no room at the link', { kind: 'unavailable', reason: 'missing' }, false],
+  ];
+
+  it.each(cases)(
+    'knows whether the link still leads anybody in when %s',
+    (_name, screen, isOpen) => {
+      expect(isOpenToNewPlayers(screen)).toBe(isOpen);
+    },
+  );
+
+  it('holds the door open before the first snapshot, so nobody waits to invite anyone', () => {
+    // The link is built from the address, not from the document, and this is
+    // what lets it be on the screen while the room is still being read.
+    expect(isOpenToNewPlayers(roomScreenFor({ status: 'connecting' }, NOW))).toBe(true);
   });
 });

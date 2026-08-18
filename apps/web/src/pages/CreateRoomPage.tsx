@@ -1,12 +1,13 @@
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword, validateWordList } from 'shared';
 
-import { RoomCreatedPanel } from '../components/RoomCreatedPanel';
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm } from '../components/WordListForm';
 import { normalizeNickname } from '../rooms/nickname';
+import { roomPath } from '../rooms/room-link';
 import { createRoom } from '../rooms/room-service';
 import { logGameEvent } from '../telemetry/analytics';
 
@@ -31,20 +32,25 @@ const CREATION_FAILED_MESSAGE =
 type CreationPhase =
   | { readonly phase: 'editing'; readonly errorMessage?: string }
   | { readonly phase: 'confirming'; readonly layout: CrosswordLayout }
-  | { readonly phase: 'creating' }
-  | { readonly phase: 'created'; readonly roomId: string };
+  | { readonly phase: 'creating' };
 
 /**
- * Room creation, end to end: word list in, shareable link out.
+ * Room creation, end to end: word list in, the owner inside their own room.
  *
  * The crossword is generated in the browser before anything is written, so the
  * owner can see which words did not fit and decide, and so a word set that
  * cannot form a grid never becomes an unplayable room.
  *
+ * Once the room exists this screen has nothing left to say: the room lives at
+ * its own address, and the owner is taken there rather than left holding a link
+ * on a page a reload would empty (see
+ * `docs/decisions/0021-one-room-address.md`).
+ *
  * @example
  * <Route path="/create" element={<CreateRoomPage />} />
  */
 export const CreateRoomPage = () => {
+  const navigate = useNavigate();
   const [nickname, setNickname] = useState('');
   const [rawWords, setRawWords] = useState('');
   const [creation, setCreation] = useState<CreationPhase>({ phase: 'editing' });
@@ -62,7 +68,10 @@ export const CreateRoomPage = () => {
       // the words do not, and could not — see `telemetry/analytics.ts`.
       void logGameEvent('room_created', { word_count: layout.placedWords.length });
 
-      setCreation({ phase: 'created', roomId });
+      // Replaced, not pushed: Back from a room leads out of the flow rather
+      // than to a filled-in word list, which invites creating a second room
+      // nobody was sent the link to.
+      void navigate(roomPath(roomId), { replace: true });
     } catch (error) {
       // Firebase messages ("Missing or insufficient permissions") mean nothing
       // to a player, so the owner gets a plain one and the details go to the
@@ -95,10 +104,6 @@ export const CreateRoomPage = () => {
   };
 
   const renderPhase = () => {
-    if (creation.phase === 'created') {
-      return <RoomCreatedPanel roomId={creation.roomId} origin={window.location.origin} />;
-    }
-
     if (creation.phase === 'confirming') {
       return (
         <UnplacedWordsNotice

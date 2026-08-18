@@ -1,9 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { roomPath } from '../rooms/room-link';
-import { RoomCreatedPanel } from './RoomCreatedPanel';
+import { RoomInvitePanel } from './RoomInvitePanel';
 
 const ORIGIN = 'https://crossword.example';
 const ROOM_URL = `${ORIGIN}/room/room-1`;
@@ -16,38 +14,17 @@ const stubClipboard = (writeText: () => Promise<void>) => {
   });
 };
 
-const renderPanel = () =>
-  render(
-    <MemoryRouter>
-      <RoomCreatedPanel roomId="room-1" origin={ORIGIN} />
-    </MemoryRouter>,
-  );
+const renderPanel = () => render(<RoomInvitePanel roomId="room-1" origin={ORIGIN} />);
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe('RoomCreatedPanel', () => {
+describe('RoomInvitePanel', () => {
   it('shows the whole link, so it can be copied by hand as well', () => {
     renderPanel();
 
     expect(screen.getByLabelText(/room link/i)).toHaveValue(ROOM_URL);
-  });
-
-  it('offers the way in as a real link, without taking the invitation off the screen', () => {
-    renderPanel();
-
-    // A link rather than a button that navigates: middle-clicking it, opening
-    // it in a new tab and seeing where it leads are all things an owner does
-    // with an address of the app.
-    expect(screen.getByRole('link', { name: /enter the room/i })).toHaveAttribute(
-      'href',
-      roomPath('room-1'),
-    );
-    // Sharing is still what this panel is for — entering was added to it, not
-    // put in its place.
-    expect(screen.getByLabelText(/room link/i)).toHaveValue(ROOM_URL);
-    expect(screen.getByRole('button', { name: /copy link/i })).toBeInTheDocument();
   });
 
   it('puts the link on the clipboard and says so', async () => {
@@ -61,7 +38,7 @@ describe('RoomCreatedPanel', () => {
     expect(writeText).toHaveBeenCalledWith(ROOM_URL);
   });
 
-  it('asks the owner to copy by hand when the browser refuses clipboard access', async () => {
+  it('asks the player to copy by hand when the browser refuses clipboard access', async () => {
     stubClipboard(vi.fn().mockRejectedValue(new Error('Write permission denied.')));
     renderPanel();
 

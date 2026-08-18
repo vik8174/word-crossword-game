@@ -5,7 +5,7 @@ import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ROOM_ROUTE_PATTERN, roomPath } from '../rooms/room-link';
+import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
 import { RoomPage } from './RoomPage';
 
 // Firebase is the system boundary: mocked so a player can be walked through the
@@ -291,6 +291,58 @@ describe('RoomPage', () => {
       unmount();
 
       expect(unsubscribe).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('the link to the room', () => {
+    const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
+    const inviteLink = () => screen.queryByLabelText(/room link/i);
+
+    it('is on the screen before the room has been read at all', async () => {
+      renderRoomPage();
+
+      await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
+
+      // Nothing has been delivered yet: the address is all a link needs, so a
+      // player can pass it on while the first snapshot is still on its way.
+      expect(screen.getByRole('status')).toHaveTextContent(/connecting/i);
+      expect(inviteLink()).toHaveValue(roomUrl('room-1', window.location.origin));
+    });
+
+    it('is offered to a visitor who has not given a nickname yet', async () => {
+      await openRoom();
+
+      expect(screen.getByLabelText(/nickname/i)).toBeInTheDocument();
+      expect(inviteLink()).toHaveValue(roomUrl('room-1', window.location.origin));
+    });
+
+    it('is offered to a player waiting in the lobby, owner or not', async () => {
+      await openRoom(storedRoom({ players: bothPlayers }));
+
+      expect(inviteLink()).toHaveValue(roomUrl('room-1', window.location.origin));
+    });
+
+    it('goes once the words are dealt out, because it lets nobody in any more', async () => {
+      await openRoom(
+        storedRoom({
+          status: 'playing',
+          players: bothPlayers,
+          words: { w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null } },
+        }),
+      );
+
+      expect(inviteLink()).not.toBeInTheDocument();
+    });
+
+    it('is not offered for a room that is not there', async () => {
+      renderRoomPage();
+      await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
+
+      await act(async () => {
+        emitRoom({ exists: () => false, data: () => undefined });
+      });
+
+      expect(inviteLink()).not.toBeInTheDocument();
     });
   });
 

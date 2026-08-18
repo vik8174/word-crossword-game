@@ -2,11 +2,11 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { logEvent } from 'firebase/analytics';
 import { signInAnonymously } from 'firebase/auth';
 import { addDoc } from 'firebase/firestore';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword } from 'shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { roomUrl } from '../rooms/room-link';
+import { ROOM_ROUTE_PATTERN } from '../rooms/room-link';
 import { CreateRoomPage } from './CreateRoomPage';
 
 // Firebase is the system boundary: mocked so the flow can be driven end to end
@@ -51,13 +51,27 @@ const EMPTY_LAYOUT: CrosswordLayout = {
   unplacedWords: ['abc'],
 };
 
-/** The created-room panel offers a way into the room, so a router has to be in place. */
+/** Stands in for the room screen, so the address the owner ends up at is readable. */
+const RoomStub = () => <p>You are in room {useParams().roomId}</p>;
+
+/**
+ * The creation screen with the room screen behind it.
+ *
+ * Creating a room now ends somewhere else, so the route it ends at has to
+ * exist: what this page does when the write comes back is leave.
+ */
 const renderPage = () =>
   render(
-    <MemoryRouter>
-      <CreateRoomPage />
+    <MemoryRouter initialEntries={['/create']}>
+      <Routes>
+        <Route path="/create" element={<CreateRoomPage />} />
+        <Route path={ROOM_ROUTE_PATTERN} element={<RoomStub />} />
+      </Routes>
     </MemoryRouter>,
   );
+
+/** Waits until the owner has landed inside the room that was just written. */
+const insideRoom = () => screen.findByText(/you are in room room-1/i);
 
 const fillIn = (label: RegExp, value: string) => {
   fireEvent.change(screen.getByLabelText(label), { target: { value } });
@@ -115,15 +129,13 @@ describe('CreateRoomPage', () => {
   });
 
   describe('creating the room', () => {
-    it('hands the owner a link to the room it just created', async () => {
+    it('takes the owner into the room it just created', async () => {
       renderPage();
       fillInValidGame();
 
       fireEvent.click(createButton());
 
-      const link = await screen.findByLabelText(/room link/i);
-
-      expect(link).toHaveValue(roomUrl('room-1', window.location.origin));
+      expect(await insideRoom()).toBeInTheDocument();
       expect(addDoc).toHaveBeenCalledOnce();
     });
 
@@ -133,7 +145,7 @@ describe('CreateRoomPage', () => {
 
       fireEvent.click(createButton());
 
-      await screen.findByLabelText(/room link/i);
+      await insideRoom();
       expect(signInAnonymously).toHaveBeenCalledOnce();
       expect(addDoc).toHaveBeenCalledWith(
         expect.anything(),
@@ -150,7 +162,7 @@ describe('CreateRoomPage', () => {
 
       fireEvent.click(createButton());
 
-      await screen.findByLabelText(/room link/i);
+      await insideRoom();
 
       const [call] = vi.mocked(addDoc).mock.calls;
       // The written document is typed as `unknown` by the Firestore mock; the
@@ -160,7 +172,7 @@ describe('CreateRoomPage', () => {
       expect(Object.keys(room.words)).toHaveLength(room.layout.placedWords.length);
     });
 
-    it('tells the owner when the room could not be written, and offers no link', async () => {
+    it('tells the owner when the room could not be written, and leaves them on the form', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.mocked(addDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
       renderPage();
@@ -169,7 +181,8 @@ describe('CreateRoomPage', () => {
       fireEvent.click(createButton());
 
       expect(await screen.findByText(/could not be created/i)).toBeInTheDocument();
-      expect(screen.queryByLabelText(/room link/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/you are in room/i)).not.toBeInTheDocument();
+      expect(screen.getByLabelText(/words/i)).toHaveValue(TEN_WORDS);
     });
   });
 
@@ -179,7 +192,7 @@ describe('CreateRoomPage', () => {
       fillInValidGame();
 
       fireEvent.click(createButton());
-      await screen.findByLabelText(/room link/i);
+      await insideRoom();
 
       await waitFor(() => {
         expect(reportedEvents()).toEqual([
@@ -224,7 +237,7 @@ describe('CreateRoomPage', () => {
 
       fireEvent.click(screen.getByRole('button', { name: /create room anyway/i }));
 
-      await screen.findByLabelText(/room link/i);
+      await insideRoom();
       expect(addDoc).toHaveBeenCalledOnce();
     });
 
