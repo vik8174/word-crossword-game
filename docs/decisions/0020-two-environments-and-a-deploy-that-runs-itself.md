@@ -63,7 +63,7 @@ Both projects are named aliases and neither is the default. `firebase deploy` wi
 
 ### The deploy authenticates as a service account
 
-`firebase login:ci` and `FIREBASE_TOKEN` are the deprecated path. Each project instead gets a service account holding Firebase Hosting Admin, Firebase Rules Admin and API Keys Viewer on that project alone — enough to publish hosting and rules, and nothing else. Its JSON key is the environment's `FIREBASE_SERVICE_ACCOUNT` secret, and the CLI reads it through `GOOGLE_APPLICATION_CREDENTIALS`.
+`firebase login:ci` and `FIREBASE_TOKEN` are the deprecated path. Each project instead gets a service account holding Firebase Hosting Admin, Firebase Rules Admin, API Keys Viewer and Service Usage Consumer on that project alone — enough to publish hosting and rules, and nothing else. Its JSON key is the environment's `FIREBASE_SERVICE_ACCOUNT` secret, and the CLI reads it through `GOOGLE_APPLICATION_CREDENTIALS`. The roles and what each is for are listed in the README; publishing rules needs the last of them, which is not obvious from either the role's name or the error a deploy without it gives.
 
 ## Consequences
 

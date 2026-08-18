@@ -113,7 +113,19 @@ Everything below is done once per Firebase project, by hand, in a console. None 
 1. **Create the Firebase project**, and in it enable **Anonymous Auth** (Authentication > Sign-in method), **Firestore** and **Google Analytics**. Register a Web app to get the SDK config.
 2. **Put the project on the Blaze plan.** Not for the traffic — for the TTL policy, which the console refuses to create on Spark (see [Firestore](#firestore)).
 3. **Create the TTL policy** in the Google Cloud console (Firestore > TTL policies): collection `rooms`, field `expiresAt`, zero offset. Without it no room is ever deleted, and nothing in a deploy will tell you so.
-4. **Create a service account** for the deploy (Google Cloud console > IAM & Admin > Service Accounts) and give it, on that project alone: **Firebase Hosting Admin** (`roles/firebasehosting.admin`), **Firebase Rules Admin** (`roles/firebaserules.admin`) and **API Keys Viewer** (`roles/serviceusage.apiKeysViewer`, which Firebase requires of anything deploying hosting from the CLI). Owner is not needed and should not be granted. Download a JSON key.
+4. **Create a service account** for the deploy (Google Cloud console > IAM & Admin > Service Accounts) and give it, on that project alone, all four of:
+
+   | Role                   | Id                                        | What it is for                                                                                       |
+   | ---------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+   | Firebase Hosting Admin | `roles/firebasehosting.admin`             | publishing the app                                                                                   |
+   | Firebase Rules Admin   | `roles/firebaserules.admin`               | publishing `firestore.rules`                                                                         |
+   | API Keys Viewer        | `roles/serviceusage.apiKeysViewer`        | reading the web app config, which the CLI does before it deploys hosting                             |
+   | Service Usage Consumer | `roles/serviceusage.serviceUsageConsumer` | `serviceusage.services.get` — the CLI asks whether the Firestore API is on before it publishes rules |
+
+   The last one is easy to leave out and the failure names neither it nor the role that would fix it: `403 Permission denied to get service [firestore.googleapis.com]`, from the deploy step, after everything else has already succeeded. API Keys Viewer grants access to API _keys_, not to _services_, so it does not cover this.
+
+   Owner is not needed and should not be granted. Download a JSON key, and give the secret the **whole file** — see step 5.
+
 5. **Create the GitHub environment** of the same name as the `.firebaserc` alias (Settings > Environments), and give it every variable the build reads — the names are the ones in `apps/web/.env.example`, plus `FIREBASE_SERVICE_ACCOUNT` holding the JSON key. `VITE_SENTRY_ENVIRONMENT` is the exception: the workflow sets it from the ref, so it is never stored.
 
 The deploy checks that every name in `apps/web/.env.example` arrived with a value before it builds, and stops if one did not. A missing key therefore costs a failed deploy rather than a white screen for whoever opened the link first — which is what `firebase/config.ts` would otherwise give them, in the browser. A variable added to `.env.example` becomes required by the same step, without it being edited.
