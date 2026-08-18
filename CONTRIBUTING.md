@@ -28,7 +28,28 @@ Opening or updating a pull request against `main` automatically runs:
 - **Build** — `pnpm build` for both packages
 - **Rules** — `pnpm test:rules`: `firestore.rules` checked against the Firestore emulator (needs a JDK, which the job installs)
 
-All five are required status checks in branch protection. A pull request cannot be merged until they are green. The workflow also runs on `push` to `main`, so the state of `main` is verified after every merge.
+All five are required status checks in branch protection. A pull request cannot be merged until they are green.
+
+## Deploying (GitHub Actions)
+
+`.github/workflows/deploy.yml` is what puts the app anywhere, and nothing else does:
+
+- **A merge to `main`** deploys to **stage**, with no command from anybody
+- **A `v*` tag** deploys to **production**
+
+Both first re-run linting, the tests with their coverage threshold and the rules checks — on the exact commit being deployed, which for a tag is a commit no pull request ever had as its head. That is also why `ci.yml` no longer runs on `push` to `main`: the state of `main` is verified by the deploy, not twice.
+
+A deploy publishes the app and `firestore.rules` together, and never gets cancelled halfway — a second push waits rather than killing the first. How the two environments are kept apart, and what has to be set up by hand for one to exist, is in [ADR 0020](docs/decisions/0020-two-environments-and-a-deploy-that-runs-itself.md) and in the [Deployment section of `README.md`](README.md#deployment).
+
+## Releasing
+
+The version lives in one place — the `version` field of the root `package.json` — and a tag has to name it. To cut a release:
+
+1. In a pull request: bump `version` in the root `package.json`, and turn the `[Unreleased]` section of `CHANGELOG.md` into a numbered one with today's date, leaving a fresh empty `[Unreleased]` above it. Known limitations that ship with the release are named there rather than left for whoever plays it to find
+2. Merge it, and let the stage deploy go green
+3. Tag that commit `v<version>` and push the tag: `git tag v1.0.0 && git push origin v1.0.0`
+
+A tag that does not match the version in `package.json` deploys nothing and says so — the release job checks the pair before it builds. Move the tag or bump the version and push again.
 
 ## Architecture decisions (ADRs)
 

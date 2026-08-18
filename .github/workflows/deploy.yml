@@ -1,0 +1,187 @@
+name: Deploy
+
+# A merge to `main` reaches stage without anybody asking, and production moves
+# only when a release tag says so. Nothing else deploys anywhere: a branch, a
+# pull request and a tag that is not a release all miss both triggers, and the
+# `target` job below refuses any ref that reaches them anyway.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+# Deliberately not `cancel-in-progress`. A deploy is an upload of files, a
+# rules document and a hosting release; cancelling one halfway leaves a project
+# in a state no commit describes. A second push waits for the first to finish
+# instead of killing it, which is the opposite of what `ci.yml` wants and the
+# reason the two live in separate workflows.
+#
+# Grouped by the kind of ref rather than by the ref itself, because only `main`
+# and `v*` tags get this far: every branch push is the one stage deploy, and
+# every tag is the one production deploy. Keyed by the ref, two tags pushed
+# within a minute of each other would be two groups, and two deploys would race
+# for the same hosting site with the loser deciding nothing and the winner
+# unrelated to which tag was meant to ship.
+concurrency:
+  group: deploy-${{ github.ref_type }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  target:
+    name: Target
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.pick.outputs.environment }}
+    steps:
+      # One name, used three ways: the GitHub environment whose secrets the
+      # build is given, the `.firebaserc` alias the deploy names, and the
+      # environment the errors are tagged with in Sentry. They cannot drift
+      # apart because there is only one of them.
+      - name: Pick the environment this ref deploys to
+        id: pick
+        run: |
+          case "$GITHUB_REF" in
+            refs/heads/main) environment=stage ;;
+            refs/tags/v*) environment=production ;;
+            *)
+              echo "::error::$GITHUB_REF deploys nowhere. Only main and a v* tag do."
+              exit 1
+              ;;
+          esac
+          echo "environment=$environment" >> "$GITHUB_OUTPUT"
+
+  # `ci.yml` runs on pull requests. What is about to be deployed is checked
+  # here instead, on the exact commit that is deployed — which for a tag is a
+  # commit no pull request ever saw as its head.
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      # Runs the tests and the 80% threshold in one pass; `pnpm test` is a
+      # subset of it.
+      - run: pnpm test:coverage
+
+  verify-rules:
+    name: Verify rules
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      # The Firestore emulator runs on the JVM.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: pnpm install --frozen-lockfile
+      # These rules are the ones the deploy step below publishes, so a red
+      # check here stops them from reaching a live database.
+      - run: pnpm test:rules
+
+  deploy:
+    name: Deploy
+    needs: [target, verify, verify-rules]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.target.outputs.environment }}
+    env:
+      # The one name this deploy runs under, in a variable rather than repeated
+      # as an expression inside each script below.
+      ENVIRONMENT: ${{ needs.target.outputs.environment }}
+      # Everything the build reads comes from the environment picked above.
+      # GitHub hands a job the secrets of its own environment and nothing else,
+      # so a stage build has no name for production's keys — which is why the
+      # two sets need no `_STAGE`/`_PROD` suffix to be told apart.
+      VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+      VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+      VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+      VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+      VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+      VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+      VITE_SENTRY_DSN: ${{ secrets.VITE_SENTRY_DSN }}
+      # Not a secret, and deliberately not stored as one. It is the only thing
+      # that tells stage and production apart in Sentry — both are built in
+      # Vite's `production` mode — so it is derived from the ref rather than
+      # typed into a settings page where it could be forgotten and leave a
+      # deployment's errors filed under `unknown`.
+      VITE_SENTRY_ENVIRONMENT: ${{ needs.target.outputs.environment }}
+      # Not `VITE_`-prefixed on purpose: read by the build on the Node side, to
+      # upload source maps, and never embedded into the public bundle.
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The version lives in the root `package.json` and the tag names a
+      # release of this repository; nothing but this makes them agree. A tag
+      # that states a version the file does not deploys nothing.
+      - name: Check the tag names the version this repository states
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          version=$(jq -r .version package.json)
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not name the version package.json states ($version). Bump the version or move the tag; nothing is deployed."
+            exit 1
+          fi
+
+      # A variable that never arrives must stop the deploy, not the game:
+      # `firebase/config.ts` throws in the browser, which would be a white
+      # screen for whoever opened the link first. The names come from
+      # `.env.example`, so a variable added there is checked here without this
+      # step being touched.
+      - name: Check the environment supplied every build variable
+        run: |
+          missing=()
+          while IFS= read -r name; do
+            if [ -z "${!name:-}" ]; then
+              missing+=("$name")
+            fi
+          done < <(sed -n 's/^\([A-Z][A-Z0-9_]*\)=.*/\1/p' apps/web/.env.example)
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
+            missing+=("FIREBASE_SERVICE_ACCOUNT")
+          fi
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::The $ENVIRONMENT environment supplies no value for: ${missing[*]}"
+            exit 1
+          fi
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Builds with this environment's credentials, and uploads this build's
+      # source maps to Sentry under the release the bundle reports.
+      - run: pnpm build
+
+      # Hosting and the security rules go up together, in one command. They are
+      # one deployment: `firestore.rules` is the whole of the access control in
+      # this project, so a database that has the app but not its rules is a
+      # database with the wrong rules on it.
+      - name: Deploy hosting and the security rules
+        run: |
+          credentials="$RUNNER_TEMP/firebase-service-account.json"
+          (umask 077 && printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$credentials")
+          export GOOGLE_APPLICATION_CREDENTIALS="$credentials"
+          # The project is always named. `.firebaserc` has no `default` alias,
+          # so a command that forgot the flag would fail rather than pick one.
+          pnpm exec firebase deploy \
+            --only hosting,firestore:rules \
+            --project "$ENVIRONMENT" \
+            --non-interactive \
+            --message "$GITHUB_SHA"
