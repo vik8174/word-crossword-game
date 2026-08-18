@@ -1,6 +1,8 @@
 # 0007. A stage environment only for the MVP, production later
 
-Status: Accepted
+Status: Accepted, amended by [0020](0020-two-environments-and-a-deploy-that-runs-itself.md)
+
+[0020](0020-two-environments-and-a-deploy-that-runs-itself.md) is the separate decision this one deferred, and it overturns the consequences below: production exists, the deploy matrix is a workflow of its own, and the two sets of build variables are told apart by the GitHub environment they come from rather than by an `_STAGE`/`_PROD` suffix. What stands is the reason stage is called stage, and that it remains a place where things may be broken.
 
 ## Context
 
