@@ -85,10 +85,25 @@ describe('initializeErrorReporting', () => {
     expect(initOptions().release).toBe('9f1c0a2b3d4e5f60718293a4b5c6d7e8f9012345');
   });
 
-  it('goes without a release rather than inventing one', () => {
+  it('goes without a release rather than reporting under an empty name', () => {
+    initializeErrorReporting({
+      VITE_SENTRY_DSN: 'https://key@o0.ingest.sentry.io/0',
+      VITE_SENTRY_RELEASE: '',
+    });
+
+    // This is what a build with no revision to name itself after actually
+    // produces: `vite.config.ts` defines the key from `release ?? ''`, so a
+    // bundle always carries it and an unnamed build carries it empty. A release
+    // of `''` would be a name Sentry files events under and holds no maps for.
+    expect(initOptions().release).toBeUndefined();
+  });
+
+  it('goes without a release when the key is absent altogether', () => {
     initializeErrorReporting({ VITE_SENTRY_DSN: 'https://key@o0.ingest.sentry.io/0' });
 
-    // A build with no revision to name itself after uploaded no maps either.
+    // Not reachable from a build, where `define` always writes the key — this
+    // is the shape the tests and any other caller of `initializeErrorReporting`
+    // pass, and it has to mean the same thing.
     expect(initOptions().release).toBeUndefined();
   });
 
