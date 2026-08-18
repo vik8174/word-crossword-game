@@ -74,6 +74,24 @@ describe('initializeErrorReporting', () => {
     expect(initOptions().environment).toBe('unknown');
   });
 
+  it('reports errors under the release the build filed its maps under', () => {
+    initializeErrorReporting({
+      VITE_SENTRY_DSN: 'https://key@o0.ingest.sentry.io/0',
+      VITE_SENTRY_RELEASE: '9f1c0a2b3d4e5f60718293a4b5c6d7e8f9012345',
+    });
+
+    // The same name the upload used, or Sentry holds maps and events it has no
+    // way to match to each other.
+    expect(initOptions().release).toBe('9f1c0a2b3d4e5f60718293a4b5c6d7e8f9012345');
+  });
+
+  it('goes without a release rather than inventing one', () => {
+    initializeErrorReporting({ VITE_SENTRY_DSN: 'https://key@o0.ingest.sentry.io/0' });
+
+    // A build with no revision to name itself after uploaded no maps either.
+    expect(initOptions().release).toBeUndefined();
+  });
+
   it('switches on neither tracing nor session replay', () => {
     initializeErrorReporting({ VITE_SENTRY_DSN: 'https://key@o0.ingest.sentry.io/0' });
 

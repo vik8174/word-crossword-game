@@ -17,6 +17,8 @@ export interface SentryEnv {
   readonly VITE_SENTRY_DSN?: string;
   /** Which deployment this build is: `stage` today, `production` one day. */
   readonly VITE_SENTRY_ENVIRONMENT?: string;
+  /** Which build this is, so Sentry can find the source maps it uploaded. */
+  readonly VITE_SENTRY_RELEASE?: string;
 }
 
 /**
@@ -53,6 +55,15 @@ export const initializeErrorReporting = (env: SentryEnv): boolean => {
   init({
     dsn,
     environment: env.VITE_SENTRY_ENVIRONMENT || UNKNOWN_ENVIRONMENT,
+
+    /**
+     * The name the build filed its source maps under, put here by
+     * `vite.config.ts` so that both sides say the same thing. A minified frame
+     * is only translated back into a file and a line when the event and the
+     * maps agree on it. Undefined in a build that had no revision to name
+     * itself after, and in every test.
+     */
+    release: env.VITE_SENTRY_RELEASE || undefined,
 
     // No `integrations`, no `tracesSampleRate`, no replay sample rates, and
     // that is the configuration rather than an omission. Browser tracing
