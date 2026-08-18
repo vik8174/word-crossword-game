@@ -5,7 +5,11 @@ import { defineConfig, loadEnv } from 'vite';
 import { readGitRevision, readPackageVersion, resolveReleaseName } from './build/release-name.ts';
 import { shouldUploadSourceMaps } from './build/source-map-upload.ts';
 
-/** Where the maps go. Neither is a secret; both are stage-only (ADR 0007). */
+/**
+ * Where the maps go. Neither is a secret, and there is one project for both
+ * deployments: stage and production report into it and are told apart by the
+ * environment their events carry (ADR 0020).
+ */
 const SENTRY_ORG = 'kurysh-labs';
 const SENTRY_PROJECT = 'word-crossword-game';
 

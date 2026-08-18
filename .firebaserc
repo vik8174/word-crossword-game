@@ -1,5 +1,6 @@
 {
   "projects": {
-    "default": "word-crossword-game-stage"
+    "stage": "word-crossword-game-stage",
+    "production": "word-crossword-game"
   }
 }

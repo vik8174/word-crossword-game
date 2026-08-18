@@ -37,7 +37,7 @@ cp apps/web/.env.example apps/web/.env
 
 - `VITE_FIREBASE_*` — from Firebase Console > Project settings > General > Your apps > SDK setup
 - `VITE_SENTRY_DSN` — from Sentry > Project Settings > Client Keys (DSN). Left empty, error reporting does not start at all, which is what a local checkout wants
-- `VITE_SENTRY_ENVIRONMENT` — which deployment this build is (`stage` today). Not derived from the build mode: stage and production are both built as `production`, so nothing else tells them apart
+- `VITE_SENTRY_ENVIRONMENT` — which deployment this build is, `stage` or `production`. Not derived from the build mode: both are built as `production`, so nothing else tells them apart. Only a build run by hand reads it from `.env` — a deploy sets it from the ref it was triggered by, so that it cannot be left out and file a deployment's errors under `unknown` ([Deployment](#deployment))
 - `SENTRY_AUTH_TOKEN` — an organization token, from Sentry > Settings > Developer Settings > Organization Tokens > **Create New Token**. Its scope is fixed at `org:ci` — source map upload, release creation, code mappings — and it is shown once, at creation. It also carries the organization's region in it, which a personal token does not; on this EU-region organization a personal token would additionally need the plugin's `url` set. Note the missing `VITE_` prefix: Vite embeds every `VITE_` variable into the bundle in plain text, and this bundle is public, so the prefix would publish the token. Only the build reads it, and only on the Node side. Left empty the build still succeeds — see [Source maps](#source-maps)
 
 `apps/web/.env` is git-ignored — never commit real values.
@@ -61,37 +61,64 @@ Both halves agree on one release name, and that name is the product's version jo
 
 The version comes from the `version` field of the **root `package.json`**, which is the one place it lives: the git tag and `CHANGELOG.md` describe the same repository, so all three sit together. `apps/web` and `packages/shared` keep a placeholder `0.0.0` — they are private, never published, and nothing reads their version. Outside a git checkout — a source archive — the release is the version alone, which is still a name both halves agree on, so such a build uploads maps like any other. See [ADR 0019](docs/decisions/0019-a-release-is-a-version-and-a-commit.md).
 
-There is no deploy job in CI yet, so maps reach Sentry from whichever build is run by hand. The token therefore has to exist on the machine that builds, not only in GitHub Actions secrets. See [ADR 0018](docs/decisions/0018-source-maps-for-sentry-only.md).
+Every deploy builds with the token, so the maps of whatever is live are always in Sentry; a deploy whose environment holds no token fails before it builds rather than publishing a bundle nothing can read. Stage and production share one Sentry project and are told apart by the environment tag, so they also share the release name whenever a tag sits on a commit stage already has — the same build, in two places. See [ADR 0018](docs/decisions/0018-source-maps-for-sentry-only.md) and [ADR 0020](docs/decisions/0020-two-environments-and-a-deploy-that-runs-itself.md).
 
 ## Firestore
 
 There is no backend in this project — browsers write to Firestore directly — so `firestore.rules` is the only access control there is.
 
 ```bash
-pnpm test:rules                                     # check the rules against the emulator
-pnpm exec firebase deploy --only firestore:rules    # deploy them (project alias lives in .firebaserc)
+pnpm test:rules                                                       # check the rules against the emulator
+pnpm exec firebase deploy --only firestore:rules --project stage      # deploy them by hand, should it ever be needed
 ```
 
-`firebase-tools` is a dev dependency of the repo, so both commands work after `pnpm install` — no global install needed.
+`firebase-tools` is a dev dependency of the repo, so both commands work after `pnpm install` — no global install needed. Deploying by hand is the exception: every deploy publishes the rules together with the app, so the rules on a project are the ones on the commit it was deployed from (see [Deployment](#deployment)).
 
-Deleting stale rooms relies on a Firestore **TTL policy** on the `expiresAt` field of the `rooms` collection. The app writes that field and pushes it another 24 hours out on every write to the room, so a room is collected only after a full day in which nobody touched it ([ADR 0013](docs/decisions/0013-keeping-a-room-alive-on-every-write.md)). The policy itself is enabled once by hand in the Google Cloud console (Firestore > TTL policies) and is not part of this repository. On the stage project it is live, on `rooms` / `expiresAt` with a zero offset.
+Deleting stale rooms relies on a Firestore **TTL policy** on the `expiresAt` field of the `rooms` collection. The app writes that field and pushes it another 24 hours out on every write to the room, so a room is collected only after a full day in which nobody touched it ([ADR 0013](docs/decisions/0013-keeping-a-room-alive-on-every-write.md)). The policy itself is enabled once by hand in the Google Cloud console (Firestore > TTL policies), on `rooms` / `expiresAt` with a zero offset. It is not part of this repository and not part of any deploy: **each project needs its own, and a project without one deletes no room, ever.**
 
-Worth knowing before setting one up elsewhere: **a TTL policy needs billing enabled on the project.** On the no-cost Spark plan the console refuses to create one — `403: Project ... has billing disabled` — so the stage project runs on pay-as-you-go (Blaze). The free usage quotas are the same on both plans and this game does not come close to them; the plan is what unlocks the feature, not what the traffic costs.
+Worth knowing before setting one up elsewhere: **a TTL policy needs billing enabled on the project.** On the no-cost Spark plan the console refuses to create one — `403: Project ... has billing disabled` — so both projects run on pay-as-you-go (Blaze). The free usage quotas are the same on both plans and this game does not come close to them; the plan is what unlocks the feature, not what the traffic costs.
 
 The policy deletes lazily: Firestore's guarantee is deletion within about 24 hours of the expiry, not at the second it passes. A room that has expired but is still in the database is therefore normal, and the app handles it — the room screen explains the expiry to whoever opens the link, and the security rules refuse every write to such a room rather than letting a game resume in one that may vanish at any moment.
 
-## Hosting
+## Deployment
 
-The built app is served from Firebase Hosting, from the same project the database lives in:
+Two environments, and two Firebase projects that share nothing — not a database, not a set of keys:
+
+| Environment  | Firebase project            | Address                                     | Deployed by           |
+| ------------ | --------------------------- | ------------------------------------------- | --------------------- |
+| `stage`      | `word-crossword-game-stage` | <https://word-crossword-game-stage.web.app> | every merge to `main` |
+| `production` | `word-crossword-game`       | <https://word-crossword-game.web.app>       | a `v*` release tag    |
+
+`.github/workflows/deploy.yml` does both, and nothing else deploys anywhere. Stage moves on its own so that what is live is what `main` says; production moves only when somebody tags a release, so shipping stays a deliberate act. Each deploy publishes the app **and** `firestore.rules` in one command: the rules are the whole of the access control here, so a database running the app without them would be a database with the wrong rules on it.
+
+One name decides everything about a deploy — `stage` or `production`, worked out from the ref that triggered it. It is the GitHub environment whose secrets the build is given, the `.firebaserc` alias the deploy names, and the value of `VITE_SENTRY_ENVIRONMENT` the errors are tagged with. There is one of it, so the three cannot drift apart. See [ADR 0020](docs/decisions/0020-two-environments-and-a-deploy-that-runs-itself.md).
+
+An invite link points straight at `/room/<id>`, a route that exists only in the browser, so `firebase.json` rewrites every path to `index.html`. Without that rewrite an invite opened in a fresh tab is a 404 rather than a room. Both addresses are the standard `*.web.app` one; nothing in the app hard-codes an origin, so a custom domain attaches later without a rebuild.
+
+### Deploying by hand
+
+`.firebaserc` names both projects and deliberately has **no `default` alias**, so there is no such thing as a command that deploys wherever the CLI last happened to point:
 
 ```bash
-pnpm build                                    # apps/web/dist is what gets uploaded
-pnpm exec firebase deploy --only hosting
+pnpm build
+pnpm exec firebase deploy --only hosting,firestore:rules --project stage
 ```
 
-An invite link points straight at `/room/<id>`, a route that exists only in the browser, so `firebase.json` rewrites every path to `index.html`. Without that rewrite an invite opened in a fresh tab is a 404 rather than a room.
+Leave `--project` out and the CLI refuses to do anything, which is the point. Note that `firebase use <alias>` records an active project outside this repository and would bring the default back for you alone — pass the flag rather than relying on it.
 
-Stage is <https://word-crossword-game-stage.web.app>. There is no production project yet — see [ADR 0007](docs/decisions/0007-stage-only-environment.md).
+### Standing up an environment
+
+Everything below is done once per Firebase project, by hand, in a console. None of it is in this repository:
+
+1. **Create the Firebase project**, and in it enable **Anonymous Auth** (Authentication > Sign-in method), **Firestore** and **Google Analytics**. Register a Web app to get the SDK config.
+2. **Put the project on the Blaze plan.** Not for the traffic — for the TTL policy, which the console refuses to create on Spark (see [Firestore](#firestore)).
+3. **Create the TTL policy** in the Google Cloud console (Firestore > TTL policies): collection `rooms`, field `expiresAt`, zero offset. Without it no room is ever deleted, and nothing in a deploy will tell you so.
+4. **Create a service account** for the deploy (Google Cloud console > IAM & Admin > Service Accounts) and give it, on that project alone: **Firebase Hosting Admin** (`roles/firebasehosting.admin`), **Firebase Rules Admin** (`roles/firebaserules.admin`) and **API Keys Viewer** (`roles/serviceusage.apiKeysViewer`, which Firebase requires of anything deploying hosting from the CLI). Owner is not needed and should not be granted. Download a JSON key.
+5. **Create the GitHub environment** of the same name as the `.firebaserc` alias (Settings > Environments), and give it every variable the build reads — the names are the ones in `apps/web/.env.example`, plus `FIREBASE_SERVICE_ACCOUNT` holding the JSON key. `VITE_SENTRY_ENVIRONMENT` is the exception: the workflow sets it from the ref, so it is never stored.
+
+The deploy checks that every name in `apps/web/.env.example` arrived with a value before it builds, and stops if one did not. A missing key therefore costs a failed deploy rather than a white screen for whoever opened the link first — which is what `firebase/config.ts` would otherwise give them, in the browser. A variable added to `.env.example` becomes required by the same step, without it being edited.
+
+Sentry needs nothing set up per environment: both deployments report into the same project and are separated by the environment tag, which Sentry creates the first time an event arrives carrying it.
 
 ## Scripts
 

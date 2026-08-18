@@ -15,7 +15,7 @@ import { redactRoomIdsDeep } from './redaction';
 export interface SentryEnv {
   /** Project DSN; absent in a checkout with no `.env`, and in tests. */
   readonly VITE_SENTRY_DSN?: string;
-  /** Which deployment this build is: `stage` today, `production` one day. */
+  /** Which deployment this build is: `stage` or `production`. */
   readonly VITE_SENTRY_ENVIRONMENT?: string;
   /** Which build this is, so Sentry can find the source maps it uploaded. */
   readonly VITE_SENTRY_RELEASE?: string;
@@ -26,8 +26,11 @@ export interface SentryEnv {
  *
  * Not derived from `import.meta.env.MODE`: stage and production are both built
  * as `production`, so guessing from the build mode would file stage errors
- * under the name of a deployment they did not come from (see
- * `docs/decisions/0007-stage-only-environment.md`).
+ * under the name of a deployment they did not come from. Both deployments
+ * report into one Sentry project and this is what separates them, which is why
+ * the deploy sets it from the ref rather than reading it from a settings page
+ * it could be missing from (see
+ * `docs/decisions/0020-two-environments-and-a-deploy-that-runs-itself.md`).
  */
 const UNKNOWN_ENVIRONMENT = 'unknown';
 
