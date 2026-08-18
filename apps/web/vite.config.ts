@@ -2,7 +2,7 @@ import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 
-import { readGitRevision, resolveReleaseName } from './build/release-name.ts';
+import { readGitRevision, readPackageVersion, resolveReleaseName } from './build/release-name.ts';
 import { shouldUploadSourceMaps } from './build/source-map-upload.ts';
 
 /** Where the maps go. Neither is a secret; both are stage-only (ADR 0007). */
@@ -19,13 +19,13 @@ export default defineConfig(({ mode }) => {
 
   // Resolved once and handed to both sides: the upload files the maps under
   // this name, and the bundle reports its errors under it. Two names would
-  // leave Sentry holding maps and events it cannot match.
-  const release = resolveReleaseName(readGitRevision);
+  // leave Sentry holding maps and events it cannot match. Always a name — the
+  // version comes from a file, so there is no build that cannot say what it is.
+  const release = resolveReleaseName(readPackageVersion, readGitRevision);
 
   // Either the build writes maps and sends them, or it writes none at all. A
-  // build missing the token or the name still succeeds, exactly as the app runs
-  // without a DSN.
-  const uploadsSourceMaps = shouldUploadSourceMaps(SENTRY_AUTH_TOKEN, release);
+  // build without a token still succeeds, exactly as the app runs without a DSN.
+  const uploadsSourceMaps = shouldUploadSourceMaps(SENTRY_AUTH_TOKEN);
 
   return {
     plugins: [
@@ -61,10 +61,9 @@ export default defineConfig(({ mode }) => {
 
     // The one way the release name reaches the running app: `main.tsx` hands
     // `import.meta.env` to `initializeErrorReporting`, and this key is part of
-    // it. Empty when the build could not name itself, which reads the same as
-    // absent.
+    // it.
     define: {
-      'import.meta.env.VITE_SENTRY_RELEASE': JSON.stringify(release ?? ''),
+      'import.meta.env.VITE_SENTRY_RELEASE': JSON.stringify(release),
     },
   };
 });
