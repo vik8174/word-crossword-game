@@ -60,39 +60,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # Non-empty is not the same as usable. A secret holding one field of the
-      # key file, or a path to it, passes the check above and then fails at the
-      # very last command with `Failed to authenticate, have you run firebase
-      # login?` — which names neither the secret nor what is wrong with it.
-      #
-      # The project the key belongs to is checked against the one this deploy
-      # targets, so a production key sitting in the stage environment is caught
-      # here rather than by noticing, later, that the wrong database moved.
-      - name: Check the service account key is a key, and this project's
-        run: |
-          expected=$(jq -r --arg alias "$ENVIRONMENT" '.projects[$alias]' .firebaserc)
-
-          if ! key_type=$(jq -er '.type // ""' <<< "$FIREBASE_SERVICE_ACCOUNT" 2>/dev/null); then
-            echo "::error::FIREBASE_SERVICE_ACCOUNT in the $ENVIRONMENT environment is not valid JSON. It has to hold the whole downloaded key file, not one field of it and not a path to it."
-            exit 1
-          fi
-
-          if [ "$key_type" != "service_account" ]; then
-            echo "::error::FIREBASE_SERVICE_ACCOUNT in the $ENVIRONMENT environment is JSON, but not a service account key (its type is '$key_type')."
-            exit 1
-          fi
-
-          if ! jq -e '(.private_key // "") != "" and (.client_email // "") != ""' <<< "$FIREBASE_SERVICE_ACCOUNT" > /dev/null 2>&1; then
-            echo "::error::The key in the $ENVIRONMENT environment is missing private_key or client_email. Download a fresh JSON key and set the secret from the file rather than by pasting."
-            exit 1
-          fi
-
-          named=$(jq -r '.project_id // ""' <<< "$FIREBASE_SERVICE_ACCOUNT")
-          if [ "$named" != "$expected" ]; then
-            echo "::error::The key in the $ENVIRONMENT environment belongs to project '$named', but this deploy targets '$expected'."
-            exit 1
-          fi
-
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -188,6 +155,39 @@ jobs:
           fi
           if [ ${#missing[@]} -gt 0 ]; then
             echo "::error::The $ENVIRONMENT environment supplies no value for: ${missing[*]}"
+            exit 1
+          fi
+
+      # Non-empty is not the same as usable. A secret holding one field of the
+      # key file, or a path to it, passes the check above and then fails at the
+      # very last command with `Failed to authenticate, have you run firebase
+      # login?` — which names neither the secret nor what is wrong with it.
+      #
+      # The project the key belongs to is checked against the one this deploy
+      # targets, so a production key sitting in the stage environment is caught
+      # here rather than by noticing, later, that the wrong database moved.
+      - name: Check the service account key is a key, and this project's
+        run: |
+          expected=$(jq -r --arg alias "$ENVIRONMENT" '.projects[$alias]' .firebaserc)
+
+          if ! key_type=$(jq -er '.type // ""' <<< "$FIREBASE_SERVICE_ACCOUNT" 2>/dev/null); then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT in the $ENVIRONMENT environment is not valid JSON. It has to hold the whole downloaded key file, not one field of it and not a path to it."
+            exit 1
+          fi
+
+          if [ "$key_type" != "service_account" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT in the $ENVIRONMENT environment is JSON, but not a service account key (its type is '$key_type')."
+            exit 1
+          fi
+
+          if ! jq -e '(.private_key // "") != "" and (.client_email // "") != ""' <<< "$FIREBASE_SERVICE_ACCOUNT" > /dev/null 2>&1; then
+            echo "::error::The key in the $ENVIRONMENT environment is missing private_key or client_email. Download a fresh JSON key and set the secret from the file rather than by pasting."
+            exit 1
+          fi
+
+          named=$(jq -r '.project_id // ""' <<< "$FIREBASE_SERVICE_ACCOUNT")
+          if [ "$named" != "$expected" ]; then
+            echo "::error::The key in the $ENVIRONMENT environment belongs to project '$named', but this deploy targets '$expected'."
             exit 1
           fi
 
