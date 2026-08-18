@@ -1,20 +1,21 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { signInAnonymously } from 'firebase/auth';
 import { addDoc, onSnapshot } from 'firebase/firestore';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { App } from './App';
 import type { NewRoomDocument } from './rooms/room-document';
-import { roomPath } from './rooms/room-link';
+import { roomPath, roomUrl } from './rooms/room-link';
 
 /**
  * The owner's journey, across both screens it runs through: the word list on
  * `/create` and the room the link leads to.
  *
  * Kept apart from the page tests on purpose. Each of those covers one screen,
- * and the gap this file exists for lived exactly between them — the owner was
- * handed a link to their own room with nothing that took them there, which no
- * test of a single screen could see (issue #27).
+ * and the gap this file exists for lives exactly between them — creation used
+ * to end on `/create` with the room in component state, so a reload lost the
+ * room and the words that built it, which no test of a single screen could see
+ * (issues #27 and #48).
  */
 
 // Firebase is the system boundary: mocked so the whole journey can be walked
@@ -93,37 +94,57 @@ afterEach(() => {
 });
 
 describe('the owner of a room', () => {
-  it('walks from the word list into their own room, as a player already in it', async () => {
+  it('lands in their own room, at its own address, and stays there through a reload', async () => {
     createRoom();
-    await screen.findByLabelText(/room link/i);
 
-    fireEvent.click(screen.getByRole('link', { name: /enter the room/i }));
-
+    // Taken in by the write coming back, with nothing to click: the room screen
+    // is subscribing before a single snapshot has arrived.
     await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
+    expect(window.location.pathname).toBe(roomPath('room-1'));
+    // The link is built from the address, so it is already here — the owner can
+    // send it on while the room is still being read.
+    expect(screen.getByLabelText(/room link/i)).toHaveValue(
+      roomUrl('room-1', window.location.origin),
+    );
+
     await act(async () => {
       emitRoom({ exists: () => true, data: () => asStoredRoom(writtenRoom()) });
     });
 
-    // On the board of the room they created, without being asked who they are:
-    // `createRoom` already put them in `players`.
-    expect(window.location.pathname).toBe(roomPath('room-1'));
+    // In the room they created, without being asked who they are: `createRoom`
+    // already put them in `players`.
     expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Vik');
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent(/host/i);
+
+    // The reload this ticket exists for: everything the screen knew is thrown
+    // away and the app is opened again at the address the browser is on.
+    cleanup();
+    render(<App />);
+
+    await waitFor(() => expect(onSnapshot).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      emitRoom({ exists: () => true, data: () => asStoredRoom(writtenRoom()) });
+    });
+
+    expect(window.location.pathname).toBe(roomPath('room-1'));
+    expect(screen.getByLabelText(/room link/i)).toHaveValue(
+      roomUrl('room-1', window.location.origin),
+    );
+    expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Vik');
     expect(screen.getByRole('group', { name: /crossword grid/i })).toBeInTheDocument();
-
-    const [owner] = screen.getAllByRole('listitem');
-
-    expect(owner).toHaveTextContent('Vik');
-    expect(owner).toHaveTextContent(/host/i);
   });
 
-  it('is left with the room to share until they choose to walk in', async () => {
+  it('is not taken back to the word list by the Back button', async () => {
     createRoom();
+    await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
 
-    await screen.findByLabelText(/room link/i);
+    act(() => {
+      window.history.back();
+    });
 
-    // Nothing has taken them anywhere: the link is usually sent before the owner
-    // goes in, and a room they were pushed into would take that away from them.
-    expect(window.location.pathname).toBe('/create');
-    expect(onSnapshot).not.toHaveBeenCalled();
+    // `/create` was replaced rather than pushed: going back to a filled-in form
+    // invites creating a second room, one the guests were never sent to.
+    await waitFor(() => expect(window.location.pathname).toBe('/'));
   });
 });

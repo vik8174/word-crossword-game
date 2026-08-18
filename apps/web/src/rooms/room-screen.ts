@@ -119,3 +119,38 @@ export const roomScreenFor = (connection: RoomConnection, now: Date): RoomScreen
   // wording for, and this line is where the compiler checks that it stays so.
   return { kind: 'unavailable', reason: access };
 };
+
+/**
+ * Whether this screen is one somebody else could still be invited into.
+ *
+ * The invite link is worth showing for exactly as long as a link can still let
+ * anyone in, which is while the room waits in its lobby — a started, finished
+ * or closed room leads a newcomer to a refusal, and one that is not there leads
+ * nowhere at all. `connecting` counts as open because the link is built from
+ * the address rather than from the document: withholding it until the first
+ * snapshot would make the owner wait to invite anybody, which is the thing
+ * being fixed.
+ *
+ * A switch rather than a list of kinds, so a screen added to {@link RoomScreen}
+ * has to say whether a room showing it can still be joined instead of silently
+ * defaulting to hiding the link.
+ *
+ * @param screen - The screen the room is showing, from {@link roomScreenFor}
+ * @returns Whether the invite link still leads anybody in
+ *
+ * @example
+ * isOpenToNewPlayers({ kind: 'connecting' }); // true
+ */
+export const isOpenToNewPlayers = (screen: RoomScreen): boolean => {
+  switch (screen.kind) {
+    case 'connecting':
+    case 'join':
+    case 'lobby':
+      return true;
+    case 'unavailable':
+    case 'playing':
+    case 'finished':
+    case 'closed-early':
+      return false;
+  }
+};
