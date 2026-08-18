@@ -1,6 +1,6 @@
 # 0018. Source maps for Sentry only, under one release name
 
-Status: Accepted
+Status: Accepted, amended by [0019](0019-a-release-is-a-version-and-a-commit.md)
 
 ## Context
 

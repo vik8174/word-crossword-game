@@ -11,22 +11,19 @@
 /**
  * Decides whether the build both writes source maps and sends them to Sentry.
  *
- * Two things have to be true, and each is false in a case that has to keep
- * building. Without a token — a fresh clone, a pull request in CI — there is
- * nowhere to upload to. Without a release name — a source archive rather than a
- * checkout — there is nothing to file the upload under, and the plugin left to
- * itself would go looking for a revision in CI variables this project never
- * read, filing the maps under a name the bundle has never heard of. Maps and
- * events would both arrive at Sentry and never meet.
+ * The token is the whole of the question. A build without one — a fresh clone,
+ * a pull request in CI — has nowhere to upload to, so it writes no maps either
+ * and still succeeds, in the same way the app runs without a DSN.
+ *
+ * A name is no longer part of it: `resolveReleaseName` always answers, because
+ * the version comes from a file every build already reads (see
+ * `docs/decisions/0019-a-release-is-a-version-and-a-commit.md`).
  *
  * @param authToken - The Sentry token the build was given, if it was given one
- * @param release - What this build calls itself, if it could work that out
  * @returns Whether to generate source maps and upload them
  *
  * @example
- * shouldUploadSourceMaps('sntrys_...', 'fd05664...'); // true
+ * shouldUploadSourceMaps('sntrys_...'); // true
  */
-export const shouldUploadSourceMaps = (
-  authToken: string | undefined,
-  release: string | undefined,
-): boolean => Boolean(authToken) && release !== undefined;
+export const shouldUploadSourceMaps = (authToken: string | undefined): boolean =>
+  Boolean(authToken);
