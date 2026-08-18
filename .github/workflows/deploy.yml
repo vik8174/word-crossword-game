@@ -14,8 +14,15 @@ on:
 # in a state no commit describes. A second push waits for the first to finish
 # instead of killing it, which is the opposite of what `ci.yml` wants and the
 # reason the two live in separate workflows.
+#
+# Grouped by the kind of ref rather than by the ref itself, because only `main`
+# and `v*` tags get this far: every branch push is the one stage deploy, and
+# every tag is the one production deploy. Keyed by the ref, two tags pushed
+# within a minute of each other would be two groups, and two deploys would race
+# for the same hosting site with the loser deciding nothing and the winner
+# unrelated to which tag was meant to ship.
 concurrency:
-  group: deploy-${{ github.ref }}
+  group: deploy-${{ github.ref_type }}
   cancel-in-progress: false
 
 permissions:
