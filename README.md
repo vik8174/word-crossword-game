@@ -59,7 +59,7 @@ The plugin runs only when `SENTRY_AUTH_TOKEN` is set and the build could name it
 
 Both halves agree on one release name: `vite.config.ts` resolves it once from `git rev-parse HEAD`, files the uploaded maps under it, and puts the same value into `import.meta.env.VITE_SENTRY_RELEASE`, which is where `initializeErrorReporting` reads it. Two names, and Sentry ends up holding maps and events with no way to match them — the trace stays minified and nothing says why. A build with no revision to read — a source archive rather than a checkout — therefore uploads nothing even when it has a token, rather than letting the plugin invent a name of its own.
 
-There is no deploy job in CI yet, so maps reach Sentry from whichever build is run by hand. The token therefore has to exist on the machine that builds, not only in GitHub Actions secrets.
+There is no deploy job in CI yet, so maps reach Sentry from whichever build is run by hand. The token therefore has to exist on the machine that builds, not only in GitHub Actions secrets. See [ADR 0018](docs/decisions/0018-source-maps-for-sentry-only.md).
 
 ## Firestore
 
