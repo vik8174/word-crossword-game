@@ -8,6 +8,7 @@ import {
   completeGame,
   createRoom,
   joinRoom,
+  markPresence,
   recordGuess,
   startGame,
   subscribeToRoom,
@@ -218,7 +219,11 @@ describe('joinRoom', () => {
     expect(updateDoc).toHaveBeenCalledWith(
       ROOM_REFERENCE,
       expect.objectContaining({
-        'players.guest-uid': { nickname: 'Bob', joinedAt: expect.any(Date) },
+        'players.guest-uid': {
+          nickname: 'Bob',
+          joinedAt: expect.any(Date),
+          lastSeenAt: expect.any(Date),
+        },
       }),
     );
   });
@@ -229,6 +234,28 @@ describe('joinRoom', () => {
     await expect(
       joinRoom({ roomId: 'room-1', playerId: 'guest-uid', nickname: 'Bob' }),
     ).rejects.toThrow(/permissions/i);
+  });
+});
+
+describe('markPresence', () => {
+  it('writes the mark alone, so nothing else about the player is touched', async () => {
+    // The whole entry would carry `joinedAt` with it, and the player list is
+    // ordered by that — a mark written every fifteen seconds would reshuffle
+    // the list on every beat.
+    await markPresence({ roomId: 'room-1', playerId: 'guest-uid' });
+
+    const [fields] = Object.keys(writtenUpdate()).filter((field) => field !== 'expiresAt');
+
+    expect(fields).toBe('players.guest-uid.lastSeenAt');
+    expect(writtenUpdate()['players.guest-uid.lastSeenAt']).toBeInstanceOf(Date);
+  });
+
+  it('lets a refused mark reach the caller, so the timer behind it can stop', async () => {
+    vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+
+    await expect(markPresence({ roomId: 'room-1', playerId: 'guest-uid' })).rejects.toThrow(
+      /permissions/i,
+    );
   });
 });
 
@@ -363,6 +390,10 @@ describe('keeping a room alive', () => {
       () => recordGuess({ roomId: 'room-1', playerId: 'guest-uid', wordId: 'w2' }),
     ],
     ['the game being closed', () => completeGame('room-1')],
+    [
+      'a player marking themselves present',
+      () => markPresence({ roomId: 'room-1', playerId: 'guest-uid' }),
+    ],
   ];
 
   it.each(writes)('pushes the expiry forward when %s', async (_description, write) => {

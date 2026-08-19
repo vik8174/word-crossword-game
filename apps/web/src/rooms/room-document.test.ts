@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildGuessUpdate,
   buildJoinUpdate,
+  buildPresenceUpdate,
   buildRoomDocument,
   buildRoomUpdate,
   buildStartGameUpdate,
@@ -79,7 +80,9 @@ describe('buildRoomDocument', () => {
     const { ownerId, players } = buildDocument();
 
     expect(ownerId).toBe('owner-uid');
-    expect(players).toEqual({ 'owner-uid': { nickname: 'Vik', joinedAt: CREATED_AT } });
+    expect(players).toEqual({
+      'owner-uid': { nickname: 'Vik', joinedAt: CREATED_AT, lastSeenAt: CREATED_AT },
+    });
   });
 
   it('stores the layout exactly as the generator produced it', () => {
@@ -152,12 +155,38 @@ describe('buildJoinUpdate', () => {
   it('adds only the joining player, leaving everyone else in place', () => {
     // Writing the `players` map itself would replace it wholesale, and two
     // players arriving in the same second would lose one of the two entries.
-    expect(join()).toMatchObject({ 'players.bob-uid': { nickname: 'Bob', joinedAt: NOW } });
+    expect(join()).toMatchObject({
+      'players.bob-uid': { nickname: 'Bob', joinedAt: NOW, lastSeenAt: NOW },
+    });
     expect(Object.keys(join())).not.toContain('players');
+  });
+
+  it('marks the player present as they arrive, so nobody reads them as away', () => {
+    // Their first heartbeat is a moment away, and until it lands the room would
+    // date them from a field they do not have.
+    expect(join()).toMatchObject({ 'players.bob-uid': { lastSeenAt: NOW } });
   });
 
   it('keeps the room alive, because arriving is playing', () => {
     expect(expiryOf(join())).toBe(ROOM_LIFETIME_MS);
+  });
+});
+
+describe('buildPresenceUpdate', () => {
+  const mark = () => buildPresenceUpdate('bob-uid', NOW);
+
+  it('writes the mark and nothing else about the player', () => {
+    // Not `players.bob-uid`: rewriting the entry would rewrite `joinedAt` with
+    // it, and the player list is ordered by that value — a mark written every
+    // fifteen seconds would shuffle the list on every beat.
+    expect(Object.keys(mark()).filter((field) => field !== 'expiresAt')).toEqual([
+      'players.bob-uid.lastSeenAt',
+    ]);
+    expect(mark()).toMatchObject({ 'players.bob-uid.lastSeenAt': NOW });
+  });
+
+  it('keeps the room alive, because somebody sitting in it is somebody using it', () => {
+    expect(expiryOf(mark())).toBe(ROOM_LIFETIME_MS);
   });
 });
 
@@ -279,9 +308,34 @@ describe('parseRoomDocument', () => {
       'a player who joined at no time',
       storedRoom({ players: { a: { nickname: 'A', joinedAt: 5 } } }),
     ],
+    [
+      'a player whose mark is not a moment',
+      storedRoom({ players: { a: { nickname: 'A', joinedAt: timestamp(1), lastSeenAt: 'now' } } }),
+    ],
     ['no expiry', storedRoom({ expiresAt: '2026-01-01' })],
     ['no birth date', storedRoom({ createdAt: null })],
   ])('refuses %s', (_description, data) => {
     expect(parseRoomDocument(data)).toBeNull();
+  });
+
+  it('accepts a room whose players were written before presence existed', () => {
+    // Rooms live for 24 hours, so some of them outlive the deploy that added
+    // the field. Refusing those would take a game away mid-word from players
+    // who did nothing but keep playing it.
+    const stored = storedRoom({
+      players: { 'owner-uid': { nickname: 'Vik', joinedAt: timestamp(1000) } },
+    });
+
+    expect(parseRoomDocument(stored)).toBe(stored);
+  });
+
+  it('accepts a player who has marked themselves present', () => {
+    const stored = storedRoom({
+      players: {
+        'owner-uid': { nickname: 'Vik', joinedAt: timestamp(1000), lastSeenAt: timestamp(9000) },
+      },
+    });
+
+    expect(parseRoomDocument(stored)).toBe(stored);
   });
 });

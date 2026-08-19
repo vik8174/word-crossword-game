@@ -14,6 +14,7 @@ import { buildCompletionUpdate } from './room-completion';
 import {
   buildGuessUpdate,
   buildJoinUpdate,
+  buildPresenceUpdate,
   buildRoomDocument,
   buildStartGameUpdate,
   parseRoomDocument,
@@ -148,6 +149,33 @@ export interface JoinRoomInput {
  */
 export const joinRoom = async ({ roomId, playerId, nickname }: JoinRoomInput): Promise<void> => {
   await writeToRoom(roomId, buildJoinUpdate(playerId, nickname, new Date()));
+};
+
+/** One player of one room, saying they are still there. */
+export interface MarkPresenceInput {
+  readonly roomId: string;
+  /** Firebase Auth UID of the player writing about themselves. */
+  readonly playerId: string;
+}
+
+/**
+ * Writes down that this player is still in the room, for everybody else to read.
+ *
+ * Called on a timer for as long as a client sits in a room that is being waited
+ * in or played, so it is the most frequent write this app makes — and the
+ * smallest: the one leaf field `players.<uid>.lastSeenAt` (see
+ * {@link buildPresenceUpdate}). A client only ever writes its own mark; what
+ * the others make of it is decided when they read it, never written down.
+ *
+ * @param input - The room and the player marking themselves present
+ * @throws Error from Firebase when the write is rejected — which, since the
+ * rules refuse writes to nothing else here, means the room has expired
+ *
+ * @example
+ * await markPresence({ roomId, playerId });
+ */
+export const markPresence = async ({ roomId, playerId }: MarkPresenceInput): Promise<void> => {
+  await writeToRoom(roomId, buildPresenceUpdate(playerId, new Date()));
 };
 
 /** The room to start, as its owner currently sees it. */

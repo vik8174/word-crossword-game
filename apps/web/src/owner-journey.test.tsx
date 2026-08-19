@@ -54,7 +54,11 @@ const asStoredRoom = (written: NewRoomDocument) => ({
   players: Object.fromEntries(
     Object.entries(written.players).map(([playerId, player]) => [
       playerId,
-      { ...player, joinedAt: asTimestamp(player.joinedAt) },
+      {
+        ...player,
+        joinedAt: asTimestamp(player.joinedAt),
+        ...(player.lastSeenAt === undefined ? {} : { lastSeenAt: asTimestamp(player.lastSeenAt) }),
+      },
     ]),
   ),
   createdAt: asTimestamp(written.createdAt),
