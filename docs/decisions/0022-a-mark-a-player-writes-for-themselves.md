@@ -66,9 +66,13 @@ The rules are not asked to arbitrate, **because they already do not**: the freez
 
 **The owner's seat is never freed.** They are the likeliest to step out, since they are the one sending the link, and they alone can start the game — so a room that loses them has nothing left to do. Nothing is lost by keeping it: a room holds two, and the ghost this decision exists for has a UID of its own.
 
+That one exception _is_ worth a rule, and `firestore.rules` states it: `after.players.keys().hasAll([before.ownerId])`, in every state. It is the opposite kind of check from the thresholds — it asks who the owner is, not how long ago anybody wrote — so it costs no number kept in step with the client by hand, and without it a lobby's roster being anybody's to write means anybody could throw the host out of the room they made.
+
 ### A player is told about their own silence
 
 The reader's own mark, in the document the reader is looking at, goes stale exactly when their writes stop arriving — because it _is_ one of those writes. So the same question, asked about the reader, is the whole mechanism: no separate notion of being online, and nothing taken from `navigator.onLine`, which reports a network rather than a database.
+
+**This is why each mark is scheduled only once the one before it has landed**, rather than on a fixed interval. Firestore applies a client's own pending writes to that client's own snapshots immediately, so a timer that fired regardless would keep writing fresh marks into the local cache and the reader would go on seeing themselves as present for as long as the tab was open — the one screen in the room that could never tell. Waiting for each write to be acknowledged means an unreachable database stops the chain, and the reader's own mark ages like everybody else's. It also means the chain resumes by itself when the connection comes back, since the write that was pending finally resolves.
 
 ### Marks are written only where somebody is waiting for one
 

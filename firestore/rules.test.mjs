@@ -504,6 +504,21 @@ describe('playing in a room', () => {
     );
   });
 
+  it('refuses to take the owner out of their own lobby, however quiet they are', async () => {
+    // The one seat presence never frees, said in the rules as well as on the
+    // client: a lobby's roster is otherwise anybody's to write, and a room
+    // without its owner is a room nobody can start.
+    await testEnv.clearFirestore();
+    await seedRoom({ players: twoPlayers });
+
+    await assertFails(
+      updateDoc(doc(asThirdPlayer(), ROOM_PATH), {
+        [`players.${OWNER}`]: deleteField(),
+        [`players.${THIRD_PLAYER}`]: { nickname: 'Cara', joinedAt: Timestamp.now() },
+      }),
+    );
+  });
+
   it('lets a lobby seat change hands in the one write that takes it', async () => {
     // The other side of the freeze, and what the lobby is open for: a guest who
     // stopped marking themselves present is replaced by the newcomer taking

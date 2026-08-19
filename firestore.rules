@@ -108,6 +108,22 @@ service cloud.firestore {
           && after.players.keys().hasAll(before.players.keys()));
     }
 
+    // The owner stays in the room they made, for as long as it exists. A lobby's
+    // roster is otherwise the clients' to write — that is what lets an arriving
+    // player take a seat nobody is sitting in — and the client refuses to touch
+    // this one: the owner is the likeliest to step away, being the one sending
+    // the link, and they alone can start the game, so a room that lost them
+    // would have nothing left to do
+    // (docs/decisions/0022-a-mark-a-player-writes-for-themselves.md).
+    //
+    // Said here as well because it costs nothing to say: this asks who the
+    // owner is, not how long ago anybody wrote, so unlike the thresholds
+    // presence is built on it needs no number kept in step with the client by
+    // hand. Outside the lobby the freeze above already covers it.
+    function keepsTheOwnerIn(before, after) {
+      return after.players.keys().hasAll([before.ownerId]);
+    }
+
     function isValidNewRoom() {
       let room = request.resource.data;
 
@@ -136,6 +152,7 @@ service cloud.firestore {
         && hasValidStatus(before, after)
         && isValidStart(before, after)
         && freezesPlayersOnceDealt(before, after)
+        && keepsTheOwnerIn(before, after)
         && after.layout == before.layout
         && after.ownerId == before.ownerId
         && after.createdAt == before.createdAt

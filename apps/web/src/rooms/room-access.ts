@@ -119,7 +119,10 @@ export const roomAccessFor = (room: ReadableRoom, playerId: string, now: Date): 
  *   sending the very link that fills the room — and they alone can start the
  *   game, so a room that loses them is a room with nothing left to do. Nothing
  *   is lost by keeping it: a room holds two, and the ghost this exists for has
- *   a UID of its own (issue #47).
+ *   a UID of its own (issue #47). `firestore.rules` refuses to let the owner's
+ *   key leave `players` at all, so this one is enforced rather than agreed —
+ *   it asks who the owner is, not how old a mark is, which is the kind of
+ *   question rules can answer without a number to keep in step.
  *
  * The stalest seat is the one taken, and ties are broken by UID, so two clients
  * reading the same room reach the same answer rather than each removing a

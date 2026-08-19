@@ -19,9 +19,15 @@ import type { RoomConnection } from './use-room-connection';
  * minutes old, and their seat could be taken while a timer counted down.
  *
  * Each mark is scheduled only once the one before it has landed, rather than on
- * a fixed interval. A connection slow enough to overlap two writes has nothing
- * to gain from the second, and a refused write ends the chain by simply not
- * scheduling another.
+ * a fixed interval, and that is load-bearing rather than tidy. Firestore applies
+ * a client's own pending writes to that client's own snapshots straight away, so
+ * a timer that fired regardless would keep writing fresh marks into the local
+ * cache of a browser that is reaching nothing — and the player nobody can hear
+ * would be the one screen in the room still showing them as present. Waiting for
+ * each write to be acknowledged means an unreachable database stops the chain,
+ * their own mark ages like everybody else's, and the chain starts itself again
+ * when the write that was pending finally lands. A refused write ends it for
+ * good, by simply not scheduling another.
  *
  * What the effect watches is a `boolean` and two strings, never the room
  * document: a new document arrives with every snapshot, and this client's own
