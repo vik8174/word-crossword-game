@@ -14,6 +14,11 @@ interface RoomJoinProps {
   readonly roomId: string;
   /** Firebase Auth UID this visitor will be listed under. */
   readonly playerId: string;
+  /**
+   * UID whose seat this visitor is taking, from the screen that offered the
+   * form; `null` whenever the room simply had one free.
+   */
+  readonly seatToRelease: string | null;
 }
 
 /**
@@ -25,18 +30,24 @@ interface RoomJoinProps {
  *
  * @param props.roomId - Id of the room the link led to
  * @param props.playerId - UID the visitor was signed in under before the room was read
+ * @param props.seatToRelease - Whose seat they are taking, if the room was full
  *
  * @example
- * <RoomJoin roomId={roomId} playerId={playerId} />
+ * <RoomJoin roomId={roomId} playerId={playerId} seatToRelease={null} />
  */
-export const RoomJoin = ({ roomId, playerId }: RoomJoinProps) => {
+export const RoomJoin = ({ roomId, playerId, seatToRelease }: RoomJoinProps) => {
   const [join, setJoin] = useState<ActionPhase>(IDLE);
 
   const submitJoin = async (rawNickname: string) => {
     setJoin({ phase: 'submitting' });
 
     try {
-      await joinRoom({ roomId, playerId, nickname: normalizeNickname(rawNickname) });
+      await joinRoom({
+        roomId,
+        playerId,
+        nickname: normalizeNickname(rawNickname),
+        seatToRelease,
+      });
 
       // Only a player who is really in the room. The nickname they chose is not
       // part of the event, and could not be — see `telemetry/analytics.ts`.

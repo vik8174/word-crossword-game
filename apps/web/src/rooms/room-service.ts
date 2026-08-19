@@ -129,6 +129,11 @@ export interface JoinRoomInput {
   readonly playerId: string;
   /** Already-normalised nickname the other players will see. */
   readonly nickname: string;
+  /**
+   * UID whose seat this player is taking, from `abandonedSeatIn` — `null`
+   * whenever the room simply had a seat free.
+   */
+  readonly seatToRelease?: string | null;
 }
 
 /**
@@ -139,7 +144,12 @@ export interface JoinRoomInput {
  * player rejoining overwrites nothing but their own entry (see
  * `docs/decisions/0009`).
  *
- * @param input - The room, the player's UID, and the nickname to show
+ * When the room was full and one of its seats had been given up, that seat is
+ * released in the same write — one update, so the room is never momentarily a
+ * size the security rules refuse.
+ *
+ * @param input - The room, the player's UID, the nickname to show, and the seat
+ * they are taking if they are taking one
  * @throws Error from Firebase when the write is rejected — most often because
  * the room expired or already holds the two players it takes, both of which
  * the rules refuse
@@ -147,8 +157,13 @@ export interface JoinRoomInput {
  * @example
  * await joinRoom({ roomId, playerId, nickname: 'Bob' });
  */
-export const joinRoom = async ({ roomId, playerId, nickname }: JoinRoomInput): Promise<void> => {
-  await writeToRoom(roomId, buildJoinUpdate(playerId, nickname, new Date()));
+export const joinRoom = async ({
+  roomId,
+  playerId,
+  nickname,
+  seatToRelease = null,
+}: JoinRoomInput): Promise<void> => {
+  await writeToRoom(roomId, buildJoinUpdate(playerId, nickname, new Date(), seatToRelease));
 };
 
 /** One player of one room, saying they are still there. */

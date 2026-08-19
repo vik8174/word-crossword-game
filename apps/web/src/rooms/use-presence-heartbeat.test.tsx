@@ -21,6 +21,8 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn(() => ({ path: 'rooms/room-1' })),
   onSnapshot: vi.fn(),
   updateDoc: vi.fn(),
+  // The SDK's word for "this field goes", which taking a seat writes.
+  deleteField: vi.fn(() => ({ field: 'deleted' })),
 }));
 
 const timestamp = (millis: number) => ({ toMillis: () => millis });

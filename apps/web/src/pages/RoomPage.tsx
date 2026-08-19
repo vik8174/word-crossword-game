@@ -47,7 +47,9 @@ const RoomScreenView = ({
     case 'unavailable':
       return <RoomUnavailableNotice reason={screen.reason} />;
     case 'join':
-      return <RoomJoin roomId={roomId} playerId={screen.playerId} />;
+      return (
+        <RoomJoin roomId={roomId} playerId={screen.playerId} seatToRelease={screen.seatToRelease} />
+      );
     case 'lobby':
       return <RoomLobby roomId={roomId} room={screen.room} viewerId={screen.viewerId} />;
     case 'playing':

@@ -28,6 +28,8 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
   onSnapshot: vi.fn(),
   updateDoc: vi.fn(),
+  // The SDK's word for "this field goes", which taking a seat writes.
+  deleteField: vi.fn(() => ({ field: 'deleted' })),
 }));
 
 const LAYOUT: CrosswordLayout = {
@@ -226,6 +228,27 @@ describe('joinRoom', () => {
         },
       }),
     );
+  });
+
+  it('takes the seat it was given, in the write that puts the player in', async () => {
+    await joinRoom({
+      roomId: 'room-1',
+      playerId: 'guest-uid',
+      nickname: 'Bob',
+      seatToRelease: 'ghost-uid',
+    });
+
+    expect(Object.keys(writtenUpdate())).toEqual([
+      'players.guest-uid',
+      'players.ghost-uid',
+      'expiresAt',
+    ]);
+  });
+
+  it('takes nobody out of a room that had a seat free', async () => {
+    await joinRoom({ roomId: 'room-1', playerId: 'guest-uid', nickname: 'Bob' });
+
+    expect(Object.keys(writtenUpdate())).toEqual(['players.guest-uid', 'expiresAt']);
   });
 
   it('lets a refused join reach the caller instead of pretending the player is in', async () => {

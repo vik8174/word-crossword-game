@@ -1,10 +1,12 @@
-import type { Timestamp } from 'firebase/firestore';
+import { deleteField, type Timestamp } from 'firebase/firestore';
 import type { CrosswordLayout, WordAssignment } from 'shared';
 
 /**
  * Shape of a room document in Firestore and the pure builder that produces a
- * brand new one. Deliberately free of any Firestore SDK call at runtime — only
- * a type import — so the shape can be built and asserted on without a database.
+ * brand new one. Deliberately free of any Firestore *access* at runtime: the
+ * one thing it calls, `deleteField`, is the SDK's word for "this field goes"
+ * and reaches no database, so every shape here can still be built and asserted
+ * on without one.
  *
  * The schema itself is fixed by `docs/decisions/0009-room-document-schema.md`;
  * tickets #5-#9 read and update these fields, so changing them is expensive.
@@ -207,16 +209,37 @@ export const buildRoomUpdate = (fields: Readonly<Record<string, unknown>>, now: 
  * but their own entry, which is what the security rules allow and what makes
  * reconnecting work (see `docs/decisions/0009-room-document-schema.md`).
  *
+ * A room whose seats are all taken may still have one going spare: a player who
+ * stopped marking themselves present long enough ago has given theirs up (see
+ * `abandonedSeatIn` in `room-access.ts`), and the arriving player takes it in
+ * the same write that puts them in.
+ *
  * @param playerId - Firebase Auth UID of the joining player
  * @param nickname - Already-normalised name the other players will see
  * @param now - The moment they joined; also what the room's new expiry is measured from
- * @returns Field path and value for a single `updateDoc` call
+ * @param seatToRelease - UID whose seat this player is taking, when they are taking one
+ * @returns Field paths and values for a single `updateDoc` call
  *
  * @example
  * buildJoinUpdate('bob-uid', 'Bob', new Date());
  */
-export const buildJoinUpdate = (playerId: string, nickname: string, now: Date): RoomUpdate =>
-  buildRoomUpdate({ [`players.${playerId}`]: { nickname, joinedAt: now, lastSeenAt: now } }, now);
+export const buildJoinUpdate = (
+  playerId: string,
+  nickname: string,
+  now: Date,
+  seatToRelease: string | null = null,
+): RoomUpdate =>
+  buildRoomUpdate(
+    {
+      [`players.${playerId}`]: { nickname, joinedAt: now, lastSeenAt: now },
+      // Arriving and taking the seat are one write, never two. Written apart,
+      // the room would pass through a size the rules refuse — three players one
+      // way round, and a lobby the arriving player is not yet in the other —
+      // and whichever half landed second would be the one refused.
+      ...(seatToRelease === null ? {} : { [`players.${seatToRelease}`]: deleteField() }),
+    },
+    now,
+  );
 
 /**
  * The update one player writes to say they are still there.

@@ -1,3 +1,4 @@
+import { deleteField } from 'firebase/firestore';
 import type { CrosswordLayout } from 'shared';
 import { describe, expect, it } from 'vitest';
 
@@ -169,6 +170,22 @@ describe('buildJoinUpdate', () => {
 
   it('keeps the room alive, because arriving is playing', () => {
     expect(expiryOf(join())).toBe(ROOM_LIFETIME_MS);
+  });
+
+  it('takes nobody out of the room when there was a seat free', () => {
+    expect(Object.keys(join())).toEqual(['players.bob-uid', 'expiresAt']);
+  });
+
+  it('takes the seat it was told about in the same write that fills it', () => {
+    // Two writes would take the room through a size the security rules refuse —
+    // three players one way round, and a lobby without the arriving player the
+    // other — and whichever half landed second would be the one refused.
+    const update = buildJoinUpdate('bob-uid', 'Bob', NOW, 'ghost-uid');
+
+    expect(Object.keys(update)).toEqual(['players.bob-uid', 'players.ghost-uid', 'expiresAt']);
+    // The SDK's sentinel for a field that goes, rather than a value written
+    // over it: a player entry set to `null` would still be a player.
+    expect(update['players.ghost-uid']).toStrictEqual(deleteField());
   });
 });
 

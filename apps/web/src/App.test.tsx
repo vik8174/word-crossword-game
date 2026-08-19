@@ -16,6 +16,8 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn(),
   onSnapshot: vi.fn(() => vi.fn()),
   updateDoc: vi.fn(),
+  // The SDK's word for "this field goes", which taking a seat writes.
+  deleteField: vi.fn(() => ({ field: 'deleted' })),
 }));
 
 const open = (path: string) => {

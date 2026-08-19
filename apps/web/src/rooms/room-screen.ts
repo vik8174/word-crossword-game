@@ -1,4 +1,4 @@
-import { roomAccessFor } from './room-access';
+import { abandonedSeatIn, roomAccessFor } from './room-access';
 import { isGameFinished } from './room-completion';
 import type { RoomDocument } from './room-document';
 import type { RoomConnection } from './use-room-connection';
@@ -39,7 +39,8 @@ export type RoomUnavailableReason =
  * What the room screen is showing right now:
  * - `connecting` — signing in and waiting for the first snapshot
  * - `unavailable` — there is no room to show, and this is why
- * - `join` — a free seat and a nickname to enter
+ * - `join` — a free seat and a nickname to enter, and whose seat it was if it
+ *   had to be given up
  * - `lobby` — in the room, waiting for the owner to deal the words out
  * - `playing` — the game is on
  * - `finished` — the crossword was filled in and the room is closed
@@ -53,7 +54,16 @@ export type RoomUnavailableReason =
 export type RoomScreen =
   | { readonly kind: 'connecting' }
   | { readonly kind: 'unavailable'; readonly reason: RoomUnavailableReason }
-  | { readonly kind: 'join'; readonly playerId: string }
+  | {
+      readonly kind: 'join';
+      readonly playerId: string;
+      /**
+       * UID whose seat this visitor would be taking, when the room is full and
+       * one of its players has given theirs up. `null` when a seat was simply
+       * free — which is every arrival at a room still filling up.
+       */
+      readonly seatToRelease: string | null;
+    }
   | { readonly kind: 'lobby'; readonly room: RoomDocument; readonly viewerId: string }
   | { readonly kind: 'playing'; readonly room: RoomDocument; readonly viewerId: string }
   | { readonly kind: 'finished'; readonly room: RoomDocument; readonly viewerId: string }
@@ -112,7 +122,10 @@ export const roomScreenFor = (connection: RoomConnection, now: Date): RoomScreen
   }
 
   if (access === 'joinable') {
-    return { kind: 'join', playerId };
+    // Worked out here rather than by the form, so what the join writes is
+    // decided from the same room, at the same moment, as the decision to offer
+    // the form at all.
+    return { kind: 'join', playerId, seatToRelease: abandonedSeatIn(room, now) };
   }
 
   // Every refusal `roomAccessFor` can answer with is a reason the notice has

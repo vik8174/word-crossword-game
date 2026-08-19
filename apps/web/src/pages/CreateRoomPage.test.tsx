@@ -20,6 +20,7 @@ vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(() => ({ name: 'firestore' })),
   collection: vi.fn(() => ({ path: 'rooms' })),
   addDoc: vi.fn(),
+  deleteField: vi.fn(() => ({ field: 'deleted' })),
 }));
 vi.mock('firebase/analytics', () => ({
   initializeAnalytics: vi.fn(() => ({ app: 'fake-analytics' })),

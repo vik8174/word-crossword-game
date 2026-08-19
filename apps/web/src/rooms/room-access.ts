@@ -1,3 +1,4 @@
+import { hasLeftTheSeat, silenceOf } from './presence';
 import type { RoomDocumentShape } from './room-document';
 
 /**
@@ -95,7 +96,55 @@ export const roomAccessFor = (room: ReadableRoom, playerId: string, now: Date): 
     return 'started';
   }
 
-  return Object.keys(room.players).length >= MAX_PLAYERS ? 'full' : 'joinable';
+  // A seat nobody is sitting in is not a seat taken. The room may be at its
+  // ceiling and still have room for this visitor — see {@link abandonedSeatIn},
+  // which is also what tells the join write whom it is replacing.
+  return Object.keys(room.players).length < MAX_PLAYERS || abandonedSeatIn(room, now) !== null
+    ? 'joinable'
+    : 'full';
+};
+
+/**
+ * The seat in this room that somebody arriving may take, if there is one.
+ *
+ * Three conditions, and each of them is somebody's protection:
+ *
+ * - **Only in a lobby.** A word is dealt to a UID and the win is read from the
+ *   same field, so a player taken out of a game leaves their words hidden from
+ *   nobody and a crossword that can never be finished. `firestore.rules` refuses
+ *   it outright; this is the client agreeing rather than the client deciding.
+ * - **Only when the room is full.** A visitor arriving at a room with a seat
+ *   free takes that one and nobody is touched.
+ * - **Never the owner's.** They are the likeliest to step out — they are off
+ *   sending the very link that fills the room — and they alone can start the
+ *   game, so a room that loses them is a room with nothing left to do. Nothing
+ *   is lost by keeping it: a room holds two, and the ghost this exists for has
+ *   a UID of its own (issue #47).
+ *
+ * The stalest seat is the one taken, and ties are broken by UID, so two clients
+ * reading the same room reach the same answer rather than each removing a
+ * different player.
+ *
+ * @param room - The room document as read from Firestore
+ * @param now - The moment to judge the marks against
+ * @returns UID of the player whose seat may be taken, or `null` when there is none
+ *
+ * @example
+ * abandonedSeatIn(room, new Date()); // 'ghost-uid'
+ */
+export const abandonedSeatIn = (room: ReadableRoom, now: Date): string | null => {
+  if (room.status !== 'lobby' || Object.keys(room.players).length < MAX_PLAYERS) {
+    return null;
+  }
+
+  const [abandoned] = Object.entries(room.players)
+    .filter(([playerId, player]) => playerId !== room.ownerId && hasLeftTheSeat(player, now))
+    .sort(
+      ([idA, playerA], [idB, playerB]) =>
+        silenceOf(playerB, now) - silenceOf(playerA, now) || idA.localeCompare(idB),
+    );
+
+  return abandoned?.[0] ?? null;
 };
 
 /** A player as the player list shows them. */

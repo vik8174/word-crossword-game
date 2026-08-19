@@ -5,6 +5,7 @@ import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from '../rooms/presence';
 import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
 import { RoomPage } from './RoomPage';
 
@@ -22,6 +23,8 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn(() => ({ path: 'rooms/room-1' })),
   onSnapshot: vi.fn(),
   updateDoc: vi.fn(),
+  // The SDK's word for "this field goes", which taking a seat writes.
+  deleteField: vi.fn(() => ({ field: 'deleted' })),
 }));
 vi.mock('firebase/analytics', () => ({
   initializeAnalytics: vi.fn(),
@@ -140,9 +143,14 @@ const CROSSING_LAYOUT = {
   unplacedWords: [],
 };
 
-const player = (nickname: string, joinedAtMillis = 1000) => ({
+/**
+ * A player of the room, marking themselves present unless the test says
+ * otherwise — which is what every screen here reads them as being.
+ */
+const player = (nickname: string, joinedAtMillis = 1000, silentForMs = 0) => ({
   nickname,
   joinedAt: timestamp(joinedAtMillis),
+  lastSeenAt: timestamp(Date.now() - silentForMs),
 });
 
 /** A room as Firestore hands it back, alive unless told otherwise. */
@@ -1360,6 +1368,71 @@ describe('RoomPage', () => {
 
       expect(screen.getByText(/played by exactly two people/i)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /start a new game/i })).toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    });
+
+    it('turns away a third player while the second is merely away', async () => {
+      // A minute of silence is a person looking at something else, not a person
+      // gone: taking the seat then would throw a player out of their own game.
+      await openRoom(
+        storedRoom({
+          players: {
+            'owner-uid': player('Vik'),
+            'third-uid': player('Cara', 2000, AWAY_AFTER_MS + 5000),
+          },
+        }),
+      );
+
+      expect(screen.getByText(/played by exactly two people/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('a seat nobody is sitting in', () => {
+    /** A full room whose guest stopped marking themselves present long ago. */
+    const roomWithAGhost = () =>
+      storedRoom({
+        players: {
+          'owner-uid': player('Vik'),
+          'ghost-uid': player('Ghost', 2000, SEAT_FREE_AFTER_MS + 5000),
+        },
+      });
+
+    it('offers the nickname form at a room whose second seat was given up', async () => {
+      await openRoom(roomWithAGhost());
+
+      expect(screen.getByLabelText(/nickname/i)).toBeInTheDocument();
+      expect(screen.queryByText(/played by exactly two people/i)).not.toBeInTheDocument();
+    });
+
+    it('takes the seat and fills it in a single write', async () => {
+      // Two writes would take the room through a size the security rules
+      // refuse, and whichever landed second would be the one turned away.
+      await openRoom(roomWithAGhost());
+
+      joinAs('Bob');
+
+      await waitFor(() => expect(gameWrites()).toHaveLength(1));
+      expect(Object.keys(gameWriteAt(0))).toEqual([
+        'players.guest-uid',
+        'players.ghost-uid',
+        'expiresAt',
+      ]);
+    });
+
+    it('never gives up the seat of the player who owns the room', async () => {
+      // They are the likeliest to be away — they are off sending the link — and
+      // they alone can start the game.
+      await openRoom(
+        storedRoom({
+          players: {
+            'owner-uid': player('Vik', 1000, 10 * SEAT_FREE_AFTER_MS),
+            'third-uid': player('Cara', 2000),
+          },
+        }),
+      );
+
+      expect(screen.getByText(/played by exactly two people/i)).toBeInTheDocument();
       expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
     });
   });
