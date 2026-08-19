@@ -1,6 +1,6 @@
 # Word Crossword Game
 
-A cooperative web game for 2-4 players: an asymmetric crossword in the style of Alias/Taboo, built for spoken English practice. Full specification — [PRD (issue #1)](https://github.com/vik8174/word-crossword-game/issues/1).
+A cooperative web game for two players: an asymmetric crossword in the style of Alias/Taboo, built for spoken English practice. Full specification — [PRD (issue #1)](https://github.com/vik8174/word-crossword-game/issues/1).
 
 ## Language: English only
 

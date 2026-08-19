@@ -49,9 +49,16 @@ service cloud.firestore {
       return room.expiresAt > request.time;
     }
 
-    // A room is playable by 2-4 players; the owner alone is in it at creation.
+    // A room is played by exactly two, and the owner alone is in it at
+    // creation, so one seat is left for the guest with the link. The ceiling is
+    // the room screen's `MAX_PLAYERS`, spelled in
+    // apps/web/src/rooms/room-access.ts. Rules cannot import it, so the two
+    // move together by hand — and they have to move together: joining writes
+    // `players.<uid>` with no re-read behind it, so a client that stopped at a
+    // size these rules had not stopped at yet would leave the seats between the
+    // two numbers to a race, decided by nothing.
     function hasRoomForPlayers(room) {
-      return room.players.size() >= 1 && room.players.size() <= 4;
+      return room.players.size() >= 1 && room.players.size() <= 2;
     }
 
     // A room moves forward: it waits, it is played, it is finished. A finished

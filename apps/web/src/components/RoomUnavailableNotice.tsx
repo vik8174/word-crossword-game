@@ -18,7 +18,10 @@ const MESSAGES: Readonly<Record<RoomUnavailableReason, string>> = {
   // docs/decisions/0012-ending-a-game-from-the-received-state.md).
   finished:
     'This game is over — the room has been closed. Rooms are not replayed, so there is nothing left to join here; start a new game and send the others your own link.',
-  full: 'This room is already full — a game takes at most four players.',
+  // Says what the game is rather than what this room ran out of: a third
+  // player is not late and not unlucky, they are one player more than the game
+  // has ever taken, and the way on is a room of their own rather than a wait.
+  full: 'This game is played by exactly two people, and this room has both of them. Start a game of your own and send its link to whoever you want to play with.',
   connection:
     'Could not reach the game. Check your connection and reload the page — the room is still there.',
 };
@@ -31,7 +34,7 @@ interface RoomUnavailableNoticeProps {
  * Explains, in a player's terms, why the link they opened leads nowhere.
  *
  * Every one of these is a normal thing to run into — a stale link, a late
- * arrival, a fifth friend — so none of them may surface as a raw Firebase
+ * arrival, a third friend — so none of them may surface as a raw Firebase
  * error, and each one leaves a way forward.
  *
  * @param props.reason - What stands between the player and the room

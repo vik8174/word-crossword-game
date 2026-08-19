@@ -50,9 +50,8 @@ const roomWith = (
   expiresAt: at(expiresAtMillis),
 });
 
-const fourPlayers = Object.fromEntries(
-  ['a', 'b', 'c', 'd'].map((id) => [id, player(id.toUpperCase())]),
-);
+/** A room with every seat taken: the two players a game is played by. */
+const bothPlayers = Object.fromEntries(['a', 'b'].map((id) => [id, player(id.toUpperCase())]));
 
 describe('roomAccessFor', () => {
   it('lets a player who is already in the room straight through', () => {
@@ -67,12 +66,12 @@ describe('roomAccessFor', () => {
     expect(roomAccessFor(room, 'guest-uid', NOW)).toBe('joinable');
   });
 
-  it('turns a fifth player away', () => {
-    expect(roomAccessFor(roomWith(fourPlayers), 'guest-uid', NOW)).toBe('full');
+  it('turns a third player away', () => {
+    expect(roomAccessFor(roomWith(bothPlayers), 'guest-uid', NOW)).toBe('full');
   });
 
-  it('still lets the four who are in play', () => {
-    expect(roomAccessFor(roomWith(fourPlayers), 'a', NOW)).toBe('joined');
+  it('still lets the two who are in play', () => {
+    expect(roomAccessFor(roomWith(bothPlayers), 'a', NOW)).toBe('joined');
   });
 
   it('turns away a newcomer once the words have been dealt out', () => {

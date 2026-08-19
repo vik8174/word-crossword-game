@@ -140,8 +140,8 @@ export interface JoinRoomInput {
  *
  * @param input - The room, the player's UID, and the nickname to show
  * @throws Error from Firebase when the write is rejected — most often because
- * the room expired or already holds four players, both of which the rules
- * refuse
+ * the room expired or already holds the two players it takes, both of which
+ * the rules refuse
  *
  * @example
  * await joinRoom({ roomId, playerId, nickname: 'Bob' });
