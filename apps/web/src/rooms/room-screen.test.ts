@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { SEAT_FREE_AFTER_MS } from './presence';
 import type { RoomDocument } from './room-document';
 import { isOpenToNewPlayers, type RoomScreen, roomScreenFor } from './room-screen';
 import type { RoomConnection } from './use-room-connection';
@@ -8,9 +9,11 @@ const NOW = new Date(1_000_000);
 
 const at = (millis: number) => ({ toMillis: () => millis });
 
-const player = (nickname: string, joinedAtMillis = 0) => ({
+/** A player of the room, still marking themselves present unless told otherwise. */
+const player = (nickname: string, joinedAtMillis = 0, silentForMs = 0) => ({
   nickname,
   joinedAt: at(joinedAtMillis),
+  lastSeenAt: at(NOW.getTime() - silentForMs),
 });
 
 /** Two words, so a room can be half answered as well as full or empty. */
@@ -150,6 +153,22 @@ describe('roomScreenFor', () => {
       expect(roomScreenFor(ready(roomWith()), NOW)).toEqual({
         kind: 'join',
         playerId: 'guest-uid',
+        seatToRelease: null,
+      });
+    });
+
+    it('offers the form at a full room whose second seat was given up, and names it', () => {
+      const room = roomWith({
+        players: {
+          'owner-uid': player('Vik'),
+          'ghost-uid': player('Ghost', 1, SEAT_FREE_AFTER_MS + 1000),
+        },
+      });
+
+      expect(roomScreenFor(ready(room), NOW)).toEqual({
+        kind: 'join',
+        playerId: 'guest-uid',
+        seatToRelease: 'ghost-uid',
       });
     });
   });
@@ -216,7 +235,11 @@ describe('isOpenToNewPlayers', () => {
 
   const cases: readonly [string, RoomScreen, boolean][] = [
     ['nobody has read the room yet', { kind: 'connecting' }, true],
-    ['a newcomer is being asked for a nickname', { kind: 'join', playerId: viewerId }, true],
+    [
+      'a newcomer is being asked for a nickname',
+      { kind: 'join', playerId: viewerId, seatToRelease: null },
+      true,
+    ],
     ['the room is waiting to be started', { kind: 'lobby', room, viewerId }, true],
     ['the words are dealt out', { kind: 'playing', room, viewerId }, false],
     ['the crossword is filled in', { kind: 'finished', room, viewerId }, false],

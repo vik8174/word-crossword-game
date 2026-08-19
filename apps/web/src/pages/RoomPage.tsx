@@ -13,6 +13,7 @@ import { RoomJoin } from '../components/RoomJoin';
 import { RoomLobby } from '../components/RoomLobby';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import { isOpenToNewPlayers, type RoomScreen, roomScreenFor } from '../rooms/room-screen';
+import { usePresenceHeartbeat } from '../rooms/use-presence-heartbeat';
 import { useRoomConnection } from '../rooms/use-room-connection';
 
 /** Shown while the visitor is being signed in and the first snapshot is on its way. */
@@ -46,7 +47,9 @@ const RoomScreenView = ({
     case 'unavailable':
       return <RoomUnavailableNotice reason={screen.reason} />;
     case 'join':
-      return <RoomJoin roomId={roomId} playerId={screen.playerId} />;
+      return (
+        <RoomJoin roomId={roomId} playerId={screen.playerId} seatToRelease={screen.seatToRelease} />
+      );
     case 'lobby':
       return <RoomLobby roomId={roomId} room={screen.room} viewerId={screen.viewerId} />;
     case 'playing':
@@ -66,10 +69,18 @@ const RoomScreenView = ({
  * arrived can pass it on while the first snapshot is still on its way. It goes
  * once the room stops taking anybody: sharing a link into a game already under
  * way only sends a friend to a refusal.
+ *
+ * The mark this client writes for itself sits here too, above the switch, for
+ * the same kind of reason: being in a room is not a phase of one. A lobby and a
+ * game are two screens, and a player is equally present in both — so the
+ * heartbeat is started once, from the connection, and neither screen has to
+ * remember to keep it going (issue #47).
  */
 const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
   const connection = useRoomConnection(roomId);
   const screen = roomScreenFor(connection, new Date());
+
+  usePresenceHeartbeat(roomId, connection);
 
   return (
     <Stack spacing={3}>

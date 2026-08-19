@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from './presence';
 import {
+  abandonedSeatIn,
   type MillisecondTimestamp,
   playersInJoinOrder,
   type ReadableRoom,
@@ -11,13 +13,15 @@ const at = (millis: number): MillisecondTimestamp => ({ toMillis: () => millis }
 
 const NOW = new Date(1_000_000);
 
-const player = (nickname: string, joinedAtMillis = 0) => ({
+/** A player of the room, still marking themselves present unless told otherwise. */
+const player = (nickname: string, joinedAtMillis = 0, silentForMs = 0) => ({
   nickname,
   joinedAt: at(joinedAtMillis),
+  lastSeenAt: at(NOW.getTime() - silentForMs),
 });
 
 const roomWith = (
-  players: Record<string, { nickname: string; joinedAt: MillisecondTimestamp }>,
+  players: Record<string, ReturnType<typeof player>>,
   expiresAtMillis = NOW.getTime() + 1,
   status: ReadableRoom['status'] = 'lobby',
 ): ReadableRoom => ({
@@ -119,6 +123,85 @@ describe('roomAccessFor', () => {
     const room = roomWith({ 'owner-uid': player('Vik') });
 
     expect(roomAccessFor(room, 'toString', NOW)).toBe('joinable');
+  });
+
+  it('lets a newcomer into a full room whose second seat was given up', () => {
+    // The defect this ticket exists for: one stray tab of the owner's fills the
+    // room, and the friend the link was sent to met a wall for 24 hours.
+    const room = roomWith({
+      'owner-uid': player('Vik'),
+      'ghost-uid': player('Ghost', 1, SEAT_FREE_AFTER_MS + 1000),
+    });
+
+    expect(roomAccessFor(room, 'guest-uid', NOW)).toBe('joinable');
+  });
+
+  it('keeps a full room shut while its second player is merely away', () => {
+    const room = roomWith({
+      'owner-uid': player('Vik'),
+      'guest-uid': player('Bob', 1, AWAY_AFTER_MS + 1000),
+    });
+
+    expect(roomAccessFor(room, 'third-uid', NOW)).toBe('full');
+  });
+});
+
+describe('abandonedSeatIn', () => {
+  it('names the seat of a player who stopped marking themselves present', () => {
+    const room = roomWith({
+      'owner-uid': player('Vik'),
+      'ghost-uid': player('Ghost', 1, SEAT_FREE_AFTER_MS + 1000),
+    });
+
+    expect(abandonedSeatIn(room, NOW)).toBe('ghost-uid');
+  });
+
+  it('holds the seat until the mark is older than the threshold', () => {
+    const stillThere = roomWith({
+      'owner-uid': player('Vik'),
+      'ghost-uid': player('Ghost', 1, SEAT_FREE_AFTER_MS - 1000),
+    });
+    const given = roomWith({
+      'owner-uid': player('Vik'),
+      'ghost-uid': player('Ghost', 1, SEAT_FREE_AFTER_MS + 1000),
+    });
+
+    expect(abandonedSeatIn(stillThere, NOW)).toBeNull();
+    expect(abandonedSeatIn(given, NOW)).toBe('ghost-uid');
+  });
+
+  it('never gives up the owner seat, however long they have been gone', () => {
+    // They are the likeliest to step out — they are off sending the link — and
+    // they alone can start the game, so a room without them has nothing to do.
+    const room = roomWith({
+      'owner-uid': player('Vik', 0, 10 * SEAT_FREE_AFTER_MS),
+      'guest-uid': player('Bob'),
+    });
+
+    expect(abandonedSeatIn(room, NOW)).toBeNull();
+    expect(roomAccessFor(room, 'third-uid', NOW)).toBe('full');
+  });
+
+  it('takes nobody out of a room that still has a seat free', () => {
+    const room = roomWith({ 'owner-uid': player('Vik', 0, 10 * SEAT_FREE_AFTER_MS) });
+
+    expect(abandonedSeatIn(room, NOW)).toBeNull();
+  });
+
+  it.each(['playing', 'completed'] as const)('takes nobody out of a %s room', (status) => {
+    // Words are dealt to UIDs and the win is read from the same fields, so a
+    // player removed mid-game leaves a crossword nobody can ever finish. The
+    // security rules refuse the write; this refuses to ask for it.
+    const room = roomWith(
+      {
+        'owner-uid': player('Vik'),
+        'ghost-uid': player('Ghost', 1, 10 * SEAT_FREE_AFTER_MS),
+      },
+      NOW.getTime() + 1,
+      status,
+    );
+
+    expect(abandonedSeatIn(room, NOW)).toBeNull();
   });
 });
 

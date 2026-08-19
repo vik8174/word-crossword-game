@@ -5,6 +5,7 @@ import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from '../rooms/presence';
 import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
 import { RoomPage } from './RoomPage';
 
@@ -22,6 +23,8 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn(() => ({ path: 'rooms/room-1' })),
   onSnapshot: vi.fn(),
   updateDoc: vi.fn(),
+  // The SDK's word for "this field goes", which taking a seat writes.
+  deleteField: vi.fn(() => ({ field: 'deleted' })),
 }));
 vi.mock('firebase/analytics', () => ({
   initializeAnalytics: vi.fn(),
@@ -38,6 +41,34 @@ const FAKE_ANALYTICS = { app: 'fake-analytics' } as unknown as Analytics;
 /** Every analytics event reported so far, as name and parameters. */
 const reportedEvents = () =>
   vi.mocked(logEvent).mock.calls.map(([, name, params]) => ({ name, params }));
+
+/** Whether a write says nothing but that its author is still in the room. */
+const isPresenceMark = (update: Record<string, unknown>): boolean =>
+  Object.keys(update).every((field) => field === 'expiresAt' || field.endsWith('.lastSeenAt'));
+
+/**
+ * Every write this screen made about the game, the presence marks left out.
+ *
+ * A client in a room marks itself present the moment it arrives and every
+ * fifteen seconds after (issue #47), which is a write about nothing that
+ * happened on screen. Counting those in would make every assertion about what
+ * a player's action wrote depend on how long the test took.
+ */
+const gameWrites = (): [unknown, Record<string, unknown>][] =>
+  (vi.mocked(updateDoc).mock.calls as unknown as [unknown, Record<string, unknown>][]).filter(
+    ([, update]) => !isPresenceMark(update),
+  );
+
+/** The fields of one of those writes, which the test says must be there. */
+const gameWriteAt = (index: number): Record<string, unknown> => {
+  const write = gameWrites()[index];
+
+  if (write === undefined) {
+    throw new Error(`The screen made no write about the game at position ${index}.`);
+  }
+
+  return write[1];
+};
 
 const timestamp = (millis: number) => ({ toMillis: () => millis });
 
@@ -112,9 +143,14 @@ const CROSSING_LAYOUT = {
   unplacedWords: [],
 };
 
-const player = (nickname: string, joinedAtMillis = 1000) => ({
+/**
+ * A player of the room, marking themselves present unless the test says
+ * otherwise — which is what every screen here reads them as being.
+ */
+const player = (nickname: string, joinedAtMillis = 1000, silentForMs = 0) => ({
   nickname,
   joinedAt: timestamp(joinedAtMillis),
+  lastSeenAt: timestamp(Date.now() - silentForMs),
 });
 
 /** A room as Firestore hands it back, alive unless told otherwise. */
@@ -356,7 +392,11 @@ describe('RoomPage', () => {
         expect(updateDoc).toHaveBeenCalledWith(
           expect.anything(),
           expect.objectContaining({
-            'players.guest-uid': { nickname: 'Bob', joinedAt: expect.any(Date) },
+            'players.guest-uid': {
+              nickname: 'Bob',
+              joinedAt: expect.any(Date),
+              lastSeenAt: expect.any(Date),
+            },
           }),
         ),
       );
@@ -493,7 +533,9 @@ describe('RoomPage', () => {
 
       expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
       expect(screen.getByText('Bob')).toBeInTheDocument();
-      expect(updateDoc).not.toHaveBeenCalled();
+      // The mark this client writes for itself is not an arrival: nothing says
+      // they joined, because they never left.
+      expect(gameWrites()).toEqual([]);
     });
 
     it('gives a player back their own half of a game in progress', async () => {
@@ -514,7 +556,7 @@ describe('RoomPage', () => {
       // `cat` shares its first square with the `car` he explains, so the two
       // squares left of it are the ones he types in.
       expect(screen.getAllByLabelText(/a letter of one of your words/i)).toHaveLength(2);
-      expect(updateDoc).not.toHaveBeenCalled();
+      expect(gameWrites()).toEqual([]);
     });
 
     it('keeps the answers that were given while the player was away', async () => {
@@ -599,10 +641,7 @@ describe('RoomPage', () => {
         typeInto(0, 2, 't');
       });
 
-      const [, update] = vi.mocked(updateDoc).mock.calls[0] as unknown as [
-        unknown,
-        Record<string, unknown>,
-      ];
+      const update = gameWriteAt(0);
 
       expect(update.expiresAt).toBeInstanceOf(Date);
       expect((update.expiresAt as Date).getTime()).toBeGreaterThan(expiresAt);
@@ -813,10 +852,9 @@ describe('RoomPage', () => {
 
       await spellCat();
 
-      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
-        expect.anything(),
-        expect.objectContaining({ 'words.w0.guessedByPlayerId': 'guest-uid' }),
-      );
+      expect(gameWrites()).toEqual([
+        [expect.anything(), expect.objectContaining({ 'words.w0.guessedByPlayerId': 'guest-uid' })],
+      ]);
     });
 
     it('keeps a wrong answer to the player who made it', async () => {
@@ -827,7 +865,7 @@ describe('RoomPage', () => {
         typeInto(0, 2, 't');
       });
 
-      expect(updateDoc).not.toHaveBeenCalled();
+      expect(gameWrites()).toEqual([]);
       expect(screen.getByText(/not the word/i)).toBeInTheDocument();
     });
 
@@ -946,10 +984,9 @@ describe('RoomPage', () => {
         typeInto(1, 0, 'a');
       });
 
-      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
-        expect.anything(),
-        expect.objectContaining({ 'words.w1.guessedByPlayerId': 'guest-uid' }),
-      );
+      expect(gameWrites()).toEqual([
+        [expect.anything(), expect.objectContaining({ 'words.w1.guessedByPlayerId': 'guest-uid' })],
+      ]);
     });
 
     /** `cat` across and `car` down are both Bob's; `rat` along the bottom is his to explain. */
@@ -987,10 +1024,9 @@ describe('RoomPage', () => {
         typeInto(0, 2, 't');
       });
 
-      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
-        expect.anything(),
-        expect.objectContaining({ 'words.w0.guessedByPlayerId': 'guest-uid' }),
-      );
+      expect(gameWrites()).toEqual([
+        [expect.anything(), expect.objectContaining({ 'words.w0.guessedByPlayerId': 'guest-uid' })],
+      ]);
 
       // Back along the row and down into the other word, without a mouse: the
       // arrow down takes the word running that way through the square it
@@ -1006,11 +1042,11 @@ describe('RoomPage', () => {
       // square of `car` arrives written and this is its last empty one.
       await act(async () => typeInto(1, 0, 'a'));
 
-      expect(updateDoc).toHaveBeenCalledTimes(2);
-      expect(updateDoc).toHaveBeenLastCalledWith(
+      expect(gameWrites()).toHaveLength(2);
+      expect(gameWrites().at(-1)).toEqual([
         expect.anything(),
         expect.objectContaining({ 'words.w1.guessedByPlayerId': 'guest-uid' }),
-      );
+      ]);
       expectNoHiddenWordOnScreen(room);
     });
 
@@ -1058,7 +1094,7 @@ describe('RoomPage', () => {
     it('leaves the game open while a single word is still unanswered', async () => {
       await openRoom(withWords({ w0: catAnswered, w1: carOpen }));
 
-      expect(updateDoc).not.toHaveBeenCalled();
+      expect(gameWrites()).toEqual([]);
     });
 
     it('closes the game the moment the room shows every word answered', async () => {
@@ -1066,10 +1102,9 @@ describe('RoomPage', () => {
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }));
 
-      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
-        expect.anything(),
-        expect.objectContaining({ status: 'completed' }),
-      );
+      expect(gameWrites()).toEqual([
+        [expect.anything(), expect.objectContaining({ status: 'completed' })],
+      ]);
     });
 
     it('closes it from the room that arrived, not from the answer this player sent', async () => {
@@ -1085,18 +1120,17 @@ describe('RoomPage', () => {
         typeInto(0, 2, 't');
       });
 
-      expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
-        expect.anything(),
-        expect.objectContaining({ 'words.w0.guessedByPlayerId': 'guest-uid' }),
-      );
+      expect(gameWrites()).toEqual([
+        [expect.anything(), expect.objectContaining({ 'words.w0.guessedByPlayerId': 'guest-uid' })],
+      ]);
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }));
 
-      expect(updateDoc).toHaveBeenLastCalledWith(
+      expect(gameWrites().at(-1)).toEqual([
         expect.anything(),
         expect.objectContaining({ status: 'completed' }),
-      );
-      expect(updateDoc).toHaveBeenCalledTimes(2);
+      ]);
+      expect(gameWrites()).toHaveLength(2);
     });
 
     it('writes the finished status once, however many snapshots follow', async () => {
@@ -1106,7 +1140,7 @@ describe('RoomPage', () => {
       await emit(finished);
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(updateDoc).toHaveBeenCalledOnce();
+      expect(gameWrites()).toHaveLength(1);
     });
 
     it('writes nothing more once the room already says the game is over', async () => {
@@ -1334,6 +1368,71 @@ describe('RoomPage', () => {
 
       expect(screen.getByText(/played by exactly two people/i)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: /start a new game/i })).toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    });
+
+    it('turns away a third player while the second is merely away', async () => {
+      // A minute of silence is a person looking at something else, not a person
+      // gone: taking the seat then would throw a player out of their own game.
+      await openRoom(
+        storedRoom({
+          players: {
+            'owner-uid': player('Vik'),
+            'third-uid': player('Cara', 2000, AWAY_AFTER_MS + 5000),
+          },
+        }),
+      );
+
+      expect(screen.getByText(/played by exactly two people/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('a seat nobody is sitting in', () => {
+    /** A full room whose guest stopped marking themselves present long ago. */
+    const roomWithAGhost = () =>
+      storedRoom({
+        players: {
+          'owner-uid': player('Vik'),
+          'ghost-uid': player('Ghost', 2000, SEAT_FREE_AFTER_MS + 5000),
+        },
+      });
+
+    it('offers the nickname form at a room whose second seat was given up', async () => {
+      await openRoom(roomWithAGhost());
+
+      expect(screen.getByLabelText(/nickname/i)).toBeInTheDocument();
+      expect(screen.queryByText(/played by exactly two people/i)).not.toBeInTheDocument();
+    });
+
+    it('takes the seat and fills it in a single write', async () => {
+      // Two writes would take the room through a size the security rules
+      // refuse, and whichever landed second would be the one turned away.
+      await openRoom(roomWithAGhost());
+
+      joinAs('Bob');
+
+      await waitFor(() => expect(gameWrites()).toHaveLength(1));
+      expect(Object.keys(gameWriteAt(0))).toEqual([
+        'players.guest-uid',
+        'players.ghost-uid',
+        'expiresAt',
+      ]);
+    });
+
+    it('never gives up the seat of the player who owns the room', async () => {
+      // They are the likeliest to be away — they are off sending the link — and
+      // they alone can start the game.
+      await openRoom(
+        storedRoom({
+          players: {
+            'owner-uid': player('Vik', 1000, 10 * SEAT_FREE_AFTER_MS),
+            'third-uid': player('Cara', 2000),
+          },
+        }),
+      );
+
+      expect(screen.getByText(/played by exactly two people/i)).toBeInTheDocument();
       expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
     });
   });

@@ -1,10 +1,12 @@
-import type { Timestamp } from 'firebase/firestore';
+import { deleteField, type Timestamp } from 'firebase/firestore';
 import type { CrosswordLayout, WordAssignment } from 'shared';
 
 /**
  * Shape of a room document in Firestore and the pure builder that produces a
- * brand new one. Deliberately free of any Firestore SDK call at runtime — only
- * a type import — so the shape can be built and asserted on without a database.
+ * brand new one. Deliberately free of any Firestore *access* at runtime: the
+ * one thing it calls, `deleteField`, is the SDK's word for "this field goes"
+ * and reaches no database, so every shape here can still be built and asserted
+ * on without one.
  *
  * The schema itself is fixed by `docs/decisions/0009-room-document-schema.md`;
  * tickets #5-#9 read and update these fields, so changing them is expensive.
@@ -33,6 +35,16 @@ export interface RoomPlayer<TTimestamp = Timestamp> {
   readonly nickname: string;
   /** When they first joined — also the ordering of the player list. */
   readonly joinedAt: TTimestamp;
+  /**
+   * When this player's own client last said it was still there, rewritten every
+   * fifteen seconds while the room is being waited in or played (issue #47).
+   *
+   * Optional because a room written before presence existed has players without
+   * it, and such a room must still be readable. Whoever asks the question falls
+   * back to `joinedAt`, which is the last moment that room can honestly claim
+   * anybody was seen — see `presence.ts`.
+   */
+  readonly lastSeenAt?: TTimestamp;
 }
 
 /**
@@ -141,7 +153,7 @@ export const buildRoomDocument = ({
     ownerId,
     layout,
     words,
-    players: { [ownerId]: { nickname: ownerNickname, joinedAt: createdAt } },
+    players: { [ownerId]: { nickname: ownerNickname, joinedAt: createdAt, lastSeenAt: createdAt } },
     createdAt,
     expiresAt: new Date(createdAt.getTime() + ROOM_LIFETIME_MS),
   };
@@ -197,16 +209,61 @@ export const buildRoomUpdate = (fields: Readonly<Record<string, unknown>>, now: 
  * but their own entry, which is what the security rules allow and what makes
  * reconnecting work (see `docs/decisions/0009-room-document-schema.md`).
  *
+ * A room whose seats are all taken may still have one going spare: a player who
+ * stopped marking themselves present long enough ago has given theirs up (see
+ * `abandonedSeatIn` in `room-access.ts`), and the arriving player takes it in
+ * the same write that puts them in.
+ *
  * @param playerId - Firebase Auth UID of the joining player
  * @param nickname - Already-normalised name the other players will see
  * @param now - The moment they joined; also what the room's new expiry is measured from
- * @returns Field path and value for a single `updateDoc` call
+ * @param seatToRelease - UID whose seat this player is taking, when they are taking one
+ * @returns Field paths and values for a single `updateDoc` call
  *
  * @example
  * buildJoinUpdate('bob-uid', 'Bob', new Date());
  */
-export const buildJoinUpdate = (playerId: string, nickname: string, now: Date): RoomUpdate =>
-  buildRoomUpdate({ [`players.${playerId}`]: { nickname, joinedAt: now } }, now);
+export const buildJoinUpdate = (
+  playerId: string,
+  nickname: string,
+  now: Date,
+  seatToRelease: string | null = null,
+): RoomUpdate =>
+  buildRoomUpdate(
+    {
+      [`players.${playerId}`]: { nickname, joinedAt: now, lastSeenAt: now },
+      // Arriving and taking the seat are one write, never two. Written apart,
+      // the room would pass through a size the rules refuse — three players one
+      // way round, and a lobby the arriving player is not yet in the other —
+      // and whichever half landed second would be the one refused.
+      ...(seatToRelease === null ? {} : { [`players.${seatToRelease}`]: deleteField() }),
+    },
+    now,
+  );
+
+/**
+ * The update one player writes to say they are still there.
+ *
+ * The single leaf field `players.<uid>.lastSeenAt`, never the player entry it
+ * sits in. Rewriting the entry would rewrite `joinedAt` with it, and the player
+ * list is ordered by exactly that value (`playersInJoinOrder` in
+ * `room-access.ts`) — so a mark written every fifteen seconds would shuffle the
+ * list on every beat, and every reconnect would send a player to the bottom
+ * of it.
+ *
+ * A player only ever writes their own mark. Reading somebody else's is what the
+ * others do with it (see `presence.ts`).
+ *
+ * @param playerId - Firebase Auth UID of the player marking themselves present
+ * @param now - The moment they were last seen; the room's new expiry follows from it
+ * @returns Field path and value for a single `updateDoc` call
+ *
+ * @example
+ * buildPresenceUpdate('bob-uid', new Date());
+ * // { 'players.bob-uid.lastSeenAt': ..., expiresAt: ... }
+ */
+export const buildPresenceUpdate = (playerId: string, now: Date): RoomUpdate =>
+  buildRoomUpdate({ [`players.${playerId}.lastSeenAt`]: now }, now);
 
 /**
  * The update that starts a game: the words are dealt out and the room begins.
@@ -290,8 +347,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isTimestamp = (value: unknown): boolean =>
   isRecord(value) && typeof value.toMillis === 'function';
 
+// `lastSeenAt` is accepted as missing, and only as missing: a room written
+// before presence existed has players without the field, while a value that is
+// there but is not a timestamp is a document this app cannot read.
 const isPlayer = (value: unknown): boolean =>
-  isRecord(value) && typeof value.nickname === 'string' && isTimestamp(value.joinedAt);
+  isRecord(value) &&
+  typeof value.nickname === 'string' &&
+  isTimestamp(value.joinedAt) &&
+  (value.lastSeenAt === undefined || isTimestamp(value.lastSeenAt));
 
 const isLayout = (value: unknown): boolean =>
   isRecord(value) &&

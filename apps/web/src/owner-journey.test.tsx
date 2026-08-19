@@ -32,6 +32,8 @@ vi.mock('firebase/firestore', () => ({
   doc: vi.fn(() => ({ path: 'rooms/room-1' })),
   onSnapshot: vi.fn(),
   updateDoc: vi.fn(),
+  // The SDK's word for "this field goes", which taking a seat writes.
+  deleteField: vi.fn(() => ({ field: 'deleted' })),
 }));
 
 const TEN_WORDS = 'apple, bread, cheese, dinner, engine, flower, garden, hunter, island, jacket';
@@ -54,7 +56,11 @@ const asStoredRoom = (written: NewRoomDocument) => ({
   players: Object.fromEntries(
     Object.entries(written.players).map(([playerId, player]) => [
       playerId,
-      { ...player, joinedAt: asTimestamp(player.joinedAt) },
+      {
+        ...player,
+        joinedAt: asTimestamp(player.joinedAt),
+        ...(player.lastSeenAt === undefined ? {} : { lastSeenAt: asTimestamp(player.lastSeenAt) }),
+      },
     ]),
   ),
   createdAt: asTimestamp(written.createdAt),
