@@ -73,6 +73,8 @@ The rules deliberately do not try to keep a player from reading a word hidden fr
 
 > The "at most 4 players" above is **at most 2** since [#49](https://github.com/vik8174/word-crossword-game/issues/49): a game is played by exactly two. The rule kept its shape — only the number moved, together with `MAX_PLAYERS` on the client. Recorded here rather than edited into the text above, which says what was decided at the time.
 
+> `RoomPlayer` has a third field since [#47](https://github.com/vik8174/word-crossword-game/issues/47): an optional `lastSeenAt`, which each client rewrites about itself every fifteen seconds and everybody else reads to tell a player thinking from a player gone ([ADR 0022](0022-a-mark-a-player-writes-for-themselves.md)). It is written as the leaf field `players.<uid>.lastSeenAt` and never as the entry around it, for the reason the maps were chosen in the first place. Optional because rooms outlive the deploy that added it; whoever asks falls back to `joinedAt`. The rules still validate nothing inside `players.<uid>`, so they were not touched for it — what they did gain is a freeze on the _set_ of player keys once a room leaves the lobby.
+
 ## Consequences
 
 - Issues #5-#9 have a shape to write against, and the immutable core means a bug in a later ticket cannot corrupt the crossword itself
