@@ -1,6 +1,6 @@
 # Word Crossword Game
 
-A cooperative web game for 2-4 players: a crossword where each player explains the words hidden from the others (as in Alias/Taboo), while the rest guess and fill the answers into a shared grid. The MVP targets vocabulary growth and spoken English practice.
+A cooperative web game for two players: a crossword where each player explains the words hidden from the other (as in Alias/Taboo), while the other guesses and fills the answers into a shared grid. The MVP targets vocabulary growth and spoken English practice.
 
 ## Quick Start
 

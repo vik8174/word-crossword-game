@@ -9,8 +9,18 @@ import type { RoomDocumentShape } from './room-document';
  * is what lets the UI explain a refusal instead of showing one.
  */
 
-/** Most players a room holds. Mirrors the limit `firestore.rules` enforces. */
-export const MAX_PLAYERS = 4;
+/**
+ * Most players a room holds — and, since `MIN_PLAYERS` is the same number, the
+ * only size this game is played at.
+ *
+ * Mirrored by the `players.size() <= 2` literal in `hasRoomForPlayers`
+ * (`firestore.rules`), which is the gate that actually holds: `joinRoom` writes
+ * `players.<uid>` without re-reading the room, so the rules are the only thing
+ * standing between two clients pressing Join at once and a third seat. Rules
+ * cannot import this, so the two move together by hand — the same convention
+ * the floor already follows.
+ */
+export const MAX_PLAYERS = 2;
 
 /** All this module needs of a timestamp — Firestore's `Timestamp` satisfies it. */
 export interface MillisecondTimestamp {
@@ -26,7 +36,7 @@ export type ReadableRoom = RoomDocumentShape<MillisecondTimestamp>;
  * - `joinable` — there is a free seat and they may enter a nickname
  * - `started` — the words have been dealt out; the room takes nobody else
  * - `finished` — the room is closed for good; its game is over
- * - `full` — four players are already in
+ * - `full` — both players are already in
  * - `expired` — the room outlived its 24 hours; Firestore has not collected it
  *   yet, but every write to it is refused, so there is no game left to join
  */

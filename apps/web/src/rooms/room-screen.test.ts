@@ -89,9 +89,8 @@ const ready = (room: RoomDocument, playerId = 'guest-uid'): RoomConnection => ({
 
 const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 1) };
 
-const fourPlayers = Object.fromEntries(
-  ['a', 'b', 'c', 'd'].map((id, index) => [id, player(id.toUpperCase(), index)]),
-);
+/** A room of two the viewer is not one of: for them, both seats are taken. */
+const strangersInBothSeats = { 'owner-uid': player('Vik'), 'other-uid': player('Cara', 1) };
 
 describe('roomScreenFor', () => {
   describe('before there is a room to show', () => {
@@ -138,7 +137,7 @@ describe('roomScreenFor', () => {
         }),
         'finished',
       ],
-      ['full, for a fifth player', roomWith({ players: fourPlayers }), 'full'],
+      ['full, for a third player', roomWith({ players: strangersInBothSeats }), 'full'],
     ];
 
     it.each(cases)('is unavailable when it is %s', (_name, room, reason) => {

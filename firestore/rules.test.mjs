@@ -23,6 +23,8 @@ import { Timestamp } from 'firebase/firestore';
 const PROJECT_ID = 'demo-word-crossword';
 const OWNER = 'owner-uid';
 const OTHER_PLAYER = 'player-uid';
+/** One player more than a room takes — the guest these rules have to turn away. */
+const THIRD_PLAYER = 'third-uid';
 const ROOM_PATH = 'rooms/room-1';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -65,6 +67,7 @@ let testEnv;
 
 const asOwner = () => testEnv.authenticatedContext(OWNER).firestore();
 const asOtherPlayer = () => testEnv.authenticatedContext(OTHER_PLAYER).firestore();
+const asThirdPlayer = () => testEnv.authenticatedContext(THIRD_PLAYER).firestore();
 const asStranger = () => testEnv.unauthenticatedContext().firestore();
 
 /** Puts an existing room in place, bypassing the rules under test. */
@@ -356,14 +359,19 @@ describe('playing in a room', () => {
     await assertFails(updateDoc(doc(asOtherPlayer(), ROOM_PATH), { status: 'playing' }));
   });
 
-  it('refuses a fifth player', async () => {
+  it('refuses a third player, since a room is played by exactly two', async () => {
+    // The room screen stops at two as well (`MAX_PLAYERS` in
+    // apps/web/src/rooms/room-access.ts), but joining writes `players.<uid>`
+    // without re-reading the room, so this is the only thing deciding it: two
+    // guests pressing Join on the same snapshot both get here.
     await testEnv.clearFirestore();
-    await seedRoom();
-    const crowd = Object.fromEntries(
-      ['a', 'b', 'c', 'd', 'e'].map((id) => [id, { nickname: id, joinedAt: Timestamp.now() }]),
-    );
+    await seedRoom({ players: twoPlayers });
 
-    await assertFails(updateDoc(doc(asOtherPlayer(), ROOM_PATH), { players: crowd }));
+    await assertFails(
+      updateDoc(doc(asThirdPlayer(), ROOM_PATH), {
+        [`players.${THIRD_PLAYER}`]: { nickname: 'Cara', joinedAt: Timestamp.now() },
+      }),
+    );
   });
 
   it('refuses to let the crossword be rewritten mid-game', async () => {

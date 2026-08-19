@@ -54,6 +54,8 @@ The three transitions that stay put are not an omission. There is nowhere to nav
 | not in `players` | `completed`                      | Room-closed notice          |
 | anyone           | past `expiresAt`                 | Expired notice              |
 
+> The two "four players" rows read **two** since [#49](https://github.com/vik8174/word-crossword-game/issues/49): a room fills at two, so the nickname form is what a visitor gets while one seat is open, and the room-full notice is what the third one gets. Which screen appears when is unchanged; only the number that separates them moved.
+
 All of it exists today except the invitation itself. The link and its copy control move off `/create` onto the room screen, and they sit **above the switch** rather than inside any one of its screens: the link is built from the address and nothing else, so putting it inside the lobby would make a player wait for the first snapshot before they could invite anybody — worse than what it replaces. Above the switch it is there while the room is still being read, on the nickname form, and in the lobby, which is exactly as long as a link can still let anyone in. Once the words are dealt out it goes: sharing it then only sends a friend to a refusal. `/create` is left as the form it was.
 
 ### What the lobby holds

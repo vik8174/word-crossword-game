@@ -71,6 +71,8 @@ The PRD makes the copied link the only way to invite anyone — nothing is dicta
 
 The rules deliberately do not try to keep a player from reading a word hidden from them ([0004](0004-ui-only-word-visibility.md)).
 
+> The "at most 4 players" above is **at most 2** since [#49](https://github.com/vik8174/word-crossword-game/issues/49): a game is played by exactly two. The rule kept its shape — only the number moved, together with `MAX_PLAYERS` on the client. Recorded here rather than edited into the text above, which says what was decided at the time.
+
 ## Consequences
 
 - Issues #5-#9 have a shape to write against, and the immutable core means a bug in a later ticket cannot corrupt the crossword itself

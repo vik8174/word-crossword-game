@@ -452,25 +452,19 @@ describe('RoomPage', () => {
     });
 
     it('shows a player arriving without anyone reloading the page', async () => {
-      await openRoom(roomWithBoth);
+      // Watched by the owner, alone in the room they made: a room is played by
+      // two, so the seat the guest with the link takes is the only one there is
+      // to watch being filled.
+      vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
+      await openRoom(storedRoom());
 
-      expect(screen.queryByText('Cara')).not.toBeInTheDocument();
+      expect(screen.queryByText('Bob')).not.toBeInTheDocument();
 
       await act(async () => {
-        emitRoom({
-          exists: () => true,
-          data: () =>
-            storedRoom({
-              players: {
-                'owner-uid': player('Vik'),
-                'guest-uid': player('Bob', 2000),
-                'third-uid': player('Cara', 3000),
-              },
-            }),
-        });
+        emitRoom({ exists: () => true, data: () => roomWithBoth });
       });
 
-      expect(screen.getByText('Cara')).toBeInTheDocument();
+      expect(screen.getByText('Bob')).toBeInTheDocument();
     });
 
     it('draws the crossword without giving a single letter away', async () => {
@@ -1331,14 +1325,15 @@ describe('RoomPage', () => {
       expect(updateDoc).not.toHaveBeenCalled();
     });
 
-    it('turns away a fifth player', async () => {
+    it('turns away a third player, and tells them what the game is', async () => {
       const crowd = Object.fromEntries(
-        ['a', 'b', 'c', 'd'].map((id, index) => [id, player(id.toUpperCase(), index)]),
+        ['a', 'b'].map((id, index) => [id, player(id.toUpperCase(), index)]),
       );
 
       await openRoom(storedRoom({ players: crowd }));
 
-      expect(screen.getByText(/already full/i)).toBeInTheDocument();
+      expect(screen.getByText(/played by exactly two people/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /start a new game/i })).toBeInTheDocument();
       expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
     });
   });

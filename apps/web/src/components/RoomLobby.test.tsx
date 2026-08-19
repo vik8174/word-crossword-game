@@ -21,7 +21,7 @@ vi.mock('firebase/firestore', () => ({
 
 const OWNER_ID = 'owner-uid';
 const GUEST_ID = 'guest-uid';
-const PLAYER_IDS = [OWNER_ID, GUEST_ID, 'third-uid', 'fourth-uid'];
+const PLAYER_IDS = [OWNER_ID, GUEST_ID];
 
 const at = (millis: number) => ({ toMillis: () => millis });
 
@@ -110,16 +110,20 @@ describe('RoomLobby', () => {
   });
 
   it('tells a guest of a room that cannot start why, rather than leaving them counting', () => {
-    renderLobby(GUEST_ID, lobbyRoom({ playerCount: 3, wordCount: 2 }));
+    // A room of two whose crossword holds a single placed word: the shortest
+    // grid the security rules admit, and the only shape this refusal still has
+    // now that a room takes two players.
+    renderLobby(GUEST_ID, lobbyRoom({ playerCount: 2, wordCount: 1 }));
 
     expect(statusLine()).toMatch(/the host cannot start this game/i);
     expect(startButton()).toBeNull();
   });
 
-  it('shows the room filling up without reading as a count towards four', () => {
+  it('states the size a game is played at, not a ceiling to work towards', () => {
     renderLobby(GUEST_ID, lobbyRoom({ playerCount: 2 }));
 
     expect(screen.getByRole('heading', { name: /players/i })).toHaveTextContent('Players (2)');
-    expect(screen.getByText(/holds up to 4 players/i)).toBeInTheDocument();
+    expect(screen.getByText(/played by exactly 2 people/i)).toBeInTheDocument();
+    expect(screen.queryByText(/up to|of 4/i)).not.toBeInTheDocument();
   });
 });

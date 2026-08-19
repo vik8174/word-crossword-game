@@ -24,7 +24,7 @@ import type { RoomConnection } from './use-room-connection';
  * - `expired` — the room outlived its 24 hours and refuses every write
  * - `started` — the words are dealt out; the game runs with the players it began with
  * - `finished` — the room is closed; the game it held is over
- * - `full` — four players are already in it
+ * - `full` — both players are already in it
  * - `connection` — the app could not reach Firebase at all
  *
  * The four in the middle are exactly the refusals {@link roomAccessFor} names,

@@ -34,10 +34,14 @@ export const PlayerList = ({ players, ownerId, viewerId }: PlayerListProps) => {
       <Typography id="players-heading" variant="h6" component="h2">
         {`Players (${players.length})`}
       </Typography>
-      {/* The ceiling, said as a ceiling. `N of 4` read as progress towards four,
-          and players waited for a fourth that a game never needed (issue #29). */}
+      {/* The size, said as a requirement. It can be wrong in either direction:
+          `N of 4` read as progress towards a fourth player a game never needed
+          (issue #29), and "up to 2" would read as a ceiling, offering a second
+          player this game cannot do without. The floor and the ceiling are the
+          same number, which is what lets the sentence say "exactly" — lifting
+          the ceiling (issue #10) rewords this line, not only the constant. */}
       <Typography variant="body2" color="text.secondary">
-        {`A room holds up to ${MAX_PLAYERS} players.`}
+        {`A game is played by exactly ${MAX_PLAYERS} people.`}
       </Typography>
 
       <List dense>
