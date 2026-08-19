@@ -10,6 +10,7 @@ import { normalizeNickname } from '../rooms/nickname';
 import { roomPath } from '../rooms/room-link';
 import { createRoom } from '../rooms/room-service';
 import { logGameEvent } from '../telemetry/analytics';
+import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /**
  * Shown when no two words share a letter. Different from words being dropped:
@@ -46,10 +47,14 @@ type CreationPhase =
  * on a page a reload would empty (see
  * `docs/decisions/0021-one-room-address.md`).
  *
+ * It is the second screen of the funnel, so it says it was reached (issue #51).
+ *
  * @example
  * <Route path="/create" element={<CreateRoomPage />} />
  */
 export const CreateRoomPage = () => {
+  useScreenReached('create');
+
   const navigate = useNavigate();
   const [nickname, setNickname] = useState('');
   const [rawWords, setRawWords] = useState('');

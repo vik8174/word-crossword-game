@@ -42,6 +42,16 @@ const FAKE_ANALYTICS = { app: 'fake-analytics' } as unknown as Analytics;
 const reportedEvents = () =>
   vi.mocked(logEvent).mock.calls.map(([, name, params]) => ({ name, params }));
 
+/**
+ * The events about what a player did — the funnel's arrivals left out.
+ *
+ * Every screen in this file reports that it was reached (issue #51), which is
+ * not something anybody did; counting those in would make each assertion about
+ * what an action reported depend on which screens the test walked through on
+ * the way. Which screens report, and how many times, is asserted on its own.
+ */
+const reportedActions = () => reportedEvents().filter(({ name }) => name !== 'screen_reached');
+
 /** Whether a write says nothing but that its author is still in the room. */
 const isPresenceMark = (update: Record<string, unknown>): boolean =>
   Object.keys(update).every((field) => field === 'expiresAt' || field.endsWith('.lastSeenAt'));
@@ -452,7 +462,7 @@ describe('RoomPage', () => {
       joinAs('Bob');
 
       await waitFor(() => {
-        expect(reportedEvents()).toEqual([{ name: 'player_joined', params: {} }]);
+        expect(reportedActions()).toEqual([{ name: 'player_joined', params: {} }]);
       });
       expect(JSON.stringify(reportedEvents())).not.toContain('Bob');
       expect(JSON.stringify(reportedEvents())).not.toContain('room-1');
@@ -466,7 +476,7 @@ describe('RoomPage', () => {
       joinAs('Bob');
 
       await screen.findByText(/could not join the game/i);
-      expect(reportedEvents()).toEqual([]);
+      expect(reportedActions()).toEqual([]);
     });
   });
 
@@ -1155,7 +1165,7 @@ describe('RoomPage', () => {
       await emit(withWords({ w0: catAnswered, w1: carAnswered }));
 
       await waitFor(() => {
-        expect(reportedEvents()).toEqual([
+        expect(reportedActions()).toEqual([
           { name: 'game_completed', params: { word_count: 2, player_count: 2 } },
         ]);
       });
@@ -1172,7 +1182,7 @@ describe('RoomPage', () => {
       await emit(withWords({ w0: catAnswered, w1: carAnswered }));
 
       await waitFor(() => expect(updateDoc).toHaveBeenCalled());
-      expect(reportedEvents()).toEqual([]);
+      expect(reportedActions()).toEqual([]);
     });
 
     it('shows the finished game to a player who answered nothing, without a reload', async () => {
@@ -1434,6 +1444,94 @@ describe('RoomPage', () => {
 
       expect(screen.getByText(/played by exactly two people/i)).toBeInTheDocument();
       expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    });
+  });
+
+  describe('the two screens one address cannot tell apart', () => {
+    const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
+    const lobbyRoom = storedRoom({ players: bothPlayers });
+    const dealtRoom = storedRoom({
+      status: 'playing',
+      layout: TWO_WORD_LAYOUT,
+      players: bothPlayers,
+      words: {
+        w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+        w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+      },
+    });
+
+    /** The funnel screens reported so far, in the order they were reported. */
+    const reportedScreens = () =>
+      reportedEvents()
+        .filter(({ name }) => name === 'screen_reached')
+        .map(({ params }) => (params as { screen: string }).screen);
+
+    const emit = (room: unknown) =>
+      act(async () => {
+        emitRoom({ exists: () => true, data: () => room });
+      });
+
+    it('reports the nickname form, and nothing while the room is still being read', async () => {
+      renderRoomPage();
+      await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
+
+      // A spinner is not a screen anybody arrives at, and a visitor who stopped
+      // there stopped at the link rather than at any of the four.
+      expect(reportedScreens()).toEqual([]);
+
+      await emit(storedRoom());
+
+      await waitFor(() => expect(reportedScreens()).toEqual(['join']));
+    });
+
+    it('reports the lobby as an arrival of its own, at the very same address', async () => {
+      await openRoom();
+      await waitFor(() => expect(reportedScreens()).toEqual(['join']));
+
+      joinAs('Bob');
+      await emit(lobbyRoom);
+
+      // Two screens, two events — which is the whole reason a page view cannot
+      // answer this: both of these happened at `/room/room-1`.
+      await waitFor(() => expect(reportedScreens()).toEqual(['join', 'lobby']));
+    });
+
+    it('reports one arrival at the lobby however long a player sits in it', async () => {
+      await openRoom(lobbyRoom);
+      await waitFor(() => expect(reportedScreens()).toEqual(['lobby']));
+
+      // Two minutes of the lobby as it really behaves: each client rewrites its
+      // own mark every fifteen seconds (issue #47), and every one of those
+      // writes comes back to both players as a snapshot carrying a room
+      // document that is new. Nobody moved.
+      for (let beat = 0; beat < 16; beat += 1) {
+        await emit(storedRoom({ players: { ...bothPlayers } }));
+      }
+
+      expect(reportedScreens()).toEqual(['lobby']);
+    });
+
+    it('stops at the lobby, the funnel ending where the first word is explained', async () => {
+      await openRoom(lobbyRoom);
+      await waitFor(() => expect(reportedScreens()).toEqual(['lobby']));
+
+      await emit(dealtRoom);
+
+      expect(screen.getByRole('group', { name: /crossword grid/i })).toBeInTheDocument();
+      expect(reportedScreens()).toEqual(['lobby']);
+    });
+
+    it('names neither the room, nor the player, nor a word', async () => {
+      await openRoom();
+      joinAs('Bob');
+      await emit(lobbyRoom);
+      await waitFor(() => expect(reportedScreens()).toEqual(['join', 'lobby']));
+
+      const reported = JSON.stringify(reportedEvents());
+
+      expect(reported).not.toContain('room-1');
+      expect(reported).not.toContain('Bob');
+      expect(reported).not.toContain('cat');
     });
   });
 
