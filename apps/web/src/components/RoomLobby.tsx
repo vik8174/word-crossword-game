@@ -8,6 +8,8 @@ import { lobbyStatusMessage } from '../rooms/lobby-status';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
 import { startGame } from '../rooms/room-service';
+import { useRoomPresence } from '../rooms/use-room-presence';
+import { OwnPresenceNotice } from './OwnPresenceNotice';
 import { PlayerList } from './PlayerList';
 import { RoomCrossword } from './RoomCrossword';
 import { StartGamePanel } from './StartGamePanel';
@@ -41,6 +43,7 @@ interface RoomLobbyProps {
  */
 export const RoomLobby = ({ roomId, room, viewerId }: RoomLobbyProps) => {
   const [start, setStart] = useState<ActionPhase>(IDLE);
+  const awayDurations = useRoomPresence(room);
   const players = playersInJoinOrder(room);
   const wordCount = room.layout.placedWords.length;
   const isOwner = viewerId === room.ownerId;
@@ -64,7 +67,14 @@ export const RoomLobby = ({ roomId, room, viewerId }: RoomLobbyProps) => {
         {lobbyStatusMessage({ isOwner, playerCount: players.length, wordCount })}
       </Typography>
 
-      <PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />
+      <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
+
+      <PlayerList
+        players={players}
+        ownerId={room.ownerId}
+        viewerId={viewerId}
+        awayDurations={awayDurations}
+      />
 
       {isOwner && (
         <StartGamePanel

@@ -56,6 +56,17 @@ const gameWrites = (): [unknown, Record<string, unknown>][] =>
     ([, update]) => !isPresenceMark(update),
   );
 
+/** The fields of one of those writes, which the test says must be there. */
+const gameWriteAt = (index: number): Record<string, unknown> => {
+  const write = gameWrites()[index];
+
+  if (write === undefined) {
+    throw new Error(`The screen made no write about the game at position ${index}.`);
+  }
+
+  return write[1];
+};
+
 const timestamp = (millis: number) => ({ toMillis: () => millis });
 
 /** A one-word crossword whose letters must never reach the screen. */
@@ -622,7 +633,7 @@ describe('RoomPage', () => {
         typeInto(0, 2, 't');
       });
 
-      const [, update] = gameWrites()[0];
+      const update = gameWriteAt(0);
 
       expect(update.expiresAt).toBeInstanceOf(Date);
       expect((update.expiresAt as Date).getTime()).toBeGreaterThan(expiresAt);

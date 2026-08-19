@@ -3,11 +3,12 @@ import { describe, expect, it } from 'vitest';
 import {
   awaitsPresenceFrom,
   AWAY_AFTER_MS,
-  awayLabel,
+  awayDurationsIn,
   hasLeftTheSeat,
   isAway,
   SEAT_FREE_AFTER_MS,
   type SeenPlayer,
+  silenceLabel,
   silenceOf,
 } from './presence';
 import type { MillisecondTimestamp, ReadableRoom } from './room-access';
@@ -81,17 +82,32 @@ describe('hasLeftTheSeat', () => {
   });
 });
 
-describe('awayLabel', () => {
+describe('silenceLabel', () => {
   it('says how long it has been, in the unit a person waiting would use', () => {
-    expect(awayLabel(50 * SECOND_MS)).toBe('away for under a minute');
-    expect(awayLabel(60 * SECOND_MS)).toBe('away for 1 min');
-    expect(awayLabel(125 * SECOND_MS)).toBe('away for 2 min');
-    expect(awayLabel(3 * 60 * 60 * SECOND_MS)).toBe('away for 3 h');
+    expect(silenceLabel(50 * SECOND_MS)).toBe('under a minute');
+    expect(silenceLabel(60 * SECOND_MS)).toBe('1 min');
+    expect(silenceLabel(125 * SECOND_MS)).toBe('2 min');
+    expect(silenceLabel(3 * 60 * 60 * SECOND_MS)).toBe('3 h');
   });
 
   it('never claims more silence than there has been', () => {
-    expect(awayLabel(119 * SECOND_MS)).toBe('away for 1 min');
-    expect(awayLabel(119 * 60 * SECOND_MS)).toBe('away for 1 h');
+    expect(silenceLabel(119 * SECOND_MS)).toBe('1 min');
+    expect(silenceLabel(119 * 60 * SECOND_MS)).toBe('1 h');
+  });
+});
+
+describe('awayDurationsIn', () => {
+  it('says how long the away players have been away, and nothing of the others', () => {
+    const room = roomWith({
+      present: silentFor(0),
+      gone: silentFor(125 * SECOND_MS),
+    });
+
+    expect(awayDurationsIn(room, NOW)).toEqual({ gone: '2 min' });
+  });
+
+  it('says nothing at all about a room everybody is still in', () => {
+    expect(awayDurationsIn(roomWith({ present: silentFor(0) }), NOW)).toEqual({});
   });
 });
 

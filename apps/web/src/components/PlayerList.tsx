@@ -14,6 +14,15 @@ interface PlayerListProps {
   readonly ownerId: string;
   /** UID of the player looking at the screen. */
   readonly viewerId: string;
+  /**
+   * How long each away player has been away, by player id, from
+   * `useRoomPresence`. A player who is present has no entry.
+   *
+   * Left out entirely by a screen that tracks nothing — a finished room, where
+   * nobody is marking themselves present any more and every name would go quiet
+   * within the minute, saying only that the game is over.
+   */
+  readonly awayDurations?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -22,13 +31,20 @@ interface PlayerListProps {
  * Everyone sees the same list — players talk to each other out loud while they
  * play, so knowing who is already in is what tells them whether to wait.
  *
+ * Only a deviation is labelled. `you`, `host` and a player who has gone quiet
+ * are all things one row can say and another cannot; a label every row carried
+ * would be read as decoration and tell nobody anything, which is what
+ * `Players (2 of 4)` was fixed for (issue #29).
+ *
  * @param props.players - Players in join order
  * @param props.viewerId - Marks which entry is the reader themselves
+ * @param props.awayDurations - How long each away player has been quiet, if the
+ * screen is one where presence is being marked at all
  *
  * @example
  * <PlayerList players={playersInJoinOrder(room)} ownerId={room.ownerId} viewerId={playerId} />
  */
-export const PlayerList = ({ players, ownerId, viewerId }: PlayerListProps) => {
+export const PlayerList = ({ players, ownerId, viewerId, awayDurations = {} }: PlayerListProps) => {
   return (
     <section aria-labelledby="players-heading">
       <Typography id="players-heading" variant="h6" component="h2">
@@ -53,6 +69,14 @@ export const PlayerList = ({ players, ownerId, viewerId }: PlayerListProps) => {
                   <span>{player.nickname}</span>
                   {player.id === viewerId && <Chip label="you" size="small" />}
                   {player.id === ownerId && <Chip label="host" size="small" variant="outlined" />}
+                  {awayDurations[player.id] !== undefined && (
+                    <Chip
+                      label={`away for ${awayDurations[player.id]}`}
+                      size="small"
+                      color="warning"
+                      variant="outlined"
+                    />
+                  )}
                 </Stack>
               }
             />

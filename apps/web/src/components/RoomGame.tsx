@@ -8,7 +8,9 @@ import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
 import { recordGuess } from '../rooms/room-service';
 import { useGameCompletion } from '../rooms/use-game-completion';
+import { useRoomPresence } from '../rooms/use-room-presence';
 import { type WordLocation, wordViewFor } from '../rooms/word-visibility';
+import { OwnPresenceNotice } from './OwnPresenceNotice';
 import { PlayerList } from './PlayerList';
 import { PlayerWordsPanel } from './PlayerWordsPanel';
 import { RoomCrossword } from './RoomCrossword';
@@ -75,6 +77,7 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
   // update of the room, and the grid would then be dragged back to the same
   // square every time anybody answered anything.
   const [wordToReach, setWordToReach] = useState<WordLocation | null>(null);
+  const awayDurations = useRoomPresence(room);
   const players = playersInJoinOrder(room);
   const wordView = wordViewFor(room, viewerId);
 
@@ -102,7 +105,14 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
         {PLAYING_MESSAGE}
       </Typography>
 
-      <PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />
+      <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
+
+      <PlayerList
+        players={players}
+        ownerId={room.ownerId}
+        viewerId={viewerId}
+        awayDurations={awayDurations}
+      />
 
       {wordView.kind === 'dealt' && (
         <PlayerWordsPanel view={wordView} onSelectWord={setWordToReach} />

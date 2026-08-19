@@ -54,7 +54,7 @@ const beat = (connection: RoomConnection = inTheRoom) =>
 const marks = () =>
   vi
     .mocked(updateDoc)
-    .mock.calls.map(([, update]) => Object.keys(update as Record<string, unknown>));
+    .mock.calls.map(([, update]) => Object.keys(update as unknown as Record<string, unknown>));
 
 beforeEach(() => {
   vi.useFakeTimers();

@@ -24,6 +24,17 @@ import type { RoomPlayer } from './room-document';
 export const PRESENCE_PERIOD_MS = 15_000;
 
 /**
+ * How often a screen re-reads the marks it is showing, in milliseconds.
+ *
+ * Nothing arrives to say a player has gone quiet — the absence of a write is
+ * the news — so a screen that only re-rendered on snapshots would keep showing
+ * a room as it stood when the last of them landed. Short enough that a line
+ * appears within a few seconds of it becoming true, and this costs a re-render
+ * of a player list rather than of a game.
+ */
+export const PRESENCE_TICK_MS = 5_000;
+
+/**
  * How stale a mark has to be for its player to be shown as away, in
  * milliseconds — three write periods, so a single missed beat says nothing.
  */
@@ -91,30 +102,57 @@ const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 
 /**
- * How long a player has been away, said the way a person waiting would say it.
+ * How long a player has been quiet, said the way a person waiting would say it.
  *
- * The duration is half of what the line is for: "blinked" and "gone" look the
- * same without it, and which one it is decides whether the others keep waiting.
- * It is rounded down to the unit it is said in, so the label never claims more
- * silence than there has been.
+ * The duration is half of what the line beside a name is for: "blinked" and
+ * "gone" look the same without it, and which one it is decides whether the
+ * others keep waiting. It is rounded down to the unit it is said in, so it
+ * never claims more silence than there has been.
+ *
+ * Only the length is worded here, not what it means — the same duration is read
+ * out to the player it is about ("the room has not heard from you for...") and
+ * about somebody else ("away for..."), and a phrase built for one of those
+ * would have to be unpicked for the other.
  *
  * @param silenceMs - Milliseconds since the player's last mark, from {@link silenceOf}
- * @returns The wording that goes beside their name
+ * @returns How long it has been, as a length of time and nothing more
  *
  * @example
- * awayLabel(125_000); // 'away for 2 min'
+ * silenceLabel(125_000); // '2 min'
  */
-export const awayLabel = (silenceMs: number): string => {
+export const silenceLabel = (silenceMs: number): string => {
   if (silenceMs < MINUTE_MS) {
-    return 'away for under a minute';
+    return 'under a minute';
   }
 
   if (silenceMs < HOUR_MS) {
-    return `away for ${Math.floor(silenceMs / MINUTE_MS)} min`;
+    return `${Math.floor(silenceMs / MINUTE_MS)} min`;
   }
 
-  return `away for ${Math.floor(silenceMs / HOUR_MS)} h`;
+  return `${Math.floor(silenceMs / HOUR_MS)} h`;
 };
+
+/**
+ * How long each player of this room has been quiet, for those who have been.
+ *
+ * A player who is present has no entry at all, which is the whole shape of what
+ * the screen says: only a deviation is worth a label, since one that appears on
+ * every row is read as decoration and says nothing — the lesson `Players (2 of
+ * 4)` cost (issue #29).
+ *
+ * @param room - The room document as read from Firestore
+ * @param now - The moment to judge every mark against
+ * @returns How long they have been away, by player id, for the away ones only
+ *
+ * @example
+ * awayDurationsIn(room, new Date()); // { 'guest-uid': '2 min' }
+ */
+export const awayDurationsIn = (room: ReadableRoom, now: Date): Readonly<Record<string, string>> =>
+  Object.fromEntries(
+    Object.entries(room.players)
+      .filter(([, player]) => isAway(player, now))
+      .map(([playerId, player]) => [playerId, silenceLabel(silenceOf(player, now))]),
+  );
 
 /**
  * Whether this room is waiting on a mark from this player.
