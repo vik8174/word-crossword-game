@@ -6,7 +6,16 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { collection, deleteDoc, doc, getDoc, getDocs, setDoc, updateDoc } from 'firebase/firestore';
+import {
+  collection,
+  deleteDoc,
+  deleteField,
+  doc,
+  getDoc,
+  getDocs,
+  setDoc,
+  updateDoc,
+} from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
 
 /**
@@ -457,6 +466,60 @@ describe('playing in a room', () => {
     await assertSucceeds(
       updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
         [`players.${OTHER_PLAYER}`]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+      }),
+    );
+  });
+
+  it('refuses to take a player out of a game that has started', async () => {
+    // The one write these rules exist to refuse. Words are dealt to UIDs
+    // (`words.w0.hiddenFromPlayerId`) and the win is read from those same
+    // fields, so a player dropped mid-game leaves their words hidden from
+    // nobody — an unfinishable crossword with no way back, since `completed` is
+    // terminal and the room cannot be deleted. Presence frees a seat in the
+    // lobby and nowhere else; this is what makes that a rule rather than a
+    // promise the client keeps.
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: twoPlayers });
+
+    await assertFails(
+      updateDoc(doc(asOwner(), ROOM_PATH), { [`players.${OTHER_PLAYER}`]: deleteField() }),
+    );
+  });
+
+  it('refuses to take a player out of a room whose game is over', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'completed', players: twoPlayers });
+
+    await assertFails(
+      updateDoc(doc(asOwner(), ROOM_PATH), { [`players.${OTHER_PLAYER}`]: deleteField() }),
+    );
+  });
+
+  it('refuses to drop a player even by the client that would be left playing alone', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: twoPlayers });
+
+    await assertFails(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), { [`players.${OWNER}`]: deleteField() }),
+    );
+  });
+
+  it('lets a lobby seat change hands in the one write that takes it', async () => {
+    // The other side of the freeze, and what the lobby is open for: a guest who
+    // stopped marking themselves present is replaced by the newcomer taking
+    // their seat, in a single update — two writes would pass through a room of
+    // one or of three, and the rules turn both away.
+    await testEnv.clearFirestore();
+    await seedRoom({ players: twoPlayers });
+
+    await assertSucceeds(
+      updateDoc(doc(asThirdPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: deleteField(),
+        [`players.${THIRD_PLAYER}`]: {
+          nickname: 'Cara',
+          joinedAt: Timestamp.now(),
+          lastSeenAt: Timestamp.now(),
+        },
       }),
     );
   });

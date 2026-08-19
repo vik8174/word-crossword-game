@@ -81,18 +81,31 @@ service cloud.firestore {
         || (request.auth.uid == before.ownerId && after.players.size() >= 2);
     }
 
-    // A room takes new players only while it waits in the lobby. Once the words
-    // are dealt out, every one of them is hidden from somebody who was in at
-    // the deal — so a latecomer would be handed the entire word list as words
-    // to "explain", which is the game given away (see
+    // Once the words are dealt out, the room is played by exactly the people it
+    // was dealt to: no key may appear in `players`, and none may disappear from
+    // it. Only the lobby is open, and there the roster is the clients' to write
+    // — which is what lets somebody arriving take a seat nobody is sitting in
+    // (docs/decisions/0022-a-mark-a-player-writes-for-themselves.md).
+    //
+    // Nobody may arrive, because every word of a started room is hidden from
+    // somebody who was in at the deal, so a latecomer would be handed the
+    // entire word list as words to "explain" — the game given away (see
     // docs/decisions/0010-letterless-grid-and-private-word-list.md).
     //
-    // What is refused is a player key that was not there before, not writing to
-    // `players` at all: a player already in the room rewrites their own entry
-    // when they come back to it, which is how reconnecting works (issue #9).
-    function keepsPlayersClosed(before, after) {
+    // Nobody may be dropped, because a word is dealt to a UID
+    // (`words.<id>.hiddenFromPlayerId`) and the win is read from those same
+    // fields. Take a player out of a game and their words are hidden from
+    // nobody: the crossword can never be finished, and there is no way back —
+    // `completed` is terminal here and `delete` is refused below.
+    //
+    // What is refused is the set of keys changing, not writing to `players` at
+    // all: a player already in the room rewrites their own entry when they come
+    // back to it, which is how reconnecting works (issue #9), and marks
+    // themselves present every fifteen seconds while they are in it.
+    function freezesPlayersOnceDealt(before, after) {
       return before.status == 'lobby'
-        || after.players.keys().hasOnly(before.players.keys());
+        || (after.players.keys().hasOnly(before.players.keys())
+          && after.players.keys().hasAll(before.players.keys()));
     }
 
     function isValidNewRoom() {
@@ -122,7 +135,7 @@ service cloud.firestore {
       return hasExactlyRoomFields(after)
         && hasValidStatus(before, after)
         && isValidStart(before, after)
-        && keepsPlayersClosed(before, after)
+        && freezesPlayersOnceDealt(before, after)
         && after.layout == before.layout
         && after.ownerId == before.ownerId
         && after.createdAt == before.createdAt
