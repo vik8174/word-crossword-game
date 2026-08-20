@@ -1,6 +1,7 @@
 import type { Analytics } from 'firebase/analytics';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { applyInternalTrafficMark } from './internal-traffic';
 import { pageViewFor } from './page-view';
 import { redactRoomId } from './redaction';
 
@@ -34,8 +35,19 @@ const loadAnalytics = async () => {
   return { ...analytics, ...sdk };
 };
 
+/**
+ * Marks this browser as internal the way a person does — by opening an address
+ * that says so — rather than by writing the storage key the module owns.
+ */
+const markThisBrowserInternal = () => {
+  window.history.replaceState({}, '', '/?internal=1');
+  applyInternalTrafficMark();
+};
+
 beforeEach(() => {
   vi.restoreAllMocks();
+  window.localStorage.clear();
+  window.history.replaceState({}, '', '/');
 });
 
 describe('logGameEvent', () => {
@@ -164,5 +176,55 @@ describe('logPageView', () => {
     await logPageView(pageViewFor({ origin: 'https://example.com', pathname: '/', referrer: '' }));
 
     expect(logEvent).not.toHaveBeenCalled();
+  });
+
+  it('says nothing about the traffic type from a browser nobody marked', async () => {
+    const { logPageView, setDefaultEventParameters, logEvent } = await loadAnalytics();
+
+    await logPageView(pageViewFor({ origin: 'https://example.com', pathname: '/', referrer: '' }));
+
+    expect(setDefaultEventParameters).toHaveBeenCalledWith(
+      expect.not.objectContaining({ traffic_type: expect.anything() }),
+    );
+    expect(logEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      'page_view',
+      expect.not.objectContaining({ traffic_type: expect.anything() }),
+    );
+  });
+
+  it('marks the page view of a browser that was marked as internal', async () => {
+    markThisBrowserInternal();
+    const { logPageView, logEvent } = await loadAnalytics();
+
+    await logPageView(pageViewFor({ origin: 'https://example.com', pathname: '/', referrer: '' }));
+
+    expect(logEvent).toHaveBeenCalledWith(
+      expect.anything(),
+      'page_view',
+      expect.objectContaining({ traffic_type: 'internal' }),
+    );
+  });
+
+  it('keeps the mark on the second navigation, not only on the first', async () => {
+    markThisBrowserInternal();
+    const { logPageView, setDefaultEventParameters } = await loadAnalytics();
+
+    await logPageView(pageViewFor({ origin: 'https://example.com', pathname: '/', referrer: '' }));
+    await logPageView(
+      pageViewFor({ origin: 'https://example.com', pathname: '/create', referrer: '' }),
+    );
+
+    // The regression this guards against is a `traffic_type` set by a call of
+    // its own: `setDefaultEventParameters` replaces the whole set of defaults
+    // rather than adding to it, so the last call is the entirety of what every
+    // later event carries — and after a navigation it would hold the page and
+    // nothing else. Hence an exact match rather than `objectContaining`.
+    expect(setDefaultEventParameters).toHaveBeenLastCalledWith({
+      page_location: 'https://example.com/create',
+      page_path: '/create',
+      page_referrer: '',
+      traffic_type: 'internal',
+    });
   });
 });

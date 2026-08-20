@@ -1,9 +1,10 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { logEvent } from 'firebase/analytics';
+import { logEvent, setDefaultEventParameters } from 'firebase/analytics';
 import { Link, MemoryRouter, Route, Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { roomPath } from '../rooms/room-link';
+import { applyInternalTrafficMark } from './internal-traffic';
 import { usePageView } from './use-page-view';
 
 vi.mock('firebase/analytics', () => ({
@@ -41,8 +42,14 @@ const reportedPages = () =>
     .mock.calls.filter(([, name]) => name === 'page_view')
     .map(([, , params]) => params as Record<string, unknown>);
 
+/** The default parameters as they stood after the most recent page view. */
+const defaultsNow = () =>
+  vi.mocked(setDefaultEventParameters).mock.calls.at(-1)?.[0] as Record<string, unknown>;
+
 beforeEach(() => {
   vi.clearAllMocks();
+  window.localStorage.clear();
+  window.history.replaceState({}, '', '/');
 });
 
 describe('usePageView', () => {
@@ -63,6 +70,25 @@ describe('usePageView', () => {
 
     expect(JSON.stringify(reportedPages())).not.toContain(ROOM_ID);
     expect(reportedPages()[0]).toMatchObject({ page_path: '/room/:roomId' });
+  });
+
+  it('keeps a marked browser marked once it moves off the page it was marked on', async () => {
+    window.history.replaceState({}, '', '/?internal=1');
+    applyInternalTrafficMark();
+
+    openAt('/');
+    await waitFor(() => {
+      expect(reportedPages()).toHaveLength(1);
+    });
+
+    fireEvent.click(screen.getByRole('link', { name: /open the room/i }));
+
+    await waitFor(() => {
+      expect(reportedPages()).toHaveLength(2);
+    });
+    expect(reportedPages()[1]).toMatchObject({ traffic_type: 'internal' });
+    // What every event after this navigation carries, page views included.
+    expect(defaultsNow()).toMatchObject({ page_path: '/room/:roomId', traffic_type: 'internal' });
   });
 
   it('reports a page reached without a reload, which the SDK never would', async () => {
