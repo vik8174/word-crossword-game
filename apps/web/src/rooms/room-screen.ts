@@ -25,15 +25,22 @@ import type { RoomConnection } from './use-room-connection';
  * - `started` — the words are dealt out; the game runs with the players it began with
  * - `finished` — the room is closed; the game it held is over
  * - `full` — both players are already in it
+ * - `refused` — the room turned this visitor's join down, and has not said why yet
  * - `connection` — the app could not reach Firebase at all
  *
  * The four in the middle are exactly the refusals {@link roomAccessFor} names,
  * and {@link roomScreenFor} hands them straight over: a refusal this list has no
  * wording for stops compiling there rather than reaching a player as a blank
  * notice.
+ *
+ * The last two come from somewhere else entirely — a call that failed rather
+ * than a room that was read — which is why `refused` claims so much less than
+ * the four above it: Firestore answers a write its rules turned down with
+ * `permission-denied` and nothing more, so which rule refused is not something
+ * the client is told (see {@link screenAfterRefusedJoin}).
  */
 export type RoomUnavailableReason =
-  'missing' | 'expired' | 'started' | 'finished' | 'full' | 'connection';
+  'missing' | 'expired' | 'started' | 'finished' | 'full' | 'refused' | 'connection';
 
 /**
  * What the room screen is showing right now:
@@ -132,6 +139,34 @@ export const roomScreenFor = (connection: RoomConnection, now: Date): RoomScreen
   // wording for, and this line is where the compiler checks that it stays so.
   return { kind: 'unavailable', reason: access };
 };
+
+/**
+ * The screen to show once the room has turned this visitor's join down.
+ *
+ * The nickname form is the one screen a refusal contradicts: it was offered
+ * because the room read as joinable, and the write proved that reading wrong.
+ * Every other screen was derived from a room this visitor is either in or
+ * already shut out of, so a stale refusal has nothing to say about it and is
+ * passed over.
+ *
+ * Deliberately not a reason worked out from the document: Firestore answers a
+ * refused write with `permission-denied` and no more, so a room that filled up,
+ * a game that was dealt out while a nickname was being typed and a room that
+ * ran out its 24 hours arrive here as the same fact. What is said is therefore
+ * only what is certainly true — the room would not take them — and it stands
+ * for as long as it takes the next snapshot to say something better, which the
+ * caller signals by asking against a room that has moved on.
+ *
+ * @param screen - The screen the room document alone calls for
+ * @param wasRefused - Whether this very room refused this visitor's join
+ * @returns The screen to render
+ *
+ * @example
+ * screenAfterRefusedJoin({ kind: 'join', playerId, seatToRelease: null }, true);
+ * // { kind: 'unavailable', reason: 'refused' }
+ */
+export const screenAfterRefusedJoin = (screen: RoomScreen, wasRefused: boolean): RoomScreen =>
+  wasRefused && screen.kind === 'join' ? { kind: 'unavailable', reason: 'refused' } : screen;
 
 /**
  * Whether this screen is one somebody else could still be invited into.

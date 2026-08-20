@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { SEAT_FREE_AFTER_MS } from './presence';
 import type { RoomDocument } from './room-document';
-import { isOpenToNewPlayers, type RoomScreen, roomScreenFor } from './room-screen';
+import {
+  isOpenToNewPlayers,
+  type RoomScreen,
+  roomScreenFor,
+  screenAfterRefusedJoin,
+} from './room-screen';
 import type { RoomConnection } from './use-room-connection';
 
 const NOW = new Date(1_000_000);
@@ -226,6 +231,41 @@ describe('roomScreenFor', () => {
         roomScreenFor(ready(roomWith({ players, expiresAtMillis: NOW.getTime() })), NOW),
       ).toEqual({ kind: 'unavailable', reason: 'expired' });
     });
+  });
+});
+
+describe('screenAfterRefusedJoin', () => {
+  const room = roomWith({ players: bothPlayers });
+  const viewerId = 'guest-uid';
+  const nicknameForm: RoomScreen = { kind: 'join', playerId: viewerId, seatToRelease: null };
+
+  it('takes away the form the refusal proved wrong', () => {
+    expect(screenAfterRefusedJoin(nicknameForm, true)).toEqual({
+      kind: 'unavailable',
+      reason: 'refused',
+    });
+  });
+
+  it('leaves the form alone until a join is actually refused', () => {
+    expect(screenAfterRefusedJoin(nicknameForm, false)).toBe(nicknameForm);
+  });
+
+  const others: readonly [string, RoomScreen][] = [
+    ['the room has not been read yet', { kind: 'connecting' }],
+    ['the room says why it cannot be entered', { kind: 'unavailable', reason: 'full' }],
+    ['the player is waiting in the lobby', { kind: 'lobby', room, viewerId }],
+    ['the game is on', { kind: 'playing', room, viewerId }],
+  ];
+
+  it.each(others)('says nothing about a screen that is not the form when %s', (_name, screen) => {
+    // Only the form was offered on the strength of a reading the write
+    // disproved; every other screen is derived from a room this player is
+    // either in or already shut out of.
+    expect(screenAfterRefusedJoin(screen, true)).toBe(screen);
+  });
+
+  it('stops offering the link to somebody the room has just turned away', () => {
+    expect(isOpenToNewPlayers(screenAfterRefusedJoin(nicknameForm, true))).toBe(false);
   });
 });
 
