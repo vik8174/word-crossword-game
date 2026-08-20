@@ -48,6 +48,24 @@ Firebase Analytics reports three moments — a room created, a player joined, a 
 
 Neither is allowed to name a room. The id in `/room/<id>` is the whole access control around a game — anyone holding it reads the room document, words included — so Firebase's automatic page view is switched off (it carries the address bar verbatim), analytics events are typed to carry numbers and text that has been through the redaction — what has not been redacted does not compile — and every Sentry event is redacted on its way out. Browser tracing and session replay are deliberately not switched on. See [ADR 0014](docs/decisions/0014-telemetry-without-room-ids.md) and [ADR 0023](docs/decisions/0023-a-screen-name-is-text-that-has-been-redacted.md).
 
+### Not counting my own visits
+
+Every look at the live app is taken from a fresh isolated browser profile, and each of those is a new anonymous sign-in and, to GA4, a new person: the first thirty days of production counted nine "users" of whom almost all were the same one. So a browser profile can be told to say it is not a player's:
+
+```text
+https://word-crossword-game-prod.web.app/?internal=1     # mark this browser as mine
+https://word-crossword-game-prod.web.app/?internal=0     # unmark it again
+```
+
+Open either address once, on any page of the app. The answer is kept in that profile's `localStorage`, so it holds across reloads and navigation with the address never opened again, and the parameter is taken straight back out of the address bar. Every event from a marked profile then carries `traffic_type=internal`, which is what the GA4 filter matches on — see step 6 of [Standing up an environment](#standing-up-an-environment). Both halves are needed: the parameter alone is a label nothing acts on, and the filter alone has nothing to match.
+
+Worth knowing:
+
+- The mark belongs to **one browser profile**, not to a machine, a network or a person. A fresh isolated profile is unmarked and has to be told again, and forgetting to tell it is the whole cost of this approach.
+- It never travels in an invite link. The link is built from the origin and `/room/<id>` and carries no query string, so a friend opening it is not marked as internal traffic.
+- A browser with no storage to reach — a private window, cookies switched off — is simply never marked. Nothing breaks, and the visit counts as anybody else's would.
+- Why the mark is carried by the browser rather than matched on an IP address is written down in `apps/web/src/telemetry/internal-traffic.ts`.
+
 ### Source maps
 
 A production build minifies the whole app into one bundle, so a stack trace out of it names a column in that bundle rather than a line of source. Sentry translates it back only when it holds the source maps for the build the error came from, which is what `@sentry/vite-plugin` uploads.
@@ -127,6 +145,12 @@ Everything below is done once per Firebase project, by hand, in a console. None 
    Owner is not needed and should not be granted. Download a JSON key, and give the secret the **whole file** — see step 5.
 
 5. **Create the GitHub environment** of the same name as the `.firebaserc` alias (Settings > Environments), and give it every variable the build reads — the names are the ones in `apps/web/.env.example`, plus `FIREBASE_SERVICE_ACCOUNT` holding the JSON key. `VITE_SENTRY_ENVIRONMENT` is the exception: the workflow sets it from the ref, so it is never stored.
+
+6. **Set up the Internal Traffic filter** in Google Analytics (Admin > Data collection and modification > Data filters). The filter type is _Internal traffic_, the operation _Exclude_, and the parameter value the one the app sends: `traffic_type` equal to `internal`. A property usually ships with such a filter already, named _Internal Traffic_ and left in Testing; check its value rather than adding a second one. No IP rule under _Define internal traffic_ is needed — the browser sends the parameter itself ([Not counting my own visits](#not-counting-my-own-visits)).
+
+   Leave the filter at **Testing** to begin with. In that state it labels matching events instead of dropping them, so Reports > Realtime, split by the _Test data filter name_ dimension, shows whether the parameter is actually arriving. Only once it plainly is, switch the filter to **Active**.
+
+   **`Active` discards the matching data permanently** — it is not stored and marked, it is not collected, and no later change brings it back. Neither state is retroactive either: whatever was recorded before the filter existed stays recorded forever.
 
 The deploy checks that every name in `apps/web/.env.example` arrived with a value before it builds, and stops if one did not. A missing key therefore costs a failed deploy rather than a white screen for whoever opened the link first — which is what `firebase/config.ts` would otherwise give them, in the browser. A variable added to `.env.example` becomes required by the same step, without it being edited.
 

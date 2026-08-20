@@ -7,6 +7,7 @@ import {
 } from 'firebase/analytics';
 
 import { firebaseApp } from '../firebase/config';
+import { internalTrafficParams } from './internal-traffic';
 import type { PageView } from './page-view';
 import type { Redacted } from './redaction';
 
@@ -131,7 +132,18 @@ export const logGameEvent = async (
  * void logPageView(pageViewFor({ origin, pathname, referrer }));
  */
 export const logPageView = async ({ location, path, referrer }: PageView): Promise<void> => {
-  const page = { page_location: location, page_path: path, page_referrer: referrer };
+  // `traffic_type` rides in this object rather than in a call of its own, and
+  // it has to: `setDefaultEventParameters` below replaces the whole set of
+  // defaults instead of adding to it, and it runs on every page view. A mark
+  // set once at start-up would be gone after the first navigation, leaving code
+  // that reads as if it worked and a GA4 filter that quietly counted nothing.
+  // Why a browser carries that mark at all is in `internal-traffic.ts`.
+  const page = {
+    page_location: location,
+    page_path: path,
+    page_referrer: referrer,
+    ...internalTrafficParams(),
+  };
 
   // Before Analytics is asked for, not after it answers: Firebase holds these
   // until it starts and applies them to its very first `gtag` call, so not even
