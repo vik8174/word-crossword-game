@@ -89,6 +89,16 @@ const createButton = () => screen.getByRole('button', { name: /create room/i });
 const reportedEvents = () =>
   vi.mocked(logEvent).mock.calls.map(([, name, params]) => ({ name, params }));
 
+/**
+ * The events about what a player did — the funnel's arrivals left out.
+ *
+ * Every screen in this file reports that it was reached (issue #51), which is
+ * not something anybody did; counting those in would make each assertion about
+ * what an action reported depend on which screens the test walked through on
+ * the way. Which screens report, and how many times, is asserted on its own.
+ */
+const reportedActions = () => reportedEvents().filter(({ name }) => name !== 'screen_reached');
+
 beforeEach(() => {
   vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
   vi.mocked(addDoc).mockResolvedValue({ id: 'room-1' } as never);
@@ -196,7 +206,7 @@ describe('CreateRoomPage', () => {
       await insideRoom();
 
       await waitFor(() => {
-        expect(reportedEvents()).toEqual([
+        expect(reportedActions()).toEqual([
           { name: 'room_created', params: { word_count: expect.any(Number) } },
         ]);
       });
@@ -204,6 +214,16 @@ describe('CreateRoomPage', () => {
       // and who its owner said they are.
       expect(JSON.stringify(reportedEvents())).not.toContain('room-1');
       expect(JSON.stringify(reportedEvents())).not.toContain('Vik');
+    });
+
+    it('reports that the second screen of the funnel was reached', async () => {
+      renderPage();
+
+      await waitFor(() => {
+        expect(reportedEvents()).toEqual([
+          { name: 'screen_reached', params: { screen: 'create' } },
+        ]);
+      });
     });
 
     it('reports nothing when the room was never written', async () => {
@@ -215,7 +235,7 @@ describe('CreateRoomPage', () => {
       fireEvent.click(createButton());
 
       await screen.findByText(/could not be created/i);
-      expect(reportedEvents()).toEqual([]);
+      expect(reportedActions()).toEqual([]);
     });
   });
 

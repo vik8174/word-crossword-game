@@ -8,6 +8,7 @@ import {
 
 import { firebaseApp } from '../firebase/config';
 import type { PageView } from './page-view';
+import type { Redacted } from './redaction';
 
 /**
  * Everything this app tells Firebase Analytics, and the only way to tell it
@@ -19,21 +20,33 @@ import type { PageView } from './page-view';
  * an event that was not sent.
  */
 
-/** The three moments this game reports. Adding one is adding a line here. */
-export type GameEvent = 'room_created' | 'player_joined' | 'game_completed';
+/** The moments this game reports. Adding one is adding a line here. */
+export type GameEvent = 'room_created' | 'player_joined' | 'game_completed' | 'screen_reached';
 
 /**
- * What an event may carry: numbers, and nothing else.
+ * What an event may carry: numbers, and text that has been through the
+ * redaction.
  *
- * This is the whole guarantee that a room id, a word or a nickname never
- * reaches Analytics — they are all strings, so an event carrying one does not
- * compile. It applies to the events written today and to every event written
- * after them, which a list of forbidden field names would not.
+ * The guarantee is that what has not been redacted does not compile. Nothing
+ * but `redactRoomId` produces a {@link Redacted}, so a `string` — which is what
+ * a room id, a nickname, a word and `window.location.href` all are — cannot be
+ * handed to an event as it stands, however the event is written and whoever
+ * writes it. A list of forbidden field names would not do that, and neither
+ * would remembering.
+ *
+ * The redaction takes room ids out and nothing else, so a caller who reaches
+ * for it to launder a nickname would get past this type. That is why an event
+ * carrying text does not take text: `logScreenReached` in `funnel.ts` asks for
+ * a `FunnelScreen`, four literals fixed at compile time, so there is nothing a
+ * player typed for it to be given. This type is the floor under every event;
+ * the event's own parameter is the door.
  *
  * Counts are welcome: how many words a room has and how many players are in it
  * say something about the product without saying anything about the room.
+ *
+ * See `docs/decisions/0023-a-screen-name-is-text-that-has-been-redacted.md`.
  */
-export type GameEventParams = Readonly<Record<string, number>>;
+export type GameEventParams = Readonly<Record<string, number | Redacted>>;
 
 /**
  * Analytics as it is initialized, or `null` where it cannot be.
@@ -88,7 +101,7 @@ const quietly = (what: string, report: () => void): void => {
  * Reports that something happened in a game.
  *
  * @param event - Which of the game's moments this is
- * @param params - Counts describing it; strings do not compile, see {@link GameEventParams}
+ * @param params - Counts and redacted text describing it; a raw string does not compile, see {@link GameEventParams}
  *
  * @example
  * void logGameEvent('room_created', { word_count: layout.placedWords.length });

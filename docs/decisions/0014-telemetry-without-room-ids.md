@@ -1,6 +1,8 @@
 # 0014. Telemetry that cannot name a room
 
-Status: Accepted
+Status: Accepted, with one part superseded by [0023](0023-a-screen-name-is-text-that-has-been-redacted.md)
+
+> **"Analytics events carry numbers and nothing else" no longer holds.** An event parameter now also accepts text of the branded type `Redacted`, so that a screen can be reported by name — see [ADR 0023](0023-a-screen-name-is-text-that-has-been-redacted.md) for what guarantees that in its place. Everything else below stands.
 
 ## Context
 

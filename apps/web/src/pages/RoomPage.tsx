@@ -15,6 +15,8 @@ import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import { isOpenToNewPlayers, type RoomScreen, roomScreenFor } from '../rooms/room-screen';
 import { usePresenceHeartbeat } from '../rooms/use-presence-heartbeat';
 import { useRoomConnection } from '../rooms/use-room-connection';
+import { funnelScreenFor } from '../telemetry/funnel';
+import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /** Shown while the visitor is being signed in and the first snapshot is on its way. */
 const Connecting = () => (
@@ -75,12 +77,20 @@ const RoomScreenView = ({
  * game are two screens, and a player is equally present in both — so the
  * heartbeat is started once, from the connection, and neither screen has to
  * remember to keep it going (issue #47).
+ *
+ * Two of the screens below are the last two of the funnel, and they report
+ * being reached from here rather than from themselves: they are one address
+ * apart from nothing, so what tells them apart is which one this switch is
+ * showing (issue #51). Only the kind is handed over, never the screen — the
+ * screen is rebuilt on every snapshot, and the heartbeat above causes one every
+ * fifteen seconds.
  */
 const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
   const connection = useRoomConnection(roomId);
   const screen = roomScreenFor(connection, new Date());
 
   usePresenceHeartbeat(roomId, connection);
+  useScreenReached(funnelScreenFor(screen.kind));
 
   return (
     <Stack spacing={3}>

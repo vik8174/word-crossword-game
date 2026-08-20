@@ -44,9 +44,9 @@ cp apps/web/.env.example apps/web/.env
 
 ## Telemetry
 
-Firebase Analytics reports three moments — a room created, a player joined, a game finished — plus a page view per screen. Sentry reports JavaScript errors and unhandled promise rejections.
+Firebase Analytics reports three moments — a room created, a player joined, a game finished — plus a page view per screen and an arrival at each of the four screens before the first word is explained. Sentry reports JavaScript errors and unhandled promise rejections.
 
-Neither is allowed to name a room. The id in `/room/<id>` is the whole access control around a game — anyone holding it reads the room document, words included — so Firebase's automatic page view is switched off (it carries the address bar verbatim), analytics events are typed to carry numbers and nothing else, and every Sentry event is redacted on its way out. Browser tracing and session replay are deliberately not switched on. See [ADR 0014](docs/decisions/0014-telemetry-without-room-ids.md).
+Neither is allowed to name a room. The id in `/room/<id>` is the whole access control around a game — anyone holding it reads the room document, words included — so Firebase's automatic page view is switched off (it carries the address bar verbatim), analytics events are typed to carry numbers and text that has been through the redaction — what has not been redacted does not compile — and every Sentry event is redacted on its way out. Browser tracing and session replay are deliberately not switched on. See [ADR 0014](docs/decisions/0014-telemetry-without-room-ids.md) and [ADR 0023](docs/decisions/0023-a-screen-name-is-text-that-has-been-redacted.md).
 
 ### Source maps
 

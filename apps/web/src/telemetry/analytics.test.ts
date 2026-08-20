@@ -2,6 +2,7 @@ import type { Analytics } from 'firebase/analytics';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { pageViewFor } from './page-view';
+import { redactRoomId } from './redaction';
 
 vi.mock('firebase/analytics', () => ({
   initializeAnalytics: vi.fn(),
@@ -46,13 +47,24 @@ describe('logGameEvent', () => {
     expect(logEvent).toHaveBeenCalledWith(expect.anything(), 'room_created', { word_count: 7 });
   });
 
-  it('refuses a parameter that is not a number, at compile time', async () => {
+  it('refuses text that has not been through the redaction, at compile time', async () => {
     const { logGameEvent } = await loadAnalytics();
 
-    // @ts-expect-error A room id, a word and a nickname are all strings, and no
-    // event may carry one. This line ceasing to be an error is the regression:
-    // it would mean a future event can name a room, a player or a word.
+    // @ts-expect-error A room id, a word and a nickname are all strings, and
+    // nothing but `redactRoomId` produces the type a parameter takes. This line
+    // ceasing to be an error is the regression: it would mean text can reach
+    // Analytics without passing the one place room ids are taken out of it.
     await logGameEvent('room_created', { room_id: ROOM_ID });
+  });
+
+  it('sends text that has been redacted, with the room taken out of it', async () => {
+    const { logGameEvent, logEvent } = await loadAnalytics();
+
+    await logGameEvent('screen_reached', { screen: redactRoomId(`/room/${ROOM_ID}`) });
+
+    expect(logEvent).toHaveBeenCalledWith(expect.anything(), 'screen_reached', {
+      screen: '/room/:roomId',
+    });
   });
 
   it('turns the automatic page view off, because it carries the full address', async () => {
