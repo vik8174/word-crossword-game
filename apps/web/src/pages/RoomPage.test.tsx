@@ -369,33 +369,78 @@ describe('RoomPage', () => {
   describe('the link to the room', () => {
     const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
     const inviteLink = () => screen.queryByLabelText(/room link/i);
+    const linkToThisRoom = roomUrl('room-1', window.location.origin);
 
-    it('is on the screen before the room has been read at all', async () => {
+    /** Opens the room as its host rather than as the visitor everything else runs as. */
+    const openRoomAsHost = async (room: unknown = storedRoom()) => {
+      vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
+
+      await openRoom(room);
+    };
+
+    it('is offered to the host waiting alone in the room they made', async () => {
+      await openRoomAsHost();
+
+      expect(inviteLink()).toHaveValue(linkToThisRoom);
+    });
+
+    it('goes the moment the guest walks in, because there is nobody left to invite', async () => {
+      await openRoomAsHost();
+
+      await act(async () => {
+        emitRoom({ exists: () => true, data: () => storedRoom({ players: bothPlayers }) });
+      });
+
+      expect(inviteLink()).not.toBeInTheDocument();
+    });
+
+    it('comes back to the host once a guest goes quiet long enough to lose the seat', async () => {
+      // The room still holds two players, so hiding the link on a count of them
+      // would leave the host with a seat they may give away and no way to.
+      await openRoomAsHost(storedRoom({ players: bothPlayers }));
+      expect(inviteLink()).not.toBeInTheDocument();
+
+      await act(async () => {
+        emitRoom({
+          exists: () => true,
+          data: () =>
+            storedRoom({
+              players: {
+                'owner-uid': player('Vik'),
+                'guest-uid': player('Bob', 2000, SEAT_FREE_AFTER_MS + 1000),
+              },
+            }),
+        });
+      });
+
+      expect(inviteLink()).toHaveValue(linkToThisRoom);
+    });
+
+    it('is offered to no guest, at the nickname form or in the lobby', async () => {
+      // They arrived by this link — it is in their address bar — and the room
+      // they are looking at is the one it would send anybody else to.
+      await openRoom();
+      expect(screen.getByLabelText(/nickname/i)).toBeInTheDocument();
+      expect(inviteLink()).not.toBeInTheDocument();
+
+      await act(async () => {
+        emitRoom({ exists: () => true, data: () => storedRoom({ players: bothPlayers }) });
+      });
+
+      expect(inviteLink()).not.toBeInTheDocument();
+    });
+
+    it('waits for the first snapshot, since nobody is a host until the room says so', async () => {
       renderRoomPage();
 
       await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
 
-      // Nothing has been delivered yet: the address is all a link needs, so a
-      // player can pass it on while the first snapshot is still on its way.
       expect(screen.getByRole('status')).toHaveTextContent(/connecting/i);
-      expect(inviteLink()).toHaveValue(roomUrl('room-1', window.location.origin));
-    });
-
-    it('is offered to a visitor who has not given a nickname yet', async () => {
-      await openRoom();
-
-      expect(screen.getByLabelText(/nickname/i)).toBeInTheDocument();
-      expect(inviteLink()).toHaveValue(roomUrl('room-1', window.location.origin));
-    });
-
-    it('is offered to a player waiting in the lobby, owner or not', async () => {
-      await openRoom(storedRoom({ players: bothPlayers }));
-
-      expect(inviteLink()).toHaveValue(roomUrl('room-1', window.location.origin));
+      expect(inviteLink()).not.toBeInTheDocument();
     });
 
     it('goes once the words are dealt out, because it lets nobody in any more', async () => {
-      await openRoom(
+      await openRoomAsHost(
         storedRoom({
           status: 'playing',
           players: bothPlayers,
@@ -539,16 +584,6 @@ describe('RoomPage', () => {
 
       expect(await screen.findByText(/would not take you in/i)).toBeInTheDocument();
       expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
-    });
-
-    it('stops offering the link to a guest the room has just turned away', async () => {
-      failEveryWriteWith(REFUSED_BY_RULES);
-      await openRoom();
-
-      joinAs('Bob');
-      await screen.findByText(/would not take you in/i);
-
-      expect(screen.queryByLabelText(/room link/i)).not.toBeInTheDocument();
     });
 
     it('gives way to what the room itself says, as soon as the next snapshot lands', async () => {

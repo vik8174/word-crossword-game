@@ -14,7 +14,7 @@ import { RoomLobby } from '../components/RoomLobby';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import type { RoomDocument } from '../rooms/room-document';
 import {
-  isOpenToNewPlayers,
+  hasSomebodyToInvite,
   type RoomScreen,
   roomScreenFor,
   screenAfterRefusedJoin,
@@ -80,10 +80,13 @@ const RoomScreenView = ({
  * The room behind the link: the invitation, and whatever the room is doing.
  *
  * The invite link sits above the screen switch rather than inside the lobby,
- * because it is built from the address and nothing else — a player who has just
- * arrived can pass it on while the first snapshot is still on its way. It goes
- * once the room stops taking anybody: sharing a link into a game already under
- * way only sends a friend to a refusal.
+ * because it is the host's tool for filling the room rather than a part of any
+ * one thing the room is doing. Who is shown it, and for how long, is
+ * `hasSomebodyToInvite`'s answer and not this page's: the host, for as long as
+ * there is a seat left to invite anybody into
+ * (`docs/decisions/0026-the-invite-link-belongs-to-the-host.md`). A seat freed
+ * by a mark that went stale brings it back on the next snapshot, which the
+ * host's own heartbeat below produces every fifteen seconds.
  *
  * The mark this client writes for itself sits here too, above the switch, for
  * the same kind of reason: being in a room is not a phase of one. A lobby and a
@@ -122,13 +125,18 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
     latestRoom.current = room;
   });
 
+  // One moment for the whole render, so the screen and the invitation above it
+  // cannot be judged against two different clocks — a seat could be free for
+  // one and taken for the other.
+  const now = new Date();
+
   // Remembered as a room and not as a flag: every snapshot is parsed into a
   // document of its own, so the moment a newer one arrives this stops matching
   // and the screen goes back to being what the document says. A flag would have
   // to be cleared by hand, and a visitor whose seat freed up again would sit
   // behind a stale notice.
   const screen = screenAfterRefusedJoin(
-    roomScreenFor(connection, new Date()),
+    roomScreenFor(connection, now),
     room !== null && room === refusedRoom,
   );
 
@@ -137,7 +145,7 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
 
   return (
     <Stack spacing={3}>
-      {isOpenToNewPlayers(screen) && (
+      {hasSomebodyToInvite(screen, now) && (
         <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
       )}
 

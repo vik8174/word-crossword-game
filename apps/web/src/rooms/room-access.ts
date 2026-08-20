@@ -107,14 +107,37 @@ export const roomAccessFor = (room: ReadableRoom, playerId: string, now: Date): 
     return 'started';
   }
 
-  // A seat nobody is sitting in is not a seat taken. The room may already hold
-  // both players and still have room for this visitor — see
-  // {@link abandonedSeatIn}, which is also what tells the join write whom it is
-  // replacing.
-  return Object.keys(room.players).length < PLAYERS_PER_GAME || abandonedSeatIn(room, now) !== null
-    ? 'joinable'
-    : 'full';
+  return hasFreeSeatIn(room, now) ? 'joinable' : 'full';
 };
+
+/**
+ * Whether somebody arriving may still take a seat in this room.
+ *
+ * A seat nobody is sitting in is not a seat taken. The room may already hold
+ * both players and still have room for a visitor — see {@link abandonedSeatIn},
+ * which is also what tells the join write whom it is replacing — so counting
+ * the players is only half the answer and the half that goes stale first.
+ *
+ * Asked by {@link roomAccessFor} of the visitor at the door, and by the room
+ * screen of the host deciding whether their link still leads anybody in. Both
+ * are the same question, and one answer, so the two cannot drift apart
+ * (`docs/decisions/0026-the-invite-link-belongs-to-the-host.md`).
+ *
+ * Outside a lobby the answer is no, whatever the count says: once the words are
+ * dealt out every seat is frozen for the player it was dealt to, and a closed
+ * room has nothing left to sit in
+ * (`docs/decisions/0025-what-happens-to-the-seat-of-a-player-who-left.md`).
+ *
+ * @param room - The room document as read from Firestore
+ * @param now - The moment to judge the presence marks against
+ * @returns Whether a newcomer would find room in it
+ *
+ * @example
+ * hasFreeSeatIn(room, new Date()); // true
+ */
+export const hasFreeSeatIn = (room: ReadableRoom, now: Date): boolean =>
+  room.status === 'lobby' &&
+  (Object.keys(room.players).length < PLAYERS_PER_GAME || abandonedSeatIn(room, now) !== null);
 
 /**
  * The seat in this room that somebody arriving may take, if there is one.

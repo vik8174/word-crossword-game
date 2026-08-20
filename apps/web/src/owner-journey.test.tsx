@@ -107,15 +107,19 @@ describe('the owner of a room', () => {
     // is subscribing before a single snapshot has arrived.
     await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
     expect(window.location.pathname).toBe(roomPath('room-1'));
-    // The link is built from the address, so it is already here — the owner can
-    // send it on while the room is still being read.
-    expect(screen.getByLabelText(/room link/i)).toHaveValue(
-      roomUrl('room-1', window.location.origin),
-    );
+    // Not yet: nothing has been read, and a link nobody has been recognised as
+    // the host of would be a link shown to whoever opened the address.
+    expect(screen.queryByLabelText(/room link/i)).not.toBeInTheDocument();
 
     await act(async () => {
       emitRoom({ exists: () => true, data: () => asStoredRoom(writtenRoom()) });
     });
+
+    // The room says who made it, so the link is theirs to send, and the seat it
+    // leads to is still empty.
+    expect(screen.getByLabelText(/room link/i)).toHaveValue(
+      roomUrl('room-1', window.location.origin),
+    );
 
     // In the room they created, without being asked who they are: `createRoom`
     // already put them in `players`.
