@@ -21,7 +21,7 @@ import { ROOM_ROUTE_PATTERN, roomPath } from './rooms/room-link';
  * facts arriving at one screen, and that order is the story.
  *
  * Both guests are handed the very same snapshot on purpose. That is not a
- * contrived race: a lobby seat frees itself once its mark is 90 seconds old
+ * contrived race: a lobby seat frees itself once its mark is 60 seconds old
  * (issue #47), so two people opening the link within the same minute read the
  * same free seat as a matter of course.
  */

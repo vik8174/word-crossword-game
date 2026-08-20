@@ -559,6 +559,82 @@ describe('playing in a room', () => {
   });
 });
 
+/**
+ * The two cases of the seat policy that the rules, and nothing else, hold.
+ *
+ * Once the words are dealt, the seat of a player who left is frozen — for the
+ * host and for their guest alike — and no age of mark changes that. The client
+ * agrees (`apps/web/src/rooms/seat-policy.test.ts`), but agreeing is all a
+ * client can do: a lobby's roster is anybody's to write, so what stops a
+ * started game losing a player is this file and nothing else. The whole policy,
+ * all four cases of it, is written out in
+ * `docs/decisions/0025-what-happens-to-the-seat-of-a-player-who-left.md`.
+ *
+ * Said here as scenarios rather than as one rule at a time: the narrower tests
+ * above check `freezesPlayersOnceDealt`, and these check what a room does to a
+ * player who disappeared mid-word.
+ */
+describe('the seat of a player who left a game that had started', () => {
+  /** The pair, with one of them last heard from hours ago. */
+  const withStaleMark = (silentPlayerId) => {
+    const present = {
+      [OWNER]: { nickname: 'Vik', joinedAt: Timestamp.now(), lastSeenAt: Timestamp.now() },
+      [OTHER_PLAYER]: { nickname: 'Bob', joinedAt: Timestamp.now(), lastSeenAt: Timestamp.now() },
+    };
+
+    return {
+      ...present,
+      [silentPlayerId]: { ...present[silentPlayerId], lastSeenAt: hoursFromNow(-3) },
+    };
+  };
+
+  it('is frozen for the host, however long ago their mark was written', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: withStaleMark(OWNER) });
+
+    // Their guest cannot free the seat, and cannot hand it on either.
+    await assertFails(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), { [`players.${OWNER}`]: deleteField() }),
+    );
+
+    // And the host plays on when they come back, marking themselves present.
+    await assertSucceeds(
+      updateDoc(doc(asOwner(), ROOM_PATH), { [`players.${OWNER}.lastSeenAt`]: Timestamp.now() }),
+    );
+  });
+
+  it('is frozen for a guest too, and no newcomer is let into their place', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: withStaleMark(OTHER_PLAYER) });
+
+    // The write that takes an abandoned lobby seat, refused here in one piece.
+    await assertFails(
+      updateDoc(doc(asThirdPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: deleteField(),
+        [`players.${THIRD_PLAYER}`]: {
+          nickname: 'Cara',
+          joinedAt: Timestamp.now(),
+          lastSeenAt: Timestamp.now(),
+        },
+      }),
+    );
+
+    // Nor may a newcomer simply sit down beside the two: the room stays a pair.
+    await assertFails(
+      updateDoc(doc(asThirdPlayer(), ROOM_PATH), {
+        [`players.${THIRD_PLAYER}`]: { nickname: 'Cara', joinedAt: Timestamp.now() },
+      }),
+    );
+
+    // The guest's own return is the one write about that seat still accepted.
+    await assertSucceeds(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}.lastSeenAt`]: Timestamp.now(),
+      }),
+    );
+  });
+});
+
 describe('anything outside the rooms collection', () => {
   it('is unreachable from a browser', async () => {
     await testEnv.clearFirestore();
