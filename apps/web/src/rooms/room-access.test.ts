@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from './presence';
 import {
   abandonedSeatIn,
+  hasFreeSeatIn,
   type MillisecondTimestamp,
   playersInJoinOrder,
   type ReadableRoom,
@@ -143,6 +144,33 @@ describe('roomAccessFor', () => {
     });
 
     expect(roomAccessFor(room, 'third-uid', NOW)).toBe('full');
+  });
+});
+
+describe('hasFreeSeatIn', () => {
+  it('has a seat while the lobby holds fewer players than a game is played by', () => {
+    expect(hasFreeSeatIn(roomWith({ 'owner-uid': player('Vik') }), NOW)).toBe(true);
+  });
+
+  it('has none once both of them are in', () => {
+    expect(hasFreeSeatIn(roomWith(bothPlayers), NOW)).toBe(false);
+  });
+
+  it('has one again when a guest lets their mark go stale', () => {
+    const room = roomWith({
+      'owner-uid': player('Vik'),
+      'guest-uid': player('Bob', 0, SEAT_FREE_AFTER_MS + 1),
+    });
+
+    expect(hasFreeSeatIn(room, NOW)).toBe(true);
+  });
+
+  it('has none once the words are dealt out, however few players are in', () => {
+    // Every seat of a started game is frozen for the player it was dealt to, so
+    // an empty half of the room is not a seat anybody may take.
+    const room = roomWith({ 'owner-uid': player('Vik') }, NOW.getTime() + 1, 'playing');
+
+    expect(hasFreeSeatIn(room, NOW)).toBe(false);
   });
 });
 

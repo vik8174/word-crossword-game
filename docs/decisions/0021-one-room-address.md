@@ -1,6 +1,8 @@
 # 0021. One room address, and the lobby that lives at it
 
-Status: Accepted
+Status: Accepted, amended by [0026](0026-the-invite-link-belongs-to-the-host.md)
+
+[0026](0026-the-invite-link-belongs-to-the-host.md) overturns one line below — "the link is shown to every player, not only the owner" — and the reason it gave for putting the panel above the switch. The premise expired rather than the reasoning failing: passing an invite on was the same act whoever performed it only while a room could hold one more person, and [0024](0024-two-players-are-the-product-not-the-algorithm.md) settled that it cannot. The link now belongs to the host, and only while a seat is free, which means it waits for the first snapshot instead of being on the screen while the room is still being read. Everything else here stands, the panel's place above the switch included.
 
 Unlike [0001](0001-record-architecture-decisions.md)–[0012](0012-ending-a-game-from-the-received-state.md), this record was written before the code it describes. What [#48](https://github.com/vik8174/word-crossword-game/issues/48) builds is the address itself: creation ends inside the room, and the invite link lives on the room screen. The crossword preview on `/create` and the lobby without a grid are decided here and still to be built.
 

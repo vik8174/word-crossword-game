@@ -25,13 +25,14 @@ type CopyState = 'idle' | 'copied' | 'failed';
  * HTTP).
  *
  * It is built from the room id and the origin alone, which is why it belongs
- * above the screen switch rather than inside the lobby: the address is known
- * the moment the page opens, so nobody waits for the first snapshot to be able
- * to invite anyone.
+ * above the screen switch rather than inside any one of the screens: filling a
+ * room is not a phase of one.
  *
- * Every player sees it, not only the owner: a guest has the URL in their
- * address bar already — it is how they got here — so hiding it would protect
- * nothing and cost a branch.
+ * The host is the only player who sees it, and only while a seat is still free.
+ * A guest arrived by this very link, and a room is played by exactly two, so
+ * once they are in it there is nobody it could still let in. Who is shown it is
+ * decided by `hasSomebodyToInvite` rather than here
+ * (`docs/decisions/0026-the-invite-link-belongs-to-the-host.md`).
  *
  * @param props.roomId - Id of the room, taken from the address
  * @param props.origin - Origin to build the shareable URL from

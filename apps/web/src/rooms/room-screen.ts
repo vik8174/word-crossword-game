@@ -1,4 +1,4 @@
-import { abandonedSeatIn, roomAccessFor } from './room-access';
+import { abandonedSeatIn, hasFreeSeatIn, roomAccessFor } from './room-access';
 import { isGameFinished } from './room-completion';
 import type { RoomDocument } from './room-document';
 import type { RoomConnection } from './use-room-connection';
@@ -169,32 +169,47 @@ export const screenAfterRefusedJoin = (screen: RoomScreen, wasRefused: boolean):
   wasRefused && screen.kind === 'join' ? { kind: 'unavailable', reason: 'refused' } : screen;
 
 /**
- * Whether this screen is one somebody else could still be invited into.
+ * Whether the viewer of this screen has a seat left to invite somebody into.
  *
- * The invite link is worth showing for exactly as long as a link can still let
- * anyone in, which is while the room waits in its lobby — a started, finished
- * or closed room leads a newcomer to a refusal, and one that is not there leads
- * nowhere at all. `connecting` counts as open because the link is built from
- * the address rather than from the document: withholding it until the first
- * snapshot would make the owner wait to invite anybody, which is the thing
- * being fixed.
+ * Two facts, and the link is worth showing only when both hold: the viewer is
+ * the host, and the room still has a seat for whoever they send it to.
+ *
+ * A guest is never offered it. They arrived by that very link, so it is already
+ * in their address bar — and a room is played by exactly two
+ * (`docs/decisions/0024-two-players-are-the-product-not-the-algorithm.md`), so
+ * the moment they walked in it stopped leading anybody anywhere but a refusal.
+ * Passing it on is no longer the same act whichever player performs it, which
+ * is the line `docs/decisions/0021-one-room-address.md` drew and
+ * `docs/decisions/0026-the-invite-link-belongs-to-the-host.md` redraws.
+ *
+ * The free seat is {@link hasFreeSeatIn}'s answer rather than a count of
+ * players, and that is the whole reason `now` is a parameter here: a guest whose
+ * mark has gone stale leaves a seat their host may fill again, and a link that
+ * did not come back would leave them with a room they cannot re-fill
+ * (`docs/decisions/0025-what-happens-to-the-seat-of-a-player-who-left.md`).
+ *
+ * Only the lobby can satisfy either fact. `join` is a visitor who is not in the
+ * room, so certainly not its host; `connecting` has no document to tell one from
+ * the other, and guessing wrong shows a guest a link they should never see. That
+ * is the price this record accepts: the host waits for the first snapshot.
  *
  * A switch rather than a list of kinds, so a screen added to {@link RoomScreen}
- * has to say whether a room showing it can still be joined instead of silently
+ * has to say whether its viewer has anybody left to invite instead of silently
  * defaulting to hiding the link.
  *
  * @param screen - The screen the room is showing, from {@link roomScreenFor}
- * @returns Whether the invite link still leads anybody in
+ * @param now - The moment to judge the presence marks against
+ * @returns Whether this viewer has a free seat of their own to give away
  *
  * @example
- * isOpenToNewPlayers({ kind: 'connecting' }); // true
+ * hasSomebodyToInvite({ kind: 'lobby', room, viewerId: room.ownerId }, new Date()); // true
  */
-export const isOpenToNewPlayers = (screen: RoomScreen): boolean => {
+export const hasSomebodyToInvite = (screen: RoomScreen, now: Date): boolean => {
   switch (screen.kind) {
+    case 'lobby':
+      return screen.viewerId === screen.room.ownerId && hasFreeSeatIn(screen.room, now);
     case 'connecting':
     case 'join':
-    case 'lobby':
-      return true;
     case 'unavailable':
     case 'playing':
     case 'finished':

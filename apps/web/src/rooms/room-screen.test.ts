@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { SEAT_FREE_AFTER_MS } from './presence';
 import type { RoomDocument } from './room-document';
 import {
-  isOpenToNewPlayers,
+  hasSomebodyToInvite,
   type RoomScreen,
   roomScreenFor,
   screenAfterRefusedJoin,
@@ -263,40 +263,72 @@ describe('screenAfterRefusedJoin', () => {
     // either in or already shut out of.
     expect(screenAfterRefusedJoin(screen, true)).toBe(screen);
   });
-
-  it('stops offering the link to somebody the room has just turned away', () => {
-    expect(isOpenToNewPlayers(screenAfterRefusedJoin(nicknameForm, true))).toBe(false);
-  });
 });
 
-describe('isOpenToNewPlayers', () => {
-  const room = roomWith({ players: bothPlayers });
-  const viewerId = 'guest-uid';
+describe('hasSomebodyToInvite', () => {
+  const ownerId = 'owner-uid';
+  const guestId = 'guest-uid';
+  const fullRoom = roomWith({ players: bothPlayers });
 
-  const cases: readonly [string, RoomScreen, boolean][] = [
-    ['nobody has read the room yet', { kind: 'connecting' }, true],
+  /** The same two players, with the guest's mark old enough to free their seat. */
+  const roomWithAnAbandonedSeat = roomWith({
+    players: {
+      'owner-uid': player('Vik'),
+      'guest-uid': player('Bob', 1, SEAT_FREE_AFTER_MS + 1),
+    },
+  });
+
+  it('offers the link to a host who is still waiting alone', () => {
+    const lobby: RoomScreen = { kind: 'lobby', room: roomWith(), viewerId: ownerId };
+
+    expect(hasSomebodyToInvite(lobby, NOW)).toBe(true);
+  });
+
+  it('takes it away the moment the second seat is filled', () => {
+    const lobby: RoomScreen = { kind: 'lobby', room: fullRoom, viewerId: ownerId };
+
+    expect(hasSomebodyToInvite(lobby, NOW)).toBe(false);
+  });
+
+  it('gives it back when a seat is freed by a mark that went stale', () => {
+    // The room still holds two players, so a count of them would say the host
+    // has nobody to invite. The seat is free all the same, and whoever the host
+    // sends the link to now gets in.
+    const lobby: RoomScreen = { kind: 'lobby', room: roomWithAnAbandonedSeat, viewerId: ownerId };
+
+    expect(hasSomebodyToInvite(lobby, NOW)).toBe(true);
+  });
+
+  it('never offers it to a guest, not even in the room whose seat just freed up', () => {
+    // The seat that freed up is a guest's own, and it is not theirs to give:
+    // the room they are in holds two, and they are one of them.
+    const lobby: RoomScreen = { kind: 'lobby', room: roomWithAnAbandonedSeat, viewerId: guestId };
+
+    expect(hasSomebodyToInvite(lobby, NOW)).toBe(false);
+  });
+
+  const withoutTheLink: readonly [string, RoomScreen][] = [
+    ['nobody has read the room yet', { kind: 'connecting' }],
     [
       'a newcomer is being asked for a nickname',
-      { kind: 'join', playerId: viewerId, seatToRelease: null },
-      true,
+      { kind: 'join', playerId: guestId, seatToRelease: null },
     ],
-    ['the room is waiting to be started', { kind: 'lobby', room, viewerId }, true],
-    ['the words are dealt out', { kind: 'playing', room, viewerId }, false],
-    ['the crossword is filled in', { kind: 'finished', room, viewerId }, false],
-    ['the room closed with words open', { kind: 'closed-early', room, viewerId }, false],
-    ['there is no room at the link', { kind: 'unavailable', reason: 'missing' }, false],
+    ['the words are dealt out', { kind: 'playing', room: fullRoom, viewerId: ownerId }],
+    ['the crossword is filled in', { kind: 'finished', room: fullRoom, viewerId: ownerId }],
+    [
+      'the room closed with words open',
+      { kind: 'closed-early', room: fullRoom, viewerId: ownerId },
+    ],
+    ['there is no room at the link', { kind: 'unavailable', reason: 'missing' }],
   ];
 
-  it.each(cases)(
-    'knows whether the link still leads anybody in when %s',
-    (_name, screen, isOpen) => {
-      expect(isOpenToNewPlayers(screen)).toBe(isOpen);
-    },
-  );
+  it.each(withoutTheLink)('offers the link to nobody when %s', (_name, screen) => {
+    expect(hasSomebodyToInvite(screen, NOW)).toBe(false);
+  });
 
-  it('holds the door open before the first snapshot, so nobody waits to invite anyone', () => {
-    // The link is built from the address, not from the document, and this is
-    // what lets it be on the screen while the room is still being read.
-    expect(isOpenToNewPlayers(roomScreenFor({ status: 'connecting' }, NOW))).toBe(true);
+  it('holds the link back until the first snapshot, because a host cannot be recognised without one', () => {
+    // The price this ticket accepts: the host sees their link a moment later
+    // than they used to, and the guest never sees it at all.
+    expect(hasSomebodyToInvite(roomScreenFor({ status: 'connecting' }, NOW), NOW)).toBe(false);
   });
 });

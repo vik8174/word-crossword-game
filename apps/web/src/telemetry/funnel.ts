@@ -34,7 +34,7 @@ export type FunnelScreen = 'home' | 'create' | 'join' | 'lobby';
  * is where `/room/<id>` is split into the two arrivals a path cannot tell apart.
  * A switch rather than a list, so a screen added to {@link RoomScreen} has to
  * say where in the funnel it sits instead of silently falling outside it — the
- * same reasoning `isOpenToNewPlayers` applies next door.
+ * same reasoning `hasSomebodyToInvite` applies next door.
  *
  * It takes the kind and not the screen because only the kind may matter: the
  * screen object is rebuilt on every snapshot, and a room gets one every fifteen
