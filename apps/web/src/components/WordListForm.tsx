@@ -5,7 +5,13 @@ import FormHelperText from '@mui/material/FormHelperText';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { MAX_WORDS, MIN_WORDS, type WordListValidation } from 'shared';
+import {
+  MAX_WORD_LENGTH,
+  MAX_WORDS,
+  MIN_WORD_LENGTH,
+  MIN_WORDS,
+  type WordListValidation,
+} from 'shared';
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
 
@@ -81,7 +87,7 @@ export const WordListForm = ({
             placeholder={'apple, bread, cheese\ndinner, engine, flower'}
           />
           <FormHelperText>
-            {`${MIN_WORDS}-${MAX_WORDS} English words, 3-12 letters each, no repeats. Separate them with commas, spaces or new lines.`}
+            {`${MIN_WORDS}-${MAX_WORDS} English words, ${MIN_WORD_LENGTH}-${MAX_WORD_LENGTH} letters each, no repeats. Separate them with commas, spaces or new lines.`}
           </FormHelperText>
           <FormHelperText>{`${validation.words.length} words entered`}</FormHelperText>
         </Box>

@@ -10,7 +10,7 @@ export const MAX_WORDS = 20;
 /** Shortest word the crossword grid accepts. */
 export const MIN_WORD_LENGTH = 3;
 /** Longest word the crossword grid accepts. */
-export const MAX_WORD_LENGTH = 12;
+export const MAX_WORD_LENGTH = 16;
 
 /**
  * What is wrong with a word list. Codes let the UI react (highlight a word,
