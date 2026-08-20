@@ -2,7 +2,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import type { ReactElement } from 'react';
+import { type ReactElement, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { RoomClosedEarly } from '../components/RoomClosedEarly';
@@ -12,7 +12,13 @@ import { RoomInvitePanel } from '../components/RoomInvitePanel';
 import { RoomJoin } from '../components/RoomJoin';
 import { RoomLobby } from '../components/RoomLobby';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
-import { isOpenToNewPlayers, type RoomScreen, roomScreenFor } from '../rooms/room-screen';
+import type { RoomDocument } from '../rooms/room-document';
+import {
+  isOpenToNewPlayers,
+  type RoomScreen,
+  roomScreenFor,
+  screenAfterRefusedJoin,
+} from '../rooms/room-screen';
 import { usePresenceHeartbeat } from '../rooms/use-presence-heartbeat';
 import { useRoomConnection } from '../rooms/use-room-connection';
 import { funnelScreenFor } from '../telemetry/funnel';
@@ -39,9 +45,11 @@ const Connecting = () => (
 const RoomScreenView = ({
   roomId,
   screen,
+  onJoinRefused,
 }: {
   readonly roomId: string;
   readonly screen: RoomScreen;
+  readonly onJoinRefused: () => void;
 }): ReactElement => {
   switch (screen.kind) {
     case 'connecting':
@@ -50,7 +58,12 @@ const RoomScreenView = ({
       return <RoomUnavailableNotice reason={screen.reason} />;
     case 'join':
       return (
-        <RoomJoin roomId={roomId} playerId={screen.playerId} seatToRelease={screen.seatToRelease} />
+        <RoomJoin
+          roomId={roomId}
+          playerId={screen.playerId}
+          seatToRelease={screen.seatToRelease}
+          onRefused={onJoinRefused}
+        />
       );
     case 'lobby':
       return <RoomLobby roomId={roomId} room={screen.room} viewerId={screen.viewerId} />;
@@ -84,10 +97,40 @@ const RoomScreenView = ({
  * showing (issue #51). Only the kind is handed over, never the screen — the
  * screen is rebuilt on every snapshot, and the heartbeat above causes one every
  * fifteen seconds.
+ *
+ * One thing here is not read from the room: whether the room refused to take
+ * this visitor in. It cannot be — a refused write is answered with
+ * `permission-denied` and the document that would explain it is the very thing
+ * the visitor is waiting for. So it is held here for exactly as long as that
+ * wait lasts, and the notice it puts up gives way to the room's own the moment
+ * a snapshot lands (issue #50).
  */
 const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
   const connection = useRoomConnection(roomId);
-  const screen = roomScreenFor(connection, new Date());
+  const [refusedRoom, setRefusedRoom] = useState<RoomDocument | null>(null);
+  const room = connection.status === 'ready' ? connection.room : null;
+
+  // The room as it stands, kept where the refusal can reach it. A refusal comes
+  // back after its write, by which time any snapshot may have landed — another
+  // player's presence mark among them — and one recorded against the document
+  // the button was pressed from would then match nothing, leaving the form
+  // frozen mid-submit with nothing said. It is recorded against the room the
+  // refusal arrives at instead, which is the room it is news about.
+  const latestRoom = useRef(room);
+
+  useEffect(() => {
+    latestRoom.current = room;
+  });
+
+  // Remembered as a room and not as a flag: every snapshot is parsed into a
+  // document of its own, so the moment a newer one arrives this stops matching
+  // and the screen goes back to being what the document says. A flag would have
+  // to be cleared by hand, and a visitor whose seat freed up again would sit
+  // behind a stale notice.
+  const screen = screenAfterRefusedJoin(
+    roomScreenFor(connection, new Date()),
+    room !== null && room === refusedRoom,
+  );
 
   usePresenceHeartbeat(roomId, connection);
   useScreenReached(funnelScreenFor(screen.kind));
@@ -98,7 +141,11 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
         <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
       )}
 
-      <RoomScreenView roomId={roomId} screen={screen} />
+      <RoomScreenView
+        roomId={roomId}
+        screen={screen}
+        onJoinRefused={() => setRefusedRoom(latestRoom.current)}
+      />
     </Stack>
   );
 };

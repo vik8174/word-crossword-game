@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { type Analytics, initializeAnalytics, isSupported, logEvent } from 'firebase/analytics';
+import { FirebaseError } from 'firebase/app';
 import { signInAnonymously } from 'firebase/auth';
 import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -265,6 +266,31 @@ const joinAs = (nickname: string) => {
   fireEvent.click(screen.getByRole('button', { name: /join the game/i }));
 };
 
+/**
+ * The two ways a write fails, as Firestore itself reports them.
+ *
+ * Kept as real `FirebaseError`s rather than as whatever a test found convenient
+ * to throw: what tells them apart in the app is the code the SDK attaches, so a
+ * plain `Error` standing in for a refusal would prove nothing about the branch
+ * a refusal actually takes.
+ */
+const REFUSED_BY_RULES = new FirebaseError(
+  'permission-denied',
+  'Missing or insufficient permissions.',
+);
+const DATABASE_UNREACHABLE = new FirebaseError(
+  'unavailable',
+  'Failed to get document because the client is offline.',
+);
+
+/** Fails the next write, with the console kept quiet for the test runner. */
+const failEveryWriteWith = (error: FirebaseError) => {
+  const reported = vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.mocked(updateDoc).mockRejectedValue(error);
+
+  return reported;
+};
+
 beforeEach(() => {
   // Cleared here rather than after each test: unmounting the previous screen is
   // itself an `afterEach`, and it calls the unsubscribe spy this file asserts on.
@@ -445,15 +471,106 @@ describe('RoomPage', () => {
       expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
     });
 
-    it('explains a join the database refused, and lets the player try again', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+    it('explains a join that never reached the database, and lets the player try again', async () => {
+      failEveryWriteWith(DATABASE_UNREACHABLE);
       await openRoom();
 
       joinAs('Bob');
 
       expect(await screen.findByText(/could not join the game/i)).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /join the game/i })).toBeEnabled();
+    });
+
+    it('tells a guest the room would not take them, and offers one of their own', async () => {
+      const reported = failEveryWriteWith(REFUSED_BY_RULES);
+      await openRoom();
+
+      joinAs('Bob');
+
+      // Nothing about a connection, because nothing was wrong with it — and no
+      // way back to a form whose button would be refused all over again.
+      expect(await screen.findByText(/would not take you in/i)).toBeInTheDocument();
+      expect(screen.queryByText(/check your connection/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /start a new game/i })).toBeInTheDocument();
+      expect(reported).toHaveBeenCalledWith('Joining the room failed', REFUSED_BY_RULES);
+    });
+
+    it('names no cause for the refusal, since the write was answered with none', async () => {
+      failEveryWriteWith(REFUSED_BY_RULES);
+      await openRoom();
+
+      joinAs('Bob');
+
+      // The room may have filled up, or its game may have been dealt out, or
+      // its 24 hours may have run out — all three arrive as the same refusal.
+      const notice = await screen.findByRole('alert');
+
+      expect(notice).toHaveTextContent(
+        /may have taken the last seat or the game may have started/i,
+      );
+    });
+
+    it('still says so when the room was read again between the click and the refusal', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      let refuse: (() => void) | undefined;
+      vi.mocked(updateDoc).mockReturnValue(
+        new Promise<void>((_resolve, reject) => {
+          refuse = () => {
+            reject(REFUSED_BY_RULES);
+          };
+        }) as never,
+      );
+      await openRoom();
+
+      joinAs('Bob');
+
+      // Somebody else's presence mark lands while the write is still in flight:
+      // a new document, saying nothing about why the write is about to fail. A
+      // refusal pinned to the document the button was pressed from would match
+      // nothing from here on, and the form would sit frozen mid-submit.
+      await act(async () => {
+        emitRoom({ exists: () => true, data: () => storedRoom() });
+      });
+
+      await act(async () => {
+        refuse?.();
+      });
+
+      expect(await screen.findByText(/would not take you in/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    });
+
+    it('stops offering the link to a guest the room has just turned away', async () => {
+      failEveryWriteWith(REFUSED_BY_RULES);
+      await openRoom();
+
+      joinAs('Bob');
+      await screen.findByText(/would not take you in/i);
+
+      expect(screen.queryByLabelText(/room link/i)).not.toBeInTheDocument();
+    });
+
+    it('gives way to what the room itself says, as soon as the next snapshot lands', async () => {
+      failEveryWriteWith(REFUSED_BY_RULES);
+      await openRoom();
+
+      joinAs('Bob');
+      await screen.findByText(/would not take you in/i);
+
+      // The guest who won the race is in the document the loser is watching.
+      await act(async () => {
+        emitRoom({
+          exists: () => true,
+          data: () =>
+            storedRoom({
+              players: { 'owner-uid': player('Vik'), 'winner-uid': player('Ann', 2000) },
+            }),
+        });
+      });
+
+      expect(screen.getByText(/played by exactly two people/i)).toBeInTheDocument();
+      expect(screen.queryByText(/would not take you in/i)).not.toBeInTheDocument();
     });
 
     it('reports a player who really got in, and never the name they got in under', async () => {
@@ -469,13 +586,12 @@ describe('RoomPage', () => {
     });
 
     it('reports nothing when the join was refused', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {});
-      vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+      failEveryWriteWith(REFUSED_BY_RULES);
       await openRoom();
 
       joinAs('Bob');
 
-      await screen.findByText(/could not join the game/i);
+      await screen.findByText(/would not take you in/i);
       expect(reportedActions()).toEqual([]);
     });
   });

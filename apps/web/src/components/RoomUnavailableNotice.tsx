@@ -22,6 +22,11 @@ const MESSAGES: Readonly<Record<RoomUnavailableReason, string>> = {
   // player is not late and not unlucky, they are one player more than the game
   // has ever taken, and the way on is a room of their own rather than a wait.
   full: 'This game is played by exactly two people, and this room has both of them. Start a game of your own and send its link to whoever you want to play with.',
+  // Names no cause, because none is known: a refused write says only that it
+  // was refused, and the room reports what it is a moment later through the
+  // subscription that never stopped running (see `screenAfterRefusedJoin`).
+  refused:
+    'The room would not take you in. In the moment it took to pick a nickname, somebody else may have taken the last seat or the game may have started. Start a game of your own and send its link to whoever you want to play with.',
   connection:
     'Could not reach the game. Check your connection and reload the page — the room is still there.',
 };
