@@ -1,8 +1,10 @@
 # 0017. Desktop first, while the grid outgrows a phone
 
-Status: Accepted
+Status: Accepted, with the first review condition below spent rather than met
 
 Refines [0016](0016-the-cursor-lives-in-the-grid.md).
+
+[Issue #31](https://github.com/vik8174/word-crossword-game/issues/31) is closed, and it did settle the largest room a game may have: exactly two players, in `MAX_PLAYERS` in `apps/web/src/rooms/room-access.ts`. That number is not the ceiling this record was waiting on. The grid is generated in `apps/web/src/pages/CreateRoomPage.tsx` from the owner's word list, at the moment the room is created and before anyone has joined, so its width follows `MAX_WORDS = 20` in `packages/shared/src/word-list-validator/types.ts` and nothing else. Room size and grid width were never the same question — a room capped at two players produces the same 22 columns as a room of four. The first condition is therefore closed without being satisfied, and the phone now waits on the second alone: the game being played by people who did not build it, on the devices they own. A room cap can still become the answer, but only by capping words rather than players.
 
 ## Context
 
