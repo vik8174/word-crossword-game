@@ -1,10 +1,12 @@
 # 0017. Desktop first, while the grid outgrows a phone
 
-Status: Accepted, with the first review condition below spent rather than met
+Status: Accepted, with the first review condition below spent rather than met, and the widths in its body superseded by measurement
 
 Refines [0016](0016-the-cursor-lives-in-the-grid.md).
 
 [Issue #31](https://github.com/vik8174/word-crossword-game/issues/31) is closed, and it did settle the largest room a game may have: exactly two players, in `MAX_PLAYERS` in `apps/web/src/rooms/room-access.ts`. That number is not the ceiling this record was waiting on. The grid is generated in `apps/web/src/pages/CreateRoomPage.tsx` from the owner's word list, at the moment the room is created and before anyone has joined, so its width follows `MAX_WORDS = 20` in `packages/shared/src/word-list-validator/types.ts` and nothing else. Room size and grid width were never the same question — a room capped at two players produces the same 22 columns as a room of four. The first condition is therefore closed without being satisfied, and the phone now waits on the second alone: the game being played by people who did not build it, on the devices they own. A room cap can still become the answer, but only by capping words rather than players.
+
+[Issue #69](https://github.com/vik8174/word-crossword-game/issues/69) raised `MAX_WORD_LENGTH` from 12 to 16, and on the way it measured what this record had only estimated. The 22 columns and 746 pixels below were an illustration rather than a run of the generator: twenty words at the old twelve-letter ceiling already produce 25 columns and 850 pixels, so the board was wider than its own record said before anything changed. At sixteen letters the worst case — twenty words of 13 to 16 letters — is 43 columns and 1462 pixels, against the 1280 of a typical desktop window. A realistic mixed list, ten long words and ten ordinary ones, is 29 columns and 986 pixels and still fits. The horizontal scroll this record accepted as the phone's problem therefore reaches the desktop it named as the target, for the widest lists rather than for every one of them. Nothing above is withdrawn and the arithmetic in the Consequences is the same arithmetic, run on the real generator instead of by hand; the decision to spend effort on the desktop stands, and so does the first condition being spent rather than met. What changes is that the second review condition — the game being played by people who did not build it, on the devices they own — now has a second way to fire: not only a phone the grid never fitted, but a desktop it can outgrow.
 
 ## Context
 

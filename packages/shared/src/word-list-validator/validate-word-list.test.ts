@@ -59,7 +59,7 @@ describe('validateWordList', () => {
 
     it('accepts words at both length boundaries', () => {
       expect(validateWordList(tenWordsWith('cat')).isValid).toBe(true);
-      expect(validateWordList(tenWordsWith('independence')).isValid).toBe(true);
+      expect(validateWordList(tenWordsWith('responsibilities')).isValid).toBe(true);
     });
   });
 
@@ -85,8 +85,8 @@ describe('validateWordList', () => {
       expect(codesOf(tenWordsWith('ox'))).toContain('word-too-short');
     });
 
-    it('rejects a word longer than twelve letters', () => {
-      expect(codesOf(tenWordsWith('extraordinary'))).toContain('word-too-long');
+    it('rejects a word longer than sixteen letters', () => {
+      expect(codesOf(tenWordsWith('misunderstandings'))).toContain('word-too-long');
     });
 
     it('rejects a word written outside the English alphabet', () => {
@@ -107,10 +107,10 @@ describe('validateWordList', () => {
     });
 
     it('reports every offending word, not only the first', () => {
-      const result = validateWordList('ox, yak, яблуко, extraordinary');
+      const result = validateWordList('ox, yak, яблуко, misunderstandings');
       const offenders = result.errors.filter((error) => error.word !== undefined);
 
-      expect(offenders.map((error) => error.word)).toEqual(['ox', 'яблуко', 'extraordinary']);
+      expect(offenders.map((error) => error.word)).toEqual(['ox', 'яблуко', 'misunderstandings']);
     });
   });
 
