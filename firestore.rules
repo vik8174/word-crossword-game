@@ -50,8 +50,8 @@ service cloud.firestore {
     }
 
     // A room is played by exactly two, and the owner alone is in it at
-    // creation, so one seat is left for the guest with the link. The ceiling is
-    // the room screen's `MAX_PLAYERS`, spelled in
+    // creation, so one seat is left for the guest with the link. The size is
+    // the room screen's `PLAYERS_PER_GAME`, spelled in
     // apps/web/src/rooms/room-access.ts. Rules cannot import it, so the two
     // move together by hand — and they have to move together: joining writes
     // `players.<uid>` with no re-read behind it, so a client that stopped at a
