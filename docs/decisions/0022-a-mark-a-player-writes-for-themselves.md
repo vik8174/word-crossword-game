@@ -1,6 +1,8 @@
 # 0022. A mark a player writes for themselves
 
-Status: Accepted
+Status: Accepted, amended by [0025](0025-what-happens-to-the-seat-of-a-player-who-left.md)
+
+[0025](0025-what-happens-to-the-seat-of-a-player-who-left.md) moves one number: a lobby seat may be taken once its mark is **60 seconds** old, not the ninety named in the table below and everywhere the prose repeats it. Everything else here stands, the separation of the two thresholds included — 60 against 45 keeps the reversible reaction apart from the irreversible one, which is what the pair was for. 0025 also states in full what this record left to be assembled from the code: what becomes of a seat in each of the four cases there are, which of them the security rules hold rather than the client, and the two gaps the policy accepts.
 
 ## Context
 

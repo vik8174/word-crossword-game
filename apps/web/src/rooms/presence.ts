@@ -42,16 +42,22 @@ export const AWAY_AFTER_MS = 45_000;
 
 /**
  * How stale a mark has to be before somebody arriving may take that seat, in
- * milliseconds.
+ * milliseconds — four missed write periods.
  *
- * Deliberately much further out than {@link AWAY_AFTER_MS}: the line beside a
- * name is taken back the moment its player writes again, while a seat given
- * away cannot be. People step out of a lobby for a minute at a time — the owner
- * is off in a messenger sending the very link the game needs — and mobile
- * browsers throttle timers in a backgrounded tab, so the threshold that costs
- * something has to be the generous one.
+ * Deliberately further out than {@link AWAY_AFTER_MS}, and that gap is the
+ * point rather than its width: the line beside a name is taken back the moment
+ * its player writes again, while a seat given away cannot be. People step out
+ * of a lobby for a minute at a time — the owner is off in a messenger sending
+ * the very link the game needs — and mobile browsers throttle timers in a
+ * backgrounded tab, so the threshold that costs something is still the slower
+ * of the two.
+ *
+ * Waiting is not free either, and it is the host who pays: while their vanished
+ * guest's seat is held, there is nobody they can give it to. What the whole of
+ * this threshold decides is recorded in
+ * `docs/decisions/0025-what-happens-to-the-seat-of-a-player-who-left.md`.
  */
-export const SEAT_FREE_AFTER_MS = 90_000;
+export const SEAT_FREE_AFTER_MS = 60_000;
 
 /** All this module needs of a player: the two moments they can be dated by. */
 export type SeenPlayer = RoomPlayer<MillisecondTimestamp>;
