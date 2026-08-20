@@ -11,8 +11,19 @@ import type { RoomDocumentShape } from './room-document';
  */
 
 /**
- * Most players a room holds — and, since `MIN_PLAYERS` is the same number, the
- * only size this game is played at.
+ * How many players a game is played by — exactly, with no range underneath.
+ * A third person is not a third player: every word is hidden from one of the
+ * two who were dealt to, so whoever arrives after them has the whole crossword
+ * to read and nothing to guess
+ * (`docs/decisions/0024-two-players-are-the-product-not-the-algorithm.md`).
+ *
+ * This is not `MIN_PLAYERS` from `packages/shared/src/word-assignment`, which
+ * is two as well. That one is the floor of the game's rule — a hidden word
+ * needs somebody left to explain it — and it holds for any number of players
+ * the deal is asked about. This one is the size of the product, and it lives in
+ * `apps/web` because that is what knows how large a game is. The two agree
+ * today by coincidence rather than by derivation, and either could move without
+ * making the other false, so they stay two constants.
  *
  * Mirrored by the `players.size() <= 2` literal in `hasRoomForPlayers`
  * (`firestore.rules`), which is the gate that actually holds: `joinRoom` writes
@@ -21,7 +32,7 @@ import type { RoomDocumentShape } from './room-document';
  * cannot import this, so the two move together by hand — the same convention
  * the floor already follows.
  */
-export const MAX_PLAYERS = 2;
+export const PLAYERS_PER_GAME = 2;
 
 /** All this module needs of a timestamp — Firestore's `Timestamp` satisfies it. */
 export interface MillisecondTimestamp {
@@ -96,10 +107,11 @@ export const roomAccessFor = (room: ReadableRoom, playerId: string, now: Date): 
     return 'started';
   }
 
-  // A seat nobody is sitting in is not a seat taken. The room may be at its
-  // ceiling and still have room for this visitor — see {@link abandonedSeatIn},
-  // which is also what tells the join write whom it is replacing.
-  return Object.keys(room.players).length < MAX_PLAYERS || abandonedSeatIn(room, now) !== null
+  // A seat nobody is sitting in is not a seat taken. The room may already hold
+  // both players and still have room for this visitor — see
+  // {@link abandonedSeatIn}, which is also what tells the join write whom it is
+  // replacing.
+  return Object.keys(room.players).length < PLAYERS_PER_GAME || abandonedSeatIn(room, now) !== null
     ? 'joinable'
     : 'full';
 };
@@ -136,7 +148,7 @@ export const roomAccessFor = (room: ReadableRoom, playerId: string, now: Date): 
  * abandonedSeatIn(room, new Date()); // 'ghost-uid'
  */
 export const abandonedSeatIn = (room: ReadableRoom, now: Date): string | null => {
-  if (room.status !== 'lobby' || Object.keys(room.players).length < MAX_PLAYERS) {
+  if (room.status !== 'lobby' || Object.keys(room.players).length < PLAYERS_PER_GAME) {
     return null;
   }
 

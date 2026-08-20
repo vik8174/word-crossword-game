@@ -5,7 +5,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
-import { MAX_PLAYERS, type RoomPlayerEntry } from '../rooms/room-access';
+import { PLAYERS_PER_GAME, type RoomPlayerEntry } from '../rooms/room-access';
 
 interface PlayerListProps {
   /** Players of the room, in the order they joined. */
@@ -53,11 +53,12 @@ export const PlayerList = ({ players, ownerId, viewerId, awayDurations = {} }: P
       {/* The size, said as a requirement. It can be wrong in either direction:
           `N of 4` read as progress towards a fourth player a game never needed
           (issue #29), and "up to 2" would read as a ceiling, offering a second
-          player this game cannot do without. The floor and the ceiling are the
-          same number, which is what lets the sentence say "exactly" — lifting
-          the ceiling (issue #10) rewords this line, not only the constant. */}
+          player this game cannot do without. Neither is what the number is:
+          a game is played by two, and that is settled rather than pending
+          (docs/decisions/0024-two-players-are-the-product-not-the-algorithm.md),
+          which is what lets the sentence say "exactly". */}
       <Typography variant="body2" color="text.secondary">
-        {`A game is played by exactly ${MAX_PLAYERS} people.`}
+        {`A game is played by exactly ${PLAYERS_PER_GAME} people.`}
       </Typography>
 
       <List dense>
