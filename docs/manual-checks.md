@@ -8,19 +8,22 @@ The list has two parts, because it cannot all happen at one moment: the first pa
 
 ## Before the tag, on stage
 
-<https://word-crossword-game-stage.web.app>, on the release commit, once its deploy is green. Two isolated browser profiles: the host and the guest. A private window is a second profile.
+<https://word-crossword-game-stage.web.app>, on the release commit, once its deploy is green.
 
-Mark both profiles before opening anything else: `https://word-crossword-game-stage.web.app/?internal=1`. Stage is a Firebase project of its own and has its own analytics property, counted the same way production's is.
+Two isolated browser profiles, the host and the guest; a private window is a second profile. Mark both before opening anything else: `https://word-crossword-game-stage.web.app/?internal=1`. Stage is a Firebase project of its own and has its own analytics property, counted the same way production's is. Leave DevTools > Network open on the host, filtered to `collect`.
 
-1. **The widest board.** Create a room with a list including several 13-to-16-letter words. The grid scrolls sideways inside its container and every square is legible; a number sits in the corner of a square without clipping or covering the letter typed into it.
-2. **The words you explain stand apart at a glance.** That the squares are dashed and the letters italic is asserted in the tests; whether the difference is visible without looking for it, on a real screen, is not.
-3. **A word off the right-hand edge can be reached.** Tap it in the panel beside the grid. The grid scrolls far enough that the whole word is actually on screen, which is a layout jsdom has no width to have.
-4. **The clipboard, against a real one.** The tests press **Copy link** against a stubbed `navigator.clipboard` and never touch the system clipboard. Press it here, then paste outside the app: what lands is the room's address. Should the browser refuse instead, the panel says so and the link is still on screen to be selected by hand.
-5. **A guest arrives.** Open the link in the second profile and join. The host's invite panel goes when the guest is in.
-6. **A guest leaves.** Close the guest's tab. Within about a minute the invite panel is back on the host's screen, and the link works again from a third profile.
-7. **Away, and being away.** With both in the room, put one profile offline. Within a minute the other names them as away beside their name, and the offline one is told on its own screen that the room has stopped hearing from it.
-8. **What the telemetry actually sends.** DevTools > Network, filter `collect`, then create a room. The request that leaves carries `room_created` and a word count, and nowhere in its address or its payload is the room id out of your own address bar.
-9. **Play one game to the end**, two profiles, out loud. The finished room says so to both.
+The steps are one session in order. They have to be: the board does not exist until the words are dealt, and a seat stops being given up the moment they are.
+
+1. **Create a room**, with a list including several 13-to-16-letter words.
+2. **The clipboard, against a real one.** The tests press **Copy link** against a stubbed `navigator.clipboard` and never touch the system clipboard. Press it here, then paste outside the app: what lands is the room's address. Should the browser refuse instead, the panel says so and the link is still on screen to be selected by hand.
+3. **What the telemetry just sent.** The `collect` request from creating the room carries a word count, and nowhere in its address or its payload is the room id out of your own address bar.
+4. **A guest arrives.** Open the link in the second profile and join. The host's invite panel goes when the guest is in.
+5. **A guest leaves, while it is still a lobby.** Close the guest's tab. Within about a minute the invite panel is back on the host's screen; reopen the link in that same profile and the guest walks back in. After the deal no seat is ever given up again, so this is the only point in the session where it can be looked at.
+6. **The host starts the game**, and the widest board is drawn. It scrolls sideways inside its container and every square is legible; a number sits in the corner of a square without clipping or covering the letter typed into it.
+7. **The words you explain stand apart at a glance.** That the squares are dashed and the letters italic is asserted in the tests; whether the difference is visible without looking for it, on a real screen, is not.
+8. **A word off the right-hand edge can be reached.** Tap it in the panel beside the grid. The grid scrolls far enough that the whole word is actually on screen, which is a layout jsdom has no width to have.
+9. **Away, and being away.** Put one profile offline. Within a minute the other names them as away beside their name, and the offline one is told on its own screen that the room has stopped hearing from it. Bring it back before the next step.
+10. **Play the game to the end**, out loud, both profiles. The finished room says so to both.
 
 ## After the tag, on production
 
