@@ -4,7 +4,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
-## [1.1.0] - 2026-08-20
+### Added
+
+- Three things a person needs and the tests cannot hold are written down. [`docs/releasing.md`](docs/releasing.md) is the order a version is published in, which until now existed only in the body of the ticket that cut 1.1.0 and would have been reconstructed from memory next time; the `Releasing` section of `CONTRIBUTING.md` now points at it rather than describing a second, shorter version of the same thing. [`docs/manual-checks.md`](docs/manual-checks.md) is the check by hand that was being reinvented, differently and incompletely, in every ticket that needed one — and that has found what the tests did not five times in this project. It is in two parts because it cannot all happen at once: what is looked at on stage before the tag, which stands on its own, and what only exists after a tag has deployed production, beginning with marking the browser profile as internal, since a visit made before that mark is counted forever. [`docs/known-limits.md`](docs/known-limits.md) gathers the seven limits that were scattered across six places, each pointing at the record that accepted it and naming what would lift it — or saying plainly that nothing is going to, and how, rather than naming a ticket that does not exist ([issue #81](https://github.com/vik8174/word-crossword-game/issues/81))
+
+### Fixed
+
+- The changelog entry for 1.1.0 is dated the day it was released, 2026-08-21, rather than the day its preparation started. The release commit and the tag are both from the 21st; the session that wrote the section down began on the 20th and ran past midnight ([issue #81](https://github.com/vik8174/word-crossword-game/issues/81))
+
+## [1.1.0] - 2026-08-21
 
 ### Added
 

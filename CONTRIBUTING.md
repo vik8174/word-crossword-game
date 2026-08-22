@@ -17,6 +17,7 @@ Everything committed to this repository is written in **English** — README, CH
 2. Code review: run the `code-reviewer` agent (zero-context review against `~/.claude/rules/code-review.md`) and address Critical/Important findings
 3. Linting, tests, and the coverage check must pass locally
 4. If the change touches `firestore.rules`, run `pnpm test:rules` locally as well — CI runs it too, but the emulator is slower to fail than you are
+5. Whatever needed a pair of eyes rather than an assertion, check by hand — and before a release check by hand from [`docs/manual-checks.md`](docs/manual-checks.md) rather than from memory, which is how the same check kept being reinvented, differently, in every ticket
 
 ## CI (GitHub Actions)
 
@@ -43,13 +44,7 @@ A deploy publishes the app and `firestore.rules` together, and never gets cancel
 
 ## Releasing
 
-The version lives in one place — the `version` field of the root `package.json` — and a tag has to name it. To cut a release:
-
-1. In a pull request: bump `version` in the root `package.json`, and turn the `[Unreleased]` section of `CHANGELOG.md` into a numbered one with today's date, leaving a fresh empty `[Unreleased]` above it. Known limitations that ship with the release are named there rather than left for whoever plays it to find
-2. Merge it, and let the stage deploy go green
-3. Tag that commit `v<version>` and push the tag: `git tag v1.0.0 && git push origin v1.0.0`
-
-A tag that does not match the version in `package.json` deploys nothing and says so — the release job checks the pair before it builds. Move the tag or bump the version and push again.
+The whole order of a release — what a version is, which files carry it, when the tag goes on and what is checked afterwards — is in [`docs/releasing.md`](docs/releasing.md), and only there. A release is rare enough that nobody remembers it, so it is written down once rather than described in three places that would drift apart.
 
 ## Architecture decisions (ADRs)
 
