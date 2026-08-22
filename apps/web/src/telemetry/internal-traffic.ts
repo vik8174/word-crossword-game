@@ -27,6 +27,8 @@
  * bookkeeping, not access control.
  */
 
+import { storageFor } from '../storage/local-storage';
+
 /**
  * Where the mark lives — one key in the profile's own storage, which is the
  * only thing that both survives a reload and does not travel in a link.
@@ -45,28 +47,14 @@ const MARK = { on: '1', off: '0' } as const;
 /**
  * Uses the profile's storage and lets nothing out of it reach the game.
  *
- * Reaching for `localStorage` is not always answered with an empty store: in a
- * private window and with cookies switched off the property access itself
- * throws, which is why the access is inside the `try` rather than above it.
- * Telemetry in this app is never allowed to fail loudly — see `quietly` in
- * `analytics.ts` — and that holds here too. A game whose browser has nowhere to
- * keep the mark is played exactly as before; its analytics is simply not
- * marked.
- *
- * @param what - What was being done, for the warning if it goes wrong
- * @param access - The work to do with the storage
- * @param fallback - What to answer when the storage cannot be used
- * @returns The result of `access`, or `fallback` if it threw
+ * A browser that cannot be reached for storage at all — a private window,
+ * cookies switched off — is what `storage/local-storage.ts` exists to survive,
+ * and telemetry in this app is never allowed to fail loudly (see `quietly` in
+ * `analytics.ts`) either way. A game whose browser has nowhere to keep the mark
+ * is played exactly as before; its analytics is simply not marked, and the
+ * warning that says so is the analytics' own.
  */
-const inStorage = <T>(what: string, access: (store: Storage) => T, fallback: T): T => {
-  try {
-    return access(window.localStorage);
-  } catch (error) {
-    console.warn(`Analytics: ${what} failed`, error);
-
-    return fallback;
-  }
-};
+const inStorage = storageFor('Analytics');
 
 /**
  * Whether this browser profile has been marked as internal.

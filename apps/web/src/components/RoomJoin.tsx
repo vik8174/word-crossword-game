@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { wasRefusedByRules } from '../firebase/refusal';
 import { type ActionPhase, failureOf, IDLE } from '../rooms/action-phase';
 import { normalizeNickname } from '../rooms/nickname';
+import { rememberNickname } from '../rooms/nickname-store';
 import { joinRoom } from '../rooms/room-service';
 import { logGameEvent } from '../telemetry/analytics';
 import { JoinRoomForm } from './JoinRoomForm';
@@ -53,14 +54,16 @@ export const RoomJoin = ({ roomId, playerId, seatToRelease, onRefused }: RoomJoi
 
   const submitJoin = async (rawNickname: string) => {
     setJoin({ phase: 'submitting' });
+    const nickname = normalizeNickname(rawNickname);
 
     try {
-      await joinRoom({
-        roomId,
-        playerId,
-        nickname: normalizeNickname(rawNickname),
-        seatToRelease,
-      });
+      await joinRoom({ roomId, playerId, nickname, seatToRelease });
+
+      // The name is remembered for the next game once this one has really been
+      // joined, and never before: a refused or unreachable write leaves nothing
+      // behind, exactly as it leaves the room (issue #75). It goes into this
+      // browser's own storage and nowhere else.
+      rememberNickname(nickname);
 
       // Only a player who is really in the room. The nickname they chose is not
       // part of the event, and could not be — see `telemetry/analytics.ts`.

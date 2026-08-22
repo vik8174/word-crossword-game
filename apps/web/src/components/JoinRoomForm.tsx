@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
+import { readRememberedNickname } from '../rooms/nickname-store';
 
 interface JoinRoomFormProps {
   /** Called with the raw nickname once it is worth submitting. */
@@ -24,6 +25,10 @@ interface JoinRoomFormProps {
  * anonymously by the time this form appears, because reading the room required
  * it, so all that is left to ask is what to call them.
  *
+ * Somebody who has played here before is asked with their last name already in
+ * the field: offered, not imposed, since the field is theirs to rewrite and
+ * what they leave in it is what gets remembered next (issue #75).
+ *
  * @param props.onJoin - Receives the nickname when the player submits a valid one
  * @param props.errorMessage - Message about a join that was refused
  *
@@ -31,7 +36,12 @@ interface JoinRoomFormProps {
  * <JoinRoomForm onJoin={join} isJoining={false} />
  */
 export const JoinRoomForm = ({ onJoin, isJoining, errorMessage }: JoinRoomFormProps) => {
-  const [nickname, setNickname] = useState('');
+  // Read once, and only once: this form lives inside a room that is rebuilt on
+  // every snapshot, and a live room produces one every fifteen seconds from
+  // each client marking itself present. The lazy form of `useState` is what
+  // keeps that from being a read of the storage per render whose answer is
+  // thrown away.
+  const [nickname, setNickname] = useState(readRememberedNickname);
 
   return (
     <Box

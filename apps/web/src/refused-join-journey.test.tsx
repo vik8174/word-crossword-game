@@ -156,6 +156,10 @@ const joinAs = async (nickname: string) => {
 };
 
 beforeEach(() => {
+  // A nickname a game was played under is remembered in this profile's own
+  // storage (issue #75), which jsdom keeps for the whole file: emptied here so
+  // no test is handed a form the one before it filled in.
+  window.localStorage.clear();
   vi.mocked(updateDoc).mockResolvedValue(undefined);
   vi.mocked(onSnapshot).mockImplementation(((_reference: unknown, onNext: typeof emitRoom) => {
     emitRoom = onNext;
