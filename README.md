@@ -107,6 +107,8 @@ Two environments, and two Firebase projects that share nothing — not a databas
 | `stage`      | `word-crossword-game-stage` | <https://word-crossword-game-stage.web.app> | every merge to `main` |
 | `production` | `word-crossword-game-prod`  | <https://word-crossword-game-prod.web.app>  | a `v*` release tag    |
 
+A release is what moves production, and the order it goes in — the version, the changelog, the tag, and what is checked before and after it — is in [`docs/releasing.md`](docs/releasing.md).
+
 `.github/workflows/deploy.yml` does both, and nothing else deploys anywhere. Stage moves on its own so that what is live is what `main` says; production moves only when somebody tags a release, so shipping stays a deliberate act. Each deploy publishes the app **and** `firestore.rules` in one command: the rules are the whole of the access control here, so a database running the app without them would be a database with the wrong rules on it.
 
 One name decides everything about a deploy — `stage` or `production`, worked out from the ref that triggered it. It is the GitHub environment whose secrets the build is given, the `.firebaserc` alias the deploy names, and the value of `VITE_SENTRY_ENVIRONMENT` the errors are tagged with. There is one of it, so the three cannot drift apart. See [ADR 0020](docs/decisions/0020-two-environments-and-a-deploy-that-runs-itself.md).
@@ -187,3 +189,6 @@ word-crossword-game/
 - Product specification: [PRD (issue #1)](https://github.com/vik8174/word-crossword-game/issues/1)
 - Architecture decisions: [`docs/decisions/`](docs/decisions/)
 - Development process, tests, linting, CI: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+- How a version is published: [`docs/releasing.md`](docs/releasing.md)
+- What has to be looked at by a person: [`docs/manual-checks.md`](docs/manual-checks.md)
+- What is a known limit rather than a defect: [`docs/known-limits.md`](docs/known-limits.md)
