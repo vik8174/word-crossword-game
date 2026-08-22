@@ -7,6 +7,7 @@ import { type CrosswordLayout, generateCrossword, validateWordList } from 'share
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm } from '../components/WordListForm';
 import { normalizeNickname } from '../rooms/nickname';
+import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
 import { roomPath } from '../rooms/room-link';
 import { createRoom } from '../rooms/room-service';
 import { logGameEvent } from '../telemetry/analytics';
@@ -56,7 +57,10 @@ export const CreateRoomPage = () => {
   useScreenReached('create');
 
   const navigate = useNavigate();
-  const [nickname, setNickname] = useState('');
+  // The field this fills is `WordListForm`'s, which is controlled: its value
+  // has one source of truth and this is it. Read lazily, so the storage is not
+  // asked again on every render of a form that re-renders as its owner types.
+  const [nickname, setNickname] = useState(readRememberedNickname);
   const [rawWords, setRawWords] = useState('');
   const [creation, setCreation] = useState<CreationPhase>({ phase: 'editing' });
 
@@ -65,8 +69,16 @@ export const CreateRoomPage = () => {
   const create = async (layout: CrosswordLayout) => {
     setCreation({ phase: 'creating' });
 
+    const ownerNickname = normalizeNickname(nickname);
+
     try {
-      const roomId = await createRoom({ layout, ownerNickname: normalizeNickname(nickname) });
+      const roomId = await createRoom({ layout, ownerNickname });
+
+      // After the write, and the very text that went into the room: a name
+      // nobody ever played under is not worth offering back, and a host who
+      // creates most of the rooms would otherwise be the one player whose name
+      // is never remembered (issue #75).
+      rememberNickname(ownerNickname);
 
       // After the write came back, so a room that was never created is never
       // counted as one. The size of the crossword travels with it; the id and

@@ -4,6 +4,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+### Added
+
+- A player's name is remembered between games. Somebody who plays twice used to type the same name twice, there being no accounts to hold it — so the browser holds it: the name a room was created or joined under is kept in that profile's own storage and offered back into both nickname fields, the host's on `/create` and the guest's behind the invite link. Both of them, because the host is the likeliest person in this game to make a second room, and a memory only the guest's form wrote to would have left exactly one player never offered their own name. It is offered rather than imposed — the field is the player's to rewrite, and what they rewrite it to is what the next game is offered. The name is remembered once the write has come back rather than as it is typed, so a room that was never created and a join the room turned down leave nothing behind: what is worth offering back is a name somebody really played under. What comes back out is treated like anything else from outside the app — a stored value the nickname rules would refuse, one kept before the rules were what they are, is read as no name at all, so no field is ever filled with something the button then refuses to act on, and that filter lives in the store rather than in each of the two forms reading it. A browser with nowhere to keep a name, a private window or one with cookies switched off, is asked for a name on an unbroken screen exactly as before: reaching for storage there throws instead of answering empty, which is now survived in one place that the internal-traffic mark uses too. The name goes into that profile's own field and nowhere else, never into an analytics event and never into Sentry ([issue #75](https://github.com/vik8174/word-crossword-game/issues/75), [ADR 0023](docs/decisions/0023-a-screen-name-is-text-that-has-been-redacted.md))
+
 ## [1.1.0] - 2026-08-20
 
 ### Added

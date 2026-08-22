@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { logEvent } from 'firebase/analytics';
 import { signInAnonymously } from 'firebase/auth';
 import { addDoc } from 'firebase/firestore';
@@ -100,6 +100,10 @@ const reportedEvents = () =>
 const reportedActions = () => reportedEvents().filter(({ name }) => name !== 'screen_reached');
 
 beforeEach(() => {
+  // The nickname of the last room created is remembered in this profile's own
+  // storage (issue #75), which jsdom keeps for the whole file: emptied here so
+  // no test is handed a field the one before it filled in.
+  window.localStorage.clear();
   vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
   vi.mocked(addDoc).mockResolvedValue({ id: 'room-1' } as never);
 });
@@ -194,6 +198,34 @@ describe('CreateRoomPage', () => {
       expect(await screen.findByText(/could not be created/i)).toBeInTheDocument();
       expect(screen.queryByText(/you are in room/i)).not.toBeInTheDocument();
       expect(screen.getByLabelText(/words/i)).toHaveValue(TEN_WORDS);
+    });
+  });
+
+  describe('the name the owner is asked for', () => {
+    it('is filled in with the name their last room was created under', async () => {
+      renderPage();
+      fillInValidGame();
+      fireEvent.click(createButton());
+      await insideRoom();
+      cleanup();
+
+      renderPage();
+
+      expect(screen.getByLabelText(/nickname/i)).toHaveValue('Vik');
+    });
+
+    it('is left empty after a room that could not be written', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.mocked(addDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+      renderPage();
+      fillInValidGame();
+      fireEvent.click(createButton());
+      await screen.findByText(/could not be created/i);
+      cleanup();
+
+      renderPage();
+
+      expect(screen.getByLabelText(/nickname/i)).toHaveValue('');
     });
   });
 

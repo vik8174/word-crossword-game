@@ -85,6 +85,10 @@ const createRoom = () => {
 };
 
 beforeEach(() => {
+  // A nickname a game was played under is remembered in this profile's own
+  // storage (issue #75), which jsdom keeps for the whole file: emptied here so
+  // no test is handed a form the one before it filled in.
+  window.localStorage.clear();
   vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
   vi.mocked(addDoc).mockResolvedValue({ id: 'room-1' } as never);
   vi.mocked(onSnapshot).mockImplementation(((_reference: unknown, onNext: typeof emitRoom) => {
