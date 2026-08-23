@@ -16,9 +16,9 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.0.10
+      - uses: actions/setup-node@v7.0.0
         with:
           node-version: 22
           cache: pnpm
@@ -29,9 +29,9 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.0.10
+      - uses: actions/setup-node@v7.0.0
         with:
           node-version: 22
           cache: pnpm
@@ -42,9 +42,9 @@ jobs:
     name: Coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.0.10
+      - uses: actions/setup-node@v7.0.0
         with:
           node-version: 22
           cache: pnpm
@@ -55,9 +55,9 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.0.10
+      - uses: actions/setup-node@v7.0.0
         with:
           node-version: 22
           cache: pnpm
@@ -70,15 +70,15 @@ jobs:
     name: Rules
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.0.10
+      - uses: actions/setup-node@v7.0.0
         with:
           node-version: 22
           cache: pnpm
       # The Firestore emulator runs on the JVM. `firebase-tools` drops support
       # for Java below 21 in its next major version.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5.7.0
         with:
           distribution: temurin
           java-version: 21
