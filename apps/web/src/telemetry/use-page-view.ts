@@ -8,7 +8,7 @@ import { pageViewFor } from './page-view';
  * Reports every page the visitor opens, including the ones they reach without
  * loading anything.
  *
- * Firebase's own page view is switched off (see `ANALYTICS_SETTINGS` in
+ * Firebase's own page view is switched off (see `analyticsSettings` in
  * `analytics.ts`), for two reasons that point the same way. It carries the
  * address bar verbatim, room id included. And it fires once, at load: in an
  * app that routes on the client, that would report the first page of a session
