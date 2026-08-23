@@ -24,6 +24,7 @@ The steps are one session in order. They have to be: the board does not exist un
 8. **A word off the right-hand edge can be reached.** Tap it in the panel beside the grid. The grid scrolls far enough that the whole word is actually on screen, which is a layout jsdom has no width to have.
 9. **Away, and being away.** Put one profile offline. Within a minute the other names them as away beside their name, and the offline one is told on its own screen that the room has stopped hearing from it. Bring it back before the next step.
 10. **Play the game to the end**, out loud, both profiles. The finished room says so to both.
+11. **A name the browser remembers.** The nickname field was empty on each profile's first visit. Open `/create` in the host's profile now that a game has been played: the field comes back filled with the name it was played under, offered rather than imposed, and it is the player's to rewrite.
 
 ## After the tag, on production
 

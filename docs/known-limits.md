@@ -9,7 +9,7 @@ The board is generated from the word list before anyone joins, so its width foll
 Recorded in [ADR 0017](decisions/0017-desktop-first-while-the-grid-outgrows-a-phone.md). Lifted by: nothing yet. How the board should be drawn instead is 0017's open question, and what reopens it is its second review condition, the game being played by people who did not build it on the devices they own.
 
 **A host who lost their browser identity cannot be recognised as the host.**
-A player is a UID issued per browser profile, so clearing site data, switching profile or reopening the link in a private window comes back as somebody else. The host's seat is the one seat nothing ever frees, so it is held for a UID no browser can produce any more, and the room lives out its 24 hours unable to start.
+A player is a UID issued per browser profile, so clearing site data, switching profile or reopening the link in a private window comes back as somebody else. Clearing site data takes the remembered nickname with it, `word-crossword-game:nickname` sitting beside `word-crossword-game:traffic-type` in the same storage, so a browser that stops being the host stops being marked and stops knowing its own name in one move. The host's seat is the one seat nothing ever frees, so it is held for a UID no browser can produce any more, and the room lives out its 24 hours unable to start.
 Recorded in [ADR 0025](decisions/0025-what-happens-to-the-seat-of-a-player-who-left.md). Lifted by: real sign-in, which [the PRD](https://github.com/vik8174/word-crossword-game/issues/1) rules out for the MVP. Nothing is planned, and the browser that made a room is the browser that plays in it.
 
 **A guest who never comes back after the words are dealt leaves a game that cannot end.**
