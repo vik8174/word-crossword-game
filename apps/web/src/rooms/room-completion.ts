@@ -16,10 +16,17 @@ import { buildRoomUpdate, isWordSolved, type RoomUpdate, wordIdAt } from './room
  * client that can see that writes the same `status: 'completed'`, which is why
  * several of them doing it at once is harmless — the value does not depend on
  * who wrote it (see `docs/decisions/0012-ending-a-game-from-the-received-state.md`).
+ *
+ * A game also ends the other way, and that one is a decision rather than a
+ * reading: a player who cannot finish the crossword ends it, and the room takes
+ * `status: 'closed'` instead. That value *does* depend on who wrote it, which
+ * is why the security rules refuse to move a room out of either ending — the
+ * two writes can meet in the same second, and only one of them may land
+ * (`docs/decisions/0027-a-game-a-player-can-end.md`).
  */
 
 /**
- * The update that closes a game.
+ * The update that ends a game whose crossword was filled in.
  *
  * `status: 'completed'` is the whole of it, and it is the same value from
  * whichever client writes it — which is what makes several of them writing it
@@ -35,6 +42,29 @@ import { buildRoomUpdate, isWordSolved, type RoomUpdate, wordIdAt } from './room
  */
 export const buildCompletionUpdate = (now: Date): RoomUpdate =>
   buildRoomUpdate({ status: 'completed' }, now);
+
+/**
+ * The update that ends a game before its crossword was filled in.
+ *
+ * The neighbour of {@link buildCompletionUpdate}, and a different value on
+ * purpose: this room's crossword was not finished, and a document saying
+ * `completed` about it would be describing a game that did not happen. What
+ * follows from the difference is the whole of the screen a closed room shows.
+ *
+ * Unlike its neighbour this value is not one every client would arrive at on
+ * its own — one player pressed a button — so two of them writing different
+ * endings in the same second is a real possibility, and the security rules
+ * settle it by refusing to move a room out of the ending that landed first
+ * (`docs/decisions/0027-a-game-a-player-can-end.md`).
+ *
+ * @param now - The moment the game was ended; the room's new expiry follows from it
+ * @returns Field and value for a single `updateDoc` call
+ *
+ * @example
+ * buildEarlyEndUpdate(new Date());
+ */
+export const buildEarlyEndUpdate = (now: Date): RoomUpdate =>
+  buildRoomUpdate({ status: 'closed' }, now);
 
 /**
  * Whether every word of the crossword has been answered.
@@ -83,6 +113,13 @@ export const awaitsCompletion = (room: ReadableRoom): boolean =>
  *
  * The status is still half the answer: `completed` is terminal in the rules, so
  * a room carrying it is closed whether or not its grid was ever filled.
+ *
+ * The other terminal status answers `false` here, and by the same rule rather
+ * than by a case of its own: a room whose players ended it says `closed`, which
+ * is not `completed`. It reads that way even in the one room where the board
+ * happens to be full — a last answer and an ending pressed in the same second,
+ * with the ending landing first. The document says the game was ended, so that
+ * is what the screen says too.
  *
  * @param room - The room document as read from Firestore
  * @returns `true` when the room is closed and its board really is full

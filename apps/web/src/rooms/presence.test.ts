@@ -123,10 +123,13 @@ describe('awaitsPresenceFrom', () => {
     expect(awaitsPresenceFrom(roomWith({ bob: player }), 'stranger-uid')).toBe(false);
   });
 
-  it('wants nothing once the game is over', () => {
-    // Nobody is waiting on anybody in a finished room, and every write pushes
-    // its expiry another 24 hours out — a tab left on the final screen would
-    // keep the room alive for good.
+  it('wants nothing once the game is over, whichever way it ended', () => {
+    // Nobody is waiting on anybody in a room that has ended, and every write
+    // pushes its expiry another 24 hours out — a tab left on the final screen
+    // would keep the room alive for good. That is also what makes a game
+    // somebody ended actually go away within the day rather than living on for
+    // as long as the last tab stays open.
     expect(awaitsPresenceFrom(roomWith({ bob: player }, 'completed'), 'bob')).toBe(false);
+    expect(awaitsPresenceFrom(roomWith({ bob: player }, 'closed'), 'bob')).toBe(false);
   });
 });

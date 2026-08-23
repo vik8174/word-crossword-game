@@ -1390,7 +1390,7 @@ describe('RoomPage', () => {
 
       expectNoHiddenWordOnScreen(room);
       expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
-      expect(screen.getByText(/this room is closed/i)).toBeInTheDocument();
+      expect(screen.getByText(/ended before every word had been answered/i)).toBeInTheDocument();
     });
 
     it('says of a closed room that the reader keeps only the words they explained', async () => {
@@ -1421,7 +1421,9 @@ describe('RoomPage', () => {
       await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
       expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
-      expect(screen.queryByText(/this room is closed/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/ended before every word had been answered/i),
+      ).not.toBeInTheDocument();
     });
 
     it('says nothing about the finished game the room could not be told about', async () => {
@@ -1434,6 +1436,194 @@ describe('RoomPage', () => {
       // room closes the game — a message here would only be noise.
       await waitFor(() => expect(updateDoc).toHaveBeenCalled());
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('ending the game early', () => {
+    // The situation this control exists for: Bob has `cat` to guess and Vik has
+    // `car`, and one of them is never coming back to answer theirs.
+    const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
+    const openWords = {
+      w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+      w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+    };
+    const catAnswered = { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: 'guest-uid' };
+
+    const gameInProgress = (overrides: Record<string, unknown> = {}) =>
+      storedRoom({
+        status: 'playing',
+        layout: TWO_WORD_LAYOUT,
+        players: bothPlayers,
+        words: openWords,
+        ...overrides,
+      });
+
+    const endButton = () => screen.getByRole('button', { name: /^end the game$/i });
+    const confirmation = () => screen.getByRole('dialog');
+
+    /** Presses the control and answers the question it asks. */
+    const endTheGame = async () => {
+      fireEvent.click(endButton());
+
+      await act(async () => {
+        fireEvent.click(within(confirmation()).getByRole('button', { name: /^end the game$/i }));
+      });
+    };
+
+    /** Opens the room as its host rather than as the guest everything else runs as. */
+    const openRoomAsOwner = async (room: unknown) => {
+      vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
+
+      await openRoom(room);
+    };
+
+    it('asks before it ends anything, and says what ending costs', async () => {
+      await openRoom(gameInProgress());
+
+      fireEvent.click(endButton());
+
+      // One sentence, true whether or not the other player is still there: a
+      // snapshot arrives every fifteen seconds and could flip that reading
+      // while the question is on screen.
+      expect(
+        within(confirmation()).getByText(/ends the game for both of you/i),
+      ).toBeInTheDocument();
+      expect(within(confirmation()).getByText(/no way back/i)).toBeInTheDocument();
+      expect(gameWrites()).toEqual([]);
+    });
+
+    it('ends nothing for the player who changes their mind', async () => {
+      await openRoom(gameInProgress());
+
+      fireEvent.click(endButton());
+      fireEvent.click(within(confirmation()).getByRole('button', { name: /keep playing/i }));
+
+      expect(gameWrites()).toEqual([]);
+      expect(screen.getByText(/the game is on/i)).toBeInTheDocument();
+    });
+
+    it('writes the ending as its own status, not as a finished game', async () => {
+      await openRoom(gameInProgress());
+
+      await endTheGame();
+
+      expect(gameWrites()).toEqual([
+        [expect.anything(), expect.objectContaining({ status: 'closed' })],
+      ]);
+    });
+
+    it("is the guest's way out as much as the host's", async () => {
+      // Either of them can be the one left alone with a crossword nobody can
+      // finish, so the control belongs to both. The test above is the guest;
+      // this one is the host, in the same room.
+      await openRoomAsOwner(gameInProgress());
+
+      await endTheGame();
+
+      expect(gameWrites()).toEqual([
+        [expect.anything(), expect.objectContaining({ status: 'closed' })],
+      ]);
+    });
+
+    it('reports an ended game apart from a finished one, by the same two counts', async () => {
+      await openRoom(gameInProgress());
+
+      await endTheGame();
+
+      await waitFor(() => {
+        expect(reportedActions()).toEqual([
+          { name: 'game_closed', params: { word_count: 2, player_count: 2 } },
+        ]);
+      });
+      expect(JSON.stringify(reportedEvents())).not.toContain('room-1');
+      expect(JSON.stringify(reportedEvents())).not.toContain('cat');
+    });
+
+    it('takes the other player to the closed room on the next snapshot, with no reload', async () => {
+      // Nobody presses anything on this screen: Vik ended it elsewhere and the
+      // subscription is what tells Bob.
+      await openRoom(gameInProgress({ words: { w0: catAnswered, w1: openWords.w1 } }));
+      expect(screen.getByText(/the game is on/i)).toBeInTheDocument();
+
+      await act(async () => {
+        emitRoom({
+          exists: () => true,
+          data: () =>
+            gameInProgress({ status: 'closed', words: { w0: catAnswered, w1: openWords.w1 } }),
+        });
+      });
+
+      expect(screen.getByText(/ended before every word had been answered/i)).toBeInTheDocument();
+      expect(screen.queryByText(/the game is on/i)).not.toBeInTheDocument();
+    });
+
+    it('keeps the words that were answered on the board and spells out no others', async () => {
+      // `cat` was answered, so it stays in the grid for everybody; `car` was
+      // Bob's to explain and was on his screen all game. Nothing else appears,
+      // and no word hidden from him is named anywhere on the page.
+      const room = gameInProgress({
+        status: 'closed',
+        words: { w0: catAnswered, w1: openWords.w1 },
+      });
+
+      await openRoom(room);
+
+      expect(gridLetters()).toBe('CATAR');
+      expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
+    });
+
+    it('spells nothing out in a room ended before a single word was answered', async () => {
+      const room = gameInProgress({ status: 'closed' });
+
+      await openRoom(room);
+
+      expectNoHiddenWordOnScreen(room);
+      expect(screen.queryAllByRole('textbox')).toHaveLength(0);
+    });
+
+    it('writes nothing at all in a room that has ended, not even a presence mark', async () => {
+      // Marks stop with the game, which is what lets an ended room actually
+      // expire: every write pushes its 24 hours out again, so a tab left on a
+      // room that went on being marked would keep it alive for good.
+      await openRoom(gameInProgress({ status: 'closed' }));
+
+      expect(updateDoc).not.toHaveBeenCalled();
+    });
+
+    const withoutTheControl: readonly [string, () => unknown][] = [
+      ['the words have not been dealt out yet', () => storedRoom({ players: bothPlayers })],
+      ['the room has already ended', () => gameInProgress({ status: 'closed' })],
+      [
+        'the crossword was finished',
+        () =>
+          gameInProgress({
+            status: 'completed',
+            words: {
+              w0: catAnswered,
+              w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: 'owner-uid' },
+            },
+          }),
+      ],
+    ];
+
+    it.each(withoutTheControl)('offers no way to end a game when %s', async (_name, room) => {
+      await openRoom(room());
+
+      expect(screen.queryByRole('button', { name: /end the game/i })).not.toBeInTheDocument();
+    });
+
+    it('says so when the room would not take the ending', async () => {
+      const reported = failEveryWriteWith(REFUSED_BY_RULES);
+      await openRoom(gameInProgress());
+
+      await endTheGame();
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(/could not be ended/i);
+      // Nothing is reported about a game that did not end.
+      expect(reportedActions()).toEqual([]);
+      // And the button is offered again: the room is still on this screen.
+      expect(endButton()).toBeEnabled();
+      expect(reported).toHaveBeenCalled();
     });
   });
 

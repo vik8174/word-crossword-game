@@ -4,6 +4,7 @@ import type { MillisecondTimestamp, ReadableRoom } from './room-access';
 import {
   awaitsCompletion,
   buildCompletionUpdate,
+  buildEarlyEndUpdate,
   isEveryWordGuessed,
   isGameFinished,
 } from './room-completion';
@@ -109,6 +110,15 @@ describe('awaitsCompletion', () => {
     expect(awaitsCompletion(room)).toBe(false);
   });
 
+  it('asks for nothing once a player has ended the game', () => {
+    // What stops every client in the room retrying an ending the rules refuse:
+    // a room somebody closed is over, full board or not, and this is the one
+    // question that decides whether the automatic ending keeps trying.
+    const closed = roomWith({ cat: guessedBy('owner-uid') }, 'closed');
+
+    expect(awaitsCompletion(closed)).toBe(false);
+  });
+
   it('does not care which player answered which word', () => {
     // The board is the whole question. Who was last to answer — the thing a
     // client cannot know about a room two people are writing to at once — is
@@ -150,6 +160,21 @@ describe('isGameFinished', () => {
 
     expect(isGameFinished(room)).toBe(false);
   });
+
+  it('is false for a game a player ended, whatever its board says', () => {
+    // The second case is the race the rules settle: the last answer and an
+    // ending land in the same second and the ending wins, so the board is full
+    // under a status saying the game was ended. The document is what happened,
+    // so the crossword is not celebrated and not spelled out.
+    const halfPlayed = roomWith({ cat: guessedBy('owner-uid'), dog: unguessed }, 'closed');
+    const fullBoard = roomWith(
+      { cat: guessedBy('owner-uid'), dog: guessedBy('guest-uid') },
+      'closed',
+    );
+
+    expect(isGameFinished(halfPlayed)).toBe(false);
+    expect(isGameFinished(fullBoard)).toBe(false);
+  });
 });
 
 describe('buildCompletionUpdate', () => {
@@ -168,6 +193,28 @@ describe('buildCompletionUpdate', () => {
     // without postponing it would be the last write it ever took.
     expect(buildCompletionUpdate(CLOSED_AT).expiresAt).toEqual(
       new Date(CLOSED_AT.getTime() + ROOM_LIFETIME_MS),
+    );
+  });
+});
+
+describe('buildEarlyEndUpdate', () => {
+  const ENDED_AT = new Date('2026-01-02T09:00:00.000Z');
+
+  it('writes the ending as its own status, not as the finished one', () => {
+    // The whole of the decision this ticket carries: a room somebody walked out
+    // of must not be a document claiming its crossword was completed.
+    expect(buildEarlyEndUpdate(ENDED_AT)).toMatchObject({ status: 'closed' });
+  });
+
+  it('says nothing else about the game on its way out', () => {
+    expect(Object.keys(buildEarlyEndUpdate(ENDED_AT)).filter((key) => key !== 'expiresAt')).toEqual(
+      ['status'],
+    );
+  });
+
+  it('keeps the room alive long enough for both players to read the ending', () => {
+    expect(buildEarlyEndUpdate(ENDED_AT).expiresAt).toEqual(
+      new Date(ENDED_AT.getTime() + ROOM_LIFETIME_MS),
     );
   });
 });

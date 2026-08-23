@@ -10,7 +10,7 @@ import {
 import { assignWords, type CrosswordLayout } from 'shared';
 
 import { auth, db } from '../firebase/config';
-import { buildCompletionUpdate } from './room-completion';
+import { buildCompletionUpdate, buildEarlyEndUpdate } from './room-completion';
 import {
   buildGuessUpdate,
   buildJoinUpdate,
@@ -276,4 +276,24 @@ export const recordGuess = async ({
  */
 export const completeGame = async (roomId: string): Promise<void> => {
   await writeToRoom(roomId, buildCompletionUpdate(new Date()));
+};
+
+/**
+ * Ends a game that is still on, for every screen at once.
+ *
+ * The opposite kind of write to {@link completeGame} in every way but its
+ * shape: one player decided this, at a moment of their choosing, and no other
+ * client would have arrived at it. It is called once, from the button that
+ * asked them to confirm — never retried, because a refusal here means the room
+ * has already ended and there is nothing left to end.
+ *
+ * @param roomId - Id of the room whose game is being ended
+ * @throws Error from Firebase when the write is rejected — an expired room, a
+ * room that ended a moment earlier, or a connection that never came back
+ *
+ * @example
+ * await endGameEarly('room-1');
+ */
+export const endGameEarly = async (roomId: string): Promise<void> => {
+  await writeToRoom(roomId, buildEarlyEndUpdate(new Date()));
 };

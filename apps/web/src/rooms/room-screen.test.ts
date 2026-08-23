@@ -66,7 +66,7 @@ const ANSWERED_WORDS = {
 };
 
 interface RoomOptions {
-  readonly status?: 'lobby' | 'playing' | 'completed';
+  readonly status?: 'lobby' | 'playing' | 'completed' | 'closed';
   readonly players?: Record<string, ReturnType<typeof player>>;
   readonly words?: Record<string, { hiddenFromPlayerId: string; guessedByPlayerId: string | null }>;
   readonly expiresAtMillis?: number;
@@ -145,6 +145,11 @@ describe('roomScreenFor', () => {
         }),
         'finished',
       ],
+      [
+        'ended by one of its players, for a stranger with the link',
+        roomWith({ status: 'closed', players: { 'owner-uid': player('Vik') } }),
+        'finished',
+      ],
       ['full, for a third player', roomWith({ players: strangersInBothSeats }), 'full'],
     ];
 
@@ -192,6 +197,11 @@ describe('roomScreenFor', () => {
         roomWith({ status: 'completed', players: bothPlayers, words: OPEN_WORDS }),
         'closed-early',
       ],
+      [
+        'ended by one of its players',
+        roomWith({ status: 'closed', players: bothPlayers, words: OPEN_WORDS }),
+        'closed-early',
+      ],
     ];
 
     it.each(cases)('shows the %s room', (_name, room, kind) => {
@@ -207,6 +217,22 @@ describe('roomScreenFor', () => {
 
       expect(roomScreenFor(ready(spoiled), NOW).kind).toBe('closed-early');
       expect(roomScreenFor(ready(played), NOW).kind).toBe('finished');
+    });
+
+    it('shows the ending a player wrote without asking the board about it', () => {
+      // `closed` is the room saying what happened, and no client can fake a
+      // better answer by filling the grid: even the board that came out full —
+      // a last answer and an ending landing in the same second — reads as the
+      // ending it was written as.
+      const ended = roomWith({ status: 'closed', players: bothPlayers, words: OPEN_WORDS });
+      const endedOnAFullBoard = roomWith({
+        status: 'closed',
+        players: bothPlayers,
+        words: ANSWERED_WORDS,
+      });
+
+      expect(roomScreenFor(ready(ended), NOW).kind).toBe('closed-early');
+      expect(roomScreenFor(ready(endedOnAFullBoard), NOW).kind).toBe('closed-early');
     });
 
     it('names the owner as the viewer when it is the owner reading', () => {

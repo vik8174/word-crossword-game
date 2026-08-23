@@ -7,6 +7,7 @@ import { ROOM_LIFETIME_MS, ROOMS_COLLECTION, type RoomDocument } from './room-do
 import {
   completeGame,
   createRoom,
+  endGameEarly,
   joinRoom,
   markPresence,
   recordGuess,
@@ -397,6 +398,29 @@ describe('completeGame', () => {
   });
 });
 
+describe('endGameEarly', () => {
+  it('ends the game by writing the status that says it was ended', async () => {
+    // Not `completed`: this room's crossword was not, and the document is what
+    // every screen afterwards reads the result off.
+    await endGameEarly('room-1');
+
+    expect(doc).toHaveBeenCalledWith(expect.anything(), ROOMS_COLLECTION, 'room-1');
+    expect(updateDoc).toHaveBeenCalledExactlyOnceWith(
+      ROOM_REFERENCE,
+      expect.objectContaining({ status: 'closed' }),
+    );
+  });
+
+  it('lets a refusal reach the caller, which is the one who has to be told', async () => {
+    // Unlike the automatic ending, nothing retries this one on the next
+    // snapshot: a person asked for it, and the screen they asked from is where
+    // a refusal has to surface.
+    vi.mocked(updateDoc).mockRejectedValue(new Error('Missing or insufficient permissions.'));
+
+    await expect(endGameEarly('room-1')).rejects.toThrow(/permissions/i);
+  });
+});
+
 describe('keeping a room alive', () => {
   // The security rules check `expiresAt` on every update, so a room whose
   // expiry stopped moving stops taking writes the moment its 24 hours run out —
@@ -413,6 +437,7 @@ describe('keeping a room alive', () => {
       () => recordGuess({ roomId: 'room-1', playerId: 'guest-uid', wordId: 'w2' }),
     ],
     ['the game being closed', () => completeGame('room-1')],
+    ['the game being ended by a player', () => endGameEarly('room-1')],
     [
       'a player marking themselves present',
       () => markPresence({ roomId: 'room-1', playerId: 'guest-uid' }),

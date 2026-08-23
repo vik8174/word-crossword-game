@@ -87,12 +87,24 @@ describe('roomAccessFor', () => {
     expect(roomAccessFor(room, 'guest-uid', NOW)).toBe('started');
   });
 
-  it('tells a newcomer arriving after the game is over that it is over', () => {
-    // Turned away either way, but "come back later" would be a lie about a
-    // room whose game has already been played to its last word.
-    const room = roomWith({ 'owner-uid': player('Vik') }, NOW.getTime() + 1, 'completed');
+  it.each(['completed', 'closed'] as const)(
+    'tells a newcomer arriving after a %s game that it is over',
+    (status) => {
+      // Turned away either way, but "come back later" would be a lie about a
+      // room whose game has already been played to its last word — or about one
+      // its players ended, which is over just as finally. The two are not told
+      // apart here: to somebody who was never in the room they are one piece of
+      // news.
+      const room = roomWith({ 'owner-uid': player('Vik') }, NOW.getTime() + 1, status);
 
-    expect(roomAccessFor(room, 'guest-uid', NOW)).toBe('finished');
+      expect(roomAccessFor(room, 'guest-uid', NOW)).toBe('finished');
+    },
+  );
+
+  it('gives a player of a room somebody ended their own ending back, not a refusal', () => {
+    const room = roomWith({ 'owner-uid': player('Vik') }, NOW.getTime() + 1, 'closed');
+
+    expect(roomAccessFor(room, 'owner-uid', NOW)).toBe('joined');
   });
 
   it('gives a player of a finished room their game back, not a refusal', () => {
@@ -216,21 +228,24 @@ describe('abandonedSeatIn', () => {
     expect(abandonedSeatIn(room, NOW)).toBeNull();
   });
 
-  it.each(['playing', 'completed'] as const)('takes nobody out of a %s room', (status) => {
-    // Words are dealt to UIDs and the win is read from the same fields, so a
-    // player removed mid-game leaves a crossword nobody can ever finish. The
-    // security rules refuse the write; this refuses to ask for it.
-    const room = roomWith(
-      {
-        'owner-uid': player('Vik'),
-        'ghost-uid': player('Ghost', 1, 10 * SEAT_FREE_AFTER_MS),
-      },
-      NOW.getTime() + 1,
-      status,
-    );
+  it.each(['playing', 'completed', 'closed'] as const)(
+    'takes nobody out of a %s room',
+    (status) => {
+      // Words are dealt to UIDs and the win is read from the same fields, so a
+      // player removed mid-game leaves a crossword nobody can ever finish. The
+      // security rules refuse the write; this refuses to ask for it.
+      const room = roomWith(
+        {
+          'owner-uid': player('Vik'),
+          'ghost-uid': player('Ghost', 1, 10 * SEAT_FREE_AFTER_MS),
+        },
+        NOW.getTime() + 1,
+        status,
+      );
 
-    expect(abandonedSeatIn(room, NOW)).toBeNull();
-  });
+      expect(abandonedSeatIn(room, NOW)).toBeNull();
+    },
+  );
 });
 
 describe('playersInJoinOrder', () => {

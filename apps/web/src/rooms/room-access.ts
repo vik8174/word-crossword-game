@@ -1,5 +1,5 @@
 import { hasLeftTheSeat, silenceOf } from './presence';
-import type { RoomDocumentShape } from './room-document';
+import { isTerminalStatus, type RoomDocumentShape } from './room-document';
 
 /**
  * Who may do what in a room, decided from the room document alone.
@@ -78,9 +78,11 @@ export type RoomAccess = 'joined' | 'joinable' | 'started' | 'finished' | 'full'
  * by the one condition that a started room takes no new player.
  *
  * This one reads `status` and not the board, unlike everything that reveals a
- * word: `completed` is terminal in the rules, so a room carrying it is shut to
- * newcomers whether or not its crossword was ever filled in, and what is said
- * to them claims no more than that.
+ * word: both endings are terminal in the rules, so a room carrying either is
+ * shut to newcomers whether or not its crossword was ever filled in, and what
+ * is said to them claims no more than that. The two are not told apart here for
+ * the same reason: to somebody who was never in the room, a game played to the
+ * end and a game its players ended are one piece of news.
  *
  * @param room - The room document as read from Firestore
  * @param playerId - Firebase Auth UID of the player who opened the link
@@ -99,7 +101,7 @@ export const roomAccessFor = (room: ReadableRoom, playerId: string, now: Date): 
     return 'joined';
   }
 
-  if (room.status === 'completed') {
+  if (isTerminalStatus(room.status)) {
     return 'finished';
   }
 
