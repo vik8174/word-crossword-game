@@ -10,21 +10,22 @@ The list has two parts, because it cannot all happen at one moment: the first pa
 
 <https://word-crossword-game-stage.web.app>, on the release commit, once its deploy is green.
 
-Two isolated browser profiles, the host and the guest; a private window is a second profile. Mark both before opening anything else: `https://word-crossword-game-stage.web.app/?internal=1`. Stage is a Firebase project of its own and has its own analytics property, counted the same way production's is. Leave DevTools > Network open on the host, filtered to `collect`.
+Two isolated browser profiles, the host and the guest; a private window is a second profile. Mark both before opening anything else: `https://word-crossword-game-stage.web.app/?internal=1`. Stage is a Firebase project of its own and has an analytics property of its own. Marking is right either way, but on stage it is only known to set the label: whether that property carries production's Internal Traffic filter has never been looked at. Leave DevTools > Network open on the host, filtered to `collect`.
 
 The steps are one session in order. They have to be: the board does not exist until the words are dealt, and a seat stops being given up the moment they are.
 
 1. **Create a room**, with a list including several 13-to-16-letter words.
 2. **The clipboard, against a real one.** The tests press **Copy link** against a stubbed `navigator.clipboard` and never touch the system clipboard. Press it here, then paste outside the app: what lands is the room's address. Should the browser refuse instead, the panel says so and the link is still on screen to be selected by hand.
-3. **What the telemetry just sent.** The `collect` request from creating the room carries a word count, and nowhere in its address or its payload is the room id out of your own address bar.
-4. **A guest arrives.** Open the link in the second profile and join. The host's invite panel goes when the guest is in.
-5. **A guest leaves, while it is still a lobby.** Close the guest's tab. Within about a minute the invite panel is back on the host's screen; reopen the link in that same profile and the guest walks back in. After the deal no seat is ever given up again, so this is the only point in the session where it can be looked at.
-6. **The host starts the game**, and the widest board is drawn. It scrolls sideways inside its container and every square is legible; a number sits in the corner of a square without clipping or covering the letter typed into it.
-7. **The words you explain stand apart at a glance.** That the squares are dashed and the letters italic is asserted in the tests; whether the difference is visible without looking for it, on a real screen, is not.
-8. **A word off the right-hand edge can be reached.** Tap it in the panel beside the grid. The grid scrolls far enough that the whole word is actually on screen, which is a layout jsdom has no width to have.
-9. **Away, and being away.** Put one profile offline. Within a minute the other names them as away beside their name, and the offline one is told on its own screen that the room has stopped hearing from it. Bring it back before the next step.
-10. **Play the game to the end**, out loud, both profiles. The finished room says so to both.
-11. **A name the browser remembers.** The nickname field was empty on each profile's first visit. Open `/create` in the host's profile now that a game has been played: the field comes back filled with the name it was played under, offered rather than imposed, and it is the player's to rewrite.
+3. **What the telemetry just sent.** Creating a room sends two `collect` requests at once and both are page views; the one to read is the later request carrying `en=room_created`, which is batched rather than sent on its own. It has the word count in `ep.word_count`, and nowhere in any of the three is the room id out of your own address bar — the page views name the route, `dp=/room/:roomId`.
+4. **A console that is not red, and one cookie of each name.** The console half is Firefox's, and only Firefox's: it writes a line for every cookie it refuses, while Chromium refuses the same one in silence and files it under Issues, so a clean console in Chrome would be a tick proving nothing. In Firefox, then: DevTools > Console holds not a word about a cookie rejected for an invalid domain. The rest of the step holds in any browser. Then Storage > Cookies: exactly one `_ga` and exactly one `_ga_<measurement id>`, both on the stage host — two of a name would be a second, host-only cookie written beside the old one. Reload the page: `cid` in the next `collect` is the one it was, so the client id survived.
+5. **A guest arrives.** Open the link in the second profile and join. The host's invite panel goes when the guest is in.
+6. **A guest leaves, while it is still a lobby.** Close the guest's tab. Within about a minute the invite panel is back on the host's screen; reopen the link in that same profile and the guest walks back in. After the deal no seat is ever given up again, so this is the only point in the session where it can be looked at.
+7. **The host starts the game**, and the widest board is drawn. It scrolls sideways inside its container and every square is legible; a number sits in the corner of a square without clipping or covering the letter typed into it.
+8. **The words you explain stand apart at a glance.** That the squares are dashed and the letters italic is asserted in the tests; whether the difference is visible without looking for it, on a real screen, is not.
+9. **A word off the right-hand edge can be reached.** Tap it in the panel beside the grid. The grid scrolls far enough that the whole word is actually on screen, which is a layout jsdom has no width to have.
+10. **Away, and being away.** Put one profile offline. Within a minute the other names them as away beside their name, and the offline one is told on its own screen that the room has stopped hearing from it. Bring it back before the next step.
+11. **Play the game to the end**, out loud, both profiles. The finished room says so to both.
+12. **A name the browser remembers.** The nickname field was empty on each profile's first visit. Open `/create` in the host's profile now that a game has been played: the field comes back filled with the name it was played under, offered rather than imposed, and it is the player's to rewrite.
 
 ## After the tag, on production
 
