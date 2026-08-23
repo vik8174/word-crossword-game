@@ -1,8 +1,10 @@
 # 0025. What happens to the seat of a player who left
 
-Status: Accepted
+Status: Accepted, amended by [0027](0027-a-game-a-player-can-end.md)
 
 Amends [0022](0022-a-mark-a-player-writes-for-themselves.md).
+
+[0027](0027-a-game-a-player-can-end.md) closes the second of the two gaps accepted below — the guest who never comes back after the deal, and the room that waits out its lifetime because the player who stayed is the one keeping it alive. Either player may now end the game, which writes a terminal status of its own, and marks stop with it, so the room's 24 hours start counting from the ending rather than from the last tab being closed. Nothing else here moves: the four cases of the policy, the thresholds, and the freeze that makes leaving a game impossible without ending it are all unchanged, and the first gap — a host whose browser identity is gone — still waits on sign-in that is not planned.
 
 ## Context
 
