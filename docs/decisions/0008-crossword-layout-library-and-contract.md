@@ -1,6 +1,6 @@
 # 0008. Crossword layout library and the `CrosswordLayout` contract
 
-Status: Accepted
+Status: Accepted, with a property of the library it does not name measured in [issue #74](https://github.com/vik8174/word-crossword-game/issues/74): the price of a layout is not flat — a call is cheap while every word finds a place, and the first word that cannot be placed turns on backtracking over a grid three times the longest word, taking one call from 20 ms to 3 seconds, so calling it again costs most exactly where it returns nothing new.
 
 ## Context
 
