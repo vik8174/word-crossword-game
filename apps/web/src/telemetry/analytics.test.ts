@@ -46,6 +46,7 @@ const markThisBrowserInternal = () => {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
   window.localStorage.clear();
   window.history.replaceState({}, '', '/');
 });
@@ -84,8 +85,23 @@ describe('logGameEvent', () => {
 
     await logGameEvent('player_joined');
 
+    expect(initializeAnalytics).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ config: expect.objectContaining({ send_page_view: false }) }),
+    );
+  });
+
+  it('names the host it is running on as the cookie domain', async () => {
+    const { logGameEvent, initializeAnalytics } = await loadAnalytics();
+    // Set after the module is loaded: the host has to be read when Analytics
+    // starts, not when the file is imported, or the address a value was taken
+    // from would depend on import order.
+    vi.stubGlobal('location', new URL('https://word-crossword-game-stage.web.app/create'));
+
+    await logGameEvent('player_joined');
+
     expect(initializeAnalytics).toHaveBeenCalledWith(expect.anything(), {
-      config: { send_page_view: false },
+      config: { send_page_view: false, cookie_domain: 'word-crossword-game-stage.web.app' },
     });
   });
 
@@ -117,6 +133,18 @@ describe('logGameEvent', () => {
     await expect(logGameEvent('room_created', { word_count: 7 })).resolves.toBeUndefined();
 
     expect(logEvent).not.toHaveBeenCalled();
+  });
+
+  it('says so once when Analytics fails to start, not once per event', async () => {
+    const { logGameEvent, isSupported } = await loadAnalytics();
+    isSupported.mockRejectedValue(new Error('measurement id missing'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    await logGameEvent('room_created', { word_count: 7 });
+    await logGameEvent('player_joined');
+    await logGameEvent('game_completed', { word_count: 7 });
+
+    expect(warn).toHaveBeenCalledTimes(1);
   });
 });
 

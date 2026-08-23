@@ -1,5 +1,6 @@
 import {
   type Analytics,
+  type AnalyticsSettings,
   initializeAnalytics,
   isSupported,
   logEvent,
@@ -58,7 +59,7 @@ export type GameEventParams = Readonly<Record<string, number | Redacted>>;
 let analytics: Promise<Analytics | null> | undefined;
 
 /**
- * Analytics settings, of which one line matters.
+ * The settings Analytics is started with, of which two lines matter.
  *
  * Firebase sends a `page_view` by itself when Analytics starts, and that event
  * carries `page_location` — the address bar as it stands, room id and all. It
@@ -66,12 +67,37 @@ let analytics: Promise<Analytics | null> | undefined;
  * same page with the id taken out. Turning it off has a second effect worth
  * having: page views then follow client-side navigation too, which the
  * automatic one never did (it fires once, at load).
+ *
+ * `cookie_domain` is the host this page is served from, named rather than left
+ * at gtag's default of `auto`. `auto` tries the broadest domain first and works
+ * inwards, and both of this app's addresses end in `web.app`, which is in the
+ * Public Suffix List: a cookie may not be set on it, so the browser refuses the
+ * attempt and writes a line about it — eight lines on every single load. The
+ * narrowest attempt is accepted, which is why the analytics was never actually
+ * broken; the cost was a console permanently red, and the next real error in it
+ * unnoticed. Naming the host makes the accepted attempt the only attempt, and
+ * it is the very domain the probing was arriving at anyway, so the same two
+ * cookies keep being written and the client id in them survives untouched.
+ *
+ * On `localhost` the host is `localhost`, and it wants no branch of its own:
+ * `localhost` is not a public suffix, so the browser accepts the cookie and
+ * there is nothing here to work around. A local `.env` without
+ * `VITE_FIREBASE_MEASUREMENT_ID` in it does not start Analytics at all, and one
+ * with it writes its cookies on `localhost` as any other host writes its own.
+ *
+ * A function rather than a constant, because the host has to be read when
+ * Analytics starts and not when this file happens to be imported — the same
+ * reason {@link internalTrafficParams} is a function and not a value.
+ *
+ * @returns What `initializeAnalytics` is handed
  */
-const ANALYTICS_SETTINGS = { config: { send_page_view: false } };
+const analyticsSettings = (): AnalyticsSettings => ({
+  config: { send_page_view: false, cookie_domain: window.location.hostname },
+});
 
 const analyticsWhenAvailable = (): Promise<Analytics | null> => {
   analytics ??= isSupported()
-    .then((supported) => (supported ? initializeAnalytics(firebaseApp, ANALYTICS_SETTINGS) : null))
+    .then((supported) => (supported ? initializeAnalytics(firebaseApp, analyticsSettings()) : null))
     .catch((error: unknown) => {
       // Warned about once — the failed answer is remembered like any other.
       console.warn('Analytics could not be started; no events will be sent', error);
