@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AWAY_AFTER_MS, PRESENCE_TICK_MS } from '../rooms/presence';
@@ -41,10 +41,13 @@ const placed = (word: string, row: number) => ({
 const lobbyRoom = ({
   playerCount,
   wordCount = 6,
+  unplacedCount = 0,
   silentFor = {},
 }: {
   playerCount: number;
   wordCount?: number;
+  /** How many of the submitted words did not fit the grid and stayed off it. */
+  unplacedCount?: number;
   /** How long ago each player last marked themselves present, by id. */
   silentFor?: Readonly<Record<string, number>>;
 }): RoomDocument =>
@@ -58,7 +61,7 @@ const lobbyRoom = ({
       placedWords: Array.from({ length: wordCount }, (_word, index) =>
         placed(`word${index}`, index),
       ),
-      unplacedWords: [],
+      unplacedWords: Array.from({ length: unplacedCount }, (_word, index) => `unplaced${index}`),
     },
     words: Object.fromEntries(
       Array.from({ length: wordCount }, (_word, index) => [
@@ -127,6 +130,18 @@ describe('RoomLobby', () => {
 
     expect(statusLine()).toMatch(/the host cannot start this game/i);
     expect(startButton()).toBeNull();
+  });
+
+  it('counts the words that are in the grid, not the words that were typed in', () => {
+    // Nine words went into this room and three of them did not fit, so six are
+    // on the board. Nothing on the board says so — an unplaced word is drawn
+    // nowhere — which is the whole reason this line still counts out loud.
+    renderLobby(GUEST_ID, lobbyRoom({ playerCount: 2, wordCount: 6, unplacedCount: 3 }));
+
+    const crossword = within(screen.getByRole('region', { name: /the crossword/i }));
+
+    expect(crossword.getByText(/^6 words/)).toBeInTheDocument();
+    expect(crossword.queryByText(/^9 words/)).toBeNull();
   });
 
   describe('presence', () => {
