@@ -157,7 +157,7 @@ const LAYOUT_ATTEMPTS = 10;
  * as long as every word finds a place a layout is cheap, but the first word
  * that cannot be placed turns the library's backtracking on, over a grid three
  * times the longest word — measured here, one attempt at twenty ordinary words
- * costs 15 ms while nineteen of them plus an uncrossable `zzz` costs 320 ms,
+ * costs 20 ms while nineteen of them plus an uncrossable `zzz` costs 320 ms,
  * and nineteen sixteen-letter words plus that same `zzz` cost 3 seconds. Ten of
  * those in a row would be half a minute, and every one of them runs inside the
  * owner's click on "Create room".
