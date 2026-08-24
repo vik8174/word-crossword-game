@@ -53,10 +53,15 @@ export type RoomUnavailableReason =
  * - `finished` — the crossword was filled in and the room is closed
  * - `closed-early` — the room is closed with words still unanswered
  *
- * The last two are one status apart from nothing: `completed` is written by a
- * client and the security rules cannot check it against the board, so the two
- * are told apart by {@link isGameFinished} rather than by the status alone (see
- * `docs/decisions/0012-ending-a-game-from-the-received-state.md`).
+ * The last two are not one status apart, and that is the part worth reading
+ * twice. A room ended by a player says `closed` and lands on the second of them
+ * without a further question. A room saying `completed` still has to answer one:
+ * that status is written by a client and the security rules cannot check it
+ * against the board, so a client that knows the room id can write it over a game
+ * nobody played. Only the board can tell those apart, which is why the celebration
+ * waits on {@link isGameFinished} and not on the status
+ * (`docs/decisions/0012-ending-a-game-from-the-received-state.md`,
+ * `docs/decisions/0027-a-game-a-player-can-end.md`).
  */
 export type RoomScreen =
   | { readonly kind: 'connecting' }
@@ -76,7 +81,17 @@ export type RoomScreen =
   | { readonly kind: 'finished'; readonly room: RoomDocument; readonly viewerId: string }
   | { readonly kind: 'closed-early'; readonly room: RoomDocument; readonly viewerId: string };
 
-/** Which of the three screens a room this player is already in has to show. */
+/**
+ * Which of the four screens a room this player is already in has to show.
+ *
+ * Only one of the four costs more than reading the status, and the extra
+ * question is a guard rather than a nicety: `completed` earns the celebration
+ * only together with a board that really is full, because that field alone can
+ * be written over a game nobody played and the celebration spells the whole
+ * crossword out. Every other ending — a room its players closed, and a
+ * `completed` no board backs up — is the same screen, which shows no word
+ * nobody answered.
+ */
 const screenInsideRoom = (room: RoomDocument, viewerId: string): RoomScreen => {
   switch (room.status) {
     case 'lobby':
@@ -87,6 +102,8 @@ const screenInsideRoom = (room: RoomDocument, viewerId: string): RoomScreen => {
       return isGameFinished(room)
         ? { kind: 'finished', room, viewerId }
         : { kind: 'closed-early', room, viewerId };
+    case 'closed':
+      return { kind: 'closed-early', room, viewerId };
   }
 };
 

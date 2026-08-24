@@ -368,6 +368,62 @@ describe('playing in a room', () => {
     await assertFails(updateDoc(doc(asOtherPlayer(), ROOM_PATH), { status: 'playing' }));
   });
 
+  it('lets either player end a game that is still on', async () => {
+    // Both of them, because either can be the one left alone with a crossword
+    // nobody can finish: after the deal, the words hidden from a player can be
+    // answered by that player and by nobody else
+    // (docs/decisions/0027-a-game-a-player-can-end.md).
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: twoPlayers });
+    await assertSucceeds(updateDoc(doc(asOtherPlayer(), ROOM_PATH), { status: 'closed' }));
+
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'playing', players: twoPlayers });
+    await assertSucceeds(updateDoc(doc(asOwner(), ROOM_PATH), { status: 'closed' }));
+  });
+
+  it('refuses to reopen a game a player ended', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'closed', players: twoPlayers });
+
+    await assertFails(updateDoc(doc(asOtherPlayer(), ROOM_PATH), { status: 'playing' }));
+  });
+
+  it('refuses to call a game somebody ended a finished one', async () => {
+    // The race the two endings create, and the half of it the rules settle
+    // rather than the client: the last answer of the crossword lands in the
+    // same second as somebody's "End the game", so one client sees a full board
+    // while another has already written a decision. Whichever arrives first is
+    // what happened in this room; the second is told no, and every screen goes
+    // on reading one ending rather than two
+    // (docs/decisions/0012-ending-a-game-from-the-received-state.md).
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'closed', players: twoPlayers });
+
+    await assertFails(updateDoc(doc(asOtherPlayer(), ROOM_PATH), { status: 'completed' }));
+  });
+
+  it('refuses to call a finished game one somebody ended', async () => {
+    // The other half of the same race, and it has to be refused too: a room
+    // whose crossword was filled in must not be turned into one that was walked
+    // out of by whoever pressed the button a moment too late.
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'completed', players: twoPlayers });
+
+    await assertFails(updateDoc(doc(asOtherPlayer(), ROOM_PATH), { status: 'closed' }));
+  });
+
+  it('refuses a newcomer joining a game a player ended', async () => {
+    await testEnv.clearFirestore();
+    await seedRoom({ status: 'closed' });
+
+    await assertFails(
+      updateDoc(doc(asOtherPlayer(), ROOM_PATH), {
+        [`players.${OTHER_PLAYER}`]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+      }),
+    );
+  });
+
   it('refuses a third player, since a room is played by exactly two', async () => {
     // The room screen stops at two as well (`MAX_PLAYERS` in
     // apps/web/src/rooms/room-access.ts), but joining writes `players.<uid>`

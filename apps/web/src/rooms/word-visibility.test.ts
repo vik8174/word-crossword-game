@@ -451,14 +451,18 @@ describe('gridViewFor', () => {
     expect(boardOf(view)).toEqual(boardOf(gridViewFor(lobby, 'nobody-uid')));
   });
 
-  it('gives nothing to type in a closed room, even with a word left open in it', () => {
-    // A room can be closed without its crossword having been finished, and it
-    // is finished with its players either way — a grid still taking answers
-    // under a notice saying the room is closed would be lying to them.
-    const room = roomWith(['bob-uid', 'alice-uid'], 'completed', CROSSING_LAYOUT);
+  it.each(['completed', 'closed'] as const)(
+    'gives nothing to type in a %s room, even with a word left open in it',
+    (status) => {
+      // A room can be closed without its crossword having been finished — the
+      // ordinary way now being that a player ended it — and it is finished with
+      // its players either way. A grid still taking answers under a notice
+      // saying the room is closed would be lying to them.
+      const room = roomWith(['bob-uid', 'alice-uid'], status, CROSSING_LAYOUT);
 
-    expect(gridViewFor(room, 'alice-uid').toGuess).toEqual([]);
-  });
+      expect(gridViewFor(room, 'alice-uid').toGuess).toEqual([]);
+    },
+  );
 
   it('numbers the square a word begins in, with one number for the two that begin together', () => {
     // `CAT` and `CAR` both start in the top-left square, so it carries a single
@@ -525,5 +529,18 @@ describe('finishedWordsOf', () => {
 
   it('says nothing in a lobby either', () => {
     expect(finishedWordsOf(roomWith([null, null, null], 'lobby'))).toEqual([]);
+  });
+
+  it('reads nothing out of a game a player ended, full board or not', () => {
+    // The double check has to survive the second terminal status rather than be
+    // replaced by it. A room whose players ended it has answered nothing worth
+    // celebrating, and the rare one whose last answer landed in the same second
+    // is still a room the document says was ended — so nothing is read out of
+    // either.
+    const halfPlayed = roomWith(DEALT, 'closed', LAYOUT, ['bob-uid', null, null]);
+    const fullBoard = roomWith(DEALT, 'closed', LAYOUT, ANSWERED);
+
+    expect(finishedWordsOf(halfPlayed)).toEqual([]);
+    expect(finishedWordsOf(fullBoard)).toEqual([]);
   });
 });

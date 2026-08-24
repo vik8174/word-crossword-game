@@ -167,10 +167,14 @@ export const awayDurationsIn = (room: ReadableRoom, now: Date): Readonly<Record<
  * A room takes marks only from the players it holds: whoever opened the link
  * and has yet to give a nickname is not in the game, and has nothing to be
  * present for. And it takes them only while it is being waited in or played —
- * a `completed` room is over, so a mark in it would tell nobody anything, while
- * every write pushes `expiresAt` another 24 hours out
+ * a room that has ended is over however it ended, so a mark in it would tell
+ * nobody anything, while every write pushes `expiresAt` another 24 hours out
  * (`docs/decisions/0013-keeping-a-room-alive-on-every-write.md`), which would
  * leave a tab forgotten on a finished game keeping that room alive for good.
+ * That is also what makes a room somebody ended actually go away: the marks
+ * stop with the game, so its 24 hours start counting down from the ending
+ * rather than from the last tab being closed
+ * (`docs/decisions/0027-a-game-a-player-can-end.md`).
  *
  * @param room - The room document as read from Firestore
  * @param playerId - Firebase Auth UID of the client asking whether to write

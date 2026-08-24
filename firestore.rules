@@ -61,12 +61,33 @@ service cloud.firestore {
       return room.players.size() >= 1 && room.players.size() <= 2;
     }
 
-    // A room moves forward: it waits, it is played, it is finished. A finished
-    // game stays finished — a player who opens the link afterwards must see
-    // the result, not a grid someone reopened.
+    // The two ways a game ends: its crossword was finished, or a player ended it
+    // with words still open (docs/decisions/0027-a-game-a-player-can-end.md).
+    // Both are the end of the room, so neither is a state anything moves out of.
+    function isTerminal(status) {
+      return status in ['completed', 'closed'];
+    }
+
+    // A room moves forward: it waits, it is played, and then it is over. A room
+    // that is over stays exactly as over as it became — a player who opens the
+    // link afterwards must see the result, not a grid someone reopened, and not
+    // a different ending either.
+    //
+    // That last word is the one doing work. The two endings are written by
+    // different clients for different reasons, and they can be written in the
+    // same second: the last answer lands while somebody's finger is already on
+    // "End the game", and one client sees a full board while another sees a
+    // decision. Two endings would then disagree about what happened in this
+    // room, and which one a player read would depend on which write was slower.
+    // Refusing the move settles it once: the first ending is the ending, and
+    // the second client is told no. It is also what keeps
+    // docs/decisions/0012-ending-a-game-from-the-received-state.md standing —
+    // several clients writing `completed` at once is harmless only while the
+    // value does not depend on who wrote it, and a second possible value is
+    // exactly what would have broken that.
     function hasValidStatus(before, after) {
-      return after.status in ['lobby', 'playing', 'completed']
-        && (before.status != 'completed' || after.status == 'completed');
+      return after.status in ['lobby', 'playing', 'completed', 'closed']
+        && (!isTerminal(before.status) || after.status == before.status);
     }
 
     // The words are dealt out once, and only the owner deals them: they are the

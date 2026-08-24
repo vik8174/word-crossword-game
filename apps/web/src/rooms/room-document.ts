@@ -23,11 +23,38 @@ export const ROOM_LIFETIME_MS = 24 * 60 * 60 * 1000;
  * - `lobby` — created, players are still joining, words not assigned yet
  * - `playing` — words assigned to players, guessing is open
  * - `completed` — every word guessed
+ * - `closed` — a player ended the game with words still unanswered
+ *
+ * The last two are the two ways a game ends, and they are separate values
+ * because they are separate facts: a room that was played to the end and a room
+ * somebody walked out of are not the same result, and writing "completed" over
+ * the second would put the wrong one in the document
+ * (`docs/decisions/0027-a-game-a-player-can-end.md`).
  *
  * A future turn-based mode adds a separate field rather than a status, so this
  * union stays about progress only (see PRD, GitHub issue #1).
  */
-export type RoomStatus = 'lobby' | 'playing' | 'completed';
+export type RoomStatus = 'lobby' | 'playing' | 'completed' | 'closed';
+
+/**
+ * Whether a room's game is over, whichever of the two ways it ended.
+ *
+ * The security rules hold the same line — a room in either of these states
+ * stays in it, the other one included — so this is the client agreeing rather
+ * than the client deciding.
+ *
+ * Deliberately not the question of whether the crossword was *finished*: that
+ * one is about the board and is answered by `isGameFinished` in
+ * `room-completion.ts`, which is what anything revealing a word has to ask.
+ *
+ * @param status - The status the room document carries
+ * @returns `true` when there is nothing left to write in this room
+ *
+ * @example
+ * isTerminalStatus('closed'); // true
+ */
+export const isTerminalStatus = (status: RoomStatus): boolean =>
+  status === 'completed' || status === 'closed';
 
 /** A participant of the room, keyed in the document by their Firebase Auth UID. */
 export interface RoomPlayer<TTimestamp = Timestamp> {
@@ -386,7 +413,10 @@ export const parseRoomDocument = (data: unknown): RoomDocument | null => {
   }
 
   const isRoom =
-    (data.status === 'lobby' || data.status === 'playing' || data.status === 'completed') &&
+    (data.status === 'lobby' ||
+      data.status === 'playing' ||
+      data.status === 'completed' ||
+      data.status === 'closed') &&
     typeof data.ownerId === 'string' &&
     isLayout(data.layout) &&
     isRecord(data.words) &&

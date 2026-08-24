@@ -9,8 +9,10 @@ import {
   buildRoomDocument,
   buildRoomUpdate,
   buildStartGameUpdate,
+  isTerminalStatus,
   parseRoomDocument,
   ROOM_LIFETIME_MS,
+  type RoomStatus,
   wordIdAt,
 } from './room-document';
 
@@ -295,6 +297,21 @@ const storedRoom = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
+describe('isTerminalStatus', () => {
+  it('names both of the ways a game ends', () => {
+    // The client's side of what the security rules refuse: a room in either of
+    // these does not move again, the other one included.
+    expect(isTerminalStatus('completed')).toBe(true);
+    expect(isTerminalStatus('closed')).toBe(true);
+  });
+
+  it('leaves a room that still has a game in it alone', () => {
+    const open: readonly RoomStatus[] = ['lobby', 'playing'];
+
+    expect(open.map(isTerminalStatus)).toEqual([false, false]);
+  });
+});
+
 describe('parseRoomDocument', () => {
   it('accepts a room written by this app', () => {
     const stored = storedRoom();
@@ -302,8 +319,8 @@ describe('parseRoomDocument', () => {
     expect(parseRoomDocument(stored)).toBe(stored);
   });
 
-  it('accepts a room in any of the three states a game goes through', () => {
-    for (const status of ['lobby', 'playing', 'completed']) {
+  it('accepts a room in any of the four states a game goes through', () => {
+    for (const status of ['lobby', 'playing', 'completed', 'closed']) {
       expect(parseRoomDocument(storedRoom({ status }))).not.toBeNull();
     }
   });

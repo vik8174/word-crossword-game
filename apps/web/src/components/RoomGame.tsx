@@ -6,10 +6,12 @@ import { useState } from 'react';
 import { openGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
-import { recordGuess } from '../rooms/room-service';
+import { endGameEarly, recordGuess } from '../rooms/room-service';
 import { useGameCompletion } from '../rooms/use-game-completion';
 import { useRoomPresence } from '../rooms/use-room-presence';
 import { type WordLocation, wordViewFor } from '../rooms/word-visibility';
+import { logGameEvent } from '../telemetry/analytics';
+import { EndGamePanel } from './EndGamePanel';
 import { OwnPresenceNotice } from './OwnPresenceNotice';
 import { PlayerList } from './PlayerList';
 import { PlayerWordsPanel } from './PlayerWordsPanel';
@@ -31,6 +33,12 @@ const LEFT_OUT_MESSAGE =
 const GUESS_FAILED_MESSAGE =
   'Your answer was right, but the others could not be told about it. The room may have expired — reload the page to see where the game stands.';
 
+// The same kind of rejection, with one more cause worth naming: the rules
+// refuse to move a room that has already ended, so the other player finishing
+// the crossword in the same second arrives here too.
+const END_FAILED_MESSAGE =
+  'The game could not be ended. The room may have expired, or it may have ended already — reload the page to see where it stands.';
+
 interface RoomGameProps {
   /** Id of the room, for the answers and the ending this screen writes. */
   readonly roomId: string;
@@ -49,11 +57,17 @@ interface RoomGameProps {
  * a word hidden from them reaches their screen before it has been answered (see
  * {@link RoomCrossword}).
  *
- * Both writes a game makes belong to this screen. Answers are one of them; the
- * other is the ending, which is watched for here rather than one screen up, so
- * that only somebody actually playing closes a game
- * (`docs/decisions/0012-ending-a-game-from-the-received-state.md` says who may
- * write it, not who has to be watching).
+ * All three writes a game makes belong to this screen. Answers are one of them;
+ * the second is the ending the full board asks for, which is watched for here
+ * rather than one screen up, so that only somebody actually playing closes a
+ * game (`docs/decisions/0012-ending-a-game-from-the-received-state.md` says who
+ * may write it, not who has to be watching).
+ *
+ * The third is the ending a player asks for, and it is on this screen for a
+ * reason of its own: a game is the only thing there is to end. A lobby has
+ * nothing stuck in it — a guest's seat frees itself and a host simply goes —
+ * and a room that has already ended has nothing left to write
+ * (`docs/decisions/0027-a-game-a-player-can-end.md`).
  *
  * It also holds the one thing the panel and the grid have to agree on: which
  * word the player last asked to be taken to. They are two components side by
@@ -77,6 +91,10 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
   // update of the room, and the grid would then be dragged back to the same
   // square every time anybody answered anything.
   const [wordToReach, setWordToReach] = useState<WordLocation | null>(null);
+  // Kept apart from the answer's failure: they are two different sentences
+  // about two different writes, and either may be the one that failed.
+  const [endError, setEndError] = useState<string | null>(null);
+  const [isEnding, setIsEnding] = useState(false);
   const awayDurations = useRoomPresence(room);
   const players = playersInJoinOrder(room);
   const wordView = wordViewFor(room, viewerId);
@@ -96,6 +114,30 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
       // Rethrown so the grid stops counting this word as written down and can
       // send it again; swallowing it here is what would lose the answer.
       throw error;
+    }
+  };
+
+  const endGame = async () => {
+    setIsEnding(true);
+    setEndError(null);
+
+    try {
+      await endGameEarly(roomId);
+      // Reported apart from `game_completed`, and carrying the same two counts:
+      // a game somebody ended is not a game that was finished, and one number
+      // meaning both would measure nothing
+      // (`docs/decisions/0027-a-game-a-player-can-end.md`).
+      void logGameEvent('game_closed', {
+        word_count: room.layout.placedWords.length,
+        player_count: Object.keys(room.players).length,
+      });
+    } catch (error) {
+      // Not retried on the next snapshot, unlike the ending a full board asks
+      // for: this one was a person's decision, and repeating it on their behalf
+      // is not this screen's to do.
+      console.error('Ending the game failed', error);
+      setEndError(END_FAILED_MESSAGE);
+      setIsEnding(false);
     }
   };
 
@@ -127,6 +169,14 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
         onSolved={submitGuess}
         errorMessage={guessError ?? undefined}
         wordToReach={wordToReach}
+      />
+
+      <EndGamePanel
+        onEnd={() => {
+          void endGame();
+        }}
+        isEnding={isEnding}
+        errorMessage={endError ?? undefined}
       />
     </Stack>
   );

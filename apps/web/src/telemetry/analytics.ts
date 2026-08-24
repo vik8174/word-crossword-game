@@ -22,8 +22,17 @@ import type { Redacted } from './redaction';
  * an event that was not sent.
  */
 
-/** The moments this game reports. Adding one is adding a line here. */
-export type GameEvent = 'room_created' | 'player_joined' | 'game_completed' | 'screen_reached';
+/**
+ * The moments this game reports. Adding one is adding a line here.
+ *
+ * `game_completed` and `game_closed` are two events rather than one with a
+ * parameter, and deliberately: the first is the measure of whether this game
+ * works at all, and folding an ended game into it would leave a single number
+ * meaning two different things
+ * (`docs/decisions/0027-a-game-a-player-can-end.md`).
+ */
+export type GameEvent =
+  'room_created' | 'player_joined' | 'game_completed' | 'game_closed' | 'screen_reached';
 
 /**
  * What an event may carry: numbers, and text that has been through the
