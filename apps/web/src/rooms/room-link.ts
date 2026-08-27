@@ -2,10 +2,19 @@
  * The one place that knows what a room's address looks like. The invite link is
  * the only way into a game (the PRD rules out any in-app invitations), so the
  * route and the shareable URL must never drift apart.
+ *
+ * A room is addressed in two spellings — `/room/<id>` in the browser and
+ * `rooms/<id>` in Firestore — and both live here. The second used to live in
+ * `room-document.ts`, which speaks to the Firestore SDK; the redaction needs
+ * the name and nothing else, and reading it from there put the whole Firestore
+ * SDK on the landing page, where no room is opened at all (issue #92).
  */
 
 /** Route pattern the room screen is registered under (issue #5 renders it). */
 export const ROOM_ROUTE_PATTERN = '/room/:roomId';
+
+/** Firestore collection every room document lives in. */
+export const ROOMS_COLLECTION = 'rooms';
 
 /**
  * In-app path of a room.

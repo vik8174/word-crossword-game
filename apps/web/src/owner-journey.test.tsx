@@ -74,12 +74,18 @@ const writtenRoom = (): NewRoomDocument => {
   return call?.[1] as unknown as NewRoomDocument;
 };
 
-/** Opens the app on the creation screen and creates a room from a valid list. */
-const createRoom = () => {
+/**
+ * Opens the app on the creation screen and creates a room from a valid list.
+ *
+ * Awaited because the screen is fetched when it is asked for rather than
+ * shipped with the landing page (issue #92), so it arrives a tick after the
+ * render.
+ */
+const createRoom = async () => {
   window.history.pushState({}, '', '/create');
   render(<App />);
 
-  fireEvent.change(screen.getByLabelText(/nickname/i), { target: { value: 'Vik' } });
+  fireEvent.change(await screen.findByLabelText(/nickname/i), { target: { value: 'Vik' } });
   fireEvent.change(screen.getByLabelText(/words/i), { target: { value: TEN_WORDS } });
   fireEvent.click(screen.getByRole('button', { name: /create room/i }));
 };
@@ -105,7 +111,7 @@ afterEach(() => {
 
 describe('the owner of a room', () => {
   it('lands in their own room, at its own address, and stays there through a reload', async () => {
-    createRoom();
+    await createRoom();
 
     // Taken in by the write coming back, with nothing to click: the room screen
     // is subscribing before a single snapshot has arrived.
@@ -150,7 +156,7 @@ describe('the owner of a room', () => {
   });
 
   it('is not taken back to the word list by the Back button', async () => {
-    createRoom();
+    await createRoom();
     await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
 
     act(() => {

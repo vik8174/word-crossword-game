@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 import { assignWords, type CrosswordLayout } from 'shared';
 
-import { auth, db } from '../firebase/config';
+import { auth, db } from '../firebase/services';
 import { buildCompletionUpdate, buildEarlyEndUpdate } from './room-completion';
 import {
   buildGuessUpdate,
@@ -18,10 +18,10 @@ import {
   buildRoomDocument,
   buildStartGameUpdate,
   parseRoomDocument,
-  ROOMS_COLLECTION,
   type RoomDocument,
   type RoomUpdate,
 } from './room-document';
+import { ROOMS_COLLECTION } from './room-link';
 
 /**
  * Writes one update to one room — the only path from this module to an existing

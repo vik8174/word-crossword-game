@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
-import { ROOMS_COLLECTION } from '../rooms/room-document';
+import { ROOMS_COLLECTION } from '../rooms/room-link';
 import { redactRoomId, redactRoomIdsDeep } from './redaction';
 
 /** A realistic Firestore auto-id — 20 characters, letters and digits mixed. */

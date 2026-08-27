@@ -3,7 +3,8 @@ import { addDoc, collection, doc, onSnapshot, updateDoc } from 'firebase/firesto
 import type { CrosswordLayout } from 'shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ROOM_LIFETIME_MS, ROOMS_COLLECTION, type RoomDocument } from './room-document';
+import { ROOM_LIFETIME_MS, type RoomDocument } from './room-document';
+import { ROOMS_COLLECTION } from './room-link';
 import {
   completeGame,
   createRoom,

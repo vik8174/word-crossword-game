@@ -1,6 +1,4 @@
 import { type FirebaseOptions, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
 
 /**
  * Env vars without which Auth and Firestore cannot work.
@@ -60,6 +58,11 @@ export const readFirebaseConfig = (env: FirebaseEnv): FirebaseOptions => {
   };
 };
 
+/**
+ * The Firebase app itself, and nothing that runs on it.
+ *
+ * Auth and Firestore are next door in `services.ts` on purpose: this module is
+ * reached from the analytics, so it is part of every page, and the two SDKs are
+ * only wanted on the screens that open a room (issue #92).
+ */
 export const firebaseApp = initializeApp(readFirebaseConfig(import.meta.env));
-export const auth = getAuth(firebaseApp);
-export const db = getFirestore(firebaseApp);

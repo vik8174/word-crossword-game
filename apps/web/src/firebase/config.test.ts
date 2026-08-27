@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { auth, db, firebaseApp, readFirebaseConfig } from './config';
+import { firebaseApp, readFirebaseConfig } from './config';
 
 /** A fully populated env, so each test can knock out exactly one thing. */
 const completeEnv = () => ({
@@ -73,10 +73,5 @@ describe('firebase config', () => {
     // rather than re-reading `import.meta.env`, so this actually catches a
     // wrong env-var name in config.ts instead of trivially matching itself.
     expect(firebaseApp.options.projectId).toBe('test-project');
-  });
-
-  it('exposes Anonymous Auth and Firestore instances', () => {
-    expect(auth).toBeDefined();
-    expect(db).toBeDefined();
   });
 });
