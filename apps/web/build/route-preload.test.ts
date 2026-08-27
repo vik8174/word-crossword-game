@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { reachableChunks, routeChunks, routePreloadScript } from './route-preload';
+import { reachableChunks, routeChunkFor, routeChunks, routePreloadScript } from './route-preload';
 
 /** A build's output as this module sees it: chunks and what each one imports. */
 const bundle = [
@@ -43,6 +43,37 @@ describe('routeChunks', () => {
 
   it('asks for nothing when the route is part of the first load', () => {
     expect(routeChunks(bundle, 'react.js', 'index.js')).toEqual([]);
+  });
+});
+
+describe('routeChunkFor', () => {
+  const built = [
+    {
+      fileName: 'RoomPage.js',
+      imports: [],
+      facadeModuleId: '/repo/apps/web/src/pages/RoomPage.tsx',
+    },
+    { fileName: 'index.js', imports: [], facadeModuleId: null },
+  ];
+
+  it('finds the chunk a route was built into', () => {
+    expect(routeChunkFor(built, 'src/pages/RoomPage.tsx')?.fileName).toBe('RoomPage.js');
+  });
+
+  it('finds it whichever way the platform writes a path', () => {
+    const onWindows = [
+      {
+        fileName: 'RoomPage.js',
+        imports: [],
+        facadeModuleId: 'C:\\repo\\src\\pages\\RoomPage.tsx',
+      },
+    ];
+
+    expect(routeChunkFor(onWindows, 'src/pages/RoomPage.tsx')?.fileName).toBe('RoomPage.js');
+  });
+
+  it('answers nothing for a route that has no chunk of its own', () => {
+    expect(routeChunkFor(built, 'src/pages/CreateRoomPage.tsx')).toBeUndefined();
   });
 });
 

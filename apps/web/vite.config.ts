@@ -3,7 +3,12 @@ import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 
 import { readGitRevision, readPackageVersion, resolveReleaseName } from './build/release-name.ts';
-import { type BundleChunk, routeChunks, routePreloadScript } from './build/route-preload.ts';
+import {
+  type BundleChunk,
+  routeChunkFor,
+  routeChunks,
+  routePreloadScript,
+} from './build/route-preload.ts';
 import { shouldUploadSourceMaps } from './build/source-map-upload.ts';
 import { ROOM_ROUTE_PATTERN } from './src/rooms/room-link.ts';
 
@@ -15,11 +20,43 @@ import { ROOM_ROUTE_PATTERN } from './src/rooms/room-link.ts';
 const SENTRY_ORG = 'kurysh-labs';
 const SENTRY_PROJECT = 'word-crossword-game';
 
+/**
+ * The routes that have to stay loaded on demand, and the build fails without.
+ *
+ * Both of them are what keeps Firestore and Anonymous Auth off the landing
+ * page: `/create` reaches the SDKs through `room-service.ts` exactly as the
+ * room does. Turning either back into an ordinary import would put them there
+ * again — with every test still passing, since nothing a test renders can see
+ * which chunk a module ended up in.
+ */
+const LAZY_ROUTE_MODULES = ['src/pages/CreateRoomPage.tsx', 'src/pages/RoomPage.tsx'];
+
 /** The module the room route is loaded from. */
 const ROOM_PAGE_MODULE = 'src/pages/RoomPage.tsx';
 
 /** The addresses it is loaded for: `/room/:roomId` as far as its first parameter. */
 const ROOM_PATH_PREFIX = ROOM_ROUTE_PATTERN.slice(0, ROOM_ROUTE_PATTERN.indexOf(':'));
+
+/**
+ * The chunk a route was built into, insisted upon.
+ *
+ * @param chunks - All chunks the build produced
+ * @param module - Path of the route module
+ * @returns The chunk built for it
+ * @throws When the route has no chunk of its own, i.e. it is no longer lazy
+ */
+const lazyRouteChunk = (chunks: readonly BundleChunk[], module: string): BundleChunk => {
+  const chunk = routeChunkFor(chunks, module);
+
+  if (chunk === undefined) {
+    throw new Error(
+      `${module} is not a chunk of its own, so that route is no longer loaded on demand. ` +
+        'Restore its lazy import in App.tsx, or take it out of LAZY_ROUTE_MODULES here.',
+    );
+  }
+
+  return chunk;
+};
 
 /**
  * Names the room route's chunks in the HTML, so an invite link does not pay a
@@ -30,9 +67,10 @@ const ROOM_PATH_PREFIX = ROOM_ROUTE_PATTERN.slice(0, ROOM_ROUTE_PATTERN.indexOf(
  * needs beyond the first load, and hand the list to a script that only acts on
  * the addresses it belongs to.
  *
- * It fails the build if the room page is not a chunk of its own, which is what
- * a route quietly ceasing to be lazy looks like from here — the preload would
- * silently become an empty list, and nobody would notice the split was gone.
+ * It also fails the build if any of {@link LAZY_ROUTE_MODULES} is not a chunk
+ * of its own, which is what a route quietly ceasing to be lazy looks like from
+ * here. This is the only place that can see it: the preload would merely become
+ * an empty list, and no test renders a chunk.
  */
 const preloadRoomRoute = (): Plugin => {
   let base = '/';
@@ -56,18 +94,12 @@ const preloadRoomRoute = (): Plugin => {
         const chunks: BundleChunk[] = Object.values(bundle).filter(
           (output) => output.type === 'chunk',
         );
-        const roomPage = Object.values(bundle).find(
-          (output) =>
-            output.type === 'chunk' && (output.facadeModuleId?.endsWith(ROOM_PAGE_MODULE) ?? false),
-        );
 
-        if (roomPage === undefined) {
-          throw new Error(
-            `${ROOM_PAGE_MODULE} is not a chunk of its own, so the room route is no longer ` +
-              'loaded on demand. Either restore the lazy import in App.tsx or drop this plugin.',
-          );
+        for (const module of LAZY_ROUTE_MODULES) {
+          lazyRouteChunk(chunks, module);
         }
 
+        const roomPage = lazyRouteChunk(chunks, ROOM_PAGE_MODULE);
         const hrefs = routeChunks(chunks, roomPage.fileName, chunk.fileName).map(
           (fileName) => `${base}${fileName}`,
         );

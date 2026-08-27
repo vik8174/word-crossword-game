@@ -19,6 +19,8 @@
 export interface BundleChunk {
   readonly fileName: string;
   readonly imports: readonly string[];
+  /** Module the chunk was created for, when it was created for one. */
+  readonly facadeModuleId?: string | null;
 }
 
 /** A route worth preloading: the addresses it covers, and what it needs. */
@@ -113,3 +115,27 @@ export const routePreloadScript = (routes: readonly PreloadedRoute[]): string =>
     'document.head.appendChild(l)}'
   );
 };
+
+/**
+ * The chunk a route module ended up in, when it has one to itself.
+ *
+ * A route that is loaded on demand gets a chunk of its own; a route that is
+ * imported normally does not. So this answering `undefined` is how a route
+ * quietly ceasing to be lazy looks from the build, and the caller is expected
+ * to treat it as a broken build rather than as nothing to preload.
+ *
+ * Module ids are matched with `/` whatever the platform writes them with, for
+ * the same reason the chunk groups match path separators either way.
+ *
+ * @param chunks - All chunks the build produced
+ * @param module - Path the route module ends with, e.g. `src/pages/RoomPage.tsx`
+ * @returns The chunk built for that module, or `undefined` when there is none
+ *
+ * @example
+ * routeChunkFor(chunks, 'src/pages/RoomPage.tsx');
+ */
+export const routeChunkFor = (
+  chunks: readonly BundleChunk[],
+  module: string,
+): BundleChunk | undefined =>
+  chunks.find((chunk) => (chunk.facadeModuleId ?? '').replaceAll('\\', '/').endsWith(module));
