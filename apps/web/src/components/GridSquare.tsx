@@ -3,9 +3,7 @@ import { alpha, type SxProps, type Theme } from '@mui/material/styles';
 import { type ChangeEvent, type FocusEvent, useLayoutEffect, useRef } from 'react';
 
 import type { GuessEntryCell } from '../rooms/guess-board';
-
-/** Side of one grid square, in pixels. */
-export const CELL_SIZE = 32;
+import { CELL_SIDE } from './board-geometry';
 
 /**
  * The crossword number of a square, in its top-left corner, as a crossword
@@ -14,12 +12,16 @@ export const CELL_SIZE = 32;
  * stay readable on a square being typed into and on one showing a wrong answer
  * in red. It takes no clicks: the square below it is the thing to press, and it
  * is said in the square's own label rather than read off the screen.
+ *
+ * It is sized from the square rather than from the page, so it keeps its share
+ * of a square that shrinks — down to a floor, because a number that went on
+ * scaling would stop being a number and become a smudge in a corner.
  */
 const NUMBER_SX: SxProps<Theme> = {
   position: 'absolute',
   top: '1px',
   left: '2px',
-  fontSize: '0.55rem',
+  fontSize: `max(8px, calc(${CELL_SIDE} * 0.3))`,
   fontWeight: 700,
   lineHeight: 1,
   color: 'text.primary',
@@ -168,14 +170,16 @@ export const GridSquare = ({
   const tabIndex = isCursor || isTabStop ? 0 : -1;
 
   const square = {
-    height: CELL_SIZE,
-    width: CELL_SIZE,
+    height: CELL_SIDE,
+    width: CELL_SIDE,
     borderRadius: '2px',
     border: '1px solid',
     borderColor: cell.isRefused ? 'error.main' : 'divider',
     display: 'grid',
     placeItems: 'center',
-    fontSize: '0.95rem',
+    // The letter keeps its share of the square rather than a size of its own,
+    // so a board drawn small stays a board of letters rather than of dots.
+    fontSize: `calc(${CELL_SIDE} * 0.55)`,
     fontWeight: 600,
     textTransform: 'uppercase',
     ...(isCursor ? CURSOR_SX : {}),
@@ -195,7 +199,7 @@ export const GridSquare = ({
   };
 
   return (
-    <Box sx={{ position: 'relative', height: CELL_SIZE, width: CELL_SIZE }}>
+    <Box sx={{ position: 'relative', height: CELL_SIDE, width: CELL_SIDE }}>
       {cell.source === 'own' ? (
         <Box
           component="input"
@@ -221,7 +225,10 @@ export const GridSquare = ({
             borderColor: cell.isRefused ? 'error.main' : 'primary.main',
             padding: 0,
             textAlign: 'center',
-            font: 'inherit',
+            // The typeface alone, where this used to take `font` whole: that is
+            // a shorthand, and it silently put the size back to the page's —
+            // which is a letter too big for a square drawn small.
+            fontFamily: 'inherit',
             fontWeight: 600,
             color: 'text.primary',
             backgroundColor: (theme) =>

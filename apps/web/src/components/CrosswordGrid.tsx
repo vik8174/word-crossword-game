@@ -7,7 +7,15 @@ import type { GuessEntryCell } from '../rooms/guess-board';
 import { isArrowKey, useGridCursor } from '../rooms/use-grid-cursor';
 import { useGuessEntry } from '../rooms/use-guess-entry';
 import { cellKey, type GridView, type WordLocation } from '../rooms/word-visibility';
-import { CELL_SIZE, GridSquare } from './GridSquare';
+import {
+  BOARD_HEIGHT_CSS,
+  boardVariables,
+  CELL_GAP,
+  CELL_SIDE,
+  cellSizeVariable,
+  GRID_COLUMNS_CSS,
+} from './board-geometry';
+import { GridSquare } from './GridSquare';
 
 /** Text that is read out but not drawn — for what the grid says in colour alone. */
 const SPOKEN_ONLY: SxProps<Theme> = {
@@ -190,7 +198,10 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
     const cell = entry.cells.get(key);
 
     if (cell === undefined) {
-      return <Box key={key} sx={{ height: CELL_SIZE, width: CELL_SIZE }} />;
+      // A square the crossword does not use still takes a square's worth of
+      // room, and takes it from the same variable — a row of holes drawn at
+      // some other size would pull the grid apart wherever a row is not full.
+      return <Box key={key} sx={{ height: CELL_SIDE, width: CELL_SIDE }} />;
     }
 
     return (
@@ -208,19 +219,41 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
   };
 
   return (
-    <Box sx={{ overflowX: 'auto', py: 1 }}>
+    <Box sx={{ py: 1 }}>
+      {/*
+        The board's own patch of the page, and the thing every square is
+        measured against: it is declared a CSS container, and the size of a
+        square is a sum over the room it has (`board-geometry.ts`). Its height
+        is given to it rather than taken from its contents, because a container
+        that reports its height has to have one settled without them.
+
+        It scrolls in both directions and not only across. Which axis runs out
+        is not fixed — the narrow column the board sits in today runs out of
+        width, a board given the whole page runs out of height — and a board cut
+        off at the bottom is a board with words nobody can reach.
+      */}
       <Box
-        role="group"
-        aria-label={`Crossword grid, ${view.rows} by ${view.cols}, ${entry.cells.size} squares, ${filledIn} of them filled in`}
-        onKeyDown={handleKeyDown}
         sx={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${view.cols}, ${CELL_SIZE}px)`,
-          gap: '2px',
-          width: 'max-content',
+          ...boardVariables(view),
+          containerType: 'size',
+          height: BOARD_HEIGHT_CSS,
+          overflow: 'auto',
         }}
       >
-        {rows.map((row) => cols.map((col) => renderCell(row, col)))}
+        <Box
+          role="group"
+          aria-label={`Crossword grid, ${view.rows} by ${view.cols}, ${entry.cells.size} squares, ${filledIn} of them filled in`}
+          onKeyDown={handleKeyDown}
+          sx={{
+            ...cellSizeVariable,
+            display: 'grid',
+            gridTemplateColumns: GRID_COLUMNS_CSS,
+            gap: `${CELL_GAP}px`,
+            width: 'max-content',
+          }}
+        >
+          {rows.map((row) => cols.map((col) => renderCell(row, col)))}
+        </Box>
       </Box>
 
       {/*
