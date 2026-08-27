@@ -1,4 +1,5 @@
 import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useMemo } from 'react';
 
@@ -67,12 +68,26 @@ export const RoomCrossword = ({
 
   return (
     <section aria-labelledby="grid-heading">
-      <Typography id="grid-heading" variant="h6" component="h2">
-        The crossword
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        {caption}
-      </Typography>
+      {/* One line rather than a heading with a paragraph under it. Both of them
+          say what the board is, and both of them were being paid for out of the
+          board's own height (issue #101); side by side they cost a single line
+          on a screen with the room for it, and wrap into the two they always
+          were on one without. */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'baseline',
+          columnGap: 1,
+        }}
+      >
+        <Typography id="grid-heading" variant="subtitle1" component="h2">
+          The crossword
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          {caption}
+        </Typography>
+      </Box>
 
       <CrosswordGrid
         view={view}

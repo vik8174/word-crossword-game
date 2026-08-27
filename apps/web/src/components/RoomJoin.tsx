@@ -7,6 +7,7 @@ import { rememberNickname } from '../rooms/nickname-store';
 import { joinRoom } from '../rooms/room-service';
 import { logGameEvent } from '../telemetry/analytics';
 import { JoinRoomForm } from './JoinRoomForm';
+import { RoomMiddleColumn, RoomShell } from './RoomShell';
 
 const JOIN_FAILED_MESSAGE =
   'Could not join the game. Check your connection and try again — the room is still there.';
@@ -85,10 +86,18 @@ export const RoomJoin = ({ roomId, playerId, seatToRelease, onRefused }: RoomJoi
   };
 
   return (
-    <JoinRoomForm
-      onJoin={(nickname) => void submitJoin(nickname)}
-      isJoining={join.phase === 'submitting'}
-      errorMessage={failureOf(join)}
-    />
+    // Both zones empty, and the form where the board will be: this visitor is
+    // not in the room yet, so there is nothing of the game to put either side of
+    // them. It is the same frame all the same, so walking in moves the contents
+    // of a screen rather than replacing one.
+    <RoomShell>
+      <RoomMiddleColumn>
+        <JoinRoomForm
+          onJoin={(nickname) => void submitJoin(nickname)}
+          isJoining={join.phase === 'submitting'}
+          errorMessage={failureOf(join)}
+        />
+      </RoomMiddleColumn>
+    </RoomShell>
   );
 };

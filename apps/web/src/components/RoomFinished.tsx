@@ -1,5 +1,3 @@
-import Stack from '@mui/material/Stack';
-
 import { finishedGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
@@ -7,6 +5,7 @@ import { finishedWordsOf } from '../rooms/word-visibility';
 import { GameCompletedPanel } from './GameCompletedPanel';
 import { PlayerList } from './PlayerList';
 import { RoomCrossword } from './RoomCrossword';
+import { RoomShell } from './RoomShell';
 
 interface RoomFinishedProps {
   /** The room, closed with its crossword full. */
@@ -34,16 +33,18 @@ export const RoomFinished = ({ room, viewerId }: RoomFinishedProps) => {
   const players = playersInJoinOrder(room);
 
   return (
-    <Stack spacing={3}>
-      <GameCompletedPanel words={finishedWordsOf(room)} playerCount={players.length} />
-
-      <PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />
-
+    <RoomShell
+      // The words go where the ones this player was explaining stood all game.
+      // There is no secret half left to keep them apart from, so the zone that
+      // held one side of the game holds the whole of it.
+      left={<GameCompletedPanel words={finishedWordsOf(room)} playerCount={players.length} />}
+      right={<PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />}
+    >
       <RoomCrossword
         room={room}
         viewerId={viewerId}
         caption={finishedGridCaption(room.layout.placedWords.length)}
       />
-    </Stack>
+    </RoomShell>
   );
 };

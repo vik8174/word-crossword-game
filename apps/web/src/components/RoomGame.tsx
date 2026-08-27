@@ -1,7 +1,7 @@
 import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import { openGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
@@ -14,8 +14,10 @@ import { logGameEvent } from '../telemetry/analytics';
 import { EndGamePanel } from './EndGamePanel';
 import { OwnPresenceNotice } from './OwnPresenceNotice';
 import { PlayerList } from './PlayerList';
-import { PlayerWordsPanel } from './PlayerWordsPanel';
 import { RoomCrossword } from './RoomCrossword';
+import { RoomShell } from './RoomShell';
+import { WordsToExplainPanel } from './WordsToExplainPanel';
+import { WordsToGuessPanel } from './WordsToGuessPanel';
 
 /** Said in a room whose words have been dealt out and is being played. */
 const PLAYING_MESSAGE = 'The game is on.';
@@ -69,11 +71,16 @@ interface RoomGameProps {
  * and a room that has already ended has nothing left to write
  * (`docs/decisions/0027-a-game-a-player-can-end.md`).
  *
- * It also holds the one thing the panel and the grid have to agree on: which
- * word the player last asked to be taken to. They are two components side by
- * side, so the request passes through here — as a location and never as a
- * word, so nothing that could be spelled out travels between them
+ * It also holds the one thing the two indexes and the grid have to agree on:
+ * which word the player last asked to be taken to. They are three components
+ * around one board, so the request passes through here — as a location and
+ * never as a word, so nothing that could be spelled out travels between them
  * (`docs/decisions/0016-the-cursor-lives-in-the-grid.md`).
+ *
+ * The screen is laid out as the game is (issue #101): what this player gives
+ * the other one on the left of the board, what they get back on the right. That
+ * is also why the two halves are two components — they no longer sit anywhere
+ * near each other.
  *
  * @param props.roomId - Id of the room being played
  * @param props.room - The room document
@@ -141,12 +148,22 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
     }
   };
 
-  return (
-    <Stack spacing={3}>
-      <Typography variant="body1" role="status">
-        {PLAYING_MESSAGE}
-      </Typography>
+  // The two zones the board sits between, and the one thing the deal can leave
+  // a player with instead of them. Built as values rather than inline, so it is
+  // plain that what a player explains never reaches the right of the board and
+  // what they guess never reaches the left.
+  const toExplain: ReactNode = (
+    <>
+      {wordView.kind === 'dealt' && (
+        <WordsToExplainPanel words={wordView.toExplain} onSelectWord={setWordToReach} />
+      )}
 
+      {wordView.kind === 'left-out' && <Alert severity="info">{LEFT_OUT_MESSAGE}</Alert>}
+    </>
+  );
+
+  const toGuess: ReactNode = (
+    <Stack spacing={2}>
       <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
 
       <PlayerList
@@ -157,11 +174,30 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
       />
 
       {wordView.kind === 'dealt' && (
-        <PlayerWordsPanel view={wordView} onSelectWord={setWordToReach} />
+        <WordsToGuessPanel words={wordView.toGuess} onSelectWord={setWordToReach} />
       )}
+    </Stack>
+  );
 
-      {wordView.kind === 'left-out' && <Alert severity="info">{LEFT_OUT_MESSAGE}</Alert>}
-
+  return (
+    <RoomShell
+      status={
+        <Typography variant="body1" role="status">
+          {PLAYING_MESSAGE}
+        </Typography>
+      }
+      action={
+        <EndGamePanel
+          onEnd={() => {
+            void endGame();
+          }}
+          isEnding={isEnding}
+          errorMessage={endError ?? undefined}
+        />
+      }
+      left={toExplain}
+      right={toGuess}
+    >
       <RoomCrossword
         room={room}
         viewerId={viewerId}
@@ -170,14 +206,6 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
         errorMessage={guessError ?? undefined}
         wordToReach={wordToReach}
       />
-
-      <EndGamePanel
-        onEnd={() => {
-          void endGame();
-        }}
-        isEnding={isEnding}
-        errorMessage={endError ?? undefined}
-      />
-    </Stack>
+    </RoomShell>
   );
 };

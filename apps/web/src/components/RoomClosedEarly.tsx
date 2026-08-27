@@ -1,11 +1,11 @@
 import Alert from '@mui/material/Alert';
-import Stack from '@mui/material/Stack';
 
 import { closedGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
 import { PlayerList } from './PlayerList';
 import { RoomCrossword } from './RoomCrossword';
+import { RoomShell } from './RoomShell';
 
 /**
  * Said in a room that ended without its crossword having been finished.
@@ -64,18 +64,19 @@ export const RoomClosedEarly = ({ room, viewerId }: RoomClosedEarlyProps) => {
   const players = playersInJoinOrder(room);
 
   return (
-    <Stack spacing={3}>
-      <Alert severity="info" role="status">
-        {CLOSED_UNFINISHED_MESSAGE}
-      </Alert>
-
-      <PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />
-
+    <RoomShell
+      left={
+        <Alert severity="info" role="status">
+          {CLOSED_UNFINISHED_MESSAGE}
+        </Alert>
+      }
+      right={<PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />}
+    >
       <RoomCrossword
         room={room}
         viewerId={viewerId}
         caption={closedGridCaption(room.layout.placedWords.length)}
       />
-    </Stack>
+    </RoomShell>
   );
 };

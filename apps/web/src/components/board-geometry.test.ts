@@ -9,6 +9,7 @@ import {
   fitsIn,
   MAX_CELL_SIZE,
   MIN_CELL_SIZE,
+  WIDE_BOARD_HEIGHT_PERCENT,
 } from './board-geometry';
 
 /**
@@ -68,54 +69,75 @@ const LIST_SIZES = [MIN_WORDS, Math.round((MIN_WORDS + MAX_WORDS) / 2), MAX_WORD
 /**
  * A screen the game is played on, and how much of it the board gets.
  *
- * The width is the page's to give, not the board's: the room sits in a
- * `Container maxWidth="sm"`, which leaves 552 pixels whatever the window is —
- * which is why a desktop and a tablet differ here only in height.
+ * Both of the board's sides are the room's layout to give, and neither of them
+ * can be worked out here: they are the answer of a `clamp()` over the window
+ * inside a grid of three zones, which jsdom cannot lay out. So they are measured
+ * in a browser and written down, and {@link SCREENS} says how.
  */
 interface Screen {
   readonly name: string;
   /** Height of the window, which the board takes its share of. */
   readonly windowHeight: number;
-  /** What the page leaves the board across. */
+  /** What the layout leaves the board across, measured in a real browser. */
   readonly boardWidth: number;
+  /** Which of the two height budgets this screen's layout gives the board. */
+  readonly heightPercent: number;
   /**
    * The share of games that must fit on it whole, with no scrolling.
    *
    * What the release undertakes to deliver on that screen, rather than what the
-   * code happens to manage — {@link SCREENS} says where the desktop's figure
-   * comes from and why it is not yet the one issue #100 set out to make.
+   * code happens to manage. Both figures are met with room to spare and are
+   * meant to be: the promise is the floor the board may not fall back through,
+   * not a record of what it reaches.
    */
   readonly promise: number;
 }
 
 /**
- * Two screens and what the board manages on them today.
+ * Two screens and what the board manages on them.
  *
- * They differ only in height, because at 552 pixels across it is the width that
- * runs out first — so a tablet's taller screen currently buys it nothing, and
- * its lower promise is met with room to spare. The two come apart the moment
- * the room page gives the board more than a `maxWidth="sm"` column: on the same
- * set of games, a board 880 pixels across fits every one of them on both.
+ * They differ in both directions now, which is issue #101's doing. Until it the
+ * room sat in a `Container maxWidth="sm"` and the board had 552 pixels across
+ * whatever the window was, so a tablet's taller screen bought it nothing: at
+ * that width it was the width that ran out first on every screen, and a desktop
+ * fitted 34 of these 45 games. The room takes the whole window now, with the
+ * board in the middle of it, and the widths below were read off the board's own
+ * box in Chrome — 915 pixels in a 1440 by 900 window, where the two indexes
+ * stand either side of it, and 802 in a 834 by 1112 one, where they stand
+ * underneath and the board has the width to itself.
  *
- * The desktop's 0.75 is therefore a lower promise than the release made, and it
- * is a temporary one. Issue #100 undertook to fit 80% of games on a desktop,
- * and 80% cannot be reached from inside this module at any setting of the
- * bounds or of the height budget, because the width is not the board's to give:
- * it is drawn inside the `Container maxWidth="sm"` of `RoomPage.tsx`, which
- * leaves it 552 pixels however wide the window is, and at 552 it fits 34 of
- * these 45 games. At 880 it fits all 45. The figure standing here is what is
- * true today rather than what was hoped for, and it is raised to 0.8 by issue
- * #101 — the ticket that gives the board the width of the page — and by nothing
- * before it.
+ * The height each of them gives the board differs for the same reason, and the
+ * one that matters is the desktop's: a crossword comes out nearly square, so
+ * once the width stops being the binding side it is the height that decides
+ * whether a game fits.
+ *
+ * The desktop's promise is 0.8, which is what the release undertook and what
+ * issue #100 could not reach from inside this module at any setting of the
+ * bounds or of the height budget, because the width was not the board's to
+ * give. It is a floor with a great deal under it: at 915 by 702 every one of
+ * these 45 games fits whole, and it takes the board back to about 660 pixels
+ * across before 0.8 is in danger.
  */
 const SCREENS: readonly Screen[] = [
-  { name: 'desktop, 1440 by 900', windowHeight: 900, boardWidth: 552, promise: 0.75 },
-  { name: 'tablet, 834 by 1112', windowHeight: 1112, boardWidth: 552, promise: 0.6 },
+  {
+    name: 'desktop, 1440 by 900',
+    windowHeight: 900,
+    boardWidth: 915,
+    heightPercent: WIDE_BOARD_HEIGHT_PERCENT,
+    promise: 0.8,
+  },
+  {
+    name: 'tablet, 834 by 1112',
+    windowHeight: 1112,
+    boardWidth: 802,
+    heightPercent: BOARD_HEIGHT_PERCENT,
+    promise: 0.6,
+  },
 ];
 
-const boardBoxOn = ({ windowHeight, boardWidth }: Screen): BoardBox => ({
+const boardBoxOn = ({ windowHeight, boardWidth, heightPercent }: Screen): BoardBox => ({
   width: boardWidth,
-  height: (windowHeight * BOARD_HEIGHT_PERCENT) / 100,
+  height: (windowHeight * heightPercent) / 100,
 });
 
 /** A small deterministic source of randomness — mulberry32. */
@@ -207,14 +229,20 @@ afterEach(() => {
  *
  * It therefore fails if the ceiling on a word list is raised, if the board's
  * share of the window is cut, or if a square is no longer allowed to shrink as
- * far — which is what it is here to guard.
+ * far — which is what it is here to guard. It also fails if the layout gives the
+ * board less room, but only once somebody measures the new width and writes it
+ * into {@link SCREENS}: no test can read that off a stylesheet, and a layout
+ * change that is not measured is a promise nobody checked.
  *
- * The margins are thin on purpose and worth knowing before touching any of
- * those numbers. A desktop fits 34 of these 45 games; it fits 33 at 65% of the
- * window instead of 70, 24 if a square may not go below 22 pixels, and 29 if a
- * word list may hold 25 words instead of 20. Every one of those is a red test,
- * and every one of them should be: they are the promise changing, not the code
- * breaking.
+ * What the margins are, since they decide how much of the above is a warning
+ * and how much is a wall. A desktop fits all 45 of these games at 915 by 702,
+ * and it goes on fitting all of them down to about 660 pixels across; the
+ * promise of 0.8 breaks somewhere under 570. A square that may not go below 22
+ * pixels rather than 20 costs neither screen anything at these sizes, which it
+ * did cost when the board had 552 pixels. A larger word list would change the
+ * games being measured rather than the room they are measured in, and is the
+ * change this test exists to make somebody look at. Every one of those failing
+ * is the promise changing rather than the code breaking.
  */
 describe('the board on a real screen', () => {
   SCREENS.forEach((screen) => {
