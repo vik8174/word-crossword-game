@@ -14,8 +14,10 @@ import {
   CELL_SIDE,
   cellSizeVariable,
   GRID_COLUMNS_CSS,
+  WIDE_BOARD_HEIGHT_CSS,
 } from './board-geometry';
 import { GridSquare } from './GridSquare';
+import { THREE_ZONES } from './room-layout';
 
 /** Text that is read out but not drawn — for what the grid says in colour alone. */
 const SPOKEN_ONLY: SxProps<Theme> = {
@@ -225,12 +227,14 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
         measured against: it is declared a CSS container, and the size of a
         square is a sum over the room it has (`board-geometry.ts`). Its height
         is given to it rather than taken from its contents, because a container
-        that reports its height has to have one settled without them.
+        that reports its height has to have one settled without them — and it is
+        a larger share of the window on the screen where the board has a column
+        to itself.
 
         It scrolls in both directions and not only across. Which axis runs out
-        is not fixed — the narrow column the board sits in today runs out of
-        width, a board given the whole page runs out of height — and a board cut
-        off at the bottom is a board with words nobody can reach.
+        is not fixed — a phone runs out of width, a board given a desktop's
+        column runs out of height — and a board cut off at the bottom is a board
+        with words nobody can reach.
       */}
       <Box
         sx={{
@@ -238,6 +242,7 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
           containerType: 'size',
           height: BOARD_HEIGHT_CSS,
           overflow: 'auto',
+          [THREE_ZONES]: { height: WIDE_BOARD_HEIGHT_CSS },
         }}
       >
         <Box
@@ -250,6 +255,11 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
             gridTemplateColumns: GRID_COLUMNS_CSS,
             gap: `${CELL_GAP}px`,
             width: 'max-content',
+            // Centred in a zone wider than the crossword, and pushed to neither
+            // side of one that is narrower: automatic margins on a block wider
+            // than what holds it come out as nothing, so the scroll still starts
+            // at the first column rather than in the middle of the board.
+            mx: 'auto',
           }}
         >
           {rows.map((row) => cols.map((col) => renderCell(row, col)))}
@@ -279,7 +289,20 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
         </Typography>
       )}
 
-      <Typography variant="body2" color="error" role="status" sx={{ mt: 1, minHeight: '1.5em' }}>
+      {/*
+        Kept under the board rather than moved to a zone beside it: it is the
+        only word a player gets about an answer that was not accepted, and it has
+        to be where they were looking when they typed it.
+
+        It reserves no height while there is nothing to say. It used to — a line
+        of it, so the board would not shift when a wrong answer came back — but
+        the height it was holding is the height a square is measured out of, and
+        paying for it on every screen of every game to save one shift is the
+        wrong way round. What it cannot do is stop existing between refusals: a
+        live region only speaks when the text inside one that was already there
+        changes, so this is an empty line and never an absent one.
+      */}
+      <Typography variant="body2" color="error" role="status" sx={{ mt: entry.hasRefusal ? 1 : 0 }}>
         {entry.hasRefusal ? REFUSAL_MESSAGE : ''}
       </Typography>
     </Box>

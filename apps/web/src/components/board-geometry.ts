@@ -46,15 +46,38 @@ export const CELL_GAP = 2;
 
 /**
  * The share of the window's height the board may take for itself, as a
- * percentage.
+ * percentage, wherever it shares its column with something else.
  *
  * The board needs a height it can be told rather than one it works out from its
  * own contents: a CSS container only reports its height to what is inside it
  * when its size is settled without them (`container-type: size`). This is that
- * height — and it is the number that decides how often a game fits, because the
- * board comes out nearly square while a screen is wide and low.
+ * height.
+ *
+ * That leaves the rest of the window to whatever is stacked with the board: the
+ * two indexes under it on a tablet, and everything the room says on a phone,
+ * where the page scrolls anyway (see `room-layout.ts`). It buys nothing to raise
+ * it there — on both of those the board runs out of width long before it runs
+ * out of height.
  */
-export const BOARD_HEIGHT_PERCENT = 70;
+export const BOARD_HEIGHT_PERCENT = 62;
+
+/**
+ * The same share on a screen wide enough for the board to have a column to
+ * itself, with the indexes beside it rather than under it.
+ *
+ * This is the number that decides how often a game fits, and it is the one the
+ * room's layout exists to raise: a crossword comes out nearly square while a
+ * desktop window is wide and low, so on that screen it is the height that runs
+ * out first. What the rest of the window pays for is the header, the line that
+ * says what the board is for, and the two hints under it — about 180 pixels of
+ * a 900-pixel window, measured rather than guessed, with the board taking the
+ * 702 that are left.
+ */
+export const WIDE_BOARD_HEIGHT_PERCENT = 78;
+
+/** The height the board is given as a share of the window, never more than its squares could use. */
+const boardHeightCss = (percent: number): string =>
+  `min(${percent}dvh, calc(var(--board-rows) * ${MAX_CELL_SIZE + CELL_GAP}px - ${CELL_GAP}px))`;
 
 /**
  * The height the board is given: its share of the window, and never more than
@@ -67,7 +90,10 @@ export const BOARD_HEIGHT_PERCENT = 70;
  *
  * Reads `--board-rows`, which {@link boardVariables} writes.
  */
-export const BOARD_HEIGHT_CSS = `min(${BOARD_HEIGHT_PERCENT}dvh, calc(var(--board-rows) * ${MAX_CELL_SIZE + CELL_GAP}px - ${CELL_GAP}px))`;
+export const BOARD_HEIGHT_CSS = boardHeightCss(BOARD_HEIGHT_PERCENT);
+
+/** The same, for the screen where the board has a column of its own. */
+export const WIDE_BOARD_HEIGHT_CSS = boardHeightCss(WIDE_BOARD_HEIGHT_PERCENT);
 
 /** The custom property the side of a square is published as. */
 const CELL_PROPERTY = '--board-cell';

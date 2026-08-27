@@ -61,9 +61,14 @@ export const RoomInvitePanel = ({ roomId, origin }: RoomInvitePanelProps) => {
         Send this link to the other players — they join with a nickname, no sign-up.
       </Typography>
 
+      {/* Wrapped rather than scrolled sideways inside its own box: the panel
+          now stands in a zone beside the board rather than across the page
+          (issue #101), and a link shown as its first thirty characters is not
+          the link shown in full that the paragraph above promises. */}
       <TextField
         label="Room link"
         value={url}
+        multiline
         slotProps={{ htmlInput: { readOnly: true } }}
         fullWidth
       />

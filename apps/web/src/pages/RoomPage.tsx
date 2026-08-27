@@ -1,8 +1,7 @@
 import CircularProgress from '@mui/material/CircularProgress';
-import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { type ReactElement, useEffect, useRef, useState } from 'react';
+import { type ReactElement, type ReactNode, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { RoomClosedEarly } from '../components/RoomClosedEarly';
@@ -11,6 +10,7 @@ import { RoomGame } from '../components/RoomGame';
 import { RoomInvitePanel } from '../components/RoomInvitePanel';
 import { RoomJoin } from '../components/RoomJoin';
 import { RoomLobby } from '../components/RoomLobby';
+import { RoomMiddleColumn, RoomShell } from '../components/RoomShell';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import type { RoomDocument } from '../rooms/room-document';
 import {
@@ -45,17 +45,31 @@ const Connecting = () => (
 const RoomScreenView = ({
   roomId,
   screen,
+  invitation,
   onJoinRefused,
 }: {
   readonly roomId: string;
   readonly screen: RoomScreen;
+  readonly invitation?: ReactNode;
   readonly onJoinRefused: () => void;
 }): ReactElement => {
   switch (screen.kind) {
     case 'connecting':
-      return <Connecting />;
+      return (
+        <RoomShell>
+          <RoomMiddleColumn>
+            <Connecting />
+          </RoomMiddleColumn>
+        </RoomShell>
+      );
     case 'unavailable':
-      return <RoomUnavailableNotice reason={screen.reason} />;
+      return (
+        <RoomShell>
+          <RoomMiddleColumn>
+            <RoomUnavailableNotice reason={screen.reason} />
+          </RoomMiddleColumn>
+        </RoomShell>
+      );
     case 'join':
       return (
         <RoomJoin
@@ -66,7 +80,14 @@ const RoomScreenView = ({
         />
       );
     case 'lobby':
-      return <RoomLobby roomId={roomId} room={screen.room} viewerId={screen.viewerId} />;
+      return (
+        <RoomLobby
+          roomId={roomId}
+          room={screen.room}
+          viewerId={screen.viewerId}
+          invitation={invitation}
+        />
+      );
     case 'playing':
       return <RoomGame roomId={roomId} room={screen.room} viewerId={screen.viewerId} />;
     case 'finished':
@@ -79,14 +100,16 @@ const RoomScreenView = ({
 /**
  * The room behind the link: the invitation, and whatever the room is doing.
  *
- * The invite link sits above the screen switch rather than inside the lobby,
- * because it is the host's tool for filling the room rather than a part of any
- * one thing the room is doing. Who is shown it, and for how long, is
- * `hasSomebodyToInvite`'s answer and not this page's: the host, for as long as
- * there is a seat left to invite anybody into
+ * The invite link is decided above the screen switch and drawn below it,
+ * because those are two different questions. Who is shown it, and for how long,
+ * is `hasSomebodyToInvite`'s answer and not any screen's: the host, for as long
+ * as there is a seat left to invite anybody into
  * (`docs/decisions/0026-the-invite-link-belongs-to-the-host.md`). A seat freed
  * by a mark that went stale brings it back on the next snapshot, which the
- * host's own heartbeat below produces every fifteen seconds.
+ * host's own heartbeat below produces every fifteen seconds. Where it is put is
+ * the lobby's, because the lobby is the only screen that answer can be true on,
+ * and because a room laid out as three zones finally has a place for it
+ * (issue #101).
  *
  * The mark this client writes for itself sits here too, above the switch, for
  * the same kind of reason: being in a room is not a phase of one. A lobby and a
@@ -144,17 +167,16 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
   useScreenReached(funnelScreenFor(screen.kind));
 
   return (
-    <Stack spacing={3}>
-      {hasSomebodyToInvite(screen, now) && (
-        <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
-      )}
-
-      <RoomScreenView
-        roomId={roomId}
-        screen={screen}
-        onJoinRefused={() => setRefusedRoom(latestRoom.current)}
-      />
-    </Stack>
+    <RoomScreenView
+      roomId={roomId}
+      screen={screen}
+      invitation={
+        hasSomebodyToInvite(screen, now) ? (
+          <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
+        ) : undefined
+      }
+      onJoinRefused={() => setRefusedRoom(latestRoom.current)}
+    />
   );
 };
 
@@ -166,19 +188,27 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
  * nickname. From there the screen follows the room live, so players see each
  * other arrive.
  *
+ * The page itself is nothing but the address: every screen of a room draws its
+ * own frame, and they all draw the same one (see `RoomShell`). It used to be a
+ * `Container maxWidth="sm"`, which gave the board 552 pixels however wide the
+ * window was, and the blocks stacked above and below it took the rest out of the
+ * size of a square (issue #101).
+ *
  * @example
  * <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
  */
 export const RoomPage = () => {
   const { roomId } = useParams();
 
-  return (
-    <Container maxWidth="sm" sx={{ py: 6 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Game room
-      </Typography>
+  if (roomId === undefined) {
+    return (
+      <RoomShell>
+        <RoomMiddleColumn>
+          <RoomUnavailableNotice reason="missing" />
+        </RoomMiddleColumn>
+      </RoomShell>
+    );
+  }
 
-      {roomId === undefined ? <RoomUnavailableNotice reason="missing" /> : <Room roomId={roomId} />}
-    </Container>
-  );
+  return <Room roomId={roomId} />;
 };

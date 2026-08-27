@@ -22,9 +22,10 @@
  *
  * It is not a key to the board and does not try to be one. What the two kinds
  * of square mean — italics on the dashed ones, the highlighted ones to type
- * into — is said by `PlayerWordsPanel`, beside the very words each half is
- * about, which is a better place for it than a paragraph over the grid; saying
- * it here as well would only be a second copy.
+ * into — is said by `WordsToExplainPanel` and `WordsToGuessPanel`, each beside
+ * the very words it is about and now on its own side of the board, which is a
+ * better place for it than a paragraph over the grid; saying it here as well
+ * would only be a second copy.
  *
  * @param wordCount - How many words made it into the grid
  * @returns The caption for a board that is still to be filled in

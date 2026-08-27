@@ -1,6 +1,6 @@
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import { type ActionPhase, failureOf, IDLE } from '../rooms/action-phase';
 import { openGridCaption } from '../rooms/grid-caption';
@@ -12,6 +12,7 @@ import { useRoomPresence } from '../rooms/use-room-presence';
 import { OwnPresenceNotice } from './OwnPresenceNotice';
 import { PlayerList } from './PlayerList';
 import { RoomCrossword } from './RoomCrossword';
+import { RoomShell } from './RoomShell';
 import { StartGamePanel } from './StartGamePanel';
 
 const START_FAILED_MESSAGE =
@@ -24,6 +25,18 @@ interface RoomLobbyProps {
   readonly room: RoomDocument;
   /** UID of the player looking at it. */
   readonly viewerId: string;
+  /**
+   * The link into this room, for the one viewer who still has somebody to send
+   * it to — and nothing at all for everybody else.
+   *
+   * Handed down rather than worked out here: who is offered it, and for how
+   * long, is `hasSomebodyToInvite`'s answer, asked one screen up where the room
+   * and the moment are both to hand
+   * (`docs/decisions/0026-the-invite-link-belongs-to-the-host.md`). The lobby is
+   * only where it is put, which is the zone beside a board nobody may type in
+   * yet.
+   */
+  readonly invitation?: ReactNode;
 }
 
 /**
@@ -34,14 +47,21 @@ interface RoomLobbyProps {
  * answering words reaches here, because in a lobby there is nothing to answer:
  * the board below is drawn empty and takes no letters.
  *
+ * The zone on the left of the board is empty here, and it is meant to be: it
+ * holds the words this player explains, and in a lobby nothing has been dealt
+ * out. The board is already the size it will be played at, though — the
+ * crossword was laid out when the room was made — so nothing about it moves
+ * when the game begins (issue #101).
+ *
  * @param props.roomId - Id of the room this lobby belongs to
  * @param props.room - The room document
  * @param props.viewerId - Which player is reading, so only the owner is offered the start
+ * @param props.invitation - The room's link, for a viewer who has somebody to invite
  *
  * @example
  * <RoomLobby roomId={roomId} room={room} viewerId={playerId} />
  */
-export const RoomLobby = ({ roomId, room, viewerId }: RoomLobbyProps) => {
+export const RoomLobby = ({ roomId, room, viewerId, invitation }: RoomLobbyProps) => {
   const [start, setStart] = useState<ActionPhase>(IDLE);
   const awayDurations = useRoomPresence(room);
   const players = playersInJoinOrder(room);
@@ -62,31 +82,39 @@ export const RoomLobby = ({ roomId, room, viewerId }: RoomLobbyProps) => {
   };
 
   return (
-    <Stack spacing={3}>
-      <Typography variant="body1" role="status">
-        {lobbyStatusMessage({ isOwner, playerCount: players.length, wordCount })}
-      </Typography>
+    <RoomShell
+      status={
+        <Typography variant="body1" role="status">
+          {lobbyStatusMessage({ isOwner, playerCount: players.length, wordCount })}
+        </Typography>
+      }
+      action={
+        isOwner ? (
+          <StartGamePanel
+            playerCount={players.length}
+            wordCount={wordCount}
+            onStart={() => void submitStart()}
+            isStarting={start.phase === 'submitting'}
+            errorMessage={failureOf(start)}
+          />
+        ) : undefined
+      }
+      right={
+        <Stack spacing={2}>
+          <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
 
-      <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
+          {invitation}
 
-      <PlayerList
-        players={players}
-        ownerId={room.ownerId}
-        viewerId={viewerId}
-        awayDurations={awayDurations}
-      />
-
-      {isOwner && (
-        <StartGamePanel
-          playerCount={players.length}
-          wordCount={wordCount}
-          onStart={() => void submitStart()}
-          isStarting={start.phase === 'submitting'}
-          errorMessage={failureOf(start)}
-        />
-      )}
-
+          <PlayerList
+            players={players}
+            ownerId={room.ownerId}
+            viewerId={viewerId}
+            awayDurations={awayDurations}
+          />
+        </Stack>
+      }
+    >
       <RoomCrossword room={room} viewerId={viewerId} caption={openGridCaption(wordCount)} />
-    </Stack>
+    </RoomShell>
   );
 };
