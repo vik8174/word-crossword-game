@@ -78,7 +78,13 @@ interface Screen {
   readonly windowHeight: number;
   /** What the page leaves the board across. */
   readonly boardWidth: number;
-  /** The share of games that must fit on it whole, with no scrolling. */
+  /**
+   * The share of games that must fit on it whole, with no scrolling.
+   *
+   * What the release undertakes to deliver on that screen, rather than what the
+   * code happens to manage — {@link SCREENS} says where the desktop's figure
+   * comes from and why it is not yet the one issue #100 set out to make.
+   */
   readonly promise: number;
 }
 
@@ -90,6 +96,17 @@ interface Screen {
  * its lower promise is met with room to spare. The two come apart the moment
  * the room page gives the board more than a `maxWidth="sm"` column: on the same
  * set of games, a board 880 pixels across fits every one of them on both.
+ *
+ * The desktop's 0.75 is therefore a lower promise than the release made, and it
+ * is a temporary one. Issue #100 undertook to fit 80% of games on a desktop,
+ * and 80% cannot be reached from inside this module at any setting of the
+ * bounds or of the height budget, because the width is not the board's to give:
+ * it is drawn inside the `Container maxWidth="sm"` of `RoomPage.tsx`, which
+ * leaves it 552 pixels however wide the window is, and at 552 it fits 34 of
+ * these 45 games. At 880 it fits all 45. The figure standing here is what is
+ * true today rather than what was hoped for, and it is raised to 0.8 by issue
+ * #101 — the ticket that gives the board the width of the page — and by nothing
+ * before it.
  */
 const SCREENS: readonly Screen[] = [
   { name: 'desktop, 1440 by 900', windowHeight: 900, boardWidth: 552, promise: 0.75 },
