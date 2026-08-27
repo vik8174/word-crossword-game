@@ -39,35 +39,49 @@ const channelsOf = (colour: string): Channels => {
   return { red, green, blue, opacity };
 };
 
+/** The page, which is what anything with nothing else named under it sits on. */
+const THE_PAGE = theme.palette.background.default;
+
 /**
- * Relative luminance, as WCAG defines it — and as it comes out on this page.
+ * Relative luminance, as WCAG defines it — and as it comes out where it is drawn.
  *
- * Several of what the board is drawn with are ink thinned down, which means
- * nothing on its own: laid over one thing it is one colour and over another it
- * is a different one. The page is what they are actually laid over, so that is
- * what they are read against.
+ * Some of what the board is drawn with is ink thinned down, and a thinned colour
+ * means nothing on its own: laid over one thing it is one colour, over another
+ * it is a different one. So what it is laid over is asked for rather than
+ * assumed. The rule of the grid is the case that makes the difference — the
+ * same `alpha()` is drawn on a square nobody has written in and on one the
+ * group has answered, and those are two different papers.
+ *
+ * @param colour - The colour to read, opaque or not
+ * @param surface - The opaque colour it is actually drawn on
  */
-const luminanceOf = (colour: string): number => {
+const luminanceOf = (colour: string, surface: string): number => {
   const { red, green, blue, opacity } = channelsOf(colour);
-  const page = channelsOf(theme.palette.background.default);
-  const linear = (channel: number, under: number): number => {
-    const value = (channel * opacity + under * (1 - opacity)) / 255;
+  const under = channelsOf(surface);
+  const linear = (channel: number, beneath: number): number => {
+    const value = (channel * opacity + beneath * (1 - opacity)) / 255;
 
     return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
   };
 
   return (
-    0.2126 * linear(red, page.red) +
-    0.7152 * linear(green, page.green) +
-    0.0722 * linear(blue, page.blue)
+    0.2126 * linear(red, under.red) +
+    0.7152 * linear(green, under.green) +
+    0.0722 * linear(blue, under.blue)
   );
 };
 
-/** How far apart two colours are as text and its background, 1:1 to 21:1. */
-const contrastBetween = (one: string, other: string): number => {
-  const [lighter, darker] = [luminanceOf(one), luminanceOf(other)];
+/**
+ * How far apart a colour and the surface behind it are, 1:1 to 21:1.
+ *
+ * @param colour - What is drawn on it: a word, a rule, an outline
+ * @param surface - The opaque thing it is drawn on
+ */
+const contrastBetween = (colour: string, surface: string): number => {
+  const drawn = luminanceOf(colour, surface);
+  const behind = luminanceOf(surface, surface);
 
-  return (Math.max(lighter, darker) + 0.05) / (Math.min(lighter, darker) + 0.05);
+  return (Math.max(drawn, behind) + 0.05) / (Math.min(drawn, behind) + 0.05);
 };
 
 /**
@@ -79,7 +93,7 @@ const contrastBetween = (one: string, other: string): number => {
  * look at. CIE lightness is the scale the eye is actually on.
  */
 const lightnessOf = (colour: string): number => {
-  const luminance = luminanceOf(colour);
+  const luminance = luminanceOf(colour, THE_PAGE);
 
   return luminance > 216 / 24389 ? 116 * Math.cbrt(luminance) - 16 : (luminance * 24389) / 27;
 };
@@ -95,6 +109,12 @@ const greyscaleGapBetween = (one: string, other: string): number =>
  * there being none for two fills of the same shape: the four states of a square
  * are between four and fourteen points apart, so anything under four is a
  * palette that has been edited into a state it can no longer say.
+ *
+ * The margin over the closest of those pairs is thin — 4.2 against 4 — and that
+ * is not an oversight. There is no room at the paper end of this scale for six
+ * surfaces and a comfortable floor at once, so a change that eats the last two
+ * tenths is a change that has taken the difference, and this is meant to say so
+ * rather than wave it through.
  */
 const A_VISIBLE_DIFFERENCE = 4;
 
@@ -179,12 +199,17 @@ describe('theme', () => {
     ).toBeGreaterThanOrEqual(A_VISIBLE_DIFFERENCE);
   });
 
-  it('rules the board in a line that can be seen on the paper it is on', () => {
+  it('rules the board in a line that can be seen on either paper it is drawn on', () => {
     // Not a text figure — nothing is written in it — but a grid whose lines
     // cannot be made out is not a crossword.
-    expect(
-      contrastBetween(theme.palette.grid.rule, theme.palette.grid.empty),
-    ).toBeGreaterThanOrEqual(3);
+    //
+    // Both papers, because the rule is one thinned ink and the squares under it
+    // are not one colour: the same line is drawn on a square nobody has written
+    // in and on one the group has answered, and it is the second, being the
+    // darker of the two, that runs out of room first.
+    for (const paper of [theme.palette.grid.empty, theme.palette.grid.guessed]) {
+      expect(contrastBetween(theme.palette.grid.rule, paper)).toBeGreaterThanOrEqual(3);
+    }
   });
 
   it('has one source of truth for a colour: the roles point at the tokens', () => {
