@@ -13,8 +13,7 @@
  * through here first.
  */
 
-import { ROOMS_COLLECTION } from '../rooms/room-document';
-import { ROOM_ROUTE_PATTERN } from '../rooms/room-link';
+import { ROOM_ROUTE_PATTERN, ROOMS_COLLECTION } from '../rooms/room-link';
 
 declare const redactedBrand: unique symbol;
 
