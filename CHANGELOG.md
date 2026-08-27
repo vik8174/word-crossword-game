@@ -4,6 +4,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+### Changed
+
+- The first screen no longer carries the whole app. Everything arrived in one 1,153 KB file — 356 KB gzipped — so a person who opened the landing page and pressed nothing had already downloaded Firestore, Anonymous Auth, the whole of MUI, Sentry and the crossword generator, on a page that is a heading, a line of text and a button. The two routes that open a room are now fetched when a room is asked for, and a first visit to the landing page costs **163 KB gzip** instead of 356 KB. Loading the routes on demand is not by itself what did it: the redaction runs on every page — both telemetry SDKs would ship a room id otherwise — and it was reading the name of the Firestore collection from the module that also builds room updates, a module that imports the Firestore SDK, so 136 KB of that SDK sat on a page that opens no room. The collection name now lives next to the route pattern in `room-link.ts`, where a room's other address already was, and `auth` and `db` have moved out of `firebase/config.ts` into `firebase/services.ts` for the same reason: the config is reached from the analytics and is therefore on every page, while the two SDKs are only wanted where a room is. The libraries sit in chunks of their own as well — React, MUI, Sentry, Firebase's core, and the Firestore half of Firebase — so a release now invalidates the few kilobytes the app's own code takes rather than half a megabyte of libraries that did not change. An invite link pays nothing for any of this: `/room/<id>` is the most important arrival this app has, opened cold in a fresh tab, and the chunks it needs are named in the HTML, so a guest's browser fetches them alongside the first chunk rather than after it — 358 KB gzip against the 356 KB it was, in the same number of round trips. While a chunk is on its way the page shows that something is coming instead of going blank, which is also what the shift between screens will be drawn over ([issue #92](https://github.com/vik8174/word-crossword-game/issues/92))
+
 ## [1.2.0] - 2026-08-24
 
 ### Added

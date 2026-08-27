@@ -36,10 +36,17 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: /word crossword game/i })).toBeInTheDocument();
   });
 
-  it('opens a room at the address invite links point at', () => {
+  it('opens a room at the address invite links point at', async () => {
     open(roomPath('room-1'));
 
-    expect(screen.getByRole('heading', { name: /game room/i })).toBeInTheDocument();
+    // What the split must not do is leave the page blank while the room is on
+    // its way: an app that is working would look like one that is broken, and
+    // this is what the shift between screens is drawn over (issue #93).
+    expect(screen.getByRole('progressbar', { name: /loading/i })).toBeInTheDocument();
+
+    // Fetched when the address asks for it rather than shipped with the landing
+    // page (issue #92), so the room arrives a tick after the render.
+    expect(await screen.findByRole('heading', { name: /game room/i })).toBeInTheDocument();
   });
 
   it('explains an address it knows nothing about instead of showing a blank page', () => {
