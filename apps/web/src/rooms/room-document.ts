@@ -12,9 +12,6 @@ import type { CrosswordLayout, WordAssignment } from 'shared';
  * tickets #5-#9 read and update these fields, so changing them is expensive.
  */
 
-/** Firestore collection every room document lives in. */
-export const ROOMS_COLLECTION = 'rooms';
-
 /** How long a room survives without activity (24 hours), in milliseconds. */
 export const ROOM_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
