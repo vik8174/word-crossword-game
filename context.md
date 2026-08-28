@@ -77,4 +77,5 @@ The four tokens are named in Japanese, and those names live in the code rather t
 - **`sumi`** — the dark ink: body text, the lines of the grid.
 - **`sakura`** — the accent that carries the atmosphere. Atmosphere only: it is kept away from the board, where pink already means a refused answer.
 - **`matcha`** — the second accent.
+- **Shift** — the movement one screen of a room makes when it becomes the next one: the screen that was goes left, the one replacing it comes in from the right over it, and the frame around them does not move. Keyed on which `RoomScreen` is showing and never on a redraw, because a room redraws roughly every seven seconds all game ([0030](docs/decisions/0030-where-movement-is-allowed.md)).
 - **Petals** — the falling background of every screen except the game. Their absence during a game is deliberate, and their return at the end is the greeting ([0030](docs/decisions/0030-where-movement-is-allowed.md)).

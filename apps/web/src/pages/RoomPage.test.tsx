@@ -38,6 +38,19 @@ vi.mock('firebase/analytics', () => ({
 
 const HOUR_MS = 60 * 60 * 1000;
 
+/**
+ * Waits for the screen that was to be taken off the page.
+ *
+ * One screen gives way to the next over `SHIFT_DURATION_MS`, and both of them
+ * are in the document while that lasts (issue #93). So a screen having gone is
+ * something to wait for: read straight after the snapshot, what is found is the
+ * one still on its way out.
+ */
+const untilGone = (find: () => HTMLElement | null): Promise<void> =>
+  waitFor(() => {
+    expect(find()).not.toBeInTheDocument();
+  });
+
 /** Stands in for the SDK's `Analytics` handle, which this app never inspects. */
 const FAKE_ANALYTICS = { app: 'fake-analytics' } as unknown as Analytics;
 
@@ -519,7 +532,7 @@ describe('RoomPage', () => {
       });
 
       expect(screen.getByText('Bob')).toBeInTheDocument();
-      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      await untilGone(() => screen.queryByLabelText(/nickname/i));
     });
 
     it('explains a join that never reached the database, and lets the player try again', async () => {
@@ -542,7 +555,7 @@ describe('RoomPage', () => {
       // way back to a form whose button would be refused all over again.
       expect(await screen.findByText(/would not take you in/i)).toBeInTheDocument();
       expect(screen.queryByText(/check your connection/i)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      await untilGone(() => screen.queryByLabelText(/nickname/i));
       expect(screen.getByRole('link', { name: /start a new game/i })).toBeInTheDocument();
       expect(reported).toHaveBeenCalledWith('Joining the room failed', REFUSED_BY_RULES);
     });
@@ -589,7 +602,7 @@ describe('RoomPage', () => {
       });
 
       expect(await screen.findByText(/would not take you in/i)).toBeInTheDocument();
-      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      await untilGone(() => screen.queryByLabelText(/nickname/i));
     });
 
     it('gives way to what the room itself says, as soon as the next snapshot lands', async () => {
@@ -1560,7 +1573,7 @@ describe('RoomPage', () => {
       });
 
       expect(screen.getByText(/ended before every word had been answered/i)).toBeInTheDocument();
-      expect(screen.queryByText(/the game is on/i)).not.toBeInTheDocument();
+      await untilGone(() => screen.queryByText(/the game is on/i));
     });
 
     it('keeps the words that were answered on the board and spells out no others', async () => {
@@ -1660,8 +1673,8 @@ describe('RoomPage', () => {
       });
 
       expect(screen.getByText(/no game at this link/i)).toBeInTheDocument();
-      expect(screen.queryByText('Vik')).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      await untilGone(() => screen.queryByText('Vik'));
+      await untilGone(() => screen.queryByLabelText(/nickname/i));
     });
 
     it('says so when the address carries no room id at all', () => {
@@ -1879,6 +1892,67 @@ describe('RoomPage', () => {
       expect(reported).not.toContain('room-1');
       expect(reported).not.toContain('Bob');
       expect(reported).not.toContain('cat');
+    });
+  });
+
+  describe('the shift from one screen to the next', () => {
+    const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
+    const lobbyRoom = storedRoom({ players: bothPlayers });
+
+    /** A dealt-out room, built afresh each time the way a snapshot delivers it. */
+    const dealtRoom = () =>
+      storedRoom({
+        status: 'playing',
+        layout: TWO_WORD_LAYOUT,
+        players: { ...bothPlayers },
+        words: {
+          w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+          w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+        },
+      });
+
+    const emit = (room: unknown) =>
+      act(async () => {
+        emitRoom({ exists: () => true, data: () => room });
+      });
+
+    it('draws the lobby over the nickname form rather than in its place', async () => {
+      await openRoom();
+      joinAs('Bob');
+
+      await emit(lobbyRoom);
+
+      // Both screens on the page at once, which is the whole of what a shift
+      // is. Nothing else about this address changes — the form and the lobby
+      // are both `/room/room-1` — so the movement is the only thing there is to
+      // say that a state changed rather than a page redrawing.
+      expect(screen.getByText('Bob')).toBeInTheDocument();
+      expect(screen.getByLabelText(/nickname/i)).toBeInTheDocument();
+
+      await untilGone(() => screen.queryByLabelText(/nickname/i));
+    });
+
+    it('stands still through the snapshots a game is full of', async () => {
+      await openRoom(dealtRoom());
+
+      // The room arriving over the spinner is itself a shift, so it is waited
+      // out before the thing this test is about begins.
+      await untilGone(() => screen.queryByText(/connecting to the game/i));
+      expect(screen.getAllByText(/the game is on/i)).toHaveLength(1);
+
+      // Two minutes of a game as it really behaves: each client rewrites its own
+      // presence mark every fifteen seconds and every write is a snapshot for
+      // everybody, so a room with two players in it redraws roughly every seven
+      // for the whole game. Not one of those is a screen changing. A shift
+      // hanging off the render would twitch through all of them — and nowhere a
+      // developer would see it, a machine with one player receiving no
+      // snapshots at all.
+      for (let beat = 0; beat < 16; beat += 1) {
+        await emit(dealtRoom());
+      }
+
+      expect(screen.getAllByText(/the game is on/i)).toHaveLength(1);
+      expect(screen.getAllByRole('heading', { level: 1, hidden: true })).toHaveLength(1);
     });
   });
 
