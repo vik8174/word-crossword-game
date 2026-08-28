@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { RoomShell } from './RoomShell';
+import { ShiftRoleContext } from './screen-shift';
 
 describe('RoomShell', () => {
   it('names the room once, whatever the room is doing', () => {
@@ -47,5 +48,21 @@ describe('RoomShell', () => {
     render(<RoomShell right={<p>who is here</p>}>the board</RoomShell>);
 
     expect(screen.getByRole('main').textContent).toBe('the boardwho is here');
+  });
+
+  it('gives up its header to the screen replacing it', () => {
+    render(
+      <ShiftRoleContext value="leaving">
+        <RoomShell status={<p>The game is on.</p>}>the board</RoomShell>
+      </ShiftRoleContext>,
+    );
+
+    // While a shift runs there are two of these on the page, one over the
+    // other. Two headers in the same place would print over each other, and the
+    // header is the part that is meant to stand still — so the screen on its
+    // way out lets the arriving one's stand (issue #93).
+    expect(screen.queryByRole('banner')).toBeNull();
+    expect(screen.getByRole('banner', { hidden: true })).not.toBeVisible();
+    expect(screen.getByRole('main')).toBeVisible();
   });
 });

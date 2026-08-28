@@ -11,6 +11,7 @@ import { RoomInvitePanel } from '../components/RoomInvitePanel';
 import { RoomJoin } from '../components/RoomJoin';
 import { RoomLobby } from '../components/RoomLobby';
 import { RoomMiddleColumn, RoomShell } from '../components/RoomShell';
+import { ScreenShift } from '../components/ScreenShift';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import type { RoomDocument } from '../rooms/room-document';
 import {
@@ -124,6 +125,13 @@ const RoomScreenView = ({
  * screen is rebuilt on every snapshot, and the heartbeat above causes one every
  * fifteen seconds.
  *
+ * The change from one of those screens to the next is the one thing on this
+ * page that moves, and it is keyed on which screen is showing rather than on
+ * this component rendering (see {@link ScreenShift}). The heartbeat above
+ * causes a render every fifteen seconds in every client, so the difference
+ * between the two is a shift that plays when a player pressed something and one
+ * that twitches all game.
+ *
  * One thing here is not read from the room: whether the room refused to take
  * this visitor in. It cannot be — a refused write is answered with
  * `permission-denied` and the document that would explain it is the very thing
@@ -167,16 +175,18 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
   useScreenReached(funnelScreenFor(screen.kind));
 
   return (
-    <RoomScreenView
-      roomId={roomId}
-      screen={screen}
-      invitation={
-        hasSomebodyToInvite(screen, now) ? (
-          <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
-        ) : undefined
-      }
-      onJoinRefused={() => setRefusedRoom(latestRoom.current)}
-    />
+    <ScreenShift shiftKey={screen.kind}>
+      <RoomScreenView
+        roomId={roomId}
+        screen={screen}
+        invitation={
+          hasSomebodyToInvite(screen, now) ? (
+            <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
+          ) : undefined
+        }
+        onJoinRefused={() => setRefusedRoom(latestRoom.current)}
+      />
+    </ScreenShift>
   );
 };
 

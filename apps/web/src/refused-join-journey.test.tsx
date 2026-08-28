@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { FirebaseError } from 'firebase/app';
 import { signInAnonymously } from 'firebase/auth';
 import { onSnapshot, updateDoc } from 'firebase/firestore';
@@ -206,7 +206,11 @@ describe('two guests reaching for the same free seat', () => {
     // to press again — the way on is a room of his own.
     expect(screen.queryByText(/check your connection/i)).not.toBeInTheDocument();
     expect(screen.getByText(/would not take you in/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    // Waited for rather than read: the form is on its way out under the notice
+    // for as long as the shift between the two screens lasts (issue #93).
+    await waitFor(() => {
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+    });
     expect(screen.getByRole('link', { name: /start a new game/i })).toBeInTheDocument();
     // Whoever is debugging still gets the whole of it.
     expect(reported).toHaveBeenCalledWith('Joining the room failed', REFUSED_BY_RULES);
