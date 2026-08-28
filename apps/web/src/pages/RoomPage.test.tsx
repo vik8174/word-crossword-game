@@ -1,3 +1,4 @@
+import { ThemeProvider } from '@mui/material/styles';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { type Analytics, initializeAnalytics, isSupported, logEvent } from 'firebase/analytics';
 import { FirebaseError } from 'firebase/app';
@@ -8,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from '../rooms/presence';
 import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
+import { theme } from '../theme';
 import { RoomPage } from './RoomPage';
 
 // Firebase is the system boundary: mocked so a player can be walked through the
@@ -194,13 +196,17 @@ let emitRoom: (snapshot: { exists: () => boolean; data: () => unknown }) => void
 let failSubscription: (error: unknown) => void;
 const unsubscribe = vi.fn();
 
+// In the app's own theme, as `App.tsx` renders it: the board takes its surfaces
+// from `theme.palette.grid`, which MUI's stock theme does not have.
 const renderRoomPage = () =>
   render(
-    <MemoryRouter initialEntries={[roomPath('room-1')]}>
-      <Routes>
-        <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <ThemeProvider theme={theme}>
+      <MemoryRouter initialEntries={[roomPath('room-1')]}>
+        <Routes>
+          <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
+        </Routes>
+      </MemoryRouter>
+    </ThemeProvider>,
   );
 
 /** Opens the room screen and lets Firestore deliver the room behind the link. */

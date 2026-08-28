@@ -1,8 +1,9 @@
 import Box from '@mui/material/Box';
-import { alpha, type SxProps, type Theme } from '@mui/material/styles';
+import { type SxProps, type Theme } from '@mui/material/styles';
 import { type ChangeEvent, type FocusEvent, useLayoutEffect, useRef } from 'react';
 
 import type { GuessEntryCell } from '../rooms/guess-board';
+import { DISPLAY_FONT_FAMILY, type GridSurfaces } from '../theme';
 import { CELL_SIDE } from './board-geometry';
 
 /**
@@ -39,12 +40,15 @@ const NUMBER_SX: SxProps<Theme> = {
  * distinction has to survive a screen read in greyscale
  * (`docs/decisions/0015-explained-words-in-the-grid.md`).
  *
- * The tint stays faint so the crossword number keeps its dark ink on top of it.
+ * It is drawn in ink rather than in an accent of its own, and that is the same
+ * decision: the board carries one accent, which belongs to the squares this
+ * player types in, so a square they merely read is a tone of the paper it is on
+ * (see `theme.ts`). The tone stays light enough for the crossword number to
+ * keep its dark ink on top of it.
  */
 const EXPLAINED_SQUARE_SX: SxProps<Theme> = {
-  backgroundColor: (theme) => alpha(theme.palette.secondary.main, 0.16),
   borderStyle: 'dashed',
-  borderColor: 'secondary.main',
+  borderColor: 'sumi.light',
   fontStyle: 'italic',
 };
 
@@ -62,7 +66,7 @@ const CURSOR_SX: SxProps<Theme> = {
   outlineStyle: 'solid',
   outlineWidth: '3px',
   outlineOffset: '-3px',
-  outlineColor: (theme) => theme.palette.primary.dark,
+  outlineColor: (theme) => theme.palette.secondary.dark,
 };
 
 /**
@@ -86,6 +90,39 @@ const labelFor = (cell: GuessEntryCell, number: number | null): string => {
       return `${where} — ${cell.letter}`;
     case 'blank':
       return `${where} — empty`;
+  }
+};
+
+/**
+ * Which of the board's surfaces a square is drawn on.
+ *
+ * A refused answer wins over everything else, being the one thing on the board
+ * that has to be noticed rather than found — and it can only ever be a square
+ * of this player's own, since nobody else's is theirs to get wrong.
+ *
+ * The surfaces themselves are in `theme.ts` rather than here, which is what
+ * lets them be held to telling each other apart with the colour taken out: the
+ * distinction between a word this player explains and one the group answered is
+ * what the game stalls on if it is lost
+ * (`docs/decisions/0015-explained-words-in-the-grid.md`).
+ *
+ * @param cell - The square, as the entry layer worked it out
+ * @returns The name of the surface it is drawn on
+ */
+const squareSurface = (cell: GuessEntryCell): keyof GridSurfaces => {
+  if (cell.isRefused) {
+    return 'refused';
+  }
+
+  switch (cell.source) {
+    case 'own':
+      return cell.isActive ? 'ownFilling' : 'own';
+    case 'explained':
+      return 'explained';
+    case 'solved':
+      return 'guessed';
+    case 'blank':
+      return 'empty';
   }
 };
 
@@ -174,13 +211,19 @@ export const GridSquare = ({
     width: CELL_SIDE,
     borderRadius: '2px',
     border: '1px solid',
-    borderColor: cell.isRefused ? 'error.main' : 'divider',
+    borderColor: cell.isRefused ? 'error.dark' : 'grid.rule',
+    backgroundColor: (theme: Theme) => theme.palette.grid[squareSurface(cell)],
     display: 'grid',
     placeItems: 'center',
+    // The one place in the app that fetches a typeface, and the reason it is
+    // worth fetching: a player looks at these letters for twenty minutes
+    // together. One weight is loaded, so the weight is named rather than left
+    // to be imitated (`theme.ts`).
+    fontFamily: DISPLAY_FONT_FAMILY,
     // The letter keeps its share of the square rather than a size of its own,
     // so a board drawn small stays a board of letters rather than of dots.
     fontSize: `calc(${CELL_SIDE} * 0.55)`,
-    fontWeight: 600,
+    fontWeight: 400,
     textTransform: 'uppercase',
     ...(isCursor ? CURSOR_SX : {}),
   } as const;
@@ -222,21 +265,15 @@ export const GridSquare = ({
             // somebody else's to answer: the grid is shared, the typing is not.
             // The word being filled is marked out again within that, so which way
             // the next letter will go is on screen rather than guessed at.
-            borderColor: cell.isRefused ? 'error.main' : 'primary.main',
+            borderColor: cell.isRefused ? 'error.dark' : 'secondary.main',
             padding: 0,
             textAlign: 'center',
-            // The typeface alone, where this used to take `font` whole: that is
-            // a shorthand, and it silently put the size back to the page's —
-            // which is a letter too big for a square drawn small.
-            fontFamily: 'inherit',
-            fontWeight: 600,
+            // Said again rather than inherited: an input takes none of the page's
+            // typography on its own, and `inherit` would take it from the box
+            // around the square, which is drawn in the interface font.
+            fontFamily: DISPLAY_FONT_FAMILY,
+            fontWeight: 400,
             color: 'text.primary',
-            backgroundColor: (theme) =>
-              cell.isRefused
-                ? theme.palette.error.light
-                : cell.isActive
-                  ? alpha(theme.palette.primary.main, 0.22)
-                  : theme.palette.action.selected,
           }}
         />
       ) : (
@@ -246,11 +283,7 @@ export const GridSquare = ({
           onMouseDown={onPressed}
           onFocus={onTakenUp}
           ref={takeSquareUp}
-          sx={
-            cell.source === 'explained'
-              ? { ...square, ...EXPLAINED_SQUARE_SX }
-              : { ...square, backgroundColor: 'background.paper' }
-          }
+          sx={cell.source === 'explained' ? { ...square, ...EXPLAINED_SQUARE_SX } : square}
         >
           {cell.letter}
         </Box>

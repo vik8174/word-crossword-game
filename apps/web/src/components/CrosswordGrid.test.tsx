@@ -1,8 +1,11 @@
+import { ThemeProvider } from '@mui/material/styles';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { checkGuess, type GridPosition } from 'shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { GridCellView, GridView, GuessableWord, WordLocation } from '../rooms/word-visibility';
+import { theme } from '../theme';
 import { CrosswordGrid } from './CrosswordGrid';
 
 /** `CAT` across the top row, `CAR` down the left column, sharing the `C`. */
@@ -137,7 +140,20 @@ const press = (key: string) =>
 
 const onSolved = vi.fn<(wordId: string) => Promise<void>>();
 
-const renderGrid = (view: GridView) => render(<CrosswordGrid view={view} onSolved={onSolved} />);
+/**
+ * The app's own theme, around whatever is being rendered.
+ *
+ * A square of the board reads its colour from `theme.palette.grid`, which MUI's
+ * stock theme does not have — so a board drawn outside this is a board drawn in
+ * a place the app never puts one. Given as a wrapper rather than written into
+ * each call so that `rerender` keeps it.
+ */
+const InTheme = ({ children }: { readonly children: ReactNode }) => (
+  <ThemeProvider theme={theme}>{children}</ThemeProvider>
+);
+
+const renderGrid = (view: GridView) =>
+  render(<CrosswordGrid view={view} onSolved={onSolved} />, { wrapper: InTheme });
 
 /** Everything the board itself says, numbers and letters alike. */
 const board = () => screen.getByRole('group', { name: /crossword grid/i });
@@ -895,7 +911,9 @@ describe('CrosswordGrid', () => {
 
   describe('reaching a word by name', () => {
     const reachFor = (view: GridView, word: WordLocation) =>
-      render(<CrosswordGrid view={view} onSolved={onSolved} wordToReach={word} />);
+      render(<CrosswordGrid view={view} onSolved={onSolved} wordToReach={word} />, {
+        wrapper: InTheme,
+      });
 
     it('goes to a word of this player own, ready for the next letter', () => {
       reachFor(crossingView(), { cells: OAK, orientation: 'down' });
@@ -938,6 +956,7 @@ describe('CrosswordGrid', () => {
           onSolved={onSolved}
           wordToReach={{ cells: OAK, orientation: 'down' }}
         />,
+        { wrapper: InTheme },
       );
 
       act(() => squareAt(1, 0).focus());
