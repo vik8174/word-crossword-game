@@ -1,3 +1,4 @@
+import { ThemeProvider } from '@mui/material/styles';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { signInAnonymously } from 'firebase/auth';
 import { onSnapshot, updateDoc } from 'firebase/firestore';
@@ -7,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { RoomPage } from './pages/RoomPage';
 import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from './rooms/presence';
 import { ROOM_ROUTE_PATTERN, roomPath } from './rooms/room-link';
+import { theme } from './theme';
 
 /**
  * The whole of issue #47, walked from one end to the other: a room fills up
@@ -116,11 +118,13 @@ const openRoomAs = async (playerId: string, room: unknown) => {
   vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: playerId } } as never);
 
   render(
-    <MemoryRouter initialEntries={[roomPath('room-1')]}>
-      <Routes>
-        <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
-      </Routes>
-    </MemoryRouter>,
+    <ThemeProvider theme={theme}>
+      <MemoryRouter initialEntries={[roomPath('room-1')]}>
+        <Routes>
+          <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
+        </Routes>
+      </MemoryRouter>
+    </ThemeProvider>,
   );
 
   // Signing in resolves, the subscription is made, and the room arrives — no
