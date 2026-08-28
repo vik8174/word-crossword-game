@@ -23,6 +23,9 @@ interface Placement extends InputWord {
 /** The letters a word occupies in the grid — the grid is rendered uppercase. */
 const gridLettersOf = (word: string): string => word.toUpperCase();
 
+/** The distinct letters a word occupies in the grid, without their repetitions. */
+const distinctLettersOf = (word: string): ReadonlySet<string> => new Set(gridLettersOf(word));
+
 const cellKey = ({ row, col }: GridPosition): string => `${row},${col}`;
 
 /**
@@ -128,6 +131,41 @@ const emptyLayout = (unplacedWords: readonly string[]): CrosswordLayout => ({
 });
 
 /**
+ * Counts, per letter, how many words of the list hold it.
+ *
+ * A letter held by exactly one word is a letter that word has nobody to cross
+ * on; the count is taken over distinct letters, so a word spelled with the same
+ * letter twice still counts once for it.
+ */
+const wordsHoldingEachLetter = (words: readonly string[]): ReadonlyMap<string, number> => {
+  const counts = new Map<string, number>();
+
+  for (const word of words) {
+    for (const letter of distinctLettersOf(word)) {
+      counts.set(letter, (counts.get(letter) ?? 0) + 1);
+    }
+  }
+
+  return counts;
+};
+
+/**
+ * Tells whether a word shares no letter with any other word in the list.
+ *
+ * Such a word cannot be laid out at all: a crossword is one connected grid, a
+ * word joins it by crossing another word on a letter they share, and this one
+ * shares no letter with anything. The condition is sufficient and not
+ * necessary — a shared letter promises nothing, and whether a word that has one
+ * actually fits stays the library's answer to give.
+ *
+ * Whether it holds is a fact about the list rather than about the word: `zzz`
+ * alongside `characterization` crosses on its `z` and is laid out like any
+ * other word, while `jjj` in a list with no other `j` is impossible.
+ */
+const cannotCross = (word: string, wordsHoldingLetter: ReadonlyMap<string, number>): boolean =>
+  [...distinctLettersOf(word)].every((letter) => wordsHoldingLetter.get(letter) === 1);
+
+/**
  * How many candidate layouts are built before the best of them is returned.
  *
  * The library places words at random, so the same list gives a different grid,
@@ -145,8 +183,8 @@ const emptyLayout = (unplacedWords: readonly string[]): CrosswordLayout => ({
  * belongs on this side of the boundary.
  *
  * Ten and not more, because more attempts do not buy the missing words back: a
- * word sharing no letter with any other cannot cross anything, however many
- * grids are built.
+ * word with nothing in the list to cross cannot be placed, however many grids
+ * are built.
  */
 const LAYOUT_ATTEMPTS = 10;
 
@@ -161,6 +199,11 @@ const LAYOUT_ATTEMPTS = 10;
  * and nineteen sixteen-letter words plus that same `zzz` cost 3 seconds. Ten of
  * those in a row would be half a minute, and every one of them runs inside the
  * owner's click on "Create room".
+ *
+ * `cannotCross` now keeps those particular lists away from the library
+ * altogether, and the budget stays behind it as the ceiling for the ones
+ * letters cannot see coming: a word whose shared letter never lines up, or a
+ * pair of words that cross each other and nothing else.
  *
  * Half a second is above every case where the repetition earns anything: the
  * near-disjoint list that motivated it takes 107 ms for all ten attempts. It is
@@ -184,11 +227,20 @@ const ATTEMPT_BUDGET_MS = 500;
  * failure, so it can be compared with the other draws and lose to any of them
  * that placed something.
  *
- * @param words - Words to lay out, in the owner's original letter case
- * @returns One layout, scored by its `unplacedWords`
+ * The library is shown `crossableWords` while the layout is still scored
+ * against the whole of `words`: a word kept back from the library is a word
+ * that could not have been placed anyway, and it is reported unplaced in the
+ * position it was passed in at, exactly as the library's own leftovers are.
+ *
+ * @param words - Every word the caller passed in, in their original letter case
+ * @param crossableWords - The subset the library is asked to lay out
+ * @returns One layout over `words`, scored by its `unplacedWords`
  */
-const attemptLayout = (words: readonly string[]): CrosswordLayout => {
-  const layout = generateLayout(words.map((word) => ({ answer: word })));
+const attemptLayout = (
+  words: readonly string[],
+  crossableWords: readonly string[],
+): CrosswordLayout => {
+  const layout = generateLayout(crossableWords.map((word) => ({ answer: word })));
   const unmatchedWords = groupWordsByLetters(words);
   const placements = layout.result
     .map((entry) => toPlacement(entry, unmatchedWords))
@@ -235,13 +287,19 @@ const attemptLayout = (words: readonly string[]): CrosswordLayout => {
  * alphabet, duplicates) belongs to `word-list-validator` and is not repeated
  * here — any word this function cannot place simply comes back unplaced.
  *
+ * A word sharing no letter with any other word in the list never reaches the
+ * library: it could not have crossed anything, and the library only finds that
+ * out by exhausting a grid three times the longest word, which costs seconds.
+ * It comes back unplaced all the same — the owner is warned about the same word
+ * as before, for the price of the list without it.
+ *
  * Up to `LAYOUT_ATTEMPTS` layouts are built and the one leaving the fewest
  * words unplaced is returned; equally good layouts are settled in favour of the
- * earlier one. A layout that leaves nothing unplaced ends the search, and so
- * does spending `ATTEMPT_BUDGET_MS` on the attempts made so far — a word list
- * that fits costs a single attempt, and so does one too expensive to lay out
- * twice. This is not a promise that every word will be placed: words that share
- * no letters cannot cross, and no number of attempts changes that.
+ * earlier one. A layout that places everything the library was given ends the
+ * search, and so does spending `ATTEMPT_BUDGET_MS` on the attempts made so far
+ * — a word list that fits costs a single attempt, and so does one too expensive
+ * to lay out twice. This is not a promise that every word will be placed: a
+ * shared letter is not a crossing, and no number of attempts changes that.
  *
  * The layout is not stable across calls: the underlying generator explores
  * placements at random, so the same words can produce different grids.
@@ -256,17 +314,42 @@ const attemptLayout = (words: readonly string[]): CrosswordLayout => {
 export const generateCrossword = (words: readonly string[]): CrosswordLayout => {
   if (words.length === 0) return emptyLayout([]);
 
+  /*
+   * One pass rather than a fixpoint, and by proof rather than by hope. It is
+   * tempting to repeat the filter until the list stops shrinking, on the
+   * grounds that a word might share letters only with words being taken out —
+   * but that cannot happen. If `w` survives, some other word `x` holds a letter
+   * of `w`; `x` therefore shares that letter with `w` and survives as well. So
+   * every survivor keeps a survivor to cross, and a second pass takes nothing
+   * out.
+   *
+   * What does survive is a pair of words sharing a letter with each other and
+   * with nothing else. Those cannot both be placed either, but their letters do
+   * not say so, and the library decides them exactly as it did before.
+   */
+  const wordsHoldingLetter = wordsHoldingEachLetter(words);
+  const crossableWords = words.filter((word) => !cannotCross(word, wordsHoldingLetter));
+
+  if (crossableWords.length === 0) return emptyLayout([...words]);
+
+  /*
+   * The floor no attempt can go below, and so the point at which repeating one
+   * stops being able to buy anything: the words held back from the library are
+   * unplaced in every layout it produces.
+   */
+  const unplaceableCount = words.length - crossableWords.length;
+
   const startedAt = Date.now();
-  let best = attemptLayout(words);
+  let best = attemptLayout(words, crossableWords);
 
   for (
     let attempt = 1;
     attempt < LAYOUT_ATTEMPTS &&
-    best.unplacedWords.length > 0 &&
+    best.unplacedWords.length > unplaceableCount &&
     Date.now() - startedAt < ATTEMPT_BUDGET_MS;
     attempt++
   ) {
-    const candidate = attemptLayout(words);
+    const candidate = attemptLayout(words, crossableWords);
 
     if (candidate.unplacedWords.length < best.unplacedWords.length) best = candidate;
   }

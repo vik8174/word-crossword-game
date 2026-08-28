@@ -7,6 +7,10 @@ import { generateCrossword } from './generate-crossword';
  * treats its output as external input rather than trusting it. These tests
  * feed it deliberately broken layouts — the only way to reach that behaviour,
  * since a healthy library never produces them.
+ *
+ * Every list here holds at least two words that share a letter. A word with
+ * nothing to cross never reaches the library at all, so a one-word list would
+ * leave these tests asserting nothing about it.
  */
 vi.mock('crossword-generator-x', () => ({ generateLayout: vi.fn() }));
 
@@ -32,19 +36,19 @@ describe('generateCrossword against a misbehaving layout library', () => {
       layoutOf([{ answer: 'GHOST', clue: '', orientation: 'across', startx: 1, starty: 1 }]),
     );
 
-    const layout = generateCrossword(['apple']);
+    const layout = generateCrossword(['apple', 'plum']);
 
     expect(layout.placedWords).toEqual([]);
-    expect(layout.unplacedWords).toEqual(['apple']);
+    expect(layout.unplacedWords).toEqual(['apple', 'plum']);
   });
 
   it('ignores a placed word that comes back without coordinates', () => {
     layoutMock.mockReturnValue(layoutOf([{ answer: 'APPLE', clue: '', orientation: 'across' }]));
 
-    const layout = generateCrossword(['apple']);
+    const layout = generateCrossword(['apple', 'plum']);
 
     expect(layout.placedWords).toEqual([]);
-    expect(layout.unplacedWords).toEqual(['apple']);
+    expect(layout.unplacedWords).toEqual(['apple', 'plum']);
   });
 
   it('drops a word whose letters contradict the grid rather than corrupting it', () => {

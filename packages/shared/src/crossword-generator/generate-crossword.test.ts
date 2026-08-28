@@ -182,6 +182,17 @@ describe('generateCrossword', () => {
     expect(layout.cells).toEqual([]);
   });
 
+  it('reports a word with nothing in the list to cross as unplaced', () => {
+    // A typo away from a real word list: `qqq` passes validation, and no other
+    // word here holds a Q, so it can only come back unplaced.
+    const withATypo = [...TYPICAL_10, 'qqq'];
+    const layout = generateCrossword(withATypo);
+
+    expect(layout.unplacedWords).toEqual(['qqq']);
+    expect(layout.placedWords).toHaveLength(TYPICAL_10.length);
+    expectConsistentLayout(layout, withATypo);
+  });
+
   it('returns the words it could not fit instead of dropping them', () => {
     const mostlyUnfittable = [...NO_SHARED_LETTERS, 'apple', 'plum'];
     const layout = generateCrossword(mostlyUnfittable);
