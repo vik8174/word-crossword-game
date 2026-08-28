@@ -16,6 +16,10 @@ This holds regardless of the language a session is being conducted in: a chat ma
 
 Why it is built this way — see [`docs/decisions/`](docs/decisions/), in particular [0002](docs/decisions/0002-no-dedicated-backend.md)-[0012](docs/decisions/0012-ending-a-game-from-the-received-state.md).
 
+## The words this project uses
+
+The domain has its own vocabulary, and one word in it means two things in ordinary English: **Home** is the landing page, **Lobby** is the screen of a room before the words are dealt. Every term is defined once in [`context.md`](context.md) — read it before naming anything new.
+
 ## How work happens here: coordinator + workers
 
 The project runs on two distinct session roles. **First, determine your role:**
