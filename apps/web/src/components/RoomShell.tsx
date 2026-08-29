@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES } from './room-layout';
+import { useShiftRole } from './screen-shift';
 
 /** What the page is, said once for every phase the room goes through. */
 const ROOM_HEADING = 'Game room';
@@ -87,6 +88,12 @@ interface RoomShellProps {
  * taking the size of a square away from it, and a board that has to be scrolled
  * to is a board a player is not looking at.
  *
+ * The frame standing still is also what the shift between screens is drawn
+ * against (issue #93). While one is running there are two of these on the page,
+ * so the one on its way out gives up its header and lets the arriving screen's
+ * stand in the same place: the header is the part that does not move, and two
+ * of them printed over each other would be the page redrawing after all.
+ *
  * @param props.status - The room's own line about what it is doing
  * @param props.action - The screen's one control, offered in the header
  * @param props.left - The zone on the board's left; an empty one is left empty
@@ -98,71 +105,76 @@ interface RoomShellProps {
  *   <RoomCrossword room={room} viewerId={viewerId} caption={caption} />
  * </RoomShell>
  */
-export const RoomShell = ({ status, action, left, right, children }: RoomShellProps) => (
-  <Box
-    sx={{
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 3,
-      px: 2,
-      py: 3,
-      [APP_SHELL]: { height: '100dvh', gap: 2, py: 2, overflow: 'hidden' },
-    }}
-  >
+export const RoomShell = ({ status, action, left, right, children }: RoomShellProps) => {
+  const isLeaving = useShiftRole() === 'leaving';
+
+  return (
     <Box
-      component="header"
       sx={{
         display: 'flex',
-        flexWrap: 'wrap',
-        alignItems: 'center',
-        columnGap: 2,
-        rowGap: 1,
-        [APP_SHELL]: { flexShrink: 0 },
+        flexDirection: 'column',
+        gap: 3,
+        px: 2,
+        py: 3,
+        [APP_SHELL]: { height: '100dvh', gap: 2, py: 2, overflow: 'hidden' },
       }}
     >
-      <Typography variant="h5" component="h1">
-        {ROOM_HEADING}
-      </Typography>
+      <Box
+        component="header"
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          columnGap: 2,
+          rowGap: 1,
+          visibility: isLeaving ? 'hidden' : undefined,
+          [APP_SHELL]: { flexShrink: 0 },
+        }}
+      >
+        <Typography variant="h5" component="h1">
+          {ROOM_HEADING}
+        </Typography>
 
-      {/* Wide enough to sit beside the heading on a screen that has the room
+        {/* Wide enough to sit beside the heading on a screen that has the room
           for it, and told to take a line of its own rather than be squeezed
           into a column of single words when it does not. */}
-      <Box sx={{ flex: '1 1 16rem', minWidth: 0 }}>{status}</Box>
+        <Box sx={{ flex: '1 1 16rem', minWidth: 0 }}>{status}</Box>
 
-      {/* Pushed to the far end of the header where there is a header to push it
+        {/* Pushed to the far end of the header where there is a header to push it
           along, and left where it falls in a document, which is a page a player
           reads from the top down rather than a bar they scan across. */}
-      {action !== undefined && <Box sx={{ [APP_SHELL]: { ml: 'auto' } }}>{action}</Box>}
-    </Box>
-
-    <Box
-      component="main"
-      sx={{
-        display: 'grid',
-        gap: 3,
-        alignContent: 'start',
-        [APP_SHELL]: {
-          flex: 1,
-          minHeight: 0,
-          gap: 2,
-          gridTemplateColumns: '1fr 1fr',
-          gridTemplateRows: 'auto minmax(0, 1fr)',
-          gridTemplateAreas: '"board board" "left right"',
-        },
-        [THREE_ZONES]: {
-          gridTemplateColumns: `${SIDE_ZONE_WIDTH} minmax(0, 1fr) ${SIDE_ZONE_WIDTH}`,
-          gridTemplateRows: 'minmax(0, 1fr)',
-          gridTemplateAreas: '"left board right"',
-        },
-      }}
-    >
-      <Box sx={zoneSx('left', left === undefined)}>{left}</Box>
-
-      <Box sx={{ [APP_SHELL]: { gridArea: 'board', minHeight: 0, overflowY: 'auto' } }}>
-        {children}
+        {action !== undefined && <Box sx={{ [APP_SHELL]: { ml: 'auto' } }}>{action}</Box>}
       </Box>
 
-      <Box sx={zoneSx('right', right === undefined)}>{right}</Box>
+      <Box
+        component="main"
+        sx={{
+          display: 'grid',
+          gap: 3,
+          alignContent: 'start',
+          [APP_SHELL]: {
+            flex: 1,
+            minHeight: 0,
+            gap: 2,
+            gridTemplateColumns: '1fr 1fr',
+            gridTemplateRows: 'auto minmax(0, 1fr)',
+            gridTemplateAreas: '"board board" "left right"',
+          },
+          [THREE_ZONES]: {
+            gridTemplateColumns: `${SIDE_ZONE_WIDTH} minmax(0, 1fr) ${SIDE_ZONE_WIDTH}`,
+            gridTemplateRows: 'minmax(0, 1fr)',
+            gridTemplateAreas: '"left board right"',
+          },
+        }}
+      >
+        <Box sx={zoneSx('left', left === undefined)}>{left}</Box>
+
+        <Box sx={{ [APP_SHELL]: { gridArea: 'board', minHeight: 0, overflowY: 'auto' } }}>
+          {children}
+        </Box>
+
+        <Box sx={zoneSx('right', right === undefined)}>{right}</Box>
+      </Box>
     </Box>
-  </Box>
-);
+  );
+};
