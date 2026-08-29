@@ -13,6 +13,7 @@ import { RoomLobby } from '../components/RoomLobby';
 import { RoomMiddleColumn, RoomShell } from '../components/RoomShell';
 import { ScreenShift } from '../components/ScreenShift';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
+import { useRoomGarden } from '../garden/use-room-garden';
 import type { RoomDocument } from '../rooms/room-document';
 import {
   hasSomebodyToInvite,
@@ -132,6 +133,13 @@ const RoomScreenView = ({
  * between the two is a shift that plays when a player pressed something and one
  * that twitches all game.
  *
+ * The garden behind the page is told the same thing, from here rather than from
+ * the screens, and for the same reason twice over: it is a change and not a
+ * render that matters, and while a shift is running two screens are on the page
+ * at once — a game and the finished game replacing it would each be answering
+ * for the background, and the one on its way out would answer last
+ * (see {@link useRoomGarden}).
+ *
  * One thing here is not read from the room: whether the room refused to take
  * this visitor in. It cannot be — a refused write is answered with
  * `permission-denied` and the document that would explain it is the very thing
@@ -173,6 +181,7 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
 
   usePresenceHeartbeat(roomId, connection);
   useScreenReached(funnelScreenFor(screen.kind));
+  useRoomGarden(screen.kind);
 
   return (
     <ScreenShift shiftKey={screen.kind}>
