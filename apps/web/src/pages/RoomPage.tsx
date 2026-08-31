@@ -28,7 +28,7 @@ import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /** Shown while the visitor is being signed in and the first snapshot is on its way. */
 const Connecting = () => (
-  <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
+  <Stack direction="row" spacing={4} sx={{ alignItems: 'center' }}>
     <CircularProgress size={24} />
     <Typography variant="body1" role="status">
       Connecting to the game...

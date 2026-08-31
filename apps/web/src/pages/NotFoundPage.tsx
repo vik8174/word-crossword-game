@@ -15,15 +15,15 @@ import { Link as RouterLink } from 'react-router-dom';
  */
 export const NotFoundPage = () => {
   return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
+    <Container maxWidth="sm" sx={{ py: 7 }}>
+      <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
         This page does not exist
       </Typography>
       <Typography variant="body1" color="text.secondary">
         The link may be incomplete or mistyped. If you were invited to a game, ask for the link
         again — it looks like <code>/room/…</code>.
       </Typography>
-      <Button component={RouterLink} to="/" variant="contained" sx={{ mt: 4 }}>
+      <Button component={RouterLink} to="/" variant="contained" sx={{ mt: 6 }}>
         Go to the start
       </Button>
     </Container>

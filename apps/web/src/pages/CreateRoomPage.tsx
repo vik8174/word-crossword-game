@@ -5,15 +5,19 @@ import { useNavigate } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword, validateWordList } from 'shared';
 
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
+import { WordListForm } from '../components/WordListForm';
 import { BAND_EDGE, BAND_EDGE_WIDTH } from '../garden/scene-palette';
 import { BAND_SX, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
-import { WordListForm } from '../components/WordListForm';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
 import { roomPath } from '../rooms/room-link';
 import { createRoom } from '../rooms/room-service';
+import { gapAt } from '../scale';
 import { logGameEvent } from '../telemetry/analytics';
 import { useScreenReached } from '../telemetry/use-screen-reached';
+
+/** The step of the row this page keeps between itself and the edge of the window. */
+const PAGE_PADDING_STEP = 4;
 
 /**
  * Shown when no two words share a letter. Different from words being dropped:
@@ -154,16 +158,20 @@ export const CreateRoomPage = () => {
     // the temple's red run under it, and the form stands on the same band a
     // list of words does. Nothing here is centred over the middle of the
     // picture: that is where the path goes.
-    <Box component="main" sx={{ px: 2, py: 3, ...ON_SCENE_SX }}>
-      <Typography component="h1" sx={stepTitleSx('-16px')}>
+    <Box component="main" sx={{ px: PAGE_PADDING_STEP, py: 5, ...ON_SCENE_SX }}>
+      <Typography
+        component="h1"
+        variant="signage"
+        sx={(theme) => stepTitleSx(theme, `-${gapAt(PAGE_PADDING_STEP)}`)}
+      >
         New game
       </Typography>
 
       <Box
         sx={{
           maxWidth: '34rem',
-          mt: 3,
-          p: 3,
+          mt: 5,
+          p: 5,
           ...BAND_SX,
           borderTop: `${BAND_EDGE_WIDTH}px solid ${BAND_EDGE}`,
         }}

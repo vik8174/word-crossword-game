@@ -222,7 +222,7 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
   };
 
   return (
-    <Box sx={{ py: 1 }}>
+    <Box sx={{ py: 2 }}>
       {/*
         The board's own patch of the page, and the thing every square is
         measured against: it is declared a CSS container, and the size of a
@@ -288,13 +288,13 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
       </Typography>
 
       {hasSquaresToFill && (
-        <Typography variant="body2" sx={{ mt: 1, color: SCENE_INK_DIM }}>
+        <Typography variant="body2" sx={{ mt: 2, color: SCENE_INK_DIM }}>
           {KEYBOARD_HINT}
         </Typography>
       )}
 
       {entry.hasCrossings && (
-        <Typography variant="body2" sx={{ mt: 1, color: SCENE_INK_DIM }}>
+        <Typography variant="body2" sx={{ mt: 2, color: SCENE_INK_DIM }}>
           {CROSSING_HINT}
         </Typography>
       )}
@@ -318,7 +318,7 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
       <Typography
         variant="body2"
         role="status"
-        sx={{ mt: entry.hasRefusal ? 1 : 0, color: SCENE.vermilionLit }}
+        sx={{ mt: entry.hasRefusal ? 2 : 0, color: SCENE.vermilionLit }}
       >
         {entry.hasRefusal ? REFUSAL_MESSAGE : ''}
       </Typography>

@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  assetHrefs,
   FIRST_VISIT_CEILING_BYTES,
   firstVisitWeight,
-  preloadedHrefs,
   tooHeavyReport,
 } from './first-visit-weight';
 
 const KIB = 1024;
 
-describe('preloadedHrefs', () => {
+describe('assetHrefs', () => {
   it('finds what the HTML fetches before anything has run', () => {
     const html = `
       <link rel="preload" href="/fonts/zen-old-mincho-v13-latin-400.woff2" as="font" crossorigin />
@@ -17,10 +17,35 @@ describe('preloadedHrefs', () => {
       <script type="module" src="/assets/index.js"></script>
     `;
 
-    // The font is the whole reason this exists: it is copied out of `public/`
-    // and named by hand, so a measurement taken off the bundle alone would miss
-    // sixteen kilobytes every first visit pays for.
-    expect(preloadedHrefs(html)).toEqual(['/fonts/zen-old-mincho-v13-latin-400.woff2']);
+    // The typefaces are the whole reason this exists: they are copied out of
+    // `public/` and named by hand, so a measurement taken off the bundle alone
+    // would miss twenty-five kilobytes every first visit pays for.
+    expect(assetHrefs(html)).toEqual(['/fonts/zen-old-mincho-v13-latin-400.woff2']);
+  });
+
+  it('counts a face the HTML declares without preloading it', () => {
+    const html = `
+      <style>
+        @font-face {
+          font-family: 'Zen Kaku Gothic New';
+          src: url('/fonts/zen-kaku-gothic-new-v18-latin-300.woff2') format('woff2');
+        }
+      </style>
+    `;
+
+    // Otherwise a font becomes free by having its <link> deleted, and whether
+    // anything asks for the family is a line of CSS in a component that no
+    // build step can see.
+    expect(assetHrefs(html)).toEqual(['/fonts/zen-kaku-gothic-new-v18-latin-300.woff2']);
+  });
+
+  it('counts a face that is both preloaded and declared exactly once', () => {
+    const html = `
+      <link rel="preload" href="/fonts/one.woff2" as="font" crossorigin />
+      <style>@font-face { src: url('/fonts/one.woff2') format('woff2'); }</style>
+    `;
+
+    expect(assetHrefs(html)).toEqual(['/fonts/one.woff2']);
   });
 
   it('is not fooled by a link that merely mentions preloading', () => {
@@ -29,11 +54,11 @@ describe('preloadedHrefs', () => {
     // A module preloaded for a route nobody has opened is not a first visit's
     // cost, and counting it would make the ceiling meaningless in the direction
     // that matters.
-    expect(preloadedHrefs(html)).toEqual([]);
+    expect(assetHrefs(html)).toEqual([]);
   });
 
   it('finds nothing in an HTML that asks for nothing', () => {
-    expect(preloadedHrefs('<html><body></body></html>')).toEqual([]);
+    expect(assetHrefs('<html><body></body></html>')).toEqual([]);
   });
 });
 

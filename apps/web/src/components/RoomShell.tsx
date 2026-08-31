@@ -4,6 +4,7 @@ import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
 import { BAND_EDGE, BAND_EDGE_WIDTH } from '../garden/scene-palette';
+import { gapAt } from '../scale';
 import { BAND_SX, fullHeightBandSx, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES } from './room-layout';
 import { useShiftRole } from './screen-shift';
@@ -11,8 +12,12 @@ import { useShiftRole } from './screen-shift';
 /** What the page is, said once for every phase the room goes through. */
 const ROOM_HEADING = 'Game room';
 
-/** How much air the frame keeps between itself and the edge of the window. */
-const FRAME_PADDING = '16px';
+/**
+ * How much air the frame keeps between itself and the edge of the window, as a
+ * step of the row and as the length two `calc()`s need it in.
+ */
+const FRAME_PADDING_STEP = 4;
+const FRAME_PADDING = gapAt(FRAME_PADDING_STEP);
 
 /** How wide a band is: the zone it holds, and the frame's padding either side of it. */
 const BAND_WIDTH = `calc(${SIDE_ZONE_WIDTH} + ${FRAME_PADDING} + ${FRAME_PADDING})`;
@@ -186,10 +191,10 @@ export const RoomShell = ({ title, status, action, left, right, children }: Room
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        gap: 3,
-        px: 2,
-        py: 3,
-        [APP_SHELL]: { height: '100dvh', gap: 2, py: 2, overflow: 'hidden' },
+        gap: 5,
+        px: 4,
+        py: 5,
+        [APP_SHELL]: { height: '100dvh', gap: 4, py: 4, overflow: 'hidden' },
       }}
     >
       {/* The bands, where the window is wide enough for a zone to be a column.
@@ -216,8 +221,8 @@ export const RoomShell = ({ title, status, action, left, right, children }: Room
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          columnGap: 2,
-          rowGap: 1,
+          columnGap: 4,
+          rowGap: 2,
           visibility: isLeaving ? 'hidden' : undefined,
           ...ON_SCENE_SX,
           [APP_SHELL]: { flexShrink: 0 },
@@ -225,7 +230,12 @@ export const RoomShell = ({ title, status, action, left, right, children }: Room
       >
         <Typography
           component="h1"
-          sx={title === undefined ? UNSEEN_HEADING : stepTitleSx(`-${FRAME_PADDING}`)}
+          variant={title === undefined ? 'h1' : 'signage'}
+          sx={
+            title === undefined
+              ? UNSEEN_HEADING
+              : (theme) => stepTitleSx(theme, `-${FRAME_PADDING}`)
+          }
         >
           {title ?? ROOM_HEADING}
         </Typography>
@@ -245,12 +255,12 @@ export const RoomShell = ({ title, status, action, left, right, children }: Room
         component="main"
         sx={{
           display: 'grid',
-          gap: 3,
+          gap: 5,
           alignContent: 'start',
           [APP_SHELL]: {
             flex: 1,
             minHeight: 0,
-            gap: 2,
+            gap: 4,
             gridTemplateColumns: '1fr 1fr',
             gridTemplateRows: 'auto minmax(0, 1fr)',
             gridTemplateAreas: '"board board" "left right"',

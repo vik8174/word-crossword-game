@@ -1,5 +1,6 @@
-import type { CSSObject } from '@mui/material/styles';
+import type { CSSObject, Theme } from '@mui/material/styles';
 
+import { inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
 import {
   BAND,
   BAND_EDGE,
@@ -75,21 +76,22 @@ export const fullHeightBandSx = (side: 'left' | 'right', width: string): CSSObje
  * floating in from one. Its `left` is the negative of whatever padding the
  * frame around it has, so the caller says how far out to reach.
  *
+ * Nothing about the lettering itself is here: the element is a `signage`
+ * `Typography`, so the face, the capitals and the tracking are the theme's. All
+ * this adds is where it sits, what colour it is on a forest, and the rule.
+ *
+ * @param theme - The theme the gap under it comes out of
  * @param outdent - How far left of the text the rule begins, as a CSS length
  * @returns The title's own styles, rule included
  *
  * @example
- * <Typography component="h1" sx={stepTitleSx('-16px')}>Lobby</Typography>
+ * sx={(theme) => stepTitleSx(theme, '-16px')}
  */
-export const stepTitleSx = (outdent: string): CSSObject => ({
+export const stepTitleSx = (theme: Theme, outdent: string): CSSObject => ({
   position: 'relative',
   display: 'inline-block',
-  paddingBottom: '12px',
-  fontWeight: 300,
-  fontSize: 17,
-  lineHeight: 1.2,
-  letterSpacing: '0.28em',
-  textTransform: 'uppercase',
+  fontSize: inRem(TEXT_LEVELS.body),
+  paddingBottom: theme.spacing(3),
   color: SCENE.cream,
   // No band across the picture, so the letters carry their own darkness with
   // them and stay readable over a lit roof as well as over a shadow.
@@ -98,7 +100,10 @@ export const stepTitleSx = (outdent: string): CSSObject => ({
     content: '""',
     position: 'absolute',
     left: outdent,
-    right: 0,
+    // Stops where the last letter does rather than where its box does: the
+    // tracking is put after it as well as between, and a rule that ran to the
+    // edge of the box would overshoot the word by half a letter.
+    right: SIGN_TRACKING,
     bottom: 0,
     height: '2px',
     backgroundColor: SCENE.vermilion,

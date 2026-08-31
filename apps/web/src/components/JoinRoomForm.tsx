@@ -52,7 +52,7 @@ export const JoinRoomForm = ({ onJoin, isJoining, errorMessage }: JoinRoomFormPr
       }}
       noValidate
     >
-      <Stack spacing={3}>
+      <Stack spacing={5}>
         <Typography variant="body1">
           You have been invited to a game. Pick a name the other players will know you by.
         </Typography>

@@ -6,10 +6,10 @@ import { gzipSync } from 'node:zlib';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 
 import {
+  assetHrefs,
   type FetchedFile,
   FIRST_VISIT_CEILING_BYTES,
   firstVisitWeight,
-  preloadedHrefs,
   tooHeavyReport,
 } from './build/first-visit-weight.ts';
 import { readGitRevision, readPackageVersion, resolveReleaseName } from './build/release-name.ts';
@@ -175,13 +175,13 @@ const capFirstVisit = (): Plugin => {
 
       const page =
         typeof html.source === 'string' ? html.source : Buffer.from(html.source).toString('utf8');
-      const preloaded = preloadedHrefs(page).map((href) =>
+      const asked = assetHrefs(page).map((href) =>
         href.startsWith(base) ? href.slice(base.length) : href.replace(/^\//, ''),
       );
       const files: readonly FetchedFile[] = [
         { fileName: HTML_FILE, gzipBytes: gzipSync(page).length },
         ...reachableChunks(chunks, entry.fileName).map(weigh),
-        ...preloaded.map(weigh),
+        ...asked.map(weigh),
       ];
       const complaint = tooHeavyReport(files, FIRST_VISIT_CEILING_BYTES);
 

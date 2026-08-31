@@ -80,15 +80,10 @@ export const RoomCrossword = ({
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'baseline',
-          columnGap: 1,
+          columnGap: 2,
         }}
       >
-        <Typography
-          id="grid-heading"
-          variant="subtitle1"
-          component="h2"
-          sx={{ color: SCENE.cream }}
-        >
+        <Typography id="grid-heading" variant="h2" component="h2" sx={{ color: SCENE.cream }}>
           The crossword
         </Typography>
         <Typography variant="body2" sx={{ color: SCENE_INK_DIM }}>

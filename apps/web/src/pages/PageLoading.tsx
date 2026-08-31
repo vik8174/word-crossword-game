@@ -20,7 +20,7 @@ import Stack from '@mui/material/Stack';
  * <Suspense fallback={<PageLoading />}>
  */
 export const PageLoading = () => (
-  <Container maxWidth="sm" sx={{ py: 8 }}>
+  <Container maxWidth="sm" sx={{ py: 7 }}>
     <Stack sx={{ alignItems: 'center' }}>
       <CircularProgress
         aria-label="Loading"

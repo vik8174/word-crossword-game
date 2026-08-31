@@ -16,8 +16,9 @@
  *
  * What counts as a first visit is everything a browser fetches to draw `/`
  * before anybody has done anything: the HTML, every chunk reachable from the
- * entry by static import, and every file the HTML asks for up front. Chunks
- * behind a lazy route are not on it and neither is anything a click causes.
+ * entry by static import, and every file the HTML asks for on its own account —
+ * which is the typefaces, preloaded or merely declared. Chunks behind a lazy
+ * route are not on it and neither is anything a click causes.
  */
 
 /**
@@ -40,25 +41,52 @@ export interface FetchedFile {
 }
 
 /**
- * The files the HTML itself asks for before anything has run.
- *
- * The font is the one that matters and the one a bundler never sees: it is
- * copied out of `public/` and named in a `<link rel="preload">` by hand, so a
- * measurement taken off the bundle alone would miss sixteen kilobytes that
- * every visitor pays for on the first screen.
+ * What the HTML preloads: the files it tells a browser to fetch at once.
  *
  * @param html - The built `index.html`
  * @returns What it preloads, as the paths written in it
- *
- * @example
- * preloadedHrefs(html); // ['/fonts/zen-old-mincho-v13-latin-400.woff2']
  */
-export const preloadedHrefs = (html: string): readonly string[] =>
+const preloadedHrefs = (html: string): readonly string[] =>
   [...html.matchAll(/<link\b[^>]*>/g)]
     .map(([tag]) => tag)
     .filter((tag) => /\brel=["']?preload\b/.test(tag))
     .map((tag) => /\bhref=["']([^"']+)["']/.exec(tag)?.[1])
     .filter((href): href is string => href !== undefined);
+
+/**
+ * What the HTML declares a face for, preloaded or not.
+ *
+ * Counted as well as the preloads, and that is the whole of why this is not
+ * one function. A `@font-face` with nothing asking for it costs nothing — and
+ * whether anything asks for it is a line of CSS in a component, which no build
+ * step can see. A face declared here is a face the app may use, so it is a cost
+ * the ceiling is measured against; the alternative is a font that becomes free
+ * by having its `<link>` deleted.
+ *
+ * @param html - The built `index.html`
+ * @returns The files behind every face it declares
+ */
+const declaredFontHrefs = (html: string): readonly string[] =>
+  [...html.matchAll(/url\(['"]?([^'")]+\.woff2?)['"]?\)/g)]
+    .map(([, href]) => href)
+    .filter((href): href is string => href !== undefined);
+
+/**
+ * Everything the HTML itself asks for, before a byte of the app has run.
+ *
+ * These are the files a bundler never sees: they are copied out of `public/`
+ * and named by hand, so a measurement taken off the bundle alone would miss
+ * twenty-five kilobytes of typeface that every first visit pays for.
+ *
+ * @param html - The built `index.html`
+ * @returns Each of them once, as the paths written in it
+ *
+ * @example
+ * assetHrefs(html); // ['/fonts/zen-old-mincho-v13-latin-400.woff2', ...]
+ */
+export const assetHrefs = (html: string): readonly string[] => [
+  ...new Set([...preloadedHrefs(html), ...declaredFontHrefs(html)]),
+];
 
 /**
  * What the whole of a first visit weighs.

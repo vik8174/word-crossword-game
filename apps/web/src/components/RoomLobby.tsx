@@ -104,7 +104,7 @@ export const RoomLobby = ({ roomId, room, viewerId, invitation }: RoomLobbyProps
         ) : undefined
       }
       left={
-        <Stack spacing={2}>
+        <Stack spacing={4}>
           <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
 
           {invitation}

@@ -56,7 +56,7 @@ export const RoomInvitePanel = ({ roomId, origin }: RoomInvitePanelProps) => {
   };
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={4}>
       <Typography variant="body1">
         Send this link to the other players — they join with a nickname, no sign-up.
       </Typography>
@@ -73,7 +73,7 @@ export const RoomInvitePanel = ({ roomId, origin }: RoomInvitePanelProps) => {
         fullWidth
       />
 
-      <Stack direction="row" spacing={2} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+      <Stack direction="row" spacing={4} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
         <Button variant="outlined" onClick={() => void handleCopy()}>
           Copy link
         </Button>
