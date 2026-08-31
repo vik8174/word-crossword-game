@@ -2,7 +2,6 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
 import { SCENE, SCENE_INK_DIM } from '../garden/scene-palette';
-import { SENTENCE_BAND_SX } from '../garden/scene-surface';
 
 /**
  * What the crossword is called, wherever it is named.
@@ -13,6 +12,11 @@ import { SENTENCE_BAND_SX } from '../garden/scene-surface';
  * middle of that screen is what the camera flies through, so nothing of the
  * interface may stand in it — and this is all there is of the crossword, in the
  * band at the side (issue #115).
+ *
+ * It carries no surface of its own, which is the difference between the two
+ * places. In the band at the side there is already one and a second would
+ * simply be the same darkness twice; in the middle of the window there is none,
+ * so the screen that puts it there gives it one (see {@link RoomCrossword}).
  *
  * The id is exported with it so that neither of them writes the string down a
  * second time: whatever holds this is the region the crossword is named by.
@@ -42,7 +46,6 @@ export const CrosswordHeading = ({ caption }: { readonly caption: string }) => (
       flexWrap: 'wrap',
       alignItems: 'baseline',
       columnGap: 2,
-      ...SENTENCE_BAND_SX,
     }}
   >
     <Typography id={CROSSWORD_HEADING_ID} variant="h2" component="h2" sx={{ color: SCENE.cream }}>

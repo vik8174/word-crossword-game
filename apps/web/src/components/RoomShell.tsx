@@ -245,17 +245,27 @@ export const RoomShell = ({ title, status, action, left, right, children }: Room
           [APP_SHELL]: { flexShrink: 0 },
         }}
       >
-        <Typography
-          component="h1"
-          variant={title === undefined ? 'h1' : 'signage'}
-          sx={
-            title === undefined
-              ? UNSEEN_HEADING
-              : (theme) => stepTitleSx(theme, `-${FRAME_PADDING}`)
-          }
-        >
-          {title ?? ROOM_HEADING}
-        </Typography>
+        {title === undefined ? (
+          <Typography component="h1" variant="h1" sx={UNSEEN_HEADING}>
+            {ROOM_HEADING}
+          </Typography>
+        ) : (
+          // A row of its own, and the title inside it only as wide as its own
+          // letters: the rule under it runs from the edge of the window to the
+          // end of the word and no further, and the line about what the room is
+          // doing wraps to three of them on a phone — beside which a title
+          // aligned to anything is a title hanging in the middle of somebody
+          // else's text.
+          <Box sx={{ flexBasis: '100%' }}>
+            <Typography
+              component="h1"
+              variant="signage"
+              sx={(theme) => stepTitleSx(theme, `-${FRAME_PADDING}`)}
+            >
+              {title}
+            </Typography>
+          </Box>
+        )}
 
         {/* Wide enough to sit beside the heading on a screen that has the room
           for it, and told to take a line of its own rather than be squeezed

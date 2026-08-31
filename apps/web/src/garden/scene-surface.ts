@@ -83,7 +83,9 @@ export const fullHeightBandSx = (side: 'left' | 'right', width: string): CSSObje
  * It is the material the interface is made of rather than a plate under a
  * caption: the general answer to reading text off a picture is still the veil,
  * and this is the band, which is what text stands on in every other part of the
- * room. It takes no height from the board — the padding is along the line and
+ * room. Which is also the one rule about where it may be used — the middle of
+ * the window and nowhere else. A zone already paints a band, and two of them
+ * over each other are not a band but a darker rectangle in the middle of one. It takes no height from the board — the padding is along the line and
  * not above it — because the height of a square is what that would come out of
  * (`docs/decisions/0029-a-board-that-fits-the-screen-it-is-played-on.md`).
  */
