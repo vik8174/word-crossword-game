@@ -13,6 +13,8 @@
  * place each time, and the point of the exercise is that it is one place.
  */
 
+import type { Spread } from './colour-spread';
+
 /**
  * The part of a canvas the scene draws through, and nothing else.
  *
@@ -161,7 +163,7 @@ export interface Leaves {
   /** Which forest this one is, so it is the same one every load. */
   readonly seed: number;
   /** Dark to light; a leaf is given one by how much light it would catch. */
-  readonly colours: readonly string[];
+  readonly colours: Spread;
   /** How many strokes it is made of. */
   readonly count: number;
   /** How big one leaf is. */
@@ -183,7 +185,7 @@ export interface Leaves {
  * @param leaves - The mass to draw
  *
  * @example
- * foliage(brush, { x: 900, y: 420, across: 1000, down: 380, seed: 101, colours: FAR_LEAF, count: 260, size: 78, alpha: 0.85 });
+ * foliage(brush, { x: 900, y: 420, across: 1000, down: 380, seed: 101, colours: spreadOf(FAR_LEAF), count: 260, size: 78, alpha: 0.85 });
  */
 export const foliage = (brush: SceneBrush, leaves: Leaves): void => {
   const random = seeded(leaves.seed);
@@ -194,7 +196,13 @@ export const foliage = (brush: SceneBrush, leaves: Leaves): void => {
     const x = leaves.x + Math.cos(angle) * distance * leaves.across;
     const y = leaves.y + Math.sin(angle) * distance * leaves.down;
     const lit = clamp(0.5 - (y - leaves.y) / (leaves.down * 2) + (random() - 0.5) * 0.5, 0, 0.999);
-    const colour = leaves.colours[Math.floor(lit * leaves.colours.length)] ?? leaves.colours[0];
+    const step = leaves.colours[Math.floor(lit * leaves.colours.length)] ?? leaves.colours[0];
+    // A step with one tone in it is asked no question, which is what keeps a
+    // ramp nothing has shifted drawing exactly the forest it drew before.
+    const colour =
+      step === undefined || step.length === 0
+        ? '#000000'
+        : (step[step.length === 1 ? 0 : Math.floor(random() * step.length)] ?? '#000000');
 
     stroke(
       brush,
@@ -205,35 +213,59 @@ export const foliage = (brush: SceneBrush, leaves: Leaves): void => {
         width: leaves.size * (0.34 + random() * 0.4),
         angle: (random() - 0.5) * 1.7,
       },
-      colour ?? '#000000',
+      colour,
       leaves.alpha * (0.62 + random() * 0.38),
     );
   }
 };
 
+/** Where a trunk starts, where it stops, how thick at the bottom, and which tree it is. */
+export interface Tree {
+  readonly x: number;
+  readonly base: number;
+  readonly top: number;
+  readonly width: number;
+  readonly seed: number;
+}
+
+/** One length of a trunk: two ends, a thickness, and whether the light is on it. */
+export interface Bough {
+  readonly x: number;
+  readonly y: number;
+  readonly length: number;
+  readonly width: number;
+  readonly angle: number;
+  readonly lit: boolean;
+}
+
+/** A trunk as a shape: the lengths it is made of, and where it came out at the top. */
+export interface Trunk {
+  readonly boughs: readonly Bough[];
+  /** Where the top of it ended up across the world. */
+  readonly top: number;
+}
+
 /**
- * A trunk climbing out of the ground and thinning as it goes.
+ * The shape of a trunk, worked out and not yet drawn.
  *
- * Drawn as a chain of strokes that wander sideways rather than as one tapered
- * shape, because a tree that is exactly straight is a post.
+ * It is a chain of strokes that wander sideways rather than one tapered shape,
+ * because a tree that is exactly straight is a post.
  *
- * @param brush - What is being drawn through
- * @param tree - Where it starts, where it stops, how thick at the bottom, and which tree it is
- * @param colours - The bark's two tones, lit and against the light
- * @returns Where the top of it ended up across the world
+ * Separate from the drawing of it for one reason: where the top of a tree ends
+ * up is where its crown hangs, and a crown has to hang in the same place
+ * whether or not the trunk under it is inside the window. A tree culled out of
+ * a frame that moved its own leaves would be a different forest at every
+ * magnification.
+ *
+ * @param tree - The tree
+ * @returns Every length of it from the ground up, and where the top came out
+ *
+ * @example
+ * const { boughs, top } = trunkOf({ x: 2980, base: 1400, top: 120, width: 190, seed: 808 });
  */
-export const trunk = (
-  brush: SceneBrush,
-  tree: {
-    readonly x: number;
-    readonly base: number;
-    readonly top: number;
-    readonly width: number;
-    readonly seed: number;
-  },
-  colours: { readonly lit: string; readonly dark: string },
-): number => {
+export const trunkOf = (tree: Tree): Trunk => {
   const random = seeded(tree.seed);
+  const boughs: Bough[] = [];
   let y = tree.base;
   let x = tree.x;
 
@@ -242,22 +274,50 @@ export const trunk = (
     const nextX = x + (random() - 0.5) * 30;
     const width = tree.width * lerp(1, 0.55, (tree.base - y) / (tree.base - tree.top));
 
-    stroke(
-      brush,
-      {
-        x: (x + nextX) / 2,
-        y: y - step / 2,
-        length: step * 1.25,
-        width,
-        angle: Math.atan2(-step, nextX - x) + Math.PI / 2,
-      },
-      random() > 0.7 ? colours.lit : colours.dark,
-      0.96,
-    );
+    boughs.push({
+      x: (x + nextX) / 2,
+      y: y - step / 2,
+      length: step * 1.25,
+      width,
+      angle: Math.atan2(-step, nextX - x) + Math.PI / 2,
+      lit: random() > 0.7,
+    });
 
     x = nextX;
     y -= step;
   }
 
-  return x;
+  return { boughs, top: x };
+};
+
+/**
+ * Where the top of a tree ends up across the world.
+ *
+ * @param tree - The tree
+ * @returns Where it came out, in world units
+ */
+export const topOf = (tree: Tree): number => trunkOf(tree).top;
+
+/**
+ * A trunk climbing out of the ground and thinning as it goes.
+ *
+ * @param brush - What is being drawn through
+ * @param tree - Where it starts, where it stops, how thick at the bottom, and which tree it is
+ * @param colours - The bark's two tones, lit and against the light
+ * @param alpha - How much of it there is; nearly all of it by default, and less with distance
+ * @returns Where the top of it ended up across the world
+ */
+export const trunk = (
+  brush: SceneBrush,
+  tree: Tree,
+  colours: { readonly lit: string; readonly dark: string },
+  alpha = 0.96,
+): number => {
+  const { boughs, top } = trunkOf(tree);
+
+  for (const bough of boughs) {
+    stroke(brush, bough, bough.lit ? colours.lit : colours.dark, alpha);
+  }
+
+  return top;
 };

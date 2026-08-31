@@ -4,9 +4,11 @@ import { CONGRATULATIONS, DOORS, GATE, HALL } from './locations';
 import {
   BASE_FRAME_HEIGHT,
   frameFor,
+  inFrame,
   LANDMARKS,
   OPENING,
   openingOnScreen,
+  type Rect,
   toScreen,
   type Viewport,
 } from './world';
@@ -109,5 +111,52 @@ describe('openingOnScreen', () => {
 
     expect(doorway.x + doorway.width / 2).toBeCloseTo(middle.x);
     expect(doorway.y + doorway.height / 2).toBeCloseTo(middle.y);
+  });
+});
+
+describe('inFrame', () => {
+  /** A window a hundred wide and a hundred down, with its corner at the origin. */
+  const WINDOW: Rect = { x: 0, y: 0, width: 100, height: 100 };
+
+  it('keeps anything the window is showing any part of', () => {
+    for (const bounds of [
+      { name: 'in the middle of it', x: 50, y: 50, across: 10, down: 10 },
+      { name: 'wider than it', x: 50, y: 50, across: 400, down: 400 },
+      { name: 'half off the left', x: 0, y: 50, across: 20, down: 20 },
+      { name: 'half off the bottom', x: 50, y: 100, across: 20, down: 20 },
+      { name: 'touching one corner', x: 120, y: 120, across: 20, down: 20 },
+    ]) {
+      expect(inFrame(WINDOW, bounds), bounds.name).toBe(true);
+    }
+  });
+
+  it('drops what falls outside it on every side', () => {
+    for (const bounds of [
+      { name: 'left of it', x: -60, y: 50, across: 20, down: 20 },
+      { name: 'right of it', x: 160, y: 50, across: 20, down: 20 },
+      { name: 'above it', x: 50, y: -60, across: 20, down: 20 },
+      { name: 'below it', x: 50, y: 160, across: 20, down: 20 },
+      // Beyond the corner rather than at it: a box that clears the window on
+      // both axes at once is the case a test of one axis at a time would miss.
+      { name: 'past the corner', x: 160, y: 160, across: 20, down: 20 },
+    ]) {
+      expect(inFrame(WINDOW, bounds), bounds.name).toBe(false);
+    }
+  });
+
+  it('shows less of the world the closer the window stands', () => {
+    // Which is the whole reason the frame is handed to the painting at all: at
+    // the magnification a game is played at, a fourteenth of the picture is on
+    // the screen and the rest of it was being drawn anyway.
+    const across = (viewport: Viewport, at: typeof GATE): number => {
+      const frame = frameFor(at, viewport);
+
+      return frame.width * frame.height;
+    };
+    const window: Viewport = { width: 1440, height: 900 };
+    const world = 3200 * 1400;
+
+    expect(across(window, GATE) / world).toBeGreaterThan(0.25);
+    expect(across(window, HALL) / world).toBeLessThan(0.05);
   });
 });

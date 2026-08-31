@@ -77,6 +77,50 @@ export interface Rect {
   readonly height: number;
 }
 
+/**
+ * A part of the world named the way the scene names its parts: by its middle
+ * and how far it reaches, rather than by a corner.
+ *
+ * Every mass of leaves, every tree and every building is already written this
+ * way, so a box round one is the numbers it was drawn from and not a second
+ * description of it that could drift.
+ */
+export interface Bounds {
+  readonly x: number;
+  readonly y: number;
+  /** How far it reaches either side of its middle, and above and below it. */
+  readonly across: number;
+  readonly down: number;
+}
+
+/**
+ * Whether any of this is inside the window, and therefore worth painting.
+ *
+ * The scene is one painting three thousand two hundred units wide, and a frame
+ * is a window onto part of it: at the magnification a game is played at, about
+ * a fourteenth of the world is on the screen. Everything else was being drawn
+ * anyway — every stroke of it, on every frame of every journey — because a
+ * canvas throws away what falls outside it silently and late, after the whole
+ * cost of the shape has been paid.
+ *
+ * A box is generous on purpose. What it holds is the middle and reach a mass
+ * was written with, and a mass scatters strokes as wide as its reach plus half
+ * a leaf, so callers add the leaf. Painting something just off the edge costs
+ * one frame's strokes; missing something just on it is a hole in the picture.
+ *
+ * @param frame - The part of the world being shown, from {@link frameFor}
+ * @param bounds - What is about to be painted, by its middle and its reach
+ * @returns Whether the two overlap at all
+ *
+ * @example
+ * if (inFrame(frame, { x: 900, y: 420, across: 1000, down: 380 })) foliage(brush, mass);
+ */
+export const inFrame = (frame: Rect, bounds: Bounds): boolean =>
+  bounds.x + bounds.across >= frame.x &&
+  bounds.x - bounds.across <= frame.x + frame.width &&
+  bounds.y + bounds.down >= frame.y &&
+  bounds.y - bounds.down <= frame.y + frame.height;
+
 /** The window the world is being looked at through, in CSS pixels. */
 export interface Viewport {
   readonly width: number;

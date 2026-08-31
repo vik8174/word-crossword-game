@@ -18,8 +18,15 @@ import type { Rect, Viewport } from './world';
  * the inside of a room at three and a half.
  *
  * There is no clearing step. The first thing painted is the air, and it covers
- * the whole world, so whatever was on the canvas a moment ago is under an
+ * the whole window, so whatever was on the canvas a moment ago is under an
  * opaque sky rather than showing through it.
+ *
+ * The frame is handed to every pass rather than kept here, and that is the one
+ * thing about this file worth reading twice. The picture is three thousand two
+ * hundred units wide and a window at the magnification a game is played at
+ * shows about a fourteenth of it; without the frame each pass painted the whole
+ * world on every frame of every journey and let the canvas throw away what fell
+ * outside — after paying for it (`inFrame` in `world.ts`).
  *
  * @param brush - What is being drawn through, in CSS pixels
  * @param frame - The part of the world to show, from `frameFor`
@@ -43,10 +50,10 @@ export const paintScene = (brush: SceneBrush, frame: Rect, viewport: Viewport): 
   brush.translate(-frame.x * scale, -frame.y * scale);
   brush.scale(scale, scale);
 
-  paintBackground(brush);
-  paintTemple(brush);
-  paintMiddleGround(brush);
-  paintForeground(brush);
+  paintBackground(brush, frame);
+  paintTemple(brush, frame);
+  paintMiddleGround(brush, frame);
+  paintForeground(brush, frame);
 
   brush.restore();
 };
