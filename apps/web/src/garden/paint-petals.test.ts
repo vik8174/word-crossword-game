@@ -137,6 +137,59 @@ describe('paintPetals', () => {
     expect(alphas).toEqual([0.2, 0.4]);
   });
 
+  it('draws nothing that falls across the temple doorway', () => {
+    const doorway = { x: 200, y: 100, width: 300, height: 200 };
+    const at = (x: number, y: number): Petal => ({
+      x,
+      y,
+      fall: 30,
+      sway: 0,
+      phase: 0,
+      spin: 0,
+      angle: 0,
+      size: 8,
+      ink: 0.3,
+    });
+    const { brush, of } = recordingBrush();
+
+    // Three in the garden and two over the hall. It is geometry and not a
+    // setting: nothing here knows the app is playing a game, only that these
+    // two petals are inside a rectangle.
+    paintPetals(
+      brush,
+      [at(10, 10), at(199, 200), at(250, 150), at(499, 299), at(600, 400)],
+      SKY,
+      '#A54460',
+      doorway,
+    );
+
+    expect(of('fill')).toHaveLength(3);
+  });
+
+  it('lets the weather through a doorway that is nowhere, and one with no size', () => {
+    const petal: Petal = {
+      x: 0,
+      y: 0,
+      fall: 30,
+      sway: 0,
+      phase: 0,
+      spin: 0,
+      angle: 0,
+      size: 8,
+      ink: 0.3,
+    };
+
+    for (const doorway of [null, { x: 0, y: 0, width: 0, height: 0 }]) {
+      const { brush, of } = recordingBrush();
+
+      // A window that has not been laid out yet projects the doorway onto a
+      // point, and a point that swallowed the weather would be a blank page.
+      paintPetals(brush, [petal], SKY, '#A54460', doorway);
+
+      expect(of('fill')).toHaveLength(1);
+    }
+  });
+
   it('leaves the brush as it found it, so what it drew cannot leak onto anything else', () => {
     const { brush, of } = recordingBrush();
 

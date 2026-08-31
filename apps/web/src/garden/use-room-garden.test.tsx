@@ -9,17 +9,20 @@ import { useRoomGarden } from './use-room-garden';
 /** A garden that draws nothing and answers for everything it was asked. */
 const gardenAround = () => {
   const showAir = vi.fn();
+  const showLocation = vi.fn();
   const greet = vi.fn();
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <GardenControlsContext value={{ showAir, greet }}>{children}</GardenControlsContext>
+    <GardenControlsContext value={{ showAir, showLocation, greet }}>
+      {children}
+    </GardenControlsContext>
   );
 
-  return { showAir, greet, wrapper };
+  return { showAir, showLocation, greet, wrapper };
 };
 
 /** The hook, opened on one screen and free to be moved to the next. */
 const openRoomOn = (kind: RoomScreen['kind']) => {
-  const { showAir, greet, wrapper } = gardenAround();
+  const { showAir, showLocation, greet, wrapper } = gardenAround();
   const { rerender, unmount } = renderHook(({ shown }) => useRoomGarden(shown), {
     initialProps: { shown: kind },
     wrapper,
@@ -27,6 +30,7 @@ const openRoomOn = (kind: RoomScreen['kind']) => {
 
   return {
     showAir,
+    showLocation,
     greet,
     unmount,
     becomes: (next: RoomScreen['kind']) => rerender({ shown: next }),
