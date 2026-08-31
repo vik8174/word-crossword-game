@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
+import { theme } from '../theme';
 import { CLOTH } from './cloth';
 import { spreadOf } from './colour-spread';
 import { SHOJI_PAPER } from './paint-hall';
+import { INK } from './petals';
 import { BLOSSOM, BLOSSOM_SHIFT } from './paint-sakura';
 import { BAND, CONTROL, SCENE, SCENE_EDGE, SCENE_INK_DIM, VEIL } from './scene-palette';
 
@@ -83,11 +85,12 @@ const contrast = (one: Rgb, other: Rgb): number => {
 /**
  * The most ink a petal carries, and what colour it carries it in.
  *
- * Kept beside the surfaces rather than imported from `petals.ts`, because what
- * is asserted below is the ceiling itself: a hand that raises it has to raise
- * it here too, and will then watch the numbers move.
+ * Both read from where the app reads them rather than written down again. A
+ * guard holding its own copy of a ceiling goes on passing after somebody raises
+ * the real one, and this is the guard that ceiling exists for
+ * ({@link PetalLayer}, `petals.ts`).
  */
-const PETAL = { colour: '#F2D3DA', ink: 0.52 } as const;
+const PETAL = { colour: theme.palette.sakura.light, ink: INK.most } as const;
 
 /** Every surface the name of a step can land on, which has no band under it. */
 const UNBANDED = [SCENE.bark, SCENE.barkDeep, SCENE.night, SCENE.deep] as const;

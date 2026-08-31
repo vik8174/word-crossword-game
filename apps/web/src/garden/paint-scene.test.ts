@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SceneBrush } from './brushwork';
-import { GATE, HALL } from './locations';
+import { PLANES, SAKURA_ON, TEMPLE_AFTER } from './forest-planes';
+import { DOORS, GATE, HALL } from './locations';
 import { paintHall } from './paint-hall';
+import { paintPlane } from './paint-planes';
 import { paintScene } from './paint-scene';
 import { paintTemple } from './paint-temple';
 import { frameFor, INTERIOR, openingRect, type Rect, type Viewport, WORLD } from './world';
@@ -141,6 +143,43 @@ describe('paintScene', () => {
     const strokes = (marks: readonly Mark[]) => marks.filter((mark) => mark.call === 'fill').length;
 
     expect(strokes(close.marks)).toBeLessThan(strokes(wide.marks) * 0.7);
+  });
+
+  it('puts the temple and the cherries in the row of planes, and not beside it', () => {
+    // Where the building and the trees stand in the order is said once, in
+    // `forest-planes.ts`, and read back here. Spelling the two names again in
+    // the painting would be a second source of truth for one rule, and the way
+    // it would fail is a temple that quietly stopped being painted rather than
+    // an error anybody sees.
+    expect(PLANES.map((plane) => plane.name)).toContain(TEMPLE_AFTER);
+    expect(PLANES.map((plane) => plane.name)).toContain(SAKURA_ON);
+
+    const { brush, marks } = recordingBrush();
+
+    paintScene(brush, frameFor(DOORS, DESKTOP), DESKTOP);
+
+    // The doorway is clipped by the temple and by nothing else in the scene, so
+    // a scene with a clip in it is a scene the building was painted into.
+    expect(marks.some((mark) => mark.call === 'clip')).toBe(true);
+
+    const gate = recordingBrush();
+
+    paintScene(gate.brush, frameFor(GATE, DESKTOP), DESKTOP);
+
+    // And a cherry stands in the window a visitor arrives in. Counted against
+    // the same painting with the cherries taken out, which is what the number
+    // below is: the gate's frame is two hundred and more strokes richer for
+    // them.
+    const withCherries = gate.marks.filter((mark) => mark.call === 'roundRect').length;
+    const withoutCherries = recordingBrush();
+
+    for (const plane of PLANES) {
+      paintPlane(withoutCherries.brush, frameFor(GATE, DESKTOP), plane);
+    }
+
+    expect(withCherries).toBeGreaterThan(
+      withoutCherries.marks.filter((mark) => mark.call === 'roundRect').length,
+    );
   });
 
   it('paints the same forest every time', () => {
