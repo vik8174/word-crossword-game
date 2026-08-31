@@ -121,8 +121,21 @@ export const BAND_EDGE_WIDTH = 1.5;
  */
 export const SCENE_INK_DIM = 'rgba(243, 236, 217, 0.78)';
 
-/** Cream thinned to a rule, a border, the edge of a field. */
+/** Cream thinned to a rule: a divider, a mark beside a line, anything decorative. */
 export const SCENE_LINE = 'rgba(243, 236, 217, 0.28)';
+
+/**
+ * Cream at the weight the edge of a control is drawn at.
+ *
+ * A heavier line than {@link SCENE_LINE} and a different job: the box around a
+ * field is what says there is a field, so it has to be seen rather than merely
+ * sensed. Fifty-five per cent is where it clears three to one on every surface
+ * this place has, the band over the lit paper of the temple's doors included,
+ * which is the threshold a control's boundary is owed
+ * (`scene-palette.test.ts`). A rule between two paragraphs is owed nothing and
+ * stays quiet.
+ */
+export const SCENE_EDGE = 'rgba(243, 236, 217, 0.55)';
 
 /**
  * The one control that carries an action, in the one colour that carries one.

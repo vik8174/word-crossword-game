@@ -3,7 +3,6 @@ import { type SxProps, type Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
-import { BAND_EDGE, BAND_EDGE_WIDTH } from '../garden/scene-palette';
 import { gapAt } from '../scale';
 import { BAND_SX, fullHeightBandSx, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES } from './room-layout';
@@ -94,8 +93,9 @@ const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
  * It stands on the same band a list of words does, and for the same reason: a
  * form is text, and text has to be read off a forest. Where a zone has a column
  * the band is that column; here there is no column, so the band is a block of
- * the same material with the same red line along the edge it meets the picture
- * at.
+ * the same material. No red line along the top of it: the name of the step is
+ * directly above with a rule of its own, and two of them a step apart read as
+ * one underline drawn twice.
  *
  * @param props.children - What this screen has to say or ask
  *
@@ -107,10 +107,9 @@ export const RoomMiddleColumn = ({ children }: { readonly children: ReactNode })
     sx={{
       maxWidth: '32rem',
       mx: 'auto',
-      p: 3,
+      p: 5,
       ...BAND_SX,
       ...ON_SCENE_SX,
-      borderTop: `${BAND_EDGE_WIDTH}px solid ${BAND_EDGE}`,
     }}
   >
     {children}

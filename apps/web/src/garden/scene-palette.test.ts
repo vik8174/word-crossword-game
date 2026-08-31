@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { SHOJI_PAPER } from './paint-hall';
-import { BAND, CONTROL, SCENE, SCENE_INK_DIM, VEIL } from './scene-palette';
+import { BAND, CONTROL, SCENE, SCENE_EDGE, SCENE_INK_DIM, VEIL } from './scene-palette';
 
 /**
  * What this file is for: the garden writes cream on a painting, and a painting
@@ -19,9 +19,12 @@ import { BAND, CONTROL, SCENE, SCENE_INK_DIM, VEIL } from './scene-palette';
  * clear the contrast small text is owed on all of them.
  */
 
-/** What small text has to reach to be read, and what a heading has to reach. */
+/**
+ * What small text has to reach to be read, and what the boundary of a control
+ * has to reach to be seen.
+ */
 const SMALL_TEXT = 4.5;
-const LARGE_TEXT = 3;
+const COMPONENT_EDGE = 3;
 
 /** A colour, as the three numbers a contrast is worked out from. */
 type Rgb = readonly [number, number, number];
@@ -160,11 +163,25 @@ describe('what the garden writes on', () => {
     }
   });
 
+  it('shows the edge of a field, which is the whole of what says there is one', () => {
+    // A box around a field is a boundary rather than decoration, so it is owed
+    // three to one and not nothing. The first screen a guest ever sees is a
+    // nickname field on this band, and it arrives already focused.
+    for (const surface of SURFACES) {
+      const behind = banded(surface.paint);
+
+      expect(
+        contrast(laidOver(asRgba(SCENE_EDGE), behind), behind),
+        `the edge of a field on ${surface.name}`,
+      ).toBeGreaterThan(COMPONENT_EDGE);
+    }
+  });
+
   it('says plainly that lit paper is not something to write on unbanded', () => {
     // Recorded rather than left to be rediscovered: this is the measurement the
     // hall was resized around, and a future release that grows the paper back
     // over the whole window will fail here rather than in somebody's eyes.
-    expect(contrast(asRgb(SCENE.cream), veiled(SHOJI_PAPER[0]))).toBeLessThan(LARGE_TEXT);
+    expect(contrast(asRgb(SCENE.cream), veiled(SHOJI_PAPER[0]))).toBeLessThan(COMPONENT_EDGE);
 
     // And the same about a control standing straight on it, which is why every
     // control in this app is either in a band or in the shade of the forest.

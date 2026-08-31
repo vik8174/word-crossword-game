@@ -7,6 +7,7 @@ import {
   BAND_EDGE_WIDTH,
   CONTROL,
   SCENE,
+  SCENE_EDGE,
   SCENE_INK_DIM,
   SCENE_LINE,
 } from './scene-palette';
@@ -160,16 +161,38 @@ export const ON_SCENE_SX: CSSObject = {
 
   // A chip beside a name says something small about it, and here it says it in
   // an outline rather than in a colour the forest does not have.
-  '& .MuiChip-root': { color: SCENE.cream, borderColor: SCENE_LINE },
+  '& .MuiChip-root': { color: SCENE.cream, borderColor: SCENE_EDGE },
   '& .MuiChip-filled': { backgroundColor: 'rgba(243, 236, 217, 0.12)' },
 
   // A field somebody types into: the letters, the box round them, and the two
-  // lines that explain it.
-  '& .MuiInputBase-input': { color: SCENE.cream },
-  '& .MuiOutlinedInput-notchedOutline': { borderColor: SCENE_LINE },
-  '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': { borderColor: SCENE.cream },
-  '& .MuiInputLabel-root': { color: SCENE_INK_DIM },
-  '& .MuiFormHelperText-root': { color: SCENE_INK_DIM },
+  // lines that explain it — in every state, because a field has four and the
+  // theme draws three of them in colours meant for paper. The doubled `&&` is
+  // what gets past MUI's own state rules, which are more specific than a plain
+  // descendant: the first screen a guest ever sees carries a field that is
+  // focused the moment it appears, and it was being outlined in the pink of the
+  // interface on a forest.
+  '&& .MuiInputBase-input': { color: SCENE.cream },
+  '&& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: SCENE_INK_DIM },
+  '&& .MuiOutlinedInput-notchedOutline': { borderColor: SCENE_EDGE },
+  '&& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': {
+    borderColor: SCENE.cream,
+  },
+  '&& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
+    borderColor: SCENE.cream,
+  },
+  // Something the room would not take: the box says so in the temple's red and
+  // the words stay cream, exactly as the line about a refused answer does. Red
+  // letters are a middling lightness and are read off neither a lit sheet nor a
+  // dark wall.
+  '&& .MuiOutlinedInput-root.Mui-error .MuiOutlinedInput-notchedOutline': {
+    borderColor: SCENE.vermilionLit,
+  },
+  '&& .MuiInputLabel-root': { color: SCENE_INK_DIM },
+  '&& .MuiInputLabel-root.Mui-focused': { color: SCENE.cream },
+  '&& .MuiInputLabel-root.Mui-error': { color: SCENE.cream },
+  '&& .MuiInputLabel-root.Mui-disabled': { color: SCENE_LINE },
+  '&& .MuiFormHelperText-root': { color: SCENE_INK_DIM },
+  '&& .MuiFormHelperText-root.Mui-error': { color: SCENE.cream },
 
   // The one action, in the one colour that carries an action anywhere in this
   // place. Translucent, so the forest goes on behind it and the control is
@@ -188,7 +211,7 @@ export const ON_SCENE_SX: CSSObject = {
   },
   '& .MuiButton-outlined': {
     color: SCENE.cream,
-    borderColor: SCENE_LINE,
+    borderColor: SCENE_EDGE,
     '&:hover': { borderColor: SCENE.cream, backgroundColor: 'rgba(243, 236, 217, 0.06)' },
   },
   '& .MuiButton-text': { color: SCENE.cream },
