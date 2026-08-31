@@ -80,8 +80,24 @@ const contrast = (one: Rgb, other: Rgb): number => {
   return (brighter ?? 1) / (darker ?? 1);
 };
 
+/**
+ * The most ink a petal carries, and what colour it carries it in.
+ *
+ * Kept beside the surfaces rather than imported from `petals.ts`, because what
+ * is asserted below is the ceiling itself: a hand that raises it has to raise
+ * it here too, and will then watch the numbers move.
+ */
+const PETAL = { colour: '#F2D3DA', ink: 0.52 } as const;
+
 /** Every surface the name of a step can land on, which has no band under it. */
 const UNBANDED = [SCENE.bark, SCENE.barkDeep, SCENE.night, SCENE.deep] as const;
+
+/** A surface with a petal on it, which is what the weather does to any of them. */
+const petalled = (paint: string): string => {
+  const mixed = over(asRgb(PETAL.colour), PETAL.ink, asRgb(paint));
+
+  return `#${mixed.map((channel) => Math.round(channel).toString(16).padStart(2, '0')).join('')}`;
+};
 
 /** A surface as the reader sees it: the paint, with the veil over it. */
 const veiled = (paint: string): Rgb => {
@@ -163,6 +179,23 @@ describe('what the garden writes on', () => {
     // and the leaves hanging into the corners of every frame are for.
     for (const paint of UNBANDED) {
       expect(contrast(asRgb(SCENE.cream), veiled(paint)), paint).toBeGreaterThan(SMALL_TEXT);
+    }
+  });
+
+  it('goes on reading it with a petal in front of it', () => {
+    // Petals are lighter than the forest now and there are twice as many of
+    // them (issue #120), so one of them landing on a step title lifts what that
+    // title is standing on. This is the measurement the ceiling on a petal's
+    // ink was set from, and the reason it is a number rather than a taste: at
+    // 0.52 the darkest surfaces still carry cream at better than four and a
+    // half to one, and at 0.56 they do not.
+    for (const paint of UNBANDED) {
+      const behind = veiled(petalled(paint));
+
+      expect(
+        contrast(asRgb(SCENE.cream), behind),
+        `cream under a petal on ${paint}`,
+      ).toBeGreaterThan(SMALL_TEXT);
     }
   });
 
