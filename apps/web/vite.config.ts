@@ -1,10 +1,21 @@
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { gzipSync } from 'node:zlib';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 
+import {
+  type FetchedFile,
+  FIRST_VISIT_CEILING_BYTES,
+  firstVisitWeight,
+  preloadedHrefs,
+  tooHeavyReport,
+} from './build/first-visit-weight.ts';
 import { readGitRevision, readPackageVersion, resolveReleaseName } from './build/release-name.ts';
 import {
   type BundleChunk,
+  reachableChunks,
   routeChunkFor,
   routeChunks,
   routePreloadScript,
@@ -113,6 +124,82 @@ const preloadRoomRoute = (): Plugin => {
   };
 };
 
+/** The one file a visitor asks for by name, and everything else follows from it. */
+const HTML_FILE = 'index.html';
+
+/**
+ * Fails the build when a first visit to the landing page has got too heavy.
+ *
+ * Why there is a ceiling at all, and what counts as a first visit, is in
+ * `build/first-visit-weight.ts`. The plugin's own part is small: it is the only
+ * place in the project that can see both what was built and what the HTML asks
+ * for up front, which is what the measurement needs — the chunks come off the
+ * bundle, and the font comes off a `<link rel="preload">` written by hand,
+ * because a file copied out of `public/` is in no bundle at all.
+ *
+ * It runs after the files are written rather than while they are being made, so
+ * what it weighs is what a browser would actually be sent.
+ */
+const capFirstVisit = (): Plugin => {
+  let outDir = 'dist';
+  let base = '/';
+
+  /** What one built file weighs over the wire. */
+  const weigh = (fileName: string): FetchedFile => ({
+    fileName,
+    gzipBytes: gzipSync(readFileSync(resolve(outDir, fileName))).length,
+  });
+
+  return {
+    name: 'cap-first-visit',
+    apply: 'build',
+
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+      base = config.base;
+    },
+
+    writeBundle(_options, bundle) {
+      const outputs = Object.values(bundle);
+      const chunks: BundleChunk[] = outputs.filter((output) => output.type === 'chunk');
+      const entry = outputs.find((output) => output.type === 'chunk' && output.isEntry);
+      const html = bundle[HTML_FILE];
+
+      if (entry === undefined || html === undefined || html.type !== 'asset') {
+        this.error(
+          `Nothing to weigh: the build produced no ${HTML_FILE} with an entry chunk behind it.`,
+        );
+
+        return;
+      }
+
+      const page =
+        typeof html.source === 'string' ? html.source : Buffer.from(html.source).toString('utf8');
+      const preloaded = preloadedHrefs(page).map((href) =>
+        href.startsWith(base) ? href.slice(base.length) : href.replace(/^\//, ''),
+      );
+      const files: readonly FetchedFile[] = [
+        { fileName: HTML_FILE, gzipBytes: gzipSync(page).length },
+        ...reachableChunks(chunks, entry.fileName).map(weigh),
+        ...preloaded.map(weigh),
+      ];
+      const complaint = tooHeavyReport(files, FIRST_VISIT_CEILING_BYTES);
+
+      if (complaint !== null) {
+        this.error(complaint);
+
+        return;
+      }
+
+      console.log(
+        `First visit: ${(firstVisitWeight(files) / 1024).toFixed(1)} KiB gzipped, of ${(
+          FIRST_VISIT_CEILING_BYTES / 1024
+        ).toFixed(1)} KiB allowed.`,
+      );
+    },
+  };
+};
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // Deliberately not `VITE_`-prefixed. Vite embeds every `VITE_` variable into
@@ -135,6 +222,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       preloadRoomRoute(),
+      capFirstVisit(),
       ...(uploadsSourceMaps
         ? [
             sentryVitePlugin({
