@@ -1,11 +1,12 @@
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import { useMemo } from 'react';
 
+import { SENTENCE_BAND_SX } from '../garden/scene-surface';
 import type { RoomDocument } from '../rooms/room-document';
 import { gridViewFor, type WordLocation } from '../rooms/word-visibility';
 import { CrosswordGrid } from './CrosswordGrid';
+import { CROSSWORD_HEADING_ID, CrosswordHeading } from './CrosswordHeading';
 
 /**
  * Stands in for a board that takes no answers.
@@ -67,26 +68,12 @@ export const RoomCrossword = ({
   const view = useMemo(() => gridViewFor(room, viewerId), [room, viewerId]);
 
   return (
-    <section aria-labelledby="grid-heading">
-      {/* One line rather than a heading with a paragraph under it. Both of them
-          say what the board is, and both of them were being paid for out of the
-          board's own height (issue #101); side by side they cost a single line
-          on a screen with the room for it, and wrap into the two they always
-          were on one without. */}
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'baseline',
-          columnGap: 2,
-        }}
-      >
-        <Typography id="grid-heading" variant="h2" component="h2">
-          The crossword
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          {caption}
-        </Typography>
+    <section aria-labelledby={CROSSWORD_HEADING_ID}>
+      {/* The middle of the window is the one part of the room with no band of
+        its own — the board stands on the temple's own doors there — so the line
+        that names it is given one. */}
+      <Box sx={SENTENCE_BAND_SX}>
+        <CrosswordHeading caption={caption} />
       </Box>
 
       <CrosswordGrid

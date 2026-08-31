@@ -54,9 +54,16 @@ const dropFrame = vi.fn();
  * jsdom has no canvas behind `getContext`, so without this the garden finds
  * nothing to draw through and every test below would pass by drawing nothing at
  * all — which is exactly what two of them are asserting.
+ *
+ * It is wide enough for the scene as well as the weather. Both layers draw
+ * through the same stub, and the count above is only ever read across one frame
+ * of the weather — the scene is painted when the layer is mounted and not
+ * again, so it is never inside anything being counted.
  */
 const stubCanvas = () => {
   petalsDrawn = 0;
+
+  const gradient = { addColorStop: () => {} } as unknown as CanvasGradient;
 
   const brush = {
     clearRect: () => {},
@@ -67,13 +74,25 @@ const stubCanvas = () => {
     scale: () => {},
     beginPath: () => {},
     moveTo: () => {},
+    lineTo: () => {},
     quadraticCurveTo: () => {},
+    closePath: () => {},
+    rect: () => {},
+    roundRect: () => {},
+    ellipse: () => {},
+    clip: () => {},
+    fillRect: () => {},
+    stroke: () => {},
+    createLinearGradient: () => gradient,
+    createRadialGradient: () => gradient,
     setTransform: () => {},
     fill: () => {
       petalsDrawn += 1;
     },
     globalAlpha: 1,
+    lineWidth: 1,
     fillStyle: '',
+    strokeStyle: '',
   };
 
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
@@ -152,13 +171,16 @@ describe('Garden', () => {
     expect(frames).toHaveLength(1);
   });
 
-  it('draws nothing at all when animation is turned off in the operating system', () => {
+  it('leaves the place standing when animation is turned off, and takes the weather away', () => {
     turnAnimationOff();
 
     const { container } = openTheApp();
 
-    // Not fewer petals and not slower ones: there is no canvas on the page.
-    expect(container.querySelector('canvas')).toBeNull();
+    // Not fewer petals and not slower ones: the canvas they fall on is not on
+    // the page at all, and there is no loop asking for frames. The scene stays,
+    // because a painting is not movement — somebody who has turned animation
+    // off has asked for stillness, not for a blank page.
+    expect(container.querySelectorAll('canvas')).toHaveLength(1);
     expect(frames).toHaveLength(0);
   });
 
@@ -246,8 +268,8 @@ describe('Garden', () => {
 
     // Still on the page and still being drawn, because it is going rather than
     // gone — the board arrives over a background that is settling, not one that
-    // snapped off behind it.
-    expect(container.querySelector('canvas')).not.toBeNull();
+    // snapped off behind it. The place behind it never went anywhere.
+    expect(container.querySelectorAll('canvas')).toHaveLength(2);
     expect(frames).toHaveLength(1);
 
     frames = [];

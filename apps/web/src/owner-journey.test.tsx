@@ -152,7 +152,10 @@ describe('the owner of a room', () => {
       roomUrl('room-1', window.location.origin),
     );
     expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Vik');
-    expect(screen.getByRole('group', { name: /crossword grid/i })).toBeInTheDocument();
+    // The room, and the room it is: the crossword is named on the lobby rather
+    // than drawn there, the board being on the other side of the doorway this
+    // screen stands at (issue #115).
+    expect(screen.getByRole('heading', { name: /the crossword/i })).toBeInTheDocument();
   });
 
   it('is not taken back to the word list by the Back button', async () => {

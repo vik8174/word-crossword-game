@@ -687,11 +687,18 @@ describe('RoomPage', () => {
       expect(screen.getByText('Bob')).toBeInTheDocument();
     });
 
-    it('draws the crossword without giving a single letter away', async () => {
+    it('names the crossword without drawing it, and gives nothing of it away', async () => {
       await openRoom(roomWithBoth);
 
-      expect(grid()).toBeInTheDocument();
-      expect(gridLetters()).toBe('');
+      // The lobby stands at the doors of the temple and the board is inside,
+      // so there is nothing of it on this screen but a count of what is in it
+      // (issue #115). It used to be drawn here, empty and already the size it
+      // would be played at (issue #101); what that bought — a board that does
+      // not move when the game begins — is now the camera going through the
+      // doorway instead, and the doorway is the middle of this window.
+      expect(screen.getByRole('heading', { name: /the crossword/i })).toBeInTheDocument();
+      expect(screen.getByText(/words are hidden in this grid/i)).toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: /crossword grid/i })).not.toBeInTheDocument();
       expect(screen.queryByText(/\bcat\b/i)).not.toBeInTheDocument();
     });
   });

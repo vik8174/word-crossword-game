@@ -98,6 +98,22 @@ export const WEIGHTS = { regular: 400, semibold: 600 } as const;
 export const SPACING_STEPS: readonly number[] = [0, 4, 8, 12, 16, 24, 32, 48];
 
 /**
+ * A gap of the row as a CSS length, for the places MUI's spacing props cannot
+ * reach.
+ *
+ * `mt` and `gap` take an index into the row; a `calc()`, a pseudo-element or a
+ * canvas takes a length. This is the same row said the other way, so a value
+ * off it cannot get in through the back door.
+ *
+ * @param step - Which of the steps, counted from nought
+ * @returns It in pixels
+ *
+ * @example
+ * gapAt(4); // '16px'
+ */
+export const gapAt = (step: number): string => `${SPACING_STEPS[step] ?? 0}px`;
+
+/**
  * The text face: whatever the reader's own system draws best.
  *
  * Nothing is fetched for it, so the first screen is drawn the moment its HTML
@@ -171,3 +187,17 @@ export const SIGN_FONT_FAMILY = [
 
 /** The one weight the sign face is fetched at: light, as a sign is lettered. */
 export const SIGN_FONT_WEIGHT = 300;
+
+/**
+ * How far apart the letters of a sign are held, as a share of their own size.
+ *
+ * Forty-two per cent, which is a great deal — and it is the number the whole
+ * look was chosen against (issue #115). It is one number rather than two,
+ * because lettering is one job: the name over the gates and the name of a step
+ * inside them are the same sign at two sizes, and a tracking that changed
+ * between them would be the same distinction this file exists to refuse, made
+ * in a second place. The tracked line is also half a letter wider than it
+ * looks — the space is added after the last letter too — so anything centring
+ * one takes this back off the right of it.
+ */
+export const SIGN_TRACKING = '0.42em';

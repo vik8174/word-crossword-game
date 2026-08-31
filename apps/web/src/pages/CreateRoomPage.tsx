@@ -1,4 +1,4 @@
-import Container from '@mui/material/Container';
+import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -6,12 +6,17 @@ import { type CrosswordLayout, generateCrossword, validateWordList } from 'share
 
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm } from '../components/WordListForm';
+import { BAND_SX, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
 import { roomPath } from '../rooms/room-link';
 import { createRoom } from '../rooms/room-service';
+import { gapAt } from '../scale';
 import { logGameEvent } from '../telemetry/analytics';
 import { useScreenReached } from '../telemetry/use-screen-reached';
+
+/** The step of the row this page keeps between itself and the edge of the window. */
+const PAGE_PADDING_STEP = 4;
 
 /**
  * Shown when no two words share a letter. Different from words being dropped:
@@ -48,7 +53,9 @@ type CreationPhase =
  * on a page a reload would empty (see
  * `docs/decisions/0021-one-room-address.md`).
  *
- * It is the second screen of the funnel, so it says it was reached (issue #51).
+ * It is the second screen of the funnel, so it says it was reached (issue #51),
+ * and it is the second screen at the gate: the garden is standing where the
+ * landing page left it, which is why nothing here has to say where it is.
  *
  * @example
  * <Route path="/create" element={<CreateRoomPage />} />
@@ -146,14 +153,32 @@ export const CreateRoomPage = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 7 }}>
-      {/* Further from what follows it than the landing page's heading is: there
-          the next line finishes the sentence, here it is a form of its own. */}
-      <Typography variant="h1" component="h1" sx={{ mb: 5 }}>
+    // Still at the gate, so the step is named in the corner of the window with
+    // the temple's red run under it, and the form stands on the same band a
+    // list of words does. Nothing here is centred over the middle of the
+    // picture: that is where the path goes.
+    <Box component="main" sx={{ px: PAGE_PADDING_STEP, py: 5, ...ON_SCENE_SX }}>
+      <Typography
+        component="h1"
+        variant="signage"
+        sx={(theme) => stepTitleSx(theme, `-${gapAt(PAGE_PADDING_STEP)}`)}
+      >
         New game
       </Typography>
 
-      {renderPhase()}
-    </Container>
+      <Box
+        sx={{
+          maxWidth: '34rem',
+          mt: 5,
+          p: 5,
+          // No red line along the top of it: the step's own rule is directly
+          // above, and two of them a step apart read as one underline drawn
+          // twice.
+          ...BAND_SX,
+        }}
+      >
+        {renderPhase()}
+      </Box>
+    </Box>
   );
 };

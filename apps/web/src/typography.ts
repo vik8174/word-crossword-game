@@ -6,6 +6,7 @@ import {
   inRem,
   SIGN_FONT_FAMILY,
   SIGN_FONT_WEIGHT,
+  SIGN_TRACKING,
   SYSTEM_FONT_FAMILY,
   TEXT_LEVELS,
   WEIGHTS,
@@ -118,6 +119,6 @@ export const TYPOGRAPHY: TypographyVariantsOptions = {
     fontSize: inRem(TEXT_LEVELS.heading),
     lineHeight: 1.25,
     textTransform: 'uppercase',
-    letterSpacing: '0.18em',
+    letterSpacing: SIGN_TRACKING,
   },
 };

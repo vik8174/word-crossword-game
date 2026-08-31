@@ -34,6 +34,7 @@ export const RoomFinished = ({ room, viewerId }: RoomFinishedProps) => {
 
   return (
     <RoomShell
+      title="Finished"
       // The words go where the ones this player was explaining stood all game.
       // There is no secret half left to keep them apart from, so the zone that
       // held one side of the game holds the whole of it.
