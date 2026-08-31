@@ -2,10 +2,10 @@
  * What the scene is made of: one stroke, one plank, and a mass of leaves.
  *
  * The whole forest is these three calls repeated a few thousand times. It is
- * drawn rather than fetched because a picture would not survive the camera in
- * the next ticket — walking into the temple magnifies the doorway three and a
- * half times, and a bitmap that stood up to that would cost more than the whole
- * of the rest of this app put together.
+ * drawn rather than fetched because a picture would not survive the camera —
+ * walking into the temple magnifies the doorway three and a half times, and a
+ * bitmap that stood up to that would cost more than the whole of the rest of
+ * this app put together.
  *
  * Every one of them takes its randomness from a seed rather than from
  * `Math.random`, so the forest is the same forest on every load and in every

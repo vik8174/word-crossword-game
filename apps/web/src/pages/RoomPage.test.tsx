@@ -1369,7 +1369,36 @@ describe('RoomPage', () => {
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
       expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
-      expect(screen.getByText(/all 2 of its words, between the 2 of you/i)).toBeInTheDocument();
+      // Twice on the page and once on the screen: the panel says it beside the
+      // board, and the cloth laid over both says it again, which is the one a
+      // player is looking at (issue #116).
+      expect(
+        screen.getAllByText(/all 2 of its words, between the 2 of you/i).length,
+      ).toBeGreaterThan(0);
+    });
+
+    it('lays the cloth over the table when the game ends in this session', async () => {
+      await openRoom(withWords({ w0: open, w1: carOpen }));
+
+      expect(screen.queryByRole('heading', { name: /congratulations/i })).not.toBeInTheDocument();
+
+      await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
+
+      expect(screen.getByRole('heading', { name: /congratulations/i })).toBeInTheDocument();
+      // One action and no other: the reward is a place to leave from, not a
+      // panel with things to do on it.
+      expect(screen.getByRole('link', { name: /back to the gate/i })).toHaveAttribute('href', '/');
+    });
+
+    it('lays no cloth over a finished room opened in a fresh tab', async () => {
+      // `finished` is true forever, so a cloth keyed on the screen would be laid
+      // again on every reload and in every tab opened an hour later. What is
+      // shown instead is a calm result, and that is the answer rather than a gap
+      // (`docs/decisions/0030-where-movement-is-allowed.md`).
+      await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
+
+      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: /congratulations/i })).not.toBeInTheDocument();
     });
 
     it('spells the whole crossword out only once it is over', async () => {

@@ -6,20 +6,25 @@ import { REDUCED_MOTION_QUERY } from '../components/screen-shift';
 import { theme } from '../theme';
 import { Garden } from './Garden';
 import { useGardenControls } from './garden-controls';
+import { CAMERA_MS } from './camera';
+import { DOORS, GATE } from './locations';
 
 /**
- * Answers the reduced-motion query the way the system setting would.
+ * Answers the media queries the garden asks, the way a browser would.
  *
  * jsdom has no `matchMedia` at all, and a browser without one is read as
- * somebody who has not turned animation off — the ordinary case, which is why
- * only this one is set up.
+ * somebody who has not turned animation off, on a window with no room in it.
+ * That is the ordinary case for most of this file, and the two below are the
+ * two answers that change what the garden does.
+ *
+ * @param answer - Which queries match
  */
-const turnAnimationOff = () => {
+const browserThatAnswers = (answer: (query: string) => boolean) => {
   vi.stubGlobal(
     'matchMedia',
     (query: string) =>
       ({
-        matches: query === REDUCED_MOTION_QUERY,
+        matches: answer(query),
         media: query,
         onchange: null,
         addListener: () => {},
@@ -30,6 +35,12 @@ const turnAnimationOff = () => {
       }) as unknown as MediaQueryList,
   );
 };
+
+/** Somebody who has turned animation off in their operating system. */
+const turnAnimationOff = () => browserThatAnswers((query) => query === REDUCED_MOTION_QUERY);
+
+/** A window with enough of both dimensions for the camera to be worth having. */
+const openAWindowWithRoomInIt = () => browserThatAnswers((query) => query.includes('min-width'));
 
 /** Puts the tab in front or behind and tells the document about it. */
 const setVisibility = (state: DocumentVisibilityState) => {
@@ -100,6 +111,18 @@ const stubCanvas = () => {
   );
 };
 
+/** Hands out one whole frame: everything waiting for one, at the same moment. */
+const tick = (at: number) => {
+  const waiting = frames;
+
+  frames = [];
+  act(() => {
+    for (const frame of waiting) {
+      frame(at);
+    }
+  });
+};
+
 /** Hands the garden the next frame it asked for. */
 const drawFrame = (at: number) => {
   const next = frames.shift();
@@ -112,24 +135,21 @@ const drawFrame = (at: number) => {
 
 /** Somebody in the app who can tell the garden what the screen is doing. */
 const Player = () => {
-  const { showAir, greet } = useGardenControls();
+  const { showAir, showLocation } = useGardenControls();
 
   return (
     <>
       <button type="button" onClick={() => showAir('still')}>
         deal the words
       </button>
-      {/* Both, and in this order, because that is what the room does: the air
-        and the greeting are set from one effect as a screen becomes the next
-        one (`use-room-garden.ts`). */}
-      <button
-        type="button"
-        onClick={() => {
-          showAir('petals');
-          greet();
-        }}
-      >
-        finish the game
+      <button type="button" onClick={() => showAir('petals')}>
+        leave the room
+      </button>
+      <button type="button" onClick={() => showLocation(DOORS)}>
+        walk to the doors
+      </button>
+      <button type="button" onClick={() => showLocation(GATE)}>
+        walk back to the gate
       </button>
     </>
   );
@@ -199,26 +219,11 @@ describe('Garden', () => {
     expect(frames).toHaveLength(1);
   });
 
-  it('fills the sky when a game is finished, thicker than the background it settles into', () => {
-    openTheApp();
-    drawFrame(0);
-    drawFrame(16);
-
-    const background = petalsDrawn;
-
-    press('finish the game');
-    drawFrame(32);
-
-    expect(petalsDrawn).toBeGreaterThan(background);
-  });
-
-  it('starts drawing again when a game ends after the garden had stopped', () => {
+  it('starts drawing again when the weather is wanted after the garden had stopped', () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
 
     openTheApp();
     drawFrame(0);
-
-    const background = petalsDrawn;
 
     press('deal the words');
     frames = [];
@@ -228,34 +233,87 @@ describe('Garden', () => {
 
     // The whole point of the step: the loop is genuinely stopped by now, so
     // what follows is a garden starting from nothing rather than one that never
-    // paused. This is the sequence a real game goes through and the one place
-    // the layer restarts itself.
+    // paused. This is the sequence a real session goes through — a game, and
+    // then the room being left — and the one place the layer restarts itself.
     expect(frames).toHaveLength(0);
 
-    press('finish the game');
+    press('leave the room');
 
     expect(frames).toHaveLength(1);
 
     drawFrame(16);
 
-    expect(petalsDrawn).toBeGreaterThan(background);
+    expect(petalsDrawn).toBeGreaterThan(0);
   });
 
-  it('drops a greeting that fell while the tab was behind another one', () => {
+  it('travels between two places rather than cutting to the second', () => {
+    openAWindowWithRoomInIt();
+
+    const { container } = openTheApp();
+    // The app is the last of the garden's children: the two canvases and the
+    // dimming are drawn behind it, and this is the one the camera touches.
+    const app = container.lastElementChild as HTMLElement;
+
+    press('walk to the doors');
+    tick(0);
+    tick(300);
+
+    // Part way there, and the interface is not on the screen: the middle of a
+    // journey belongs to the place alone.
+    expect(Number(app.style.opacity)).toBeLessThan(1);
+
+    tick(CAMERA_MS * 2);
+
+    expect(app.style.opacity).toBe('1');
+  });
+
+  it('asks for frames only while it is travelling', () => {
+    openAWindowWithRoomInIt();
     openTheApp();
-    drawFrame(0);
+    tick(0);
 
-    const background = petalsDrawn;
+    const settled = frames.length;
 
-    setVisibility('hidden');
-    press('finish the game');
-    setVisibility('visible');
-    drawFrame(16);
-    drawFrame(32);
+    press('walk to the doors');
 
-    // Not kept for later: the person came back to a game that had ended, and a
-    // greeting replayed for them is the reload case wearing a different hat.
-    expect(petalsDrawn).toBeLessThanOrEqual(background);
+    expect(frames.length).toBeGreaterThan(settled);
+
+    // The first frame is where a journey starts its clock, and the second is
+    // long past the end of it: the camera lands and stops asking, while the
+    // weather goes on as it always does.
+    tick(0);
+    tick(CAMERA_MS * 2);
+
+    expect(frames).toHaveLength(settled);
+  });
+
+  it('changes the place at once on a window with no room for a journey', () => {
+    // A phone sees a narrow slice of the world, so a journey across it is a
+    // stripe of green sliding past — on the device least able to spare the
+    // frames it would cost.
+    const { container } = openTheApp();
+    const app = container.lastElementChild as HTMLElement;
+
+    frames = [];
+    press('walk to the doors');
+
+    expect(frames).toHaveLength(0);
+    expect(app.style.opacity).toBe('1');
+  });
+
+  it('changes the place at once when animation is turned off', () => {
+    turnAnimationOff();
+
+    const { container } = openTheApp();
+    const app = container.lastElementChild as HTMLElement;
+
+    frames = [];
+    press('walk to the doors');
+
+    // Off is off: not a shorter journey and not a gentler one, and the
+    // interface is never taken off the screen on the way.
+    expect(frames).toHaveLength(0);
+    expect(app.style.opacity).toBe('1');
   });
 
   it('fades the garden out for a game and then stops drawing it', () => {

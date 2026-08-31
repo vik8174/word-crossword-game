@@ -1,15 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  driftPetals,
-  fillSky,
-  GREETING_SECONDS,
-  type Petal,
-  petalsWanted,
-  seedPetal,
-  seedSky,
-  type Sky,
-} from './petals';
+import { driftPetals, fillSky, type Petal, petalsWanted, seedPetal, type Sky } from './petals';
 
 const SKY: Sky = { width: 1440, height: 900 };
 
@@ -36,35 +27,26 @@ const petalAt = (petal: Partial<Petal>): Petal => ({
 });
 
 describe('petalsWanted', () => {
-  it('holds a background when no game has just been finished', () => {
-    expect(petalsWanted(SKY, null)).toBeGreaterThan(0);
-  });
-
-  it('starts a greeting far thicker than the background it settles into', () => {
-    expect(petalsWanted(SKY, 0)).toBeGreaterThan(petalsWanted(SKY, null) * 3);
-  });
-
-  it('thins the greeting out as it goes on', () => {
-    expect(petalsWanted(SKY, 1)).toBeLessThan(petalsWanted(SKY, 0));
-    expect(petalsWanted(SKY, 4)).toBeLessThan(petalsWanted(SKY, 1));
-  });
-
-  it('is the background again once the greeting is over, and stays there', () => {
-    expect(petalsWanted(SKY, GREETING_SECONDS)).toBe(petalsWanted(SKY, null));
-    expect(petalsWanted(SKY, GREETING_SECONDS * 100)).toBe(petalsWanted(SKY, null));
+  it('holds a background, and one number of them: there is no thicker sky any more', () => {
+    // The greeting used to be a sky four times this one. A finished game now
+    // stands indoors, where no petal is drawn at all, so what a sky holds no
+    // longer depends on anything but its own size
+    // (`docs/decisions/0031-one-camera-and-what-it-promises.md`).
+    expect(petalsWanted(SKY)).toBeGreaterThan(0);
+    expect(petalsWanted(SKY)).toBe(petalsWanted(SKY));
   });
 
   it('gives a bigger sky more petals, so a phone is not under a blizzard', () => {
-    const phone = petalsWanted({ width: 390, height: 780 }, null);
-    const desktop = petalsWanted({ width: 2560, height: 1400 }, null);
+    const phone = petalsWanted({ width: 390, height: 780 });
+    const desktop = petalsWanted({ width: 2560, height: 1400 });
 
     expect(phone).toBeLessThan(desktop);
   });
 
   it('stops counting up on a sky nobody has, and stops counting down on a sliver', () => {
-    const huge = petalsWanted({ width: 8000, height: 4000 }, null);
-    const huger = petalsWanted({ width: 16000, height: 8000 }, null);
-    const sliver = petalsWanted({ width: 200, height: 120 }, null);
+    const huge = petalsWanted({ width: 8000, height: 4000 });
+    const huger = petalsWanted({ width: 16000, height: 8000 });
+    const sliver = petalsWanted({ width: 200, height: 120 });
 
     expect(huger).toBe(huge);
     expect(sliver).toBeGreaterThan(0);
@@ -75,24 +57,9 @@ describe('fillSky', () => {
   it('spreads the first sky through itself rather than dropping it in from above', () => {
     const petals = fillSky(SKY, always(0.5));
 
-    expect(petals).toHaveLength(petalsWanted(SKY, null));
+    expect(petals).toHaveLength(petalsWanted(SKY));
     expect(petals.some((petal) => petal.y > 0)).toBe(true);
     expect(petals.every((petal) => petal.y <= SKY.height)).toBe(true);
-  });
-});
-
-describe('seedSky', () => {
-  it('tops a sky up to what was asked for, without letting it in over the top edge', () => {
-    const petals = seedSky(fillSky(SKY, always(0.5)), SKY, 90, always(0.7));
-
-    expect(petals).toHaveLength(90);
-    expect(petals.some((petal) => petal.y > SKY.height / 2)).toBe(true);
-  });
-
-  it('leaves a sky that is already thick enough alone', () => {
-    const thick = fillSky(SKY, always(0.5));
-
-    expect(seedSky(thick, SKY, 1, always(0.5))).toHaveLength(thick.length);
   });
 });
 

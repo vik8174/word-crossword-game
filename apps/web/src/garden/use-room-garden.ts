@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { RoomScreen } from '../rooms/room-screen';
 import { DEFAULT_AIR, useGardenControls } from './garden-controls';
@@ -7,19 +7,24 @@ import { airFor, isGreeting } from './room-air';
 
 /**
  * The garden behind a room, told what the room is doing and where it is
- * happening.
+ * happening — and the one thing it tells the room back.
  *
  * Called once, from above the switch that renders the screens, and that is the
  * whole of why it is a hook rather than something each screen does for itself.
  * While a screen is giving way to the next one there are two of them on the
  * page at once ({@link ScreenShift}), so a game and a finished game would each
  * be saying what the air should be, and the one leaving would have the last
- * word — a greeting switched off by the screen it was greeting.
+ * word — an ending switched off by the screen it was ending.
  *
- * The screen it was last given is remembered here because the greeting is a
- * change and not a state: `finished` is true forever, a completed room being
- * terminal, so a garden that woke to the screen would wake again on every
- * reload (`docs/decisions/0030-where-movement-is-allowed.md`).
+ * The screen it was last given is remembered here because the end of a game is
+ * a change and not a state: `finished` is true forever, a completed room being
+ * terminal, so a room that woke to the screen would wake again on every reload
+ * (`docs/decisions/0030-where-movement-is-allowed.md`). That memory is the
+ * reason this hook answers rather than only telling: what a finished game is
+ * greeted with is no longer anything the garden does — the hall has no sky in
+ * it — so the room lays a cloth over its own table instead, and this is where
+ * the one moment it does so is known
+ * (`docs/decisions/0031-one-camera-and-what-it-promises.md`).
  *
  * Where the screen stands is told from here for a third reason of its own: two
  * of the seven screens have no place of their own, and `locationFor` says so by
@@ -29,13 +34,15 @@ import { airFor, isGreeting } from './room-air';
  * mid-game is the hall it expired in.
  *
  * @param kind - Which of the room's screens is showing
+ * @returns Whether the game ended while this session was watching
  *
  * @example
- * useRoomGarden(screen.kind);
+ * const hasEnded = useRoomGarden(screen.kind);
  */
-export const useRoomGarden = (kind: RoomScreen['kind']): void => {
-  const { showAir, showLocation, greet } = useGardenControls();
+export const useRoomGarden = (kind: RoomScreen['kind']): boolean => {
+  const { showAir, showLocation } = useGardenControls();
   const shown = useRef<RoomScreen['kind'] | null>(null);
+  const [hasEnded, setHasEnded] = useState(false);
 
   useEffect(() => {
     const before = shown.current;
@@ -49,9 +56,9 @@ export const useRoomGarden = (kind: RoomScreen['kind']): void => {
     }
 
     if (isGreeting(before, kind)) {
-      greet();
+      setHasEnded(true);
     }
-  }, [greet, kind, showAir, showLocation]);
+  }, [kind, showAir, showLocation]);
 
   // A room is the only place in this app where the air is anything but petals
   // and the window stands anywhere but at the gate, so leaving one takes both
@@ -65,4 +72,6 @@ export const useRoomGarden = (kind: RoomScreen['kind']): void => {
     },
     [showAir, showLocation],
   );
+
+  return hasEnded;
 };

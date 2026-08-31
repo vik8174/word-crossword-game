@@ -2,24 +2,33 @@ import Box from '@mui/material/Box';
 import { useEffect, useRef } from 'react';
 
 import { fitToWindow, LAYERS, layerSx } from './canvas-layer';
-import type { Location } from './locations';
+import type { Camera } from './use-camera';
 import { paintScene } from './paint-scene';
 import { frameFor } from './world';
 
 /**
  * The place itself: the forest, the temple, and the hall behind its open front.
  *
- * It is painted once and then left alone, which is the whole of its performance
- * story. Nothing in the scene moves — there is no camera in this release and
- * the trees are not in a wind — so a few thousand brush strokes are laid down
- * when the window changes size or the app arrives somewhere else, and never on
- * a frame. That is also why this outlives `prefers-reduced-motion` while the
- * petals do not: a painting is not movement, and a reader who has asked for
- * stillness has asked for stillness rather than for a blank page.
+ * It is painted from wherever the camera is standing at the moment of painting,
+ * and that is the whole of what a journey is here — the same few thousand brush
+ * strokes laid down again through a frame that has moved a little and grown a
+ * little. There is no second scene for the inside of the temple and no picture
+ * being swapped for another: the hall is painted inside the doorway, so walking
+ * in is a magnification (`world.ts`, {@link paintScene}).
  *
- * @param props.location - Which of the four places the window is standing in
+ * When nothing is travelling nothing is painted either. The camera says when the
+ * view has changed and this listens, so a settled screen costs no frames at all,
+ * and a window being dragged costs one painting rather than one for every pixel
+ * of the drag.
+ *
+ * This outlives `prefers-reduced-motion` while the petals do not: a painting is
+ * not movement, and a reader who has asked for stillness has asked for
+ * stillness rather than for a blank page. What that setting takes away is the
+ * travelling, which is the camera's own answer ({@link useCamera}).
+ *
+ * @param props.camera - Where the window is standing, and when that changed
  */
-export const SceneLayer = ({ location }: { readonly location: Location }) => {
+export const SceneLayer = ({ camera }: { readonly camera: Camera }) => {
   const canvas = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -38,11 +47,9 @@ export const SceneLayer = ({ location }: { readonly location: Location }) => {
     let pending = 0;
 
     const paint = () => {
-      pending = 0;
-
       const viewport = fitToWindow(element, brush);
 
-      paintScene(brush, frameFor(location, viewport), viewport);
+      paintScene(brush, frameFor(camera.at(), viewport), viewport);
     };
 
     // A window being dragged fires this many times a second, and each one is a
@@ -50,21 +57,27 @@ export const SceneLayer = ({ location }: { readonly location: Location }) => {
     // painting rather than one for every pixel of the drag.
     const repaint = () => {
       if (pending === 0) {
-        pending = window.requestAnimationFrame(paint);
+        pending = window.requestAnimationFrame(() => {
+          pending = 0;
+          paint();
+        });
       }
     };
+
+    const forget = camera.onFrame(paint);
 
     paint();
     window.addEventListener('resize', repaint);
 
     return () => {
+      forget();
       window.removeEventListener('resize', repaint);
 
       if (pending !== 0) {
         window.cancelAnimationFrame(pending);
       }
     };
-  }, [location]);
+  }, [camera]);
 
   return <Box component="canvas" ref={canvas} aria-hidden sx={layerSx(LAYERS.scene)} />;
 };

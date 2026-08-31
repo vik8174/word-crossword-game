@@ -14,7 +14,8 @@ import type { Location } from './locations';
  * than the whole painting made small: a phone loses field of view, which is
  * what a phone should lose, and it loses nothing of the size anything is drawn
  * at. It is also the only anchoring under which a magnification means one thing
- * on every screen, which the camera in the next ticket will need it to.
+ * on every screen, which is what lets the camera travel between the four places
+ * without meaning something different on each window (`camera.ts`).
  */
 
 /** How big the painting is, in world units. */
