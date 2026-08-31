@@ -17,6 +17,7 @@ import {
   WIDE_BOARD_HEIGHT_CSS,
 } from './board-geometry';
 import { SCENE, SCENE_INK_DIM } from '../garden/scene-palette';
+import { SENTENCE_BAND_SX } from '../garden/scene-surface';
 import { GridSquare } from './GridSquare';
 import { THREE_ZONES } from './room-layout';
 
@@ -262,7 +263,12 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
             // at the first column rather than in the middle of the board.
             mx: 'auto',
             // The squares are objects standing in front of the wall behind
-            // them, not part of it. A shadow is what says so, and it is cast by
+            // them, not part of it.
+            //
+            // A filter makes a containing block of its own, exactly as a
+            // transform does (`garden/Garden.tsx`), so nothing inside this grid
+            // may ever be positioned against the window. Nothing is today, and
+            // a square is a box in a grid rather than anything that floats. A shadow is what says so, and it is cast by
             // the board as a shape rather than square by square: the shape has
             // holes in it where no word runs, and the light falls into those
             // too. A square is still opaque and still exactly the colour the
@@ -288,13 +294,13 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
       </Typography>
 
       {hasSquaresToFill && (
-        <Typography variant="body2" sx={{ mt: 2, color: SCENE_INK_DIM }}>
+        <Typography variant="body2" sx={{ mt: 2, color: SCENE_INK_DIM, ...SENTENCE_BAND_SX }}>
           {KEYBOARD_HINT}
         </Typography>
       )}
 
       {entry.hasCrossings && (
-        <Typography variant="body2" sx={{ mt: 2, color: SCENE_INK_DIM }}>
+        <Typography variant="body2" sx={{ mt: 2, color: SCENE_INK_DIM, ...SENTENCE_BAND_SX }}>
           {CROSSING_HINT}
         </Typography>
       )}
@@ -312,13 +318,23 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
         live region only speaks when the text inside one that was already there
         changes, so this is an empty line and never an absent one.
       */}
-      {/* The lit edge of the temple's red rather than the theme's error colour:
-        this line is read off a dark hall, where ink meant for paper is not read
-        at all. */}
+      {/* Cream on the band with the temple's red beside it, rather than red
+        letters: this line is read off a room and not off paper, and vermilion
+        is a middling lightness — the one colour in the palette that cannot be
+        read on either a lit sheet or a dark wall. The red carries the alarm and
+        the cream carries the words. The band and the rule come and go with the
+        message, so an empty live region is an empty line and not a strip. */}
       <Typography
         variant="body2"
         role="status"
-        sx={{ mt: entry.hasRefusal ? 2 : 0, color: SCENE.vermilionLit }}
+        sx={{
+          mt: entry.hasRefusal ? 2 : 0,
+          color: SCENE.cream,
+          ...(entry.hasRefusal && {
+            ...SENTENCE_BAND_SX,
+            borderLeft: `2px solid ${SCENE.vermilionLit}`,
+          }),
+        }}
       >
         {entry.hasRefusal ? REFUSAL_MESSAGE : ''}
       </Typography>

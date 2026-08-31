@@ -21,15 +21,31 @@ import { INTERIOR } from './world';
 /**
  * The closed doors the crossword stands against.
  *
- * Big enough that the board is on paper rather than on paper with a wall around
- * it: at the magnification the hall is seen at, this covers all but a margin of
- * the window. Which is the point — a board floating on a dark wall would be a
- * board on a background, and a board on lit paper is a board in a room.
+ * Sized to the board and not to the window, which is the one measurement in
+ * this file that the interface depends on. Lit paper is the brightest thing in
+ * the scene, and everything the room writes is written in cream — so a sheet of
+ * it the size of the window would put the name of the step, the line about what
+ * the room is doing and the hints under the board all on a surface they cannot
+ * be read off. The ticket allows no band behind a step title to rescue them
+ * (issue #115), so the wall has to be where they are.
+ *
+ * At the magnification the hall is seen at, this lands under the middle zone —
+ * the board's own column — and leaves dark wood along the top and the sides,
+ * which is where the frame of the room stands. It is also the other half of the
+ * reason the board is laid down with a shadow: a board on paper of its own
+ * lightness dissolves into the wall, and paper the size of the wall is the worst
+ * case of that (`docs/decisions/0015-explained-words-in-the-grid.md`).
  */
-const SHOJI = { x: 720, y: 400, width: 1180, height: 660 } as const;
+const SHOJI = { x: 720, y: 460, width: 820, height: 570 } as const;
 
-/** The paper of the doors, from where the light hits it to where it does not. */
-const PAPER = ['#E4D8B6', '#D6C9A3', '#C3B48D'] as const;
+/**
+ * The paper of the doors, from where the light hits it to where it does not.
+ *
+ * Exported because the first of them is the brightest surface anywhere in this
+ * place, and every claim the palette makes about text being readable is a claim
+ * about that one (`scene-palette.test.ts`).
+ */
+export const SHOJI_PAPER = ['#E4D8B6', '#D6C9A3', '#C3B48D'] as const;
 
 /** The wood of the lattice, and of the frame around it. */
 const LATTICE_WOOD = '#4C3A2B';
@@ -53,8 +69,8 @@ const paintGardenBehindPaper = (brush: SceneBrush): void => {
   const shadow = ['#8C8A72', '#7E8168'];
 
   for (const mass of [
-    { x: SHOJI.x - 280, y: SHOJI.y + 120, across: 300, down: 170, seed: 771, count: 100 },
-    { x: SHOJI.x + 300, y: SHOJI.y + 80, across: 260, down: 160, seed: 913, count: 90 },
+    { x: SHOJI.x - 200, y: SHOJI.y + 100, across: 230, down: 150, seed: 771, count: 90 },
+    { x: SHOJI.x + 210, y: SHOJI.y + 70, across: 200, down: 140, seed: 913, count: 80 },
   ]) {
     const random = seeded(mass.seed);
 
@@ -94,9 +110,9 @@ const paintShoji = (brush: SceneBrush): void => {
   brush.clip();
 
   const paper = brush.createLinearGradient(left, top, left, top + SHOJI.height);
-  paper.addColorStop(0, PAPER[0]);
-  paper.addColorStop(0.55, PAPER[1]);
-  paper.addColorStop(1, PAPER[2]);
+  paper.addColorStop(0, SHOJI_PAPER[0]);
+  paper.addColorStop(0.55, SHOJI_PAPER[1]);
+  paper.addColorStop(1, SHOJI_PAPER[2]);
   brush.fillStyle = paper;
   brush.fillRect(left, top, SHOJI.width, SHOJI.height);
 

@@ -58,7 +58,7 @@ export const GardenControlsContext = createContext<GardenControls>(NO_GARDEN);
 /**
  * The garden this screen is being drawn in.
  *
- * @returns The two things a screen may ask of it
+ * @returns The three things a screen may ask of it
  *
  * @example
  * const { showAir, showLocation, greet } = useGardenControls();

@@ -31,6 +31,10 @@ const BAND_WIDTH = `calc(${SIDE_ZONE_WIDTH} + ${FRAME_PADDING} + ${FRAME_PADDING
  * A page with no heading at all is a different thing, though — somebody moving
  * through it by headings would find nothing — so the name is still said, and
  * takes no pixels to say it.
+ *
+ * Written out rather than taken from `visuallyHidden`: that lives in
+ * `@mui/utils`, which this app does not depend on and would have to start
+ * depending on for six properties of CSS.
  */
 const UNSEEN_HEADING = {
   position: 'absolute',

@@ -80,12 +80,17 @@ export type SceneColour = (typeof SCENE)[keyof typeof SCENE];
 /**
  * How much the picture is put down by, everywhere the interface stands on it.
  *
- * This is the answer to legibility, and it is one answer rather than a backing
- * behind every sentence: a plate under each line of text would cut the scene
- * into pieces, while a single dimming leaves it a picture and takes the fight
- * out of it. Twenty-six per cent was measured against the busiest part of the
- * scene — the near canopy — and it is the point at which cream text is read
+ * This is the general answer to legibility, and it is one answer rather than a
+ * backing behind every sentence: a plate under each line of text would cut the
+ * scene into pieces, while a single dimming leaves it a picture and takes the
+ * fight out of it. Twenty-six per cent was measured against the busiest part of
+ * the scene — the near canopy — and it is the point at which cream text is read
  * without the greens going grey.
+ *
+ * It is not the whole answer, because it cannot be: the veil dims the picture
+ * and the picture has a sheet of lit paper in it, which stays lighter than any
+ * ink this place writes in. What text stands on there is {@link BAND}, and
+ * `scene-palette.test.ts` is what holds both of them to a number.
  */
 export const VEIL = 'rgba(6, 17, 26, 0.26)';
 
@@ -105,8 +110,16 @@ export const BAND_EDGE = SCENE.vermilion;
 /** How wide that line is, in pixels. */
 export const BAND_EDGE_WIDTH = 1.5;
 
-/** Cream at the weight a secondary line of text is read at on the band. */
-export const SCENE_INK_DIM = 'rgba(243, 236, 217, 0.72)';
+/**
+ * Cream at the weight a secondary line of text is read at on the band.
+ *
+ * Seventy-eight per cent rather than a rounder number, and it is measured. The
+ * worst surface in this place is the band laid over the lit paper of the
+ * temple's doors: at 0.72 a thirteen-pixel line reads there at 4.28 to one,
+ * which is under the 4.5 small text is owed, and at 0.78 it reads at 4.71.
+ * Everywhere else in the scene it is between seven and nine to one.
+ */
+export const SCENE_INK_DIM = 'rgba(243, 236, 217, 0.78)';
 
 /** Cream thinned to a rule, a border, the edge of a field. */
 export const SCENE_LINE = 'rgba(243, 236, 217, 0.28)';

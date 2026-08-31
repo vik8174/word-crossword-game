@@ -285,6 +285,12 @@ export const paintForeground = (brush: SceneBrush): void => {
     { x: 2860, y: 250, across: 700, down: 340, seed: 1313, count: 210, size: 76 },
     { x: 640, y: 620, across: 300, down: 190, seed: 1414, count: 100, size: 62 },
     { x: 2480, y: 560, across: 280, down: 200, seed: 1515, count: 90, size: 62 },
+    // The two that hang into the top corners of the frame at the doors of the
+    // temple. Without them that frame opens on the grey of the roof, which is
+    // the one light thing in the forest, and the name of the step is lettered
+    // in cream with nothing behind it but the picture.
+    { x: 1780, y: 600, across: 300, down: 220, seed: 1616, count: 120, size: 66 },
+    { x: 2540, y: 620, across: 300, down: 230, seed: 1717, count: 120, size: 66 },
   ]) {
     foliage(brush, { ...mass, colours: NEAR_LEAF, alpha: 0.97 });
   }

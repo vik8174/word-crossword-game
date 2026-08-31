@@ -1,6 +1,6 @@
 import type { CSSObject, Theme } from '@mui/material/styles';
 
-import { inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
+import { gapAt, inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
 import {
   BAND,
   BAND_EDGE,
@@ -67,6 +67,30 @@ export const fullHeightBandSx = (side: 'left' | 'right', width: string): CSSObje
   [side === 'left' ? 'borderRight' : 'borderLeft']: `${BAND_EDGE_WIDTH}px solid ${BAND_EDGE}`,
   pointerEvents: 'none',
 });
+
+/**
+ * The strip a sentence stands on where there is no zone to hold it.
+ *
+ * The board's own lines — what the crossword is called, what the squares are
+ * for, how the keyboard works, and the one word about an answer that was
+ * refused — sit in the middle of the room rather than in a zone at its edge,
+ * and what is behind them changes: lit paper on a desktop where the shoji is,
+ * dark wood above and below it, and on a phone whatever the page has been
+ * scrolled to. Cream is not readable off all three, so these stand on the same
+ * band every other sentence in this app stands on.
+ *
+ * It is the material the interface is made of rather than a plate under a
+ * caption: the general answer to reading text off a picture is still the veil,
+ * and this is the band, which is what text stands on in every other part of the
+ * room. It takes no height from the board — the padding is along the line and
+ * not above it — because the height of a square is what that would come out of
+ * (`docs/decisions/0029-a-board-that-fits-the-screen-it-is-played-on.md`).
+ */
+export const SENTENCE_BAND_SX: CSSObject = {
+  ...BAND_SX,
+  paddingLeft: gapAt(2),
+  paddingRight: gapAt(2),
+};
 
 /**
  * The name of a step, top left, with the temple's red run under it.

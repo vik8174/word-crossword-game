@@ -3,6 +3,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
 import { SCENE, SCENE_INK_DIM } from '../garden/scene-palette';
+import { SENTENCE_BAND_SX } from '../garden/scene-surface';
 import { useMemo } from 'react';
 
 import type { RoomDocument } from '../rooms/room-document';
@@ -81,6 +82,7 @@ export const RoomCrossword = ({
           flexWrap: 'wrap',
           alignItems: 'baseline',
           columnGap: 2,
+          ...SENTENCE_BAND_SX,
         }}
       >
         <Typography id="grid-heading" variant="h2" component="h2" sx={{ color: SCENE.cream }}>
