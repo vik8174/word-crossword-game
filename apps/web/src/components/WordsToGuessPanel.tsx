@@ -51,16 +51,16 @@ export const WordsToGuessPanel = ({ words, onSelectWord }: WordsToGuessPanelProp
 
   return (
     <section aria-labelledby="to-guess-heading">
-      <Typography id="to-guess-heading" variant="subtitle1" component="h2">
+      <Typography id="to-guess-heading" variant="h2" component="h2" sx={{ mb: 1 }}>
         Yours to guess
       </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {GUESS_HINT}
       </Typography>
 
       <WordEntryList labelledBy="to-guess-heading" entries={entries} onSelectWord={onSelectWord} />
 
-      <Typography variant="body2" role="status" sx={{ mt: 1 }}>
+      <Typography variant="body2" role="status" sx={{ mt: 2 }}>
         {`${answered} of ${words.length} answered.`}
       </Typography>
     </section>

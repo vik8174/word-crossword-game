@@ -146,8 +146,10 @@ export const CreateRoomPage = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 6 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
+    <Container maxWidth="sm" sx={{ py: 7 }}>
+      {/* Further from what follows it than the landing page's heading is: there
+          the next line finishes the sentence, here it is a form of its own. */}
+      <Typography variant="h1" component="h1" sx={{ mb: 5 }}>
         New game
       </Typography>
 

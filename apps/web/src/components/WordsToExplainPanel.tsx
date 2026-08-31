@@ -54,10 +54,10 @@ export const WordsToExplainPanel = ({ words, onSelectWord }: WordsToExplainPanel
 
   return (
     <section aria-labelledby="to-explain-heading">
-      <Typography id="to-explain-heading" variant="subtitle1" component="h2">
+      <Typography id="to-explain-heading" variant="h2" component="h2" sx={{ mb: 1 }}>
         Yours to explain
       </Typography>
-      <Typography variant="body2" color="text.secondary" gutterBottom>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {EXPLAIN_HINT}
       </Typography>
 

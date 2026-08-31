@@ -221,7 +221,7 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
   };
 
   return (
-    <Box sx={{ py: 1 }}>
+    <Box sx={{ py: 2 }}>
       {/*
         The board's own patch of the page, and the thing every square is
         measured against: it is declared a CSS container, and the size of a
@@ -278,13 +278,13 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
       </Typography>
 
       {hasSquaresToFill && (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
           {KEYBOARD_HINT}
         </Typography>
       )}
 
       {entry.hasCrossings && (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
           {CROSSING_HINT}
         </Typography>
       )}
@@ -302,7 +302,7 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
         live region only speaks when the text inside one that was already there
         changes, so this is an empty line and never an absent one.
       */}
-      <Typography variant="body2" color="error" role="status" sx={{ mt: entry.hasRefusal ? 1 : 0 }}>
+      <Typography variant="body2" color="error" role="status" sx={{ mt: entry.hasRefusal ? 2 : 0 }}>
         {entry.hasRefusal ? REFUSAL_MESSAGE : ''}
       </Typography>
     </Box>

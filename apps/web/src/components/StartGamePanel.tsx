@@ -48,7 +48,7 @@ export const StartGamePanel = ({
   const refusal = wordAssignmentRefusal({ wordCount, playerCount });
 
   return (
-    <Stack spacing={2}>
+    <Stack spacing={4}>
       {errorMessage !== undefined && <Alert severity="error">{errorMessage}</Alert>}
 
       <Button

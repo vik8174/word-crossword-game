@@ -35,11 +35,11 @@ export const GameCompletedPanel = ({ words, playerCount }: GameCompletedPanelPro
         {`You finished the crossword together — all ${words.length} of its words, between the ${playerCount} of you.`}
       </Alert>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} gutterBottom>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 4, mb: 2 }}>
         The words you were playing for:
       </Typography>
 
-      <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
+      <Stack direction="row" spacing={2} sx={{ flexWrap: 'wrap', gap: 2 }}>
         {words.map((word, index) => (
           // The grid can hold the same word twice only if the owner listed it
           // twice, which the word-list validator refuses — but the index keeps

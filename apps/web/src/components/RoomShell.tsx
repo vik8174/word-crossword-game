@@ -113,10 +113,10 @@ export const RoomShell = ({ status, action, left, right, children }: RoomShellPr
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        gap: 3,
-        px: 2,
-        py: 3,
-        [APP_SHELL]: { height: '100dvh', gap: 2, py: 2, overflow: 'hidden' },
+        gap: 5,
+        px: 4,
+        py: 5,
+        [APP_SHELL]: { height: '100dvh', gap: 4, py: 4, overflow: 'hidden' },
       }}
     >
       <Box
@@ -125,13 +125,13 @@ export const RoomShell = ({ status, action, left, right, children }: RoomShellPr
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          columnGap: 2,
-          rowGap: 1,
+          columnGap: 4,
+          rowGap: 2,
           visibility: isLeaving ? 'hidden' : undefined,
           [APP_SHELL]: { flexShrink: 0 },
         }}
       >
-        <Typography variant="h5" component="h1">
+        <Typography variant="h1" component="h1">
           {ROOM_HEADING}
         </Typography>
 
@@ -150,12 +150,12 @@ export const RoomShell = ({ status, action, left, right, children }: RoomShellPr
         component="main"
         sx={{
           display: 'grid',
-          gap: 3,
+          gap: 5,
           alignContent: 'start',
           [APP_SHELL]: {
             flex: 1,
             minHeight: 0,
-            gap: 2,
+            gap: 4,
             gridTemplateColumns: '1fr 1fr',
             gridTemplateRows: 'auto minmax(0, 1fr)',
             gridTemplateAreas: '"board board" "left right"',
