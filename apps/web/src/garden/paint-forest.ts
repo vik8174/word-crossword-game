@@ -1,8 +1,10 @@
-import { foliage, type SceneBrush, seeded, slab, stroke, topOf, trunk } from './brushwork';
+import { foliage, type SceneBrush, seeded, stroke } from './brushwork';
 import { spreadOf } from './colour-spread';
+import { paintLandmarks } from './paint-landmarks';
 import { airOf } from './paint-planes';
 import { SCENE } from './scene-palette';
-import { GATE_LINTEL_RISE, inFrame, LANDMARKS, type Rect } from './world';
+import { inFrame, LANDMARKS, type Rect } from './world';
+import { trunk, trunkOf } from './trunks';
 
 /**
  * The forest the temple stands in: the air, the water, the gate, and the leaves
@@ -124,74 +126,6 @@ export const paintWater = (brush: SceneBrush, frame: Rect): void => {
 };
 
 /**
- * The torii: two vermilion posts and a lintel that lifts at both ends.
- *
- * The lift is the whole silhouette. Everything else about the gate could be
- * done with rectangles, and the one thing that could not is the curve, so it is
- * the one thing drawn as a path.
- *
- * @param brush - What is being drawn through
- */
-const paintGate = (brush: SceneBrush): void => {
-  const { x, y } = LANDMARKS.gate;
-  const half = 200;
-  const top = y - GATE_LINTEL_RISE + 6;
-
-  slab(brush, { x, y: y + 16, width: half * 2 + 130, height: 30 }, SCENE.night, 0.45);
-
-  for (const side of [-1, 1]) {
-    slab(brush, { x: x + side * half, y: y - 215, width: 40, height: 430 }, SCENE.vermilionDeep);
-    slab(
-      brush,
-      { x: x + side * half - 11, y: y - 215, width: 15, height: 430 },
-      SCENE.vermilionLit,
-      0.75,
-    );
-    slab(brush, { x: x + side * half, y: y - 6, width: 62, height: 22 }, SCENE.stoneDark);
-  }
-
-  slab(brush, { x, y: y - 310, width: half * 2 + 40, height: 26 }, SCENE.vermilion);
-
-  brush.save();
-  brush.globalAlpha = 1;
-  brush.beginPath();
-  brush.moveTo(x - half - 120, top - 6);
-  brush.quadraticCurveTo(x, top + 44, x + half + 120, top - 6);
-  brush.lineTo(x + half + 120, top + 30);
-  brush.quadraticCurveTo(x, top + 78, x - half - 120, top + 30);
-  brush.closePath();
-  brush.fillStyle = SCENE.vermilionDeep;
-  brush.fill();
-
-  brush.globalAlpha = 0.85;
-  brush.beginPath();
-  brush.moveTo(x - half - 120, top - 6);
-  brush.quadraticCurveTo(x, top + 44, x + half + 120, top - 6);
-  brush.lineTo(x + half + 120, top + 8);
-  brush.quadraticCurveTo(x, top + 58, x - half - 120, top + 8);
-  brush.closePath();
-  brush.fillStyle = SCENE.vermilionLit;
-  brush.fill();
-  brush.restore();
-};
-
-/**
- * The stone lantern between the gate and the temple.
- *
- * @param brush - What is being drawn through
- */
-const paintLantern = (brush: SceneBrush): void => {
-  const { x, y } = LANDMARKS.lantern;
-
-  slab(brush, { x, y: y - 46, width: 34, height: 92 }, SCENE.stoneDark);
-  slab(brush, { x, y: y - 100, width: 104, height: 22 }, SCENE.stone);
-  slab(brush, { x, y: y - 136, width: 84, height: 54 }, SCENE.stone);
-  slab(brush, { x, y: y - 136, width: 46, height: 32 }, SCENE.sun, 0.9);
-  slab(brush, { x, y: y - 172, width: 122, height: 20 }, SCENE.stoneDark);
-  slab(brush, { x, y: y - 190, width: 26, height: 20 }, SCENE.stoneDark);
-};
-
-/**
  * A mass of leaves, written the way the picture describes one.
  *
  * The ramp is the plain list of colours rather than a spread, because the
@@ -273,22 +207,7 @@ export const paintBackground = (brush: SceneBrush, frame: Rect): void => {
  * @param frame - The part of the world being shown
  */
 export const paintMiddleGround = (brush: SceneBrush, frame: Rect): void => {
-  if (
-    inFrame(frame, { x: LANDMARKS.lantern.x, y: LANDMARKS.lantern.y - 100, across: 70, down: 110 })
-  ) {
-    paintLantern(brush);
-  }
-
-  if (
-    inFrame(frame, {
-      x: LANDMARKS.gate.x,
-      y: LANDMARKS.gate.y - GATE_LINTEL_RISE / 2,
-      across: 330,
-      down: GATE_LINTEL_RISE / 2 + 40,
-    })
-  ) {
-    paintGate(brush);
-  }
+  paintLandmarks(brush, frame);
 
   // Written in the order they are painted rather than grouped by colour: a
   // mass laid over another is the picture, so the order is not a detail of how
@@ -324,7 +243,8 @@ export const paintForeground = (brush: SceneBrush, frame: Rect): void => {
   // piece of it was drawn and the thickness fell out of the step
   // ({@link trunkOf}). This is the width it was actually coming out at.
   const tree = { x: LANDMARKS.trunk.x, base: LANDMARKS.trunk.y, top: 120, width: 110, seed: 808 };
-  const top = topOf(tree);
+  const shape = trunkOf(tree);
+  const top = shape.top;
 
   if (
     inFrame(frame, {
@@ -334,7 +254,7 @@ export const paintForeground = (brush: SceneBrush, frame: Rect): void => {
       down: (tree.base - tree.top) / 2 + 60,
     })
   ) {
-    trunk(brush, tree, { lit: SCENE.bark, dark: SCENE.barkDeep });
+    trunk(brush, shape, { lit: SCENE.bark, dark: SCENE.barkDeep });
   }
 
   // The two boughs that leave it are asked about separately, because they reach

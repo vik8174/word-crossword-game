@@ -1,5 +1,5 @@
 import type { SceneBrush } from './brushwork';
-import { PLANES } from './forest-planes';
+import { PLANES, SAKURA_ON, TEMPLE_AFTER } from './forest-planes';
 import { paintBackground, paintForeground, paintMiddleGround, paintWater } from './paint-forest';
 import { paintGround, paintShore } from './paint-ground';
 import { paintPlane } from './paint-planes';
@@ -68,7 +68,7 @@ export const paintScene = (brush: SceneBrush, frame: Rect, viewport: Viewport): 
     // The four things that are not leaves take their places in the same row.
     // The ground arrives with the bank because the bank is the plane that
     // stands on it, and the temple after both because it is built on it.
-    if (plane.name === 'bank') {
+    if (plane.name === TEMPLE_AFTER) {
       paintGround(brush, frame);
       paintWater(brush, frame);
       paintShore(brush, frame);
@@ -76,9 +76,7 @@ export const paintScene = (brush: SceneBrush, frame: Rect, viewport: Viewport): 
       paintMiddleGround(brush, frame);
     }
 
-    // The cherries stand on the thicket, which is the plane in front of the
-    // temple: the petals fall past the building rather than out of it.
-    if (plane.name === 'thicket') {
+    if (plane.name === SAKURA_ON) {
       paintSakura(brush, frame);
     }
   }

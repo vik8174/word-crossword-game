@@ -1,8 +1,9 @@
-import { foliage, type SceneBrush, stroke, topOf, trunk } from './brushwork';
+import { foliage, type SceneBrush, stroke } from './brushwork';
 import { spreadOf } from './colour-spread';
 import { AIR, AIR_MIDDLE, BARK, type Crossing, type Plane, type PlaneTree } from './forest-planes';
 import { SCENE } from './scene-palette';
 import { inFrame, type Rect, WORLD } from './world';
+import { trunk, trunkOf } from './trunks';
 
 /**
  * How one step of the stairs is put down: its trees, their crowns, the boughs
@@ -76,7 +77,8 @@ const paintTree = (
   tree: PlaneTree,
   leaves: ReturnType<typeof spreadOf>,
 ): void => {
-  const top = topOf(tree);
+  const shape = trunkOf(tree);
+  const top = shape.top;
 
   if (
     inFrame(frame, {
@@ -90,7 +92,7 @@ const paintTree = (
 
     trunk(
       brush,
-      tree,
+      shape,
       { dark: bark[0]?.[0] ?? BARK.dark, lit: bark[1]?.[0] ?? BARK.lit },
       0.55 + plane.bark * 0.41,
     );

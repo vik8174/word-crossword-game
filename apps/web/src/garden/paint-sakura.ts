@@ -1,7 +1,8 @@
-import { foliage, type SceneBrush, stroke, topOf, trunk } from './brushwork';
+import { foliage, type SceneBrush, stroke } from './brushwork';
 import { spreadOf } from './colour-spread';
 import { SCENE } from './scene-palette';
 import { inFrame, type Rect } from './world';
+import { trunk, trunkOf } from './trunks';
 
 /**
  * The cherry trees, and the one thing they are for: giving the petals
@@ -113,7 +114,8 @@ const CHERRIES: readonly Cherry[] = [
  * @param cherry - The tree
  */
 const paintCherry = (brush: SceneBrush, frame: Rect, cherry: Cherry): void => {
-  const top = topOf(cherry);
+  const shape = trunkOf(cherry);
+  const top = shape.top;
 
   if (
     inFrame(frame, {
@@ -123,7 +125,7 @@ const paintCherry = (brush: SceneBrush, frame: Rect, cherry: Cherry): void => {
       down: (cherry.base - cherry.top) / 2 + cherry.width,
     })
   ) {
-    trunk(brush, cherry, { lit: SCENE.bark, dark: SCENE.barkDeep }, 0.94);
+    trunk(brush, shape, { lit: SCENE.bark, dark: SCENE.barkDeep }, 0.94);
 
     // The two boughs the crown sits on. A cherry with a straight stem under a
     // ball of blossom is a lollipop; the branches are what make it a tree.

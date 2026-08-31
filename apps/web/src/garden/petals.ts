@@ -99,7 +99,7 @@ const FALL = { least: 22, most: 62 };
 const SWAY = { least: 7, most: 26 };
 const SPIN = { least: -1.1, most: 1.1 };
 const SIZE = { least: 7, most: 19 };
-const INK = { least: 0.26, most: 0.52 };
+export const INK = { least: 0.26, most: 0.52 };
 
 /** How fast a petal travels through its sideways wander, in radians a second. */
 const SWAY_RATE = 0.9;
