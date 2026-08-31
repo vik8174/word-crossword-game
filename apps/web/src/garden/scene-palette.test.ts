@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { CLOTH } from './cloth';
 import { SHOJI_PAPER } from './paint-hall';
 import { BAND, CONTROL, SCENE, SCENE_EDGE, SCENE_INK_DIM, VEIL } from './scene-palette';
 
@@ -188,5 +189,58 @@ describe('what the garden writes on', () => {
     const bare = laidOver(asRgba(CONTROL.fill), veiled(SHOJI_PAPER[0]));
 
     expect(contrast(laidOver(asRgba(CONTROL.ink), bare), bare)).toBeLessThan(SMALL_TEXT);
+  });
+});
+
+/**
+ * The cloth is the one surface in this place that is not a picture with an
+ * interface over it, so it is measured on its own.
+ *
+ * Nothing standing on it is under the veil: the cloth is laid over the whole
+ * window at the end of a game, above everything the app draws, and it is opaque
+ * paper. What is written on it is therefore ink straight onto paper, at the
+ * three tones the paper runs through from its lit edge to its shaded one — and
+ * the bottom of that gradient is the surface every claim below has to survive.
+ */
+describe('what the cloth writes on', () => {
+  it('reads both of its inks off the paper, at every tone of it', () => {
+    for (const paper of CLOTH.paper) {
+      const behind = asRgb(paper);
+
+      expect(contrast(asRgb(CLOTH.ink), behind), `ink on ${paper}`).toBeGreaterThan(SMALL_TEXT);
+      expect(
+        contrast(laidOver(asRgba(CLOTH.inkDim), behind), behind),
+        `dim ink on ${paper}`,
+      ).toBeGreaterThan(SMALL_TEXT);
+    }
+  });
+
+  it('reads the label off the one action, and shows the edge of the button it is on', () => {
+    // The control is opaque here and translucent everywhere else in this app,
+    // and this is why. Every other one stands on a forest and lets it through;
+    // this one stands on paper, which lets nothing through, and the same fill
+    // laid on it carries its label at 3.9 to one.
+    const control = asRgb(CLOTH.action.fill);
+
+    expect(contrast(laidOver(asRgba(CLOTH.action.ink), control), control)).toBeGreaterThan(
+      SMALL_TEXT,
+    );
+
+    for (const paper of CLOTH.paper) {
+      expect(contrast(control, asRgb(paper)), `the button on ${paper}`).toBeGreaterThan(
+        COMPONENT_EDGE,
+      );
+    }
+  });
+
+  it('is made of the temple, and of nothing that is not already in the place', () => {
+    // Not a saving. An ending made out of interface — a card, a dialog, a
+    // colour off the theme — would be the application congratulating somebody,
+    // and what is wanted is the room they played in doing it.
+    expect(CLOTH.paper).toEqual(SHOJI_PAPER);
+
+    for (const colour of [CLOTH.ink, CLOTH.rule, CLOTH.edge, CLOTH.action.fill]) {
+      expect(Object.values<string>(SCENE)).toContain(colour);
+    }
   });
 });

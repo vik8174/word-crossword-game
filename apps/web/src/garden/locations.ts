@@ -9,8 +9,9 @@ import type { RoomScreen } from '../rooms/room-screen';
  * hall behind them, and the same hall at the moment a crossword is finished.
  *
  * A location is a point and a magnification, and nothing else. Where the camera
- * is, is not this file's business either — there is no camera yet, and when
- * there is one it will move between exactly these four values.
+ * is at any moment is not this file's business either: it moves between exactly
+ * these four values and nothing else, and how it gets from one to another is
+ * `camera.ts`.
  */
 
 /** One place a screen stands in: a point of the world, seen this close. */
@@ -49,11 +50,10 @@ export const HALL: Location = { id: 'hall', x: 2150, y: 800, zoom: 3.6 };
  * to be discovered. At this magnification the frame is smaller than the
  * temple's doorway, so the whole window is indoors — and the weather does not
  * come indoors (`paint-petals.ts`). The greeting a finished game asks for is
- * therefore a shower of petals with no sky to fall in, and this screen is
- * silent where it used to be full
- * (`docs/decisions/0030-where-movement-is-allowed.md`). It is a real change to
- * what a player sees at the end of a game, and what takes its place is the
- * cloth in the ticket that brings the camera.
+ * therefore a shower of petals with no sky to fall in
+ * (`docs/decisions/0030-where-movement-is-allowed.md`). What takes their place
+ * is the cloth the room lays over its own table ({@link RewardCloth},
+ * `docs/decisions/0031-one-camera-and-what-it-promises.md`).
  */
 export const CONGRATULATIONS: Location = { id: 'congratulations', x: 2150, y: 800, zoom: 3.6 };
 

@@ -4,6 +4,8 @@ import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
+import { finishedGameSummary } from '../rooms/game-summary';
+
 interface GameCompletedPanelProps {
   /** Every word of the crossword, now that none of them is a secret. */
   readonly words: readonly string[];
@@ -15,11 +17,9 @@ interface GameCompletedPanelProps {
  * The end of a game: the crossword is full and this is what the room did.
  *
  * The game is cooperative, so what is reported is the room's result and not
- * anybody's score. There is deliberately no tally of who guessed how much:
- * `guessedByPlayerId` does not always name the person who typed the word — one
- * that its crossings filled in entirely is recorded against the player it was
- * hidden from (`docs/decisions/0011-typing-guesses-into-the-grid.md`) — so any
- * such table would be wrong in exactly the games that were most fun.
+ * anybody's score, and the sentence that reports it is written down once
+ * ({@link finishedGameSummary}) because the cloth laid over the table at the
+ * moment the game ends says the same thing.
  *
  * @param props.words - The crossword's words, from `finishedWordsOf`
  * @param props.playerCount - Number of players in the room
@@ -32,7 +32,7 @@ export const GameCompletedPanel = ({ words, playerCount }: GameCompletedPanelPro
     <section aria-labelledby="game-completed-heading">
       <Alert severity="success" role="status">
         <AlertTitle id="game-completed-heading">Every word is in</AlertTitle>
-        {`You finished the crossword together — all ${words.length} of its words, between the ${playerCount} of you.`}
+        {finishedGameSummary(words.length, playerCount)}
       </Alert>
 
       <Typography variant="body2" color="text.secondary" sx={{ mt: 4, mb: 2 }}>
