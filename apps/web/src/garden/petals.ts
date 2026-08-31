@@ -42,18 +42,16 @@ export interface Petal {
 }
 
 /**
- * How many petals a calm sky holds, and how many the greeting starts with.
+ * How many petals a calm sky holds.
  *
- * The calm number is a background — enough that the page is not still, few
- * enough that nothing in the corner of the eye asks to be looked at. The
- * greeting is four times it, and that ratio is the whole effect: what says a
- * game was finished is the change, not the density it changes to.
+ * A background: enough that the page is not still, few enough that nothing in
+ * the corner of the eye asks to be looked at. There used to be a second, much
+ * larger number here — the sky the end of a game thickened to. A finished game
+ * now stands inside the temple, where no petal is drawn at all, so the greeting
+ * it was for is a cloth rather than weather
+ * (`docs/decisions/0031-one-camera-and-what-it-promises.md`).
  */
 const CALM_PETALS = 30;
-const GREETING_PETALS = 130;
-
-/** How long the greeting takes to thin back out into the calm sky, in seconds. */
-export const GREETING_SECONDS = 7;
 
 /**
  * The sky the two numbers above were chosen against, in square pixels.
@@ -98,32 +96,21 @@ const between = (random: () => number, range: { least: number; most: number }): 
   range.least + random() * (range.most - range.least);
 
 /**
- * How many petals this sky should be holding at this moment.
+ * How many petals this sky should be holding.
  *
  * @param sky - The area they fall through
- * @param sinceGreeting - Seconds since the greeting began, or `null` when none has
  * @returns The number of petals wanted, scaled to the size of the sky
  *
  * @example
- * petalsWanted(sky, null); // the calm background
- * petalsWanted(sky, 0); // the moment the last square went in
+ * petalsWanted(sky); // the calm background, at the size of this window
  */
-export const petalsWanted = (sky: Sky, sinceGreeting: number | null): number => {
+export const petalsWanted = (sky: Sky): number => {
   const density = Math.min(
     Math.max((sky.width * sky.height) / REFERENCE_SKY, THINNEST_SKY),
     THICKEST_SKY,
   );
 
-  if (sinceGreeting === null || sinceGreeting >= GREETING_SECONDS) {
-    return Math.round(CALM_PETALS * density);
-  }
-
-  // Straight down from the greeting to the calm sky. What the eye reads is not
-  // this line but the petals already falling, which go on falling as the line
-  // drops and are simply not replaced.
-  const left = 1 - Math.max(sinceGreeting, 0) / GREETING_SECONDS;
-
-  return Math.round((CALM_PETALS + (GREETING_PETALS - CALM_PETALS) * left) * density);
+  return Math.round(CALM_PETALS * density);
 };
 
 /**
@@ -208,9 +195,8 @@ const driftPetal = (petal: Petal, seconds: number, sky: Sky): Petal => {
  * The whole sky, a number of seconds later.
  *
  * Petals that have fallen past the bottom edge are gone, and the sky is topped
- * back up to what is wanted. That one line is also how the greeting thins out:
- * nothing takes a petal off the screen, the wanted number simply stops being
- * met, and the sky returns to its background as the extra petals reach the
+ * back up to what is wanted. Nothing ever takes a petal off the screen: a sky
+ * that should hold fewer of them simply stops replacing the ones that reach the
  * floor.
  *
  * @param petals - The sky as it stood
@@ -221,7 +207,7 @@ const driftPetal = (petal: Petal, seconds: number, sky: Sky): Petal => {
  * @returns The sky now
  *
  * @example
- * driftPetals(petals, 1 / 60, sky, petalsWanted(sky, null), Math.random);
+ * driftPetals(petals, 1 / 60, sky, petalsWanted(sky), Math.random);
  */
 export const driftPetals = (
   petals: readonly Petal[],
@@ -240,42 +226,14 @@ export const driftPetals = (
 };
 
 /**
- * A sky topped up all at once, with the new petals spread through it rather
- * than queued above the top edge.
- *
- * Two moments need this and no other does. The first sky of all would otherwise
- * be an empty page raining from its top edge, and would then carry a bare band
- * across the top of it for the twenty seconds the first petals take to fall
- * clear. The greeting would otherwise not be a greeting: petals let in over the
- * top would still be arriving when the thing they were announcing is over.
- *
- * That neither is a petal appearing out of nothing in front of somebody is down
- * to when they happen — a page that has not been drawn yet, and a canvas fading
- * back in behind a board.
- *
- * @param petals - The sky as it stands, which for the first one is nothing
- * @param sky - The area they fall through
- * @param wanted - How many there should be
- * @param random - Where the randomness comes from
- * @returns The sky, at the number asked for
- *
- * @example
- * seedSky(petals, sky, petalsWanted(sky, 0), Math.random); // the greeting
- */
-export const seedSky = (
-  petals: readonly Petal[],
-  sky: Sky,
-  wanted: number,
-  random: () => number,
-): readonly Petal[] => [
-  ...petals,
-  ...Array.from({ length: Math.max(wanted - petals.length, 0) }, () =>
-    seedPetal(random, sky, 'sky'),
-  ),
-];
-
-/**
  * The first sky of a tab: the calm background, already spread through itself.
+ *
+ * Spread rather than let in over the top edge, which is the one reason this is
+ * not `driftPetals` with nothing to drift. A sky filled from above is an empty
+ * page raining from its top edge, and then carries a bare band across the top
+ * of it for the twenty seconds the first petals take to fall clear. That this
+ * is not a petal appearing out of nothing in front of somebody is down to when
+ * it happens: a page that has not been drawn yet.
  *
  * @param sky - The area they fall through
  * @param random - Where the randomness comes from
@@ -285,4 +243,4 @@ export const seedSky = (
  * petals.current = fillSky(sky, Math.random);
  */
 export const fillSky = (sky: Sky, random: () => number): readonly Petal[] =>
-  seedSky([], sky, petalsWanted(sky, null), random);
+  Array.from({ length: petalsWanted(sky) }, () => seedPetal(random, sky, 'sky'));

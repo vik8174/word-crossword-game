@@ -5,10 +5,16 @@ import type { Location } from './locations';
 /**
  * What anything drawn inside the garden can ask of it.
  *
- * It is three verbs and no state, on purpose. Whether petals are falling, and
+ * It is two verbs and no state, on purpose. Whether petals are falling, and
  * where in the world the window is standing, are the garden's own business and
  * nothing else's — a screen that could read either would sooner or later be
  * written to decide something by it.
+ *
+ * There used to be a third, `greet`, which asked the sky to thicken at the end
+ * of a game. It is gone rather than unused: the end of a game happens inside
+ * the temple, the weather does not come indoors, and what answers a finished
+ * game now is a cloth the room lays over its own table
+ * (`docs/decisions/0031-one-camera-and-what-it-promises.md`).
  */
 
 /**
@@ -36,8 +42,6 @@ export interface GardenControls {
   readonly showAir: (air: GardenAir) => void;
   /** Says which of the four places the window is standing in from now on. */
   readonly showLocation: (location: Location) => void;
-  /** Asks for the greeting: a sky that starts thick and thins back out. */
-  readonly greet: () => void;
 }
 
 /**
@@ -50,7 +54,6 @@ export interface GardenControls {
 const NO_GARDEN: GardenControls = {
   showAir: () => {},
   showLocation: () => {},
-  greet: () => {},
 };
 
 export const GardenControlsContext = createContext<GardenControls>(NO_GARDEN);
@@ -58,9 +61,9 @@ export const GardenControlsContext = createContext<GardenControls>(NO_GARDEN);
 /**
  * The garden this screen is being drawn in.
  *
- * @returns The three things a screen may ask of it
+ * @returns The two things a screen may ask of it
  *
  * @example
- * const { showAir, showLocation, greet } = useGardenControls();
+ * const { showAir, showLocation } = useGardenControls();
  */
 export const useGardenControls = (): GardenControls => useContext(GardenControlsContext);

@@ -6,9 +6,9 @@ import { useEffect, useRef, useState } from 'react';
 import { REDUCED_MOTION_QUERY } from '../components/screen-shift';
 import { FADE_MS, fitToWindow, LAYERS, layerSx } from './canvas-layer';
 import type { GardenAir } from './garden-controls';
-import type { Location } from './locations';
 import { paintPetals } from './paint-petals';
-import { driftPetals, fillSky, type Petal, petalsWanted, seedSky } from './petals';
+import { driftPetals, fillSky, type Petal, petalsWanted } from './petals';
+import type { Camera } from './use-camera';
 import { useDocumentVisible } from './use-document-visible';
 import { frameFor, openingOnScreen } from './world';
 
@@ -35,35 +35,38 @@ const LONGEST_FRAME_SECONDS = 1 / 15;
  * - **A tab nobody is looking at** stops the loop and leaves the last frame on
  *   the canvas, so a phone in a pocket is not drawing a garden.
  *
+ * It has nothing to say about the end of a game any more. The petals were the
+ * greeting once, and a finished game now stands inside the temple where they do
+ * not fall at all, so what greets a player is the cloth the room lays over its
+ * own table ({@link RewardCloth},
+ * `docs/decisions/0031-one-camera-and-what-it-promises.md`).
+ *
  * Where the window is standing matters here for one reason: the temple's
  * doorway is a hole in the weather, and a petal that falls across it is not
- * drawn (see {@link openingOnScreen}).
+ * drawn (see {@link openingOnScreen}). The camera is asked for that place once
+ * a frame rather than given it, because the doorway moves and grows for the
+ * length of every journey, and a petal culled against the doorway as it stood a
+ * second ago is a petal missing out of the middle of the sky.
  *
  * @param props.air - Whether petals are falling behind this screen
- * @param props.greeting - How many greetings have been asked for, one per game finished
- * @param props.location - Where the window is standing, which is where the doorway is
+ * @param props.camera - Where the window is standing, which is where the doorway is
  */
 export const PetalLayer = ({
   air,
-  greeting,
-  location,
+  camera,
 }: {
   readonly air: GardenAir;
-  readonly greeting: number;
-  readonly location: Location;
+  readonly camera: Camera;
 }) => {
   const theme = useTheme();
   const isStill = useMediaQuery(REDUCED_MOTION_QUERY);
   const isAwake = useDocumentVisible();
   const canvas = useRef<HTMLCanvasElement>(null);
 
-  // The sky between frames, and how long ago the last game ended. Neither is
-  // state: every frame reads them and no frame is a render, so holding them as
-  // state would redraw the whole app sixty times a second to move a petal.
+  // The sky between frames. Not state: every frame reads it and no frame is a
+  // render, so holding it as state would redraw the whole app sixty times a
+  // second to move a petal.
   const petals = useRef<readonly Petal[] | null>(null);
-  const sinceGreeting = useRef<number | null>(null);
-  const isBursting = useRef(false);
-  const greeted = useRef(0);
 
   // Not the same thing as the air. The air says what should be seen and the
   // canvas fades between the two; this says whether there is any point drawing,
@@ -77,28 +80,6 @@ export const PetalLayer = ({
   if (air === 'petals' && !isDrawing) {
     setIsDrawing(true);
   }
-
-  useEffect(() => {
-    // Counted rather than flagged, so that the app starting is not a game
-    // ending: both begin at nought, and a greeting on the first render is the
-    // very thing this whole arrangement exists to avoid.
-    if (greeting === greeted.current) {
-      return;
-    }
-
-    greeted.current = greeting;
-
-    // A greeting that fell while nobody was looking is dropped rather than
-    // kept. Somebody who left the tab and came back after the game ended is
-    // shown a calm result, which is the price of a garden that sleeps and is
-    // paid knowingly (`docs/decisions/0030-where-movement-is-allowed.md`).
-    if (!isAwake) {
-      return;
-    }
-
-    sinceGreeting.current = 0;
-    isBursting.current = true;
-  }, [greeting, isAwake]);
 
   useEffect(() => {
     if (air === 'petals') {
@@ -135,30 +116,19 @@ export const PetalLayer = ({
 
       last = now;
 
-      if (sinceGreeting.current !== null) {
-        sinceGreeting.current += seconds;
-      }
+      const wanted = petalsWanted(sky);
 
-      const wanted = petalsWanted(sky, sinceGreeting.current);
-
-      if (petals.current === null) {
-        petals.current = fillSky(sky, Math.random);
-      } else if (isBursting.current) {
-        // The one frame of a greeting. The rest of the sky it asked for is put
-        // there at once rather than let in over the top edge, which would still
-        // be arriving when the greeting was over.
-        isBursting.current = false;
-        petals.current = seedSky(petals.current, sky, wanted, Math.random);
-      } else {
-        petals.current = driftPetals(petals.current, seconds, sky, wanted, Math.random);
-      }
+      petals.current =
+        petals.current === null
+          ? fillSky(sky, Math.random)
+          : driftPetals(petals.current, seconds, sky, wanted, Math.random);
 
       paintPetals(
         brush,
         petals.current,
         sky,
         colour,
-        openingOnScreen(frameFor(location, sky), sky),
+        openingOnScreen(frameFor(camera.at(), sky), sky),
       );
       frame = window.requestAnimationFrame(step);
     };
@@ -166,7 +136,7 @@ export const PetalLayer = ({
     frame = window.requestAnimationFrame(step);
 
     return () => window.cancelAnimationFrame(frame);
-  }, [colour, isAwake, isDrawing, isStill, location]);
+  }, [camera, colour, isAwake, isDrawing, isStill]);
 
   if (isStill) {
     return null;
