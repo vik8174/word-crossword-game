@@ -1,7 +1,8 @@
 import { foliage, type SceneBrush, seeded, slab, stroke, topOf, trunk } from './brushwork';
 import { spreadOf } from './colour-spread';
+import { airOf } from './paint-planes';
 import { SCENE } from './scene-palette';
-import { GATE_LINTEL_RISE, inFrame, LANDMARKS, type Rect, WORLD } from './world';
+import { GATE_LINTEL_RISE, inFrame, LANDMARKS, type Rect } from './world';
 
 /**
  * The forest the temple stands in: the air, the water, the gate, and the leaves
@@ -49,16 +50,11 @@ const paintAir = (brush: SceneBrush, frame: Rect): void => {
   brush.save();
   brush.globalAlpha = 1;
 
-  // The gradient is still measured down the whole world, because that is what
-  // makes the air the same air wherever the window is standing. Only the
-  // covering is cut to the window: a rectangle the size of the world costs the
-  // browser a clip it was going to make anyway, and at the magnification a game
-  // is played at that is fourteen times the paint for the same picture.
-  const air = brush.createLinearGradient(0, 0, 0, WORLD.height);
-  air.addColorStop(0, SCENE.deep);
-  air.addColorStop(0.42, SCENE.shade);
-  air.addColorStop(1, SCENE.night);
-  brush.fillStyle = air;
+  // The gradient is measured down the whole world, because that is what makes
+  // the air the same air wherever the window is standing, and it is the same
+  // gradient every sheet between two planes is laid in ({@link airOf}). Only
+  // the covering is cut to the window.
+  brush.fillStyle = airOf(brush);
   brush.fillRect(
     frame.x - BLEED,
     frame.y - BLEED,
@@ -87,8 +83,13 @@ const paintAir = (brush: SceneBrush, frame: Rect): void => {
  * The water: teal under a clip, with the light moving across it.
  *
  * @param brush - What is being drawn through
+ * @param frame - The part of the world being shown
  */
-const paintWater = (brush: SceneBrush): void => {
+export const paintWater = (brush: SceneBrush, frame: Rect): void => {
+  if (!inFrame(frame, { x: LANDMARKS.pond.x, y: LANDMARKS.pond.y, across: 750, down: 120 })) {
+    return;
+  }
+
   const random = seeded(4114);
   const width = 1500;
   const height = 240;
@@ -242,8 +243,11 @@ const paintMass = (
 };
 
 /**
- * The air, the far canopy, the water and the lantern: everything behind the
- * buildings.
+ * The air, and the canopy furthest back in it.
+ *
+ * The water is no longer here. It lies in front of four of the six planes and
+ * behind two, so where it is painted is a decision about depth and belongs with
+ * the rest of them, in {@link paintScene}.
  *
  * @param brush - What is being drawn through
  * @param frame - The part of the world being shown
@@ -259,10 +263,6 @@ export const paintBackground = (brush: SceneBrush, frame: Rect): void => {
     { x: 2600, y: 400, across: 900, down: 360, seed: 202, count: 180, size: 78 },
   ]) {
     paintMass(brush, frame, mass, FAR_LEAF, 0.85);
-  }
-
-  if (inFrame(frame, { x: LANDMARKS.pond.x, y: LANDMARKS.pond.y, across: 750, down: 120 })) {
-    paintWater(brush);
   }
 };
 
@@ -319,7 +319,11 @@ export const paintForeground = (brush: SceneBrush, frame: Rect): void => {
   // hangs from, so it is worked out whether or not the tree itself is inside
   // the window. A crown that moved when the camera did would be a different
   // forest at every magnification.
-  const tree = { x: LANDMARKS.trunk.x, base: LANDMARKS.trunk.y, top: 120, width: 190, seed: 808 };
+  // A hundred and ten rather than the hundred and ninety it used to be: the
+  // number is now how thick the tree is, where before it was how tall each
+  // piece of it was drawn and the thickness fell out of the step
+  // ({@link trunkOf}). This is the width it was actually coming out at.
+  const tree = { x: LANDMARKS.trunk.x, base: LANDMARKS.trunk.y, top: 120, width: 110, seed: 808 };
   const top = topOf(tree);
 
   if (

@@ -170,7 +170,58 @@ export interface Leaves {
   readonly size: number;
   /** How solid the mass is, 0 to 1. */
   readonly alpha: number;
+  /**
+   * How many holes the sky comes through, 0 for a solid mass.
+   *
+   * A wall of green has no depth in it however many planes are laid into it,
+   * because nothing behind it is ever seen. The holes are scattered from the
+   * mass's own seed, so they are the same holes every load, and a stroke that
+   * lands in one is dropped rather than moved — which makes a crown with sky in
+   * it cheaper than the same crown without.
+   */
+  readonly gaps?: number;
 }
+
+/** Where the sky comes through a crown: a middle and how far it reaches. */
+interface Gap {
+  readonly x: number;
+  readonly y: number;
+  readonly across: number;
+  readonly down: number;
+}
+
+/**
+ * The holes in one mass, scattered through the middle of it.
+ *
+ * Taken from a stream of its own rather than from the mass's, so that adding a
+ * hole to a crown does not move every leaf in it.
+ *
+ * @param leaves - The mass
+ * @returns Where the sky comes through
+ */
+const gapsIn = (leaves: Leaves): readonly Gap[] => {
+  const wanted = leaves.gaps ?? 0;
+
+  if (wanted === 0) {
+    return [];
+  }
+
+  const random = seeded(leaves.seed + 1);
+
+  return Array.from({ length: wanted }, () => {
+    const angle = random() * Math.PI * 2;
+    // Kept off the rim: a hole at the edge of a mass is a bite out of its
+    // outline, and the outline is what says it is a crown.
+    const distance = 0.15 + random() * 0.5;
+
+    return {
+      x: leaves.x + Math.cos(angle) * distance * leaves.across,
+      y: leaves.y + Math.sin(angle) * distance * leaves.down,
+      across: leaves.across * (0.1 + random() * 0.13),
+      down: leaves.down * (0.12 + random() * 0.16),
+    };
+  });
+};
 
 /**
  * A crown of leaves, lit from above and from the left.
@@ -189,6 +240,7 @@ export interface Leaves {
  */
 export const foliage = (brush: SceneBrush, leaves: Leaves): void => {
   const random = seeded(leaves.seed);
+  const gaps = gapsIn(leaves);
 
   for (let index = 0; index < leaves.count; index += 1) {
     const angle = random() * Math.PI * 2;
@@ -196,6 +248,15 @@ export const foliage = (brush: SceneBrush, leaves: Leaves): void => {
     const x = leaves.x + Math.cos(angle) * distance * leaves.across;
     const y = leaves.y + Math.sin(angle) * distance * leaves.down;
     const lit = clamp(0.5 - (y - leaves.y) / (leaves.down * 2) + (random() - 0.5) * 0.5, 0, 0.999);
+
+    if (
+      gaps.some(
+        (gap) => Math.pow((x - gap.x) / gap.across, 2) + Math.pow((y - gap.y) / gap.down, 2) < 1,
+      )
+    ) {
+      continue;
+    }
+
     const step = leaves.colours[Math.floor(lit * leaves.colours.length)] ?? leaves.colours[0];
     // A step with one tone in it is asked no question, which is what keeps a
     // ramp nothing has shifted drawing exactly the forest it drew before.
@@ -249,7 +310,9 @@ export interface Trunk {
  * The shape of a trunk, worked out and not yet drawn.
  *
  * It is a chain of strokes that wander sideways rather than one tapered shape,
- * because a tree that is exactly straight is a post.
+ * because a tree that is exactly straight is a post. Each stroke runs along the
+ * trunk, so `width` is how thick the tree is and the taper is how much of that
+ * is left at the top.
  *
  * Separate from the drawing of it for one reason: where the top of a tree ends
  * up is where its crown hangs, and a crown has to hang in the same place
@@ -277,9 +340,15 @@ export const trunkOf = (tree: Tree): Trunk => {
     boughs.push({
       x: (x + nextX) / 2,
       y: y - step / 2,
-      length: step * 1.25,
+      // Laid along the trunk rather than across it, so that `width` is how
+      // thick the tree is and the length is how far up this piece of it goes.
+      // A little longer than the step it covers, so consecutive pieces overlap
+      // instead of leaving the trunk in beads — which is what a thin tree drawn
+      // the other way round comes out as, and there are now sixteen thin trees
+      // in this picture (`forest-planes.ts`).
+      length: step * 1.3,
       width,
-      angle: Math.atan2(-step, nextX - x) + Math.PI / 2,
+      angle: Math.atan2(-step, nextX - x),
       lit: random() > 0.7,
     });
 
