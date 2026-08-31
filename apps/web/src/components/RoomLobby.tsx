@@ -47,9 +47,12 @@ interface RoomLobbyProps {
  * answering words reaches here, because in a lobby there is nothing to answer:
  * the board below is drawn empty and takes no letters.
  *
- * The zone on the left of the board is empty here, and it is meant to be: it
- * holds the words this player explains, and in a lobby nothing has been dealt
- * out. The board is already the size it will be played at, though — the
+ * Who is in the room, and the link that brings the other one, stand in the zone
+ * on the left of the board — the one that holds the words this player explains
+ * once there are any. It is the side the lobby's band is on, and the side is
+ * the point: this screen is the doors of the temple, and what the camera flies
+ * through next is the doorway in the middle of it, so nothing of the interface
+ * may stand there. The board is already the size it will be played at — the
  * crossword was laid out when the room was made — so nothing about it moves
  * when the game begins (issue #101).
  *
@@ -83,6 +86,7 @@ export const RoomLobby = ({ roomId, room, viewerId, invitation }: RoomLobbyProps
 
   return (
     <RoomShell
+      title="Lobby"
       status={
         <Typography variant="body1" role="status">
           {lobbyStatusMessage({ isOwner, playerCount: players.length, wordCount })}
@@ -99,7 +103,7 @@ export const RoomLobby = ({ roomId, room, viewerId, invitation }: RoomLobbyProps
           />
         ) : undefined
       }
-      right={
+      left={
         <Stack spacing={2}>
           <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
 

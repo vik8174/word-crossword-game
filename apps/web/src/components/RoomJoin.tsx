@@ -90,7 +90,7 @@ export const RoomJoin = ({ roomId, playerId, seatToRelease, onRefused }: RoomJoi
     // not in the room yet, so there is nothing of the game to put either side of
     // them. It is the same frame all the same, so walking in moves the contents
     // of a screen rather than replacing one.
-    <RoomShell>
+    <RoomShell title="Join the game">
       <RoomMiddleColumn>
         <JoinRoomForm
           onJoin={(nickname) => void submitJoin(nickname)}

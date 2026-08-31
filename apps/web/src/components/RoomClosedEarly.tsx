@@ -65,6 +65,7 @@ export const RoomClosedEarly = ({ room, viewerId }: RoomClosedEarlyProps) => {
 
   return (
     <RoomShell
+      title="Game ended"
       left={
         <Alert severity="info" role="status">
           {CLOSED_UNFINISHED_MESSAGE}

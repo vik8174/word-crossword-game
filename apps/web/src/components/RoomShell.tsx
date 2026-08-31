@@ -3,11 +3,41 @@ import { type SxProps, type Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
+import { BAND_EDGE, BAND_EDGE_WIDTH } from '../garden/scene-palette';
+import { BAND_SX, fullHeightBandSx, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES } from './room-layout';
 import { useShiftRole } from './screen-shift';
 
 /** What the page is, said once for every phase the room goes through. */
 const ROOM_HEADING = 'Game room';
+
+/** How much air the frame keeps between itself and the edge of the window. */
+const FRAME_PADDING = '16px';
+
+/** How wide a band is: the zone it holds, and the frame's padding either side of it. */
+const BAND_WIDTH = `calc(${SIDE_ZONE_WIDTH} + ${FRAME_PADDING} + ${FRAME_PADDING})`;
+
+/**
+ * A heading that is there to be read aloud and not to be looked at.
+ *
+ * The screen a game is played on carries no title, because the letters in the
+ * squares say what it is and the strip a title would take is height the board
+ * has none of (`docs/decisions/0029-a-board-that-fits-the-screen-it-is-played-on.md`).
+ * A page with no heading at all is a different thing, though — somebody moving
+ * through it by headings would find nothing — so the name is still said, and
+ * takes no pixels to say it.
+ */
+const UNSEEN_HEADING = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  padding: 0,
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+} as const;
 
 /**
  * The zone a side of the room is given, and what it does when it is empty.
@@ -22,12 +52,20 @@ const ROOM_HEADING = 'Game room';
  */
 const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
   ...(isEmpty && { display: 'none' }),
+  ...ON_SCENE_SX,
+  // The band, as tall as what stands on it. Where the window is wide enough to
+  // give the list a column of its own, the band is drawn behind instead and
+  // runs the whole height of the window, so this one gets out of its way rather
+  // than doubling its darkness.
+  ...BAND_SX,
+  padding: FRAME_PADDING,
   [APP_SHELL]: {
     display: 'block',
     gridArea: area,
     minHeight: 0,
     overflowY: 'auto',
   },
+  [THREE_ZONES]: { backgroundColor: 'transparent', padding: 0 },
 });
 
 /**
@@ -38,16 +76,42 @@ const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
  * paragraph stretched the same way is a paragraph nobody finishes a line of, so
  * anything that is words rather than squares is capped and centred instead.
  *
+ * It stands on the same band a list of words does, and for the same reason: a
+ * form is text, and text has to be read off a forest. Where a zone has a column
+ * the band is that column; here there is no column, so the band is a block of
+ * the same material with the same red line along the edge it meets the picture
+ * at.
+ *
  * @param props.children - What this screen has to say or ask
  *
  * @example
  * <RoomShell><RoomMiddleColumn><JoinRoomForm ... /></RoomMiddleColumn></RoomShell>
  */
 export const RoomMiddleColumn = ({ children }: { readonly children: ReactNode }) => (
-  <Box sx={{ maxWidth: '32rem', mx: 'auto' }}>{children}</Box>
+  <Box
+    sx={{
+      maxWidth: '32rem',
+      mx: 'auto',
+      p: 3,
+      ...BAND_SX,
+      ...ON_SCENE_SX,
+      borderTop: `${BAND_EDGE_WIDTH}px solid ${BAND_EDGE}`,
+    }}
+  >
+    {children}
+  </Box>
 );
 
 interface RoomShellProps {
+  /**
+   * The name of this step of the room, shown top left with the temple's red
+   * run under it.
+   *
+   * A screen that gives none is named to a reader and to nobody else, which is
+   * the game's own case: the letters in the squares say what that screen is,
+   * and the strip a title would take is height the board has none of.
+   */
+  readonly title?: string;
   /** What the room is doing right now, said in the header beside its name. */
   readonly status?: ReactNode;
   /** The one thing this screen offers to do, if it offers anything. */
@@ -94,6 +158,14 @@ interface RoomShellProps {
  * stand in the same place: the header is the part that does not move, and two
  * of them printed over each other would be the page redrawing after all.
  *
+ * The interface stands on the picture the whole app is drawn in front of, so
+ * two things about it are settled here rather than screen by screen. A zone
+ * with anything in it stands on a band — a column of the shadow under the
+ * canopy, run out to the edge of the window wherever the zone has a column of
+ * its own — and everything inside a zone or the header is written in the
+ * forest's own cream instead of in ink meant for paper (see `scene-surface.ts`).
+ *
+ * @param props.title - The name of this step, or nothing on the screen a game is played on
  * @param props.status - The room's own line about what it is doing
  * @param props.action - The screen's one control, offered in the header
  * @param props.left - The zone on the board's left; an empty one is left empty
@@ -105,12 +177,13 @@ interface RoomShellProps {
  *   <RoomCrossword room={room} viewerId={viewerId} caption={caption} />
  * </RoomShell>
  */
-export const RoomShell = ({ status, action, left, right, children }: RoomShellProps) => {
+export const RoomShell = ({ title, status, action, left, right, children }: RoomShellProps) => {
   const isLeaving = useShiftRole() === 'leaving';
 
   return (
     <Box
       sx={{
+        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         gap: 3,
@@ -119,6 +192,24 @@ export const RoomShell = ({ status, action, left, right, children }: RoomShellPr
         [APP_SHELL]: { height: '100dvh', gap: 2, py: 2, overflow: 'hidden' },
       }}
     >
+      {/* The bands, where the window is wide enough for a zone to be a column.
+        They are behind the zones rather than around them, so what a reader
+        moves through is a list of words and not a decoration first. */}
+      {(
+        [
+          ['left', left],
+          ['right', right],
+        ] as const
+      ).map(([side, zone]) =>
+        zone === undefined ? null : (
+          <Box
+            key={side}
+            aria-hidden
+            sx={{ display: 'none', [THREE_ZONES]: fullHeightBandSx(side, BAND_WIDTH) }}
+          />
+        ),
+      )}
+
       <Box
         component="header"
         sx={{
@@ -128,11 +219,15 @@ export const RoomShell = ({ status, action, left, right, children }: RoomShellPr
           columnGap: 2,
           rowGap: 1,
           visibility: isLeaving ? 'hidden' : undefined,
+          ...ON_SCENE_SX,
           [APP_SHELL]: { flexShrink: 0 },
         }}
       >
-        <Typography variant="h5" component="h1">
-          {ROOM_HEADING}
+        <Typography
+          component="h1"
+          sx={title === undefined ? UNSEEN_HEADING : stepTitleSx(`-${FRAME_PADDING}`)}
+        >
+          {title ?? ROOM_HEADING}
         </Typography>
 
         {/* Wide enough to sit beside the heading on a screen that has the room

@@ -1,6 +1,8 @@
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+
+import { SCENE, SCENE_INK_DIM } from '../garden/scene-palette';
 import { useMemo } from 'react';
 
 import type { RoomDocument } from '../rooms/room-document';
@@ -81,10 +83,15 @@ export const RoomCrossword = ({
           columnGap: 1,
         }}
       >
-        <Typography id="grid-heading" variant="subtitle1" component="h2">
+        <Typography
+          id="grid-heading"
+          variant="subtitle1"
+          component="h2"
+          sx={{ color: SCENE.cream }}
+        >
           The crossword
         </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" sx={{ color: SCENE_INK_DIM }}>
           {caption}
         </Typography>
       </Box>

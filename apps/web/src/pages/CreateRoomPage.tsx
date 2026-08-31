@@ -1,10 +1,12 @@
-import Container from '@mui/material/Container';
+import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword, validateWordList } from 'shared';
 
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
+import { BAND_EDGE, BAND_EDGE_WIDTH } from '../garden/scene-palette';
+import { BAND_SX, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
 import { WordListForm } from '../components/WordListForm';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
@@ -48,7 +50,9 @@ type CreationPhase =
  * on a page a reload would empty (see
  * `docs/decisions/0021-one-room-address.md`).
  *
- * It is the second screen of the funnel, so it says it was reached (issue #51).
+ * It is the second screen of the funnel, so it says it was reached (issue #51),
+ * and it is the second screen at the gate: the garden is standing where the
+ * landing page left it, which is why nothing here has to say where it is.
  *
  * @example
  * <Route path="/create" element={<CreateRoomPage />} />
@@ -146,12 +150,26 @@ export const CreateRoomPage = () => {
   };
 
   return (
-    <Container maxWidth="sm" sx={{ py: 6 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
+    // Still at the gate, so the step is named in the corner of the window with
+    // the temple's red run under it, and the form stands on the same band a
+    // list of words does. Nothing here is centred over the middle of the
+    // picture: that is where the path goes.
+    <Box component="main" sx={{ px: 2, py: 3, ...ON_SCENE_SX }}>
+      <Typography component="h1" sx={stepTitleSx('-16px')}>
         New game
       </Typography>
 
-      {renderPhase()}
-    </Container>
+      <Box
+        sx={{
+          maxWidth: '34rem',
+          mt: 3,
+          p: 3,
+          ...BAND_SX,
+          borderTop: `${BAND_EDGE_WIDTH}px solid ${BAND_EDGE}`,
+        }}
+      >
+        {renderPhase()}
+      </Box>
+    </Box>
   );
 };
