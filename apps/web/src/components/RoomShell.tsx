@@ -60,21 +60,27 @@ const UNSEEN_HEADING = {
  * @param isEmpty - Whether this screen handed the zone anything
  */
 const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
-  ...(isEmpty && { display: 'none' }),
-  ...ON_SCENE_SX,
-  // The band, as tall as what stands on it. Where the window is wide enough to
-  // give the list a column of its own, the band is drawn behind instead and
-  // runs the whole height of the window, so this one gets out of its way rather
-  // than doubling its darkness.
-  ...BAND_SX,
-  padding: FRAME_PADDING,
+  ...(isEmpty
+    ? { display: 'none' }
+    : {
+        ...ON_SCENE_SX,
+        // The band, as tall as what stands on it. Where the window is wide
+        // enough to give the list a column of its own, the band is drawn behind
+        // instead and runs the whole height of the window, so this one gets out
+        // of its way rather than doubling its darkness.
+        ...BAND_SX,
+        padding: FRAME_PADDING,
+      }),
   [APP_SHELL]: {
     display: 'block',
     gridArea: area,
     minHeight: 0,
     overflowY: 'auto',
   },
-  [THREE_ZONES]: { backgroundColor: 'transparent', padding: 0 },
+  // An empty zone is still a column while the room is an application — that is
+  // what keeps the board in the middle when only one side has anything to say —
+  // but it is an empty column and not a band with nothing on it.
+  [THREE_ZONES]: isEmpty ? {} : { backgroundColor: 'transparent', padding: 0 },
 });
 
 /**
@@ -129,8 +135,15 @@ interface RoomShellProps {
   readonly left?: ReactNode;
   /** What they get back from them, and who is in the room. */
   readonly right?: ReactNode;
-  /** The middle of the screen, which every phase of a room fills with the board. */
-  readonly children: ReactNode;
+  /**
+   * The middle of the screen, which is the board on every screen that has one.
+   *
+   * A screen may have none, and the lobby is that screen: it stands at the doors
+   * of the temple, the doorway is what fills the middle of the window, and the
+   * camera goes through it when the game begins (issue #115). What that screen
+   * puts in the middle is nothing.
+   */
+  readonly children?: ReactNode;
 }
 
 /**
@@ -179,7 +192,7 @@ interface RoomShellProps {
  * @param props.action - The screen's one control, offered in the header
  * @param props.left - The zone on the board's left; an empty one is left empty
  * @param props.right - The zone on its right
- * @param props.children - The middle zone, which is the board
+ * @param props.children - The middle zone: the board, or nothing at all
  *
  * @example
  * <RoomShell status={<Status />} left={<ToExplain />} right={<ToGuess />}>

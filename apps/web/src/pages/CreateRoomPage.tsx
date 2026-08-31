@@ -6,7 +6,6 @@ import { type CrosswordLayout, generateCrossword, validateWordList } from 'share
 
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm } from '../components/WordListForm';
-import { BAND_EDGE, BAND_EDGE_WIDTH } from '../garden/scene-palette';
 import { BAND_SX, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
@@ -172,8 +171,10 @@ export const CreateRoomPage = () => {
           maxWidth: '34rem',
           mt: 5,
           p: 5,
+          // No red line along the top of it: the step's own rule is directly
+          // above, and two of them a step apart read as one underline drawn
+          // twice.
           ...BAND_SX,
-          borderTop: `${BAND_EDGE_WIDTH}px solid ${BAND_EDGE}`,
         }}
       >
         {renderPhase()}

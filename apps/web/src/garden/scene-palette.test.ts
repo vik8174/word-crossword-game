@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { SHOJI_PAPER } from './paint-hall';
-import { BAND, SCENE, SCENE_INK_DIM, VEIL } from './scene-palette';
+import { BAND, CONTROL, SCENE, SCENE_INK_DIM, VEIL } from './scene-palette';
 
 /**
  * What this file is for: the garden writes cream on a painting, and a painting
@@ -33,8 +33,12 @@ const asRgb = (hex: string): Rgb => [
   parseInt(hex.slice(5, 7), 16),
 ];
 
-/** `rgba(r, g, b, a)` as three numbers and the alpha. */
+/** Either spelling of a colour — `#RRGGBB` or `rgba(...)` — as numbers and an alpha. */
 const asRgba = (colour: string): { readonly rgb: Rgb; readonly alpha: number } => {
+  if (colour.startsWith('#')) {
+    return { rgb: asRgb(colour), alpha: 1 };
+  }
+
   const parts = colour
     .slice(colour.indexOf('(') + 1, colour.indexOf(')'))
     .split(',')
@@ -84,12 +88,12 @@ const banded = (paint: string): Rgb => {
   return over(band.rgb, band.alpha, veiled(paint));
 };
 
-/** Cream at the weight a secondary line is written in, over what it lands on. */
-const dimOver = (surface: Rgb): Rgb => {
-  const ink = asRgba(SCENE_INK_DIM);
+/** A colour that may be translucent, laid over what is behind it. */
+const laidOver = (paint: { readonly rgb: Rgb; readonly alpha: number }, behind: Rgb): Rgb =>
+  over(paint.rgb, paint.alpha, behind);
 
-  return over(ink.rgb, ink.alpha, surface);
-};
+/** Cream at the weight a secondary line is written in, over what it lands on. */
+const dimOver = (surface: Rgb): Rgb => laidOver(asRgba(SCENE_INK_DIM), surface);
 
 /**
  * Every surface a sentence can land on, brightest first.
@@ -132,10 +136,40 @@ describe('what the garden writes on', () => {
     }
   });
 
+  it('reads the label off every control, in both of the states a control has', () => {
+    // A control is not text on a surface but a surface of its own with text on
+    // it, so what has to clear the threshold is its label against its own fill —
+    // and its fill lets the picture through, which means the picture is part of
+    // the measurement. The resting state is here for the same reason the pressed
+    // one is not: waiting for the other player is the state somebody looks at
+    // longest.
+    const states = [
+      { name: 'the one action', fill: CONTROL.fill, ink: CONTROL.ink },
+      { name: 'a control that is waiting', fill: CONTROL.restingFill, ink: CONTROL.restingInk },
+    ];
+
+    for (const surface of SURFACES) {
+      for (const state of states) {
+        const control = laidOver(asRgba(state.fill), banded(surface.paint));
+        const label = laidOver(asRgba(state.ink), control);
+
+        expect(contrast(label, control), `${state.name} on ${surface.name}`).toBeGreaterThan(
+          SMALL_TEXT,
+        );
+      }
+    }
+  });
+
   it('says plainly that lit paper is not something to write on unbanded', () => {
     // Recorded rather than left to be rediscovered: this is the measurement the
     // hall was resized around, and a future release that grows the paper back
     // over the whole window will fail here rather than in somebody's eyes.
     expect(contrast(asRgb(SCENE.cream), veiled(SHOJI_PAPER[0]))).toBeLessThan(LARGE_TEXT);
+
+    // And the same about a control standing straight on it, which is why every
+    // control in this app is either in a band or in the shade of the forest.
+    const bare = laidOver(asRgba(CONTROL.fill), veiled(SHOJI_PAPER[0]));
+
+    expect(contrast(laidOver(asRgba(CONTROL.ink), bare), bare)).toBeLessThan(SMALL_TEXT);
   });
 });

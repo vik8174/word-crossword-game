@@ -123,3 +123,34 @@ export const SCENE_INK_DIM = 'rgba(243, 236, 217, 0.78)';
 
 /** Cream thinned to a rule, a border, the edge of a field. */
 export const SCENE_LINE = 'rgba(243, 236, 217, 0.28)';
+
+/**
+ * The one control that carries an action, in the one colour that carries one.
+ *
+ * Translucent, so the forest goes on behind it and the control stands in the
+ * picture rather than on it. That only works where the picture is dark, which
+ * is why every control in this app stands either on a band or on the shade
+ * under the canopy: on the lit paper of the temple's doors the same fill
+ * carries its label at 3.6 to one, and on a band over that same paper at 4.65
+ * (`scene-palette.test.ts`).
+ *
+ * The resting state is nearly opaque rather than half of it, and says it is
+ * resting by going the colour of the temple's shadowed side. A control faded
+ * out until it is half the picture behind it is a control nobody can read the
+ * name of, which is the state a player looks at longest — the start of a game
+ * is a button that waits for the other player.
+ */
+export const CONTROL = {
+  /** What the temple's red looks like with the forest coming through it. */
+  fill: 'rgba(218, 70, 32, 0.78)',
+  /** The same under a finger. */
+  litFill: 'rgba(242, 118, 47, 0.88)',
+  /** What is written on it. Not translucent: this is the part that is read. */
+  ink: '#FFF3E2',
+  /** The brushed highlight the temple's woodwork catches along its top edge. */
+  edge: SCENE.vermilionLit,
+  /** A control that cannot be pressed yet. */
+  restingFill: 'rgba(147, 41, 15, 0.86)',
+  restingInk: 'rgba(243, 236, 217, 0.78)',
+  restingEdge: 'rgba(242, 118, 47, 0.4)',
+} as const;

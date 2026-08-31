@@ -5,6 +5,7 @@ import {
   BAND,
   BAND_EDGE,
   BAND_EDGE_WIDTH,
+  CONTROL,
   SCENE,
   SCENE_INK_DIM,
   SCENE_LINE,
@@ -173,14 +174,14 @@ export const ON_SCENE_SX: CSSObject = {
   // standing in the picture rather than on it — but the edge and the label are
   // not, because those are the parts that have to be read.
   '& .MuiButton-contained': {
-    backgroundColor: 'rgba(218, 70, 32, 0.78)',
-    color: '#FFF3E2',
-    border: `1.5px solid ${SCENE.vermilionLit}`,
-    '&:hover': { backgroundColor: 'rgba(242, 118, 47, 0.88)' },
+    backgroundColor: CONTROL.fill,
+    color: CONTROL.ink,
+    border: `1.5px solid ${CONTROL.edge}`,
+    '&:hover': { backgroundColor: CONTROL.litFill },
     '&.Mui-disabled': {
-      backgroundColor: 'rgba(147, 41, 15, 0.5)',
-      color: 'rgba(255, 243, 226, 0.5)',
-      borderColor: 'rgba(242, 118, 47, 0.4)',
+      backgroundColor: CONTROL.restingFill,
+      color: CONTROL.restingInk,
+      borderColor: CONTROL.restingEdge,
     },
   },
   '& .MuiButton-outlined': {

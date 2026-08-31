@@ -9,9 +9,9 @@ import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
 import { startGame } from '../rooms/room-service';
 import { useRoomPresence } from '../rooms/use-room-presence';
+import { CROSSWORD_HEADING_ID, CrosswordHeading } from './CrosswordHeading';
 import { OwnPresenceNotice } from './OwnPresenceNotice';
 import { PlayerList } from './PlayerList';
-import { RoomCrossword } from './RoomCrossword';
 import { RoomShell } from './RoomShell';
 import { StartGamePanel } from './StartGamePanel';
 
@@ -47,14 +47,23 @@ interface RoomLobbyProps {
  * answering words reaches here, because in a lobby there is nothing to answer:
  * the board below is drawn empty and takes no letters.
  *
- * Who is in the room, and the link that brings the other one, stand in the zone
- * on the left of the board — the one that holds the words this player explains
- * once there are any. It is the side the lobby's band is on, and the side is
- * the point: this screen is the doors of the temple, and what the camera flies
- * through next is the doorway in the middle of it, so nothing of the interface
- * may stand there. The board is already the size it will be played at — the
- * crossword was laid out when the room was made — so nothing about it moves
- * when the game begins (issue #101).
+ * Everything this screen has stands in the zone on the left — who is in the
+ * room, the link that brings the other one, what the crossword is, and the one
+ * control that starts it. The middle is left empty, and that is the whole of
+ * the arrangement: this screen stands at the doors of the temple, the doorway
+ * is what fills the middle of it, and the camera goes through that doorway when
+ * the game begins (issue #115). Anything put there would be standing in the way
+ * of the next screen.
+ *
+ * So the board is not drawn here, and that is a change of mind rather than an
+ * oversight. It used to be, empty and already the size it would be played at,
+ * so that nothing about it moved when the game began (issue #101) — which was
+ * the right answer while every screen was drawn on the same flat page. It is
+ * the wrong one now that the screens are places: the crossword is in the hall,
+ * this is the doors, and a board seen through a doorway you have not walked
+ * through yet is the room arriving before the player does. What the lobby says
+ * about the crossword it says in words, in the band, and the count it gives is
+ * the words that are in the grid rather than the words that were typed in.
  *
  * @param props.roomId - Id of the room this lobby belongs to
  * @param props.room - The room document
@@ -92,17 +101,6 @@ export const RoomLobby = ({ roomId, room, viewerId, invitation }: RoomLobbyProps
           {lobbyStatusMessage({ isOwner, playerCount: players.length, wordCount })}
         </Typography>
       }
-      action={
-        isOwner ? (
-          <StartGamePanel
-            playerCount={players.length}
-            wordCount={wordCount}
-            onStart={() => void submitStart()}
-            isStarting={start.phase === 'submitting'}
-            errorMessage={failureOf(start)}
-          />
-        ) : undefined
-      }
       left={
         <Stack spacing={4}>
           <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
@@ -115,10 +113,30 @@ export const RoomLobby = ({ roomId, room, viewerId, invitation }: RoomLobbyProps
             viewerId={viewerId}
             awayDurations={awayDurations}
           />
+
+          {/* The crossword said rather than shown. The count is the words that
+            are in the grid and not the words that were typed in — three of them
+            may have failed to fit, and an unplaced word is drawn nowhere, so
+            this line is the only place anybody is told. */}
+          <section aria-labelledby={CROSSWORD_HEADING_ID}>
+            <CrosswordHeading caption={openGridCaption(wordCount)} />
+          </section>
+
+          {/* The one control, in the band with everything else this screen has:
+            the middle of the window is the doorway, and a control let through
+            the picture cannot be read off the roof of a temple anyway
+            (`garden/scene-palette.ts`). */}
+          {isOwner && (
+            <StartGamePanel
+              playerCount={players.length}
+              wordCount={wordCount}
+              onStart={() => void submitStart()}
+              isStarting={start.phase === 'submitting'}
+              errorMessage={failureOf(start)}
+            />
+          )}
         </Stack>
       }
-    >
-      <RoomCrossword room={room} viewerId={viewerId} caption={openGridCaption(wordCount)} />
-    </RoomShell>
+    />
   );
 };
