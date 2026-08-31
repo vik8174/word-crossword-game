@@ -3,6 +3,7 @@ import { PLANES } from './forest-planes';
 import { paintBackground, paintForeground, paintMiddleGround, paintWater } from './paint-forest';
 import { paintGround, paintShore } from './paint-ground';
 import { paintPlane } from './paint-planes';
+import { paintSakura } from './paint-sakura';
 import { paintTemple } from './paint-temple';
 import { SCENE } from './scene-palette';
 import type { Rect, Viewport } from './world';
@@ -73,6 +74,12 @@ export const paintScene = (brush: SceneBrush, frame: Rect, viewport: Viewport): 
       paintShore(brush, frame);
       paintTemple(brush, frame);
       paintMiddleGround(brush, frame);
+    }
+
+    // The cherries stand on the thicket, which is the plane in front of the
+    // temple: the petals fall past the building rather than out of it.
+    if (plane.name === 'thicket') {
+      paintSakura(brush, frame);
     }
   }
 
