@@ -163,7 +163,7 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
   );
 
   const toGuess: ReactNode = (
-    <Stack spacing={2}>
+    <Stack spacing={4}>
       <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
 
       <PlayerList

@@ -78,10 +78,10 @@ export const RoomCrossword = ({
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'baseline',
-          columnGap: 1,
+          columnGap: 2,
         }}
       >
-        <Typography id="grid-heading" variant="subtitle1" component="h2">
+        <Typography id="grid-heading" variant="h2" component="h2">
           The crossword
         </Typography>
         <Typography variant="body2" color="text.secondary">

@@ -26,21 +26,21 @@ interface UnplacedWordsNoticeProps {
  */
 export const UnplacedWordsNotice = ({ layout, onConfirm, onBack }: UnplacedWordsNoticeProps) => {
   return (
-    <Stack spacing={3}>
+    <Stack spacing={5}>
       <Alert severity="warning">
         <AlertTitle>Some words did not fit into the crossword</AlertTitle>
         <Typography variant="body2">
           These words cross none of the others and will be left out:
         </Typography>
-        <Typography variant="body2" sx={{ fontWeight: 'medium', mt: 1 }}>
+        <Typography variant="body2" sx={{ fontWeight: 'medium', mt: 2 }}>
           {layout.unplacedWords.join(', ')}
         </Typography>
-        <Typography variant="body2" sx={{ mt: 1 }}>
+        <Typography variant="body2" sx={{ mt: 2 }}>
           {`The room will be created with the remaining ${layout.placedWords.length} words.`}
         </Typography>
       </Alert>
 
-      <Stack direction="row" spacing={2}>
+      <Stack direction="row" spacing={4}>
         <Button variant="contained" onClick={onConfirm}>
           Create room anyway
         </Button>

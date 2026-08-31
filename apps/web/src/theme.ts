@@ -1,4 +1,6 @@
 import { alpha, createTheme, darken, type PaletteColor } from '@mui/material/styles';
+import { inRem, SPACING_STEPS, TEXT_LEVELS } from './scale';
+import { TYPOGRAPHY } from './typography';
 
 /**
  * The colours the app is drawn in, and the only place any of them is written
@@ -110,57 +112,15 @@ declare module '@mui/material/styles' {
 }
 
 /**
- * The typeface of the interface: whatever the reader's own system draws best.
- *
- * Nothing is fetched for it, so the first screen is drawn the moment its HTML
- * arrives and there is no flash of one font being replaced by another on the
- * page a visitor lands on.
+ * The three faces, the four levels and the row of gaps this app is drawn with
+ * are in `scale.ts`, and the typography below is nothing but those handed to
+ * MUI. Two of them leave again through this module — the crossword reads the
+ * display face here, and the scene of issue #115 reads the sign face out of
+ * `theme.typography.signage` — so the theme stays the one thing a component
+ * asks about how the app looks
+ * (`docs/decisions/0028-a-design-system-inside-the-mui-theme.md`).
  */
-const SYSTEM_FONT_FAMILY = [
-  '-apple-system',
-  'BlinkMacSystemFont',
-  '"Segoe UI"',
-  'Roboto',
-  '"Helvetica Neue"',
-  'Arial',
-  'sans-serif',
-].join(', ');
-
-/**
- * The one typeface this app fetches: the letters of the crossword, and the
- * headings large enough to be looked at rather than read past.
- *
- * A letter in the grid is the single thing a player looks at for twenty minutes
- * together, which is the whole of why it is worth any bytes at all. It costs
- * 15.9 KB: one weight, latin only, declared in `index.html`.
- *
- * Served from this app's own origin rather than linked from a font host, and
- * that is a measurement rather than a preference: the stylesheet a font host
- * answers with for this family is 58 KB gzipped, because it lists every
- * Japanese subset of the face — a third of what a first visit to the landing
- * page costs in total, spent before a byte of the font itself is fetched. The
- * word list refuses anything but latin anyway (`word-list-validator`,
- * `word-not-latin`), so the `unicode-range` in `index.html` says latin and the
- * file behind it is the latin subset alone.
- *
- * `font-display: swap` is set with it, so the board is ruled and readable in
- * the system font while the face is still on its way.
- *
- * Only weight 400 is fetched. Anything asking for bold in this family would be
- * given a slanted, thickened imitation of it instead, so every variant that
- * uses it says 400 below and the crossword's numbers stay in the interface
- * font, where a bold small numeral is a numeral rather than a smudge.
- */
-export const DISPLAY_FONT_FAMILY = [
-  '"Zen Old Mincho"',
-  '"Hiragino Mincho ProN"',
-  '"Iowan Old Style"',
-  'Georgia',
-  'serif',
-].join(', ');
-
-/** Heading sizes are the display face at a single weight, sizes doing the work. */
-const displayHeading = { fontFamily: DISPLAY_FONT_FAMILY, fontWeight: 400 } as const;
+export { DISPLAY_FONT_FAMILY, SIGN_FONT_FAMILY } from './scale';
 
 /**
  * The app's design system: a palette of named tokens, and the typography drawn
@@ -229,16 +189,11 @@ export const theme = createTheme({
     },
   },
 
-  typography: {
-    fontFamily: SYSTEM_FONT_FAMILY,
-    h1: displayHeading,
-    h2: displayHeading,
-    h3: displayHeading,
-    h4: displayHeading,
-    // Below h4 a heading is a label on a panel rather than something to look
-    // at, and a label is read fastest in the font the reader's system draws.
-    button: { textTransform: 'none', fontWeight: 500 },
-  },
+  // Every gap in the app, read as an index into the row rather than as a
+  // multiplier — `mt: 5` is the fifth step and so twenty-four pixels.
+  spacing: [...SPACING_STEPS],
+
+  typography: TYPOGRAPHY,
 
   // Ink on paper has edges. Four pixels of rounding on every corner is the
   // house style of a control panel, which is the thing this palette is not.
@@ -247,6 +202,23 @@ export const theme = createTheme({
   components: {
     // A raised button casts a shadow onto the paper, and nothing in this design
     // is above the page.
-    MuiButton: { defaultProps: { disableElevation: true } },
+    MuiButton: {
+      defaultProps: { disableElevation: true },
+      styleOverrides: {
+        // A large button is larger in what surrounds its label, not in the
+        // label: MUI sets fifteen pixels here, which is a fifth size and half a
+        // step off the one above it.
+        sizeLarge: { fontSize: inRem(TEXT_LEVELS.body) },
+      },
+    },
+
+    MuiFormHelperText: {
+      styleOverrides: {
+        // The hint under a field, which MUI puts three pixels below it — close
+        // enough to read as part of the box rather than as a line about it, and
+        // the one gap on this form that was not on the row.
+        root: ({ theme }) => ({ marginTop: theme.spacing(2) }),
+      },
+    },
   },
 });

@@ -75,7 +75,7 @@ export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProp
   };
 
   return (
-    <Stack spacing={2} sx={{ alignItems: 'flex-start' }}>
+    <Stack spacing={4} sx={{ alignItems: 'flex-start' }}>
       {errorMessage !== undefined && <Alert severity="error">{errorMessage}</Alert>}
 
       <Button

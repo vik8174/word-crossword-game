@@ -49,7 +49,7 @@ interface RoomUnavailableNoticeProps {
  */
 export const RoomUnavailableNotice = ({ reason }: RoomUnavailableNoticeProps) => {
   return (
-    <Stack spacing={3} sx={{ alignItems: 'flex-start' }}>
+    <Stack spacing={5} sx={{ alignItems: 'flex-start' }}>
       <Alert severity={reason === 'connection' ? 'error' : 'info'}>{MESSAGES[reason]}</Alert>
 
       <Button component={RouterLink} to="/" variant="contained">

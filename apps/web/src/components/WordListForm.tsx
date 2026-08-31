@@ -63,7 +63,7 @@ export const WordListForm = ({
       }}
       noValidate
     >
-      <Stack spacing={3}>
+      <Stack spacing={5}>
         <TextField
           label="Your nickname"
           value={nickname}
@@ -94,7 +94,7 @@ export const WordListForm = ({
 
         {showsErrors && (
           <Alert severity="warning">
-            <Stack component="ul" sx={{ m: 0, pl: 2 }} spacing={0.5}>
+            <Stack component="ul" sx={{ m: 0, pl: 4 }} spacing={1}>
               {validation.errors.map((error) => (
                 <Typography
                   component="li"

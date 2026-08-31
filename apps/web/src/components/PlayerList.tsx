@@ -47,7 +47,7 @@ interface PlayerListProps {
 export const PlayerList = ({ players, ownerId, viewerId, awayDurations = {} }: PlayerListProps) => {
   return (
     <section aria-labelledby="players-heading">
-      <Typography id="players-heading" variant="h6" component="h2">
+      <Typography id="players-heading" variant="h2" component="h2" sx={{ mb: 1 }}>
         {`Players (${players.length})`}
       </Typography>
       {/* The size, said as a requirement. It can be wrong in either direction:
@@ -66,7 +66,7 @@ export const PlayerList = ({ players, ownerId, viewerId, awayDurations = {} }: P
           <ListItem key={player.id} disableGutters>
             <ListItemText
               primary={
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
+                <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
                   <span>{player.nickname}</span>
                   {player.id === viewerId && <Chip label="you" size="small" />}
                   {player.id === ownerId && <Chip label="host" size="small" variant="outlined" />}

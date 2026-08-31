@@ -49,7 +49,7 @@ export const WordEntryList = ({ labelledBy, entries, onSelectWord }: WordEntryLi
       // line is also the button's whole name, so tapping it is offered in the
       // same words.
       <ListItem key={entry.id} disableGutters disablePadding>
-        <ListItemButton onClick={() => onSelectWord(entry.location)} sx={{ py: 0.25, px: 0.5 }}>
+        <ListItemButton onClick={() => onSelectWord(entry.location)} sx={{ py: 1, px: 1 }}>
           <Typography
             variant="body2"
             sx={

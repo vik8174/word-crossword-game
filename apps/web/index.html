@@ -5,11 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Word Crossword Game</title>
 
-    <!--
-      The one typeface this app fetches: the crossword's letters and its large
-      headings. Why it is worth any bytes, and why it is served from here rather
-      than from a font host, is with DISPLAY_FONT_FAMILY in src/theme.ts.
-    -->
+    <!-- The two faces this app has files for. Which is which, and why either is
+      worth any bytes, is in src/scale.ts. Only the display face is preloaded:
+      nothing in the interface asks for the sign face, so a first visit fetches
+      nothing for it. -->
     <link
       rel="preload"
       href="/fonts/zen-old-mincho-v13-latin-400.woff2"
@@ -25,6 +24,18 @@
         font-weight: 400;
         font-display: swap;
         src: url('/fonts/zen-old-mincho-v13-latin-400.woff2') format('woff2');
+        unicode-range:
+          U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+          U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+      /* Zen Kaku Gothic New, SIL Open Font License 1.1 — /fonts/OFL.txt */
+      @font-face {
+        font-family: 'Zen Kaku Gothic New';
+        font-style: normal;
+        font-weight: 300;
+        font-display: swap;
+        src: url('/fonts/zen-kaku-gothic-new-v18-latin-300.woff2') format('woff2');
         unicode-range:
           U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
           U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
