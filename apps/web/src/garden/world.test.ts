@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DOORS, GATE, HALL } from './locations';
+import { CONGRATULATIONS, DOORS, GATE, HALL } from './locations';
 import {
   BASE_FRAME_HEIGHT,
   frameFor,
@@ -80,13 +80,19 @@ describe('openingOnScreen', () => {
 
   it('is bigger than the window itself once the window is inside it', () => {
     // Which is what being in the hall means: the frame is smaller than the
-    // doorway, so there is nothing on the screen that is not the room.
-    const doorway = openingOnScreen(frameFor(HALL, DESKTOP), DESKTOP);
+    // doorway, so there is nothing on the screen that is not the room — and
+    // nothing on the screen that the weather may fall on, the doorway being a
+    // hole in it. That holds for the end of a game as well as for the middle of
+    // one, so the greeting a finished game asks for has no sky left to fall in
+    // (see the note on `CONGRATULATIONS`).
+    for (const inside of [HALL, CONGRATULATIONS]) {
+      const doorway = openingOnScreen(frameFor(inside, DESKTOP), DESKTOP);
 
-    expect(doorway.x).toBeLessThan(0);
-    expect(doorway.y).toBeLessThan(0);
-    expect(doorway.x + doorway.width).toBeGreaterThan(DESKTOP.width);
-    expect(doorway.y + doorway.height).toBeGreaterThan(DESKTOP.height);
+      expect(doorway.x).toBeLessThan(0);
+      expect(doorway.y).toBeLessThan(0);
+      expect(doorway.x + doorway.width).toBeGreaterThan(DESKTOP.width);
+      expect(doorway.y + doorway.height).toBeGreaterThan(DESKTOP.height);
+    }
   });
 
   it('grows as the window comes closer to it', () => {

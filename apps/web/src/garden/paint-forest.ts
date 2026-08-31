@@ -13,18 +13,6 @@ import { GATE_LINTEL_RISE, LANDMARKS, WORLD } from './world';
  * scaled or offset by distance, and it does not need to be.
  */
 
-/** Leaves in daylight, dark to lit. */
-export const CANOPY = [
-  SCENE.night,
-  SCENE.deep,
-  SCENE.shade,
-  SCENE.moss,
-  SCENE.leaf,
-  SCENE.fresh,
-  SCENE.lime,
-  SCENE.glow,
-] as const;
-
 /** Leaves between the reader and the light, which catch almost none of it. */
 const NEAR_LEAF = [
   SCENE.barkDeep,

@@ -44,6 +44,16 @@ export const HALL: Location = { id: 'hall', x: 2150, y: 800, zoom: 3.6 };
  * ends a game is an event in the room it was played in, not a journey out of
  * it. It is a location of its own because the screen standing here is a
  * different screen, and because the camera has to know it does not move.
+ *
+ * One consequence of standing this close is worth naming rather than leaving
+ * to be discovered. At this magnification the frame is smaller than the
+ * temple's doorway, so the whole window is indoors — and the weather does not
+ * come indoors (`paint-petals.ts`). The greeting a finished game asks for is
+ * therefore a shower of petals with no sky to fall in, and this screen is
+ * silent where it used to be full
+ * (`docs/decisions/0030-where-movement-is-allowed.md`). It is a real change to
+ * what a player sees at the end of a game, and what takes its place is the
+ * cloth in the ticket that brings the camera.
  */
 export const CONGRATULATIONS: Location = { id: 'congratulations', x: 2150, y: 800, zoom: 3.6 };
 

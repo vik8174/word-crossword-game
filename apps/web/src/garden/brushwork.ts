@@ -183,7 +183,7 @@ export interface Leaves {
  * @param leaves - The mass to draw
  *
  * @example
- * foliage(brush, { x: 900, y: 420, across: 1000, down: 380, seed: 101, colours: CANOPY, count: 260, size: 78, alpha: 0.85 });
+ * foliage(brush, { x: 900, y: 420, across: 1000, down: 380, seed: 101, colours: FAR_LEAF, count: 260, size: 78, alpha: 0.85 });
  */
 export const foliage = (brush: SceneBrush, leaves: Leaves): void => {
   const random = seeded(leaves.seed);
