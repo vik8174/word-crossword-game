@@ -46,6 +46,15 @@ export const HomePage = () => {
           left: title.x,
           top: title.y,
           transform: 'translate(-50%, -50%)',
+          // A fixed box given `left` and no `right` is offered the room from
+          // `left` to the edge of the window for its shrink-to-fit width, and
+          // the transform that recentres it only runs after that width is
+          // settled — the same trap the button was in (#127). At `title`
+          // (31px) the name never asked for more than that happened to allow;
+          // at a larger size on desktop it does, so the box gets the same fix
+          // there. Left alone below `md` on purpose: nothing here changes what
+          // a phone or a tablet already shows.
+          width: { md: 'max-content' },
           maxWidth: '90vw',
           textAlign: 'center',
         }}
@@ -57,13 +66,18 @@ export const HomePage = () => {
             fontSize: {
               xs: inRem(TEXT_LEVELS.body),
               sm: inRem(TEXT_LEVELS.heading),
-              md: inRem(TEXT_LEVELS.title),
+              // Larger than `title` on purpose: this is a sign standing in the
+              // world, not text in the interface, and it already has the right
+              // to be bigger than the scale (as the canvas signage is).
+              md: '2.5625rem', // 41px, one ratio step above `title`
             },
             // The tracking is put after the last letter as well as between, so
             // a centred line sits half a letter to the right without this.
             marginRight: `-${SIGN_TRACKING}`,
             color: SCENE.cream,
-            textShadow: '0 2px 18px rgba(6, 20, 16, 0.9)',
+            // Tighter than it was: an 18px blur softened the edges of the
+            // letters and gave away part of the weight they already have.
+            textShadow: '0 1px 6px rgba(6, 20, 16, 0.85)',
           }}
         >
           Word Crossword Game
@@ -72,7 +86,7 @@ export const HomePage = () => {
         {/* The temple's red, under the name of the place it belongs to. */}
         <Box
           aria-hidden
-          sx={{ width: '68%', height: '2px', mx: 'auto', mt: 3, backgroundColor: SCENE.vermilion }}
+          sx={{ width: '72%', height: '3px', mx: 'auto', mt: 3, backgroundColor: SCENE.vermilion }}
         />
       </Box>
 
