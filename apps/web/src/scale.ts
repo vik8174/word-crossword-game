@@ -60,6 +60,21 @@ export const TEXT_LEVELS = {
 } as const;
 
 /**
+ * How big the name of the game stands over the gates, on a window wide
+ * enough to hold it.
+ *
+ * Not a fifth text level — `context.md` says there is no fifth, and this is
+ * not text, it is a sign standing in the world: the one thing the first
+ * screen introduces the game with, and the only place a sign is allowed to
+ * outgrow the four levels above it (issue #125). It still lives on their
+ * ladder rather than a number written down at the place it is used, because
+ * a size chosen there is a size nobody can check — the whole reason this
+ * file exists. One step above `title`, on a narrower window the name still
+ * reads at `body` or `heading`.
+ */
+export const GATE_NAME_SIZE = levelAt(4);
+
+/**
  * A level as a share of the reader's own text size rather than as pixels.
  *
  * Somebody who has made text larger in their browser has said something, and a

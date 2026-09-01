@@ -7,7 +7,7 @@ import { gateChrome } from '../garden/gate-chrome';
 import { SCENE } from '../garden/scene-palette';
 import { ON_SCENE_SX } from '../garden/scene-surface';
 import { useViewport } from '../garden/use-viewport';
-import { inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
+import { GATE_NAME_SIZE, inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
 import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /** How wide the button that stands in the gate is padded, as steps of the row. */
@@ -23,9 +23,11 @@ const BUTTON_PADDING = { across: 5, down: 3 } as const;
  * because a first screen with one action on it should look like one.
  *
  * Both are lettered rather than written — the sign face out of
- * `theme.typography.signage`, at three of the app's own levels so that the name
- * comes down as the window narrows instead of running off it. Nothing about the
- * face, the capitals or the tracking is decided here.
+ * `theme.typography.signage`, at three sizes off `scale.ts`'s own ladder so
+ * that the name comes down as the window narrows instead of running off it
+ * (the widest of the three, {@link GATE_NAME_SIZE}, is a sign's and not one of
+ * the four text levels). Nothing about the face, the capitals or the tracking
+ * is decided here.
  *
  * Joining an existing game does not start here: players arrive straight at
  * their room link (issue #5), so the only action this page offers is creating
@@ -66,10 +68,7 @@ export const HomePage = () => {
             fontSize: {
               xs: inRem(TEXT_LEVELS.body),
               sm: inRem(TEXT_LEVELS.heading),
-              // Larger than `title` on purpose: this is a sign standing in the
-              // world, not text in the interface, and it already has the right
-              // to be bigger than the scale (as the canvas signage is).
-              md: '2.5625rem', // 41px, one ratio step above `title`
+              md: inRem(GATE_NAME_SIZE),
             },
             // The tracking is put after the last letter as well as between, so
             // a centred line sits half a letter to the right without this.
