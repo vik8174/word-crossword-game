@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
 import type { SceneBrush } from './brushwork';
-import { GATE } from './locations';
+import { PLANES, SAKURA_ON, TEMPLE_AFTER } from './forest-planes';
+import { DOORS, GATE, HALL } from './locations';
 import { paintHall } from './paint-hall';
+import { paintPlane } from './paint-planes';
 import { paintScene } from './paint-scene';
 import { paintTemple } from './paint-temple';
-import { frameFor, INTERIOR, openingRect, type Rect, type Viewport } from './world';
+import { frameFor, INTERIOR, openingRect, type Rect, type Viewport, WORLD } from './world';
 
 const DESKTOP: Viewport = { width: 1440, height: 900 };
+
+/** A window onto the whole picture, for the passes that are asked about on their own. */
+const EVERYTHING: Rect = { x: 0, y: 0, width: WORLD.width, height: WORLD.height };
 
 /** One thing a brush was told to do, and the numbers it was told to do it with. */
 interface Mark {
@@ -123,6 +128,60 @@ describe('paintScene', () => {
     expect(marks.filter((mark) => mark.call === 'fill').length).toBeGreaterThan(2000);
   });
 
+  it('paints only what the window is showing', () => {
+    const wide = recordingBrush();
+    const close = recordingBrush();
+
+    paintScene(wide.brush, frameFor(GATE, DESKTOP), DESKTOP);
+    paintScene(close.brush, frameFor(HALL, DESKTOP), DESKTOP);
+
+    // Standing at the table inside the temple shows about a fourteenth of the
+    // picture. Before the frame reached the painting, the other thirteen
+    // fourteenths were drawn too — every stroke of them, on every frame of
+    // every journey — and thrown away by the canvas after they had been paid
+    // for.
+    const strokes = (marks: readonly Mark[]) => marks.filter((mark) => mark.call === 'fill').length;
+
+    expect(strokes(close.marks)).toBeLessThan(strokes(wide.marks) * 0.7);
+  });
+
+  it('puts the temple and the cherries in the row of planes, and not beside it', () => {
+    // Where the building and the trees stand in the order is said once, in
+    // `forest-planes.ts`, and read back here. Spelling the two names again in
+    // the painting would be a second source of truth for one rule, and the way
+    // it would fail is a temple that quietly stopped being painted rather than
+    // an error anybody sees.
+    expect(PLANES.map((plane) => plane.name)).toContain(TEMPLE_AFTER);
+    expect(PLANES.map((plane) => plane.name)).toContain(SAKURA_ON);
+
+    const { brush, marks } = recordingBrush();
+
+    paintScene(brush, frameFor(DOORS, DESKTOP), DESKTOP);
+
+    // The doorway is clipped by the temple and by nothing else in the scene, so
+    // a scene with a clip in it is a scene the building was painted into.
+    expect(marks.some((mark) => mark.call === 'clip')).toBe(true);
+
+    const gate = recordingBrush();
+
+    paintScene(gate.brush, frameFor(GATE, DESKTOP), DESKTOP);
+
+    // And a cherry stands in the window a visitor arrives in. Counted against
+    // the same painting with the cherries taken out, which is what the number
+    // below is: the gate's frame is two hundred and more strokes richer for
+    // them.
+    const withCherries = gate.marks.filter((mark) => mark.call === 'roundRect').length;
+    const withoutCherries = recordingBrush();
+
+    for (const plane of PLANES) {
+      paintPlane(withoutCherries.brush, frameFor(GATE, DESKTOP), plane);
+    }
+
+    expect(withCherries).toBeGreaterThan(
+      withoutCherries.marks.filter((mark) => mark.call === 'roundRect').length,
+    );
+  });
+
   it('paints the same forest every time', () => {
     const first = recordingBrush();
     const second = recordingBrush();
@@ -142,7 +201,7 @@ describe('paintTemple', () => {
   it('paints the hall inside the doorway and nowhere else', () => {
     const { brush, marks } = recordingBrush();
 
-    paintTemple(brush);
+    paintTemple(brush, EVERYTHING);
 
     // The hall's first act is to lay its own floor over the whole of its own
     // 1440 × 900. Where that rectangle lands in the world is the whole of what
@@ -169,7 +228,7 @@ describe('paintTemple', () => {
   it('clips the hall to the doorway, so nothing inside can spill out of it', () => {
     const { brush, marks } = recordingBrush();
 
-    paintTemple(brush);
+    paintTemple(brush, EVERYTHING);
 
     const clipped = marks.findIndex((mark) => mark.call === 'clip');
     const rectangle = marks

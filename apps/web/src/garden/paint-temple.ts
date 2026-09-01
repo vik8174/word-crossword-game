@@ -1,7 +1,7 @@
 import { type SceneBrush, seeded, slab, stroke } from './brushwork';
 import { paintHall } from './paint-hall';
 import { SCENE } from './scene-palette';
-import { INTERIOR, LANDMARKS, openingRect } from './world';
+import { inFrame, INTERIOR, LANDMARKS, openingRect, type Rect } from './world';
 
 /**
  * The temple: a vermilion body, a grey roof, and the hall behind its open
@@ -218,14 +218,39 @@ const paintRoof = (brush: SceneBrush): void => {
 };
 
 /**
+ * How far the building reaches from the middle of its platform, in world units.
+ *
+ * Taken from the widest and the tallest of the four passes above rather than
+ * guessed at: the eaves reach furthest across, the ridge of the roof furthest
+ * up at five hundred and forty above the platform, and the bottom step furthest
+ * down at two hundred and sixty-three below it.
+ */
+const TEMPLE_REACH = { across: ROOF_HALF + 40, down: 420 } as const;
+
+/** How far above the platform the middle of the building sits. */
+const TEMPLE_RISE = 140;
+
+/**
  * The whole temple, steps first and roof last.
  *
  * @param brush - What is being drawn through, in world coordinates
+ * @param frame - The part of the world being shown; a building off the edge of it is not painted
  *
  * @example
- * paintTemple(brush);
+ * paintTemple(brush, frame);
  */
-export const paintTemple = (brush: SceneBrush): void => {
+export const paintTemple = (brush: SceneBrush, frame: Rect): void => {
+  if (
+    !inFrame(frame, {
+      x: LANDMARKS.temple.x,
+      y: LANDMARKS.temple.y - TEMPLE_RISE,
+      across: TEMPLE_REACH.across,
+      down: TEMPLE_REACH.down,
+    })
+  ) {
+    return;
+  }
+
   paintSteps(brush);
   paintBody(brush);
   paintOpening(brush);

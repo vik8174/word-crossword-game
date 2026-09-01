@@ -50,8 +50,16 @@ export interface Petal {
  * now stands inside the temple, where no petal is drawn at all, so the greeting
  * it was for is a cloth rather than weather
  * (`docs/decisions/0031-one-camera-and-what-it-promises.md`).
+ *
+ * Sixty rather than thirty, and the reason is what is behind them. Every one of
+ * the numbers in this file was chosen when the page was a sheet of light paper,
+ * where thirty marks are weather; against a forest at the end of an afternoon
+ * they were thirty specks nobody ever reported seeing, because there was
+ * nothing to report. The same reasoning is why they are twice the size, half as
+ * transparent again, and no longer the colour of a plum
+ * (`PetalLayer`, issue #120).
  */
-const CALM_PETALS = 30;
+const CALM_PETALS = 60;
 
 /**
  * The sky the two numbers above were chosen against, in square pixels.
@@ -75,12 +83,23 @@ const THICKEST_SKY = 1.8;
  */
 const SEED_BAND = 0.15;
 
-/** The ranges a petal is drawn from, each one inclusive of its floor. */
+/**
+ * The ranges a petal is drawn from, each one inclusive of its floor.
+ *
+ * The size and the ink are the two that were measured against a forest rather
+ * than against paper, and the ceiling on the ink is measured rather than
+ * chosen. A petal is lighter than everything it falls across now, so a petal in
+ * front of a sentence lifts what that sentence is standing on — and the name of
+ * a step stands on the picture with no band under it. Fifty-two hundredths is
+ * the most a petal may carry and still leave cream at 4.63 to one over the
+ * darkest surfaces this app writes on; at fifty-six it is 4.31, which is under
+ * what small text is owed (`scene-palette.test.ts`).
+ */
 const FALL = { least: 22, most: 62 };
 const SWAY = { least: 7, most: 26 };
 const SPIN = { least: -1.1, most: 1.1 };
-const SIZE = { least: 4.5, most: 10.5 };
-const INK = { least: 0.14, most: 0.42 };
+const SIZE = { least: 7, most: 19 };
+export const INK = { least: 0.26, most: 0.52 };
 
 /** How fast a petal travels through its sideways wander, in radians a second. */
 const SWAY_RATE = 0.9;

@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { theme } from '../theme';
 import { CLOTH } from './cloth';
+import { spreadOf } from './colour-spread';
 import { SHOJI_PAPER } from './paint-hall';
+import { INK } from './petals';
+import { BLOSSOM, BLOSSOM_SHIFT } from './paint-sakura';
 import { BAND, CONTROL, SCENE, SCENE_EDGE, SCENE_INK_DIM, VEIL } from './scene-palette';
 
 /**
@@ -78,6 +82,26 @@ const contrast = (one: Rgb, other: Rgb): number => {
   return (brighter ?? 1) / (darker ?? 1);
 };
 
+/**
+ * The most ink a petal carries, and what colour it carries it in.
+ *
+ * Both read from where the app reads them rather than written down again. A
+ * guard holding its own copy of a ceiling goes on passing after somebody raises
+ * the real one, and this is the guard that ceiling exists for
+ * ({@link PetalLayer}, `petals.ts`).
+ */
+const PETAL = { colour: theme.palette.sakura.light, ink: INK.most } as const;
+
+/** Every surface the name of a step can land on, which has no band under it. */
+const UNBANDED = [SCENE.bark, SCENE.barkDeep, SCENE.night, SCENE.deep] as const;
+
+/** A surface with a petal on it, which is what the weather does to any of them. */
+const petalled = (paint: string): string => {
+  const mixed = over(asRgb(PETAL.colour), PETAL.ink, asRgb(paint));
+
+  return `#${mixed.map((channel) => Math.round(channel).toString(16).padStart(2, '0')).join('')}`;
+};
+
 /** A surface as the reader sees it: the paint, with the veil over it. */
 const veiled = (paint: string): Rgb => {
   const veil = asRgba(VEIL);
@@ -100,13 +124,34 @@ const laidOver = (paint: { readonly rgb: Rgb; readonly alpha: number }, behind: 
 const dimOver = (surface: Rgb): Rgb => laidOver(asRgba(SCENE_INK_DIM), surface);
 
 /**
+ * The lightest tone a cherry is painted in.
+ *
+ * Worked out from the ramp and the shift the tree is actually drawn with rather
+ * than written down here, because a blossom is not a token — it is the temple's
+ * own reds taken most of the way to paper ({@link paintSakura}), and a hand
+ * that later moves it a further tenth towards `cream` should fail here rather
+ * than in somebody's eyes.
+ */
+const lightestBlossom = (): string => {
+  const tones = spreadOf(BLOSSOM, BLOSSOM_SHIFT).flat();
+
+  return tones.reduce(
+    (brightest, tone) => (lightness(asRgb(tone)) > lightness(asRgb(brightest)) ? tone : brightest),
+    tones[0] ?? SHOJI_PAPER[0],
+  );
+};
+
+/**
  * Every surface a sentence can land on, brightest first.
  *
- * The lit paper of the temple's doors is the whole reason for this list: it is
- * brighter than anything else in the place by a long way, and it is the surface
- * the crossword stands against, so it is the one every claim has to survive.
+ * The blossom of the cherry trees is the brightest of them, and the lit paper
+ * of the temple's doors — which had held that place — is second. Both are the
+ * reason for the list: they are brighter than the rest of the picture by a long
+ * way, the paper is what the crossword stands against, and the blossom hangs in
+ * the window a visitor arrives in.
  */
 const SURFACES = [
+  { name: 'the blossom of a cherry', paint: lightestBlossom() },
   { name: 'the lit paper of the doors', paint: SHOJI_PAPER[0] },
   { name: 'the same paper further down', paint: SHOJI_PAPER[2] },
   { name: 'the wall of the hall', paint: SCENE.bark },
@@ -135,8 +180,25 @@ describe('what the garden writes on', () => {
     // The ticket allows no band behind a step title (issue #115), so the scene
     // has to be dark wherever one is put — which is what the walls of the hall
     // and the leaves hanging into the corners of every frame are for.
-    for (const paint of [SCENE.bark, SCENE.barkDeep, SCENE.night, SCENE.deep]) {
+    for (const paint of UNBANDED) {
       expect(contrast(asRgb(SCENE.cream), veiled(paint)), paint).toBeGreaterThan(SMALL_TEXT);
+    }
+  });
+
+  it('goes on reading it with a petal in front of it', () => {
+    // Petals are lighter than the forest now and there are twice as many of
+    // them (issue #120), so one of them landing on a step title lifts what that
+    // title is standing on. This is the measurement the ceiling on a petal's
+    // ink was set from, and the reason it is a number rather than a taste: at
+    // 0.52 the darkest surfaces still carry cream at better than four and a
+    // half to one, and at 0.56 they do not.
+    for (const paint of UNBANDED) {
+      const behind = veiled(petalled(paint));
+
+      expect(
+        contrast(asRgb(SCENE.cream), behind),
+        `cream under a petal on ${paint}`,
+      ).toBeGreaterThan(SMALL_TEXT);
     }
   });
 

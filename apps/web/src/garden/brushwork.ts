@@ -13,6 +13,8 @@
  * place each time, and the point of the exercise is that it is one place.
  */
 
+import type { Spread } from './colour-spread';
+
 /**
  * The part of a canvas the scene draws through, and nothing else.
  *
@@ -161,14 +163,65 @@ export interface Leaves {
   /** Which forest this one is, so it is the same one every load. */
   readonly seed: number;
   /** Dark to light; a leaf is given one by how much light it would catch. */
-  readonly colours: readonly string[];
+  readonly colours: Spread;
   /** How many strokes it is made of. */
   readonly count: number;
   /** How big one leaf is. */
   readonly size: number;
   /** How solid the mass is, 0 to 1. */
   readonly alpha: number;
+  /**
+   * How many holes the sky comes through, 0 for a solid mass.
+   *
+   * A wall of green has no depth in it however many planes are laid into it,
+   * because nothing behind it is ever seen. The holes are scattered from the
+   * mass's own seed, so they are the same holes every load, and a stroke that
+   * lands in one is dropped rather than moved — which makes a crown with sky in
+   * it cheaper than the same crown without.
+   */
+  readonly gaps?: number;
 }
+
+/** Where the sky comes through a crown: a middle and how far it reaches. */
+interface Gap {
+  readonly x: number;
+  readonly y: number;
+  readonly across: number;
+  readonly down: number;
+}
+
+/**
+ * The holes in one mass, scattered through the middle of it.
+ *
+ * Taken from a stream of its own rather than from the mass's, so that adding a
+ * hole to a crown does not move every leaf in it.
+ *
+ * @param leaves - The mass
+ * @returns Where the sky comes through
+ */
+const gapsIn = (leaves: Leaves): readonly Gap[] => {
+  const wanted = leaves.gaps ?? 0;
+
+  if (wanted === 0) {
+    return [];
+  }
+
+  const random = seeded(leaves.seed + 1);
+
+  return Array.from({ length: wanted }, () => {
+    const angle = random() * Math.PI * 2;
+    // Kept off the rim: a hole at the edge of a mass is a bite out of its
+    // outline, and the outline is what says it is a crown.
+    const distance = 0.15 + random() * 0.5;
+
+    return {
+      x: leaves.x + Math.cos(angle) * distance * leaves.across,
+      y: leaves.y + Math.sin(angle) * distance * leaves.down,
+      across: leaves.across * (0.1 + random() * 0.13),
+      down: leaves.down * (0.12 + random() * 0.16),
+    };
+  });
+};
 
 /**
  * A crown of leaves, lit from above and from the left.
@@ -183,10 +236,11 @@ export interface Leaves {
  * @param leaves - The mass to draw
  *
  * @example
- * foliage(brush, { x: 900, y: 420, across: 1000, down: 380, seed: 101, colours: FAR_LEAF, count: 260, size: 78, alpha: 0.85 });
+ * foliage(brush, { x: 900, y: 420, across: 1000, down: 380, seed: 101, colours: spreadOf(FAR_LEAF), count: 260, size: 78, alpha: 0.85 });
  */
 export const foliage = (brush: SceneBrush, leaves: Leaves): void => {
   const random = seeded(leaves.seed);
+  const gaps = gapsIn(leaves);
 
   for (let index = 0; index < leaves.count; index += 1) {
     const angle = random() * Math.PI * 2;
@@ -194,7 +248,22 @@ export const foliage = (brush: SceneBrush, leaves: Leaves): void => {
     const x = leaves.x + Math.cos(angle) * distance * leaves.across;
     const y = leaves.y + Math.sin(angle) * distance * leaves.down;
     const lit = clamp(0.5 - (y - leaves.y) / (leaves.down * 2) + (random() - 0.5) * 0.5, 0, 0.999);
-    const colour = leaves.colours[Math.floor(lit * leaves.colours.length)] ?? leaves.colours[0];
+
+    if (
+      gaps.some(
+        (gap) => Math.pow((x - gap.x) / gap.across, 2) + Math.pow((y - gap.y) / gap.down, 2) < 1,
+      )
+    ) {
+      continue;
+    }
+
+    const step = leaves.colours[Math.floor(lit * leaves.colours.length)] ?? leaves.colours[0];
+    // A step with one tone in it is asked no question, which is what keeps a
+    // ramp nothing has shifted drawing exactly the forest it drew before.
+    const colour =
+      step === undefined || step.length === 0
+        ? '#000000'
+        : (step[step.length === 1 ? 0 : Math.floor(random() * step.length)] ?? '#000000');
 
     stroke(
       brush,
@@ -205,59 +274,8 @@ export const foliage = (brush: SceneBrush, leaves: Leaves): void => {
         width: leaves.size * (0.34 + random() * 0.4),
         angle: (random() - 0.5) * 1.7,
       },
-      colour ?? '#000000',
+      colour,
       leaves.alpha * (0.62 + random() * 0.38),
     );
   }
-};
-
-/**
- * A trunk climbing out of the ground and thinning as it goes.
- *
- * Drawn as a chain of strokes that wander sideways rather than as one tapered
- * shape, because a tree that is exactly straight is a post.
- *
- * @param brush - What is being drawn through
- * @param tree - Where it starts, where it stops, how thick at the bottom, and which tree it is
- * @param colours - The bark's two tones, lit and against the light
- * @returns Where the top of it ended up across the world
- */
-export const trunk = (
-  brush: SceneBrush,
-  tree: {
-    readonly x: number;
-    readonly base: number;
-    readonly top: number;
-    readonly width: number;
-    readonly seed: number;
-  },
-  colours: { readonly lit: string; readonly dark: string },
-): number => {
-  const random = seeded(tree.seed);
-  let y = tree.base;
-  let x = tree.x;
-
-  while (y > tree.top) {
-    const step = 46 + random() * 40;
-    const nextX = x + (random() - 0.5) * 30;
-    const width = tree.width * lerp(1, 0.55, (tree.base - y) / (tree.base - tree.top));
-
-    stroke(
-      brush,
-      {
-        x: (x + nextX) / 2,
-        y: y - step / 2,
-        length: step * 1.25,
-        width,
-        angle: Math.atan2(-step, nextX - x) + Math.PI / 2,
-      },
-      random() > 0.7 ? colours.lit : colours.dark,
-      0.96,
-    );
-
-    x = nextX;
-    y -= step;
-  }
-
-  return x;
 };

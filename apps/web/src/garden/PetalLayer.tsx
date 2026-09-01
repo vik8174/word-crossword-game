@@ -72,7 +72,14 @@ export const PetalLayer = ({
   // canvas fades between the two; this says whether there is any point drawing,
   // and it outlasts the air by the length of the fade.
   const [isDrawing, setIsDrawing] = useState(air === 'petals');
-  const colour = theme.palette.sakura.main;
+
+  // The light sakura rather than the deep one, and the reason is what is now
+  // behind it. `sakura.main` is a plum that was picked when this app was a
+  // sheet of washi: over a forest at the end of an afternoon it is darker than
+  // everything it falls across, so a petal was a speck of shadow. `sakura.light`
+  // is lighter than the canopy at every point of the picture, which is what a
+  // petal in front of a wood actually is (issue #120).
+  const colour = theme.palette.sakura.light;
 
   // Petals are wanted again, so there is something to draw again — said here
   // rather than from an effect, because the loop should be running by the time
