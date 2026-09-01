@@ -1,6 +1,22 @@
 import { alpha, createTheme, darken, type PaletteColor } from '@mui/material/styles';
+import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
 import { inRem, SPACING_STEPS, TEXT_LEVELS } from './scale';
 import { TYPOGRAPHY } from './typography';
+
+/**
+ * The system setting that means no movement at all, spelled out again rather
+ * than imported.
+ *
+ * `components/screen-shift.ts` declares the same string for the camera, the
+ * screen shift and the garden's canvases to read with `useMediaQuery` — a
+ * check that runs in JavaScript, once, at the moment each of those decides
+ * whether to move. A style block cannot ask a hook a question; what it can do
+ * is hold the same query as a CSS `@media` rule, which the browser
+ * re-evaluates on its own the moment the setting changes, with nothing to
+ * import and nothing to grow stale. The two are the same query written for
+ * two different readers, not two sources of truth.
+ */
+const REDUCED_MOTION_MEDIA = '@media (prefers-reduced-motion: reduce)';
 
 /**
  * The colours the app is drawn in, and the only place any of them is written
@@ -199,6 +215,30 @@ export const theme = createTheme({
   // house style of a control panel, which is the thing this palette is not.
   shape: { borderRadius: 2 },
 
+  // The row this interface moves on (`motion.ts`), and every one of MUI's own
+  // duration and easing slots pointed at it rather than left at what MUI ships
+  // with. Every component below reads its motion from this object without
+  // being told about it — `Button`, `TextField`, `Dialog`, `Chip`, `Alert` and
+  // everything else `theme.transitions.create()` is called for — which is what
+  // makes this the widest-reaching change in the ticket that wrote it.
+  transitions: {
+    duration: {
+      shortest: MOTION_DURATIONS_MS.quick,
+      shorter: MOTION_DURATIONS_MS.quick,
+      short: MOTION_DURATIONS_MS.quick,
+      standard: MOTION_DURATIONS_MS.settle,
+      complex: MOTION_DURATIONS_MS.settle,
+      enteringScreen: MOTION_DURATIONS_MS.settle,
+      leavingScreen: MOTION_DURATIONS_MS.quick,
+    },
+    easing: {
+      easeInOut: MOTION_EASING,
+      easeOut: MOTION_EASING,
+      easeIn: MOTION_EASING,
+      sharp: MOTION_EASING,
+    },
+  },
+
   components: {
     // A raised button casts a shadow onto the paper, and nothing in this design
     // is above the page.
@@ -218,6 +258,34 @@ export const theme = createTheme({
         // enough to read as part of the box rather than as a line about it, and
         // the one gap on this form that was not on the row.
         root: ({ theme }) => ({ marginTop: theme.spacing(2) }),
+      },
+    },
+
+    // `prefers-reduced-motion` is answered here rather than inside each
+    // component, so that nothing drawn by MUI can opt back into motion with an
+    // `sx` of its own. `!important` is not decoration: an `sx` prop compiles to
+    // a class of equal specificity to this one, and only `!important` inside a
+    // media query is guaranteed to outrank whichever of the two happens to be
+    // declared later. `*` is the whole document rather than a list of MUI's own
+    // classes, because the rule this is answering
+    // (`docs/decisions/0030-where-movement-is-allowed.md`) is about every
+    // control in the app, not only the ones this file happens to style.
+    //
+    // The four consumers of `REDUCED_MOTION_QUERY` — the camera, the screen
+    // shift, the petals and the garden's cloth — already ask the same question
+    // themselves and skip their own `requestAnimationFrame` loops when it is
+    // answered, so this rule and theirs never race: theirs stops a canvas from
+    // being painted, and this one stops a `transition` or `animation` CSS
+    // property from doing anything once painted.
+    MuiCssBaseline: {
+      styleOverrides: {
+        [REDUCED_MOTION_MEDIA]: {
+          '*, *::before, *::after': {
+            animationDuration: '0.01ms !important',
+            animationIterationCount: '1 !important',
+            transitionDuration: '0.01ms !important',
+          },
+        },
       },
     },
   },

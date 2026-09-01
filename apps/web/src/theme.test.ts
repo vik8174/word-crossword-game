@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
 import { theme } from './theme';
 
 /** A colour as the three channels a screen draws it with, and how solid it is. */
@@ -255,5 +256,34 @@ describe('theme', () => {
       expect(heading.fontFamily).toMatch(/Zen Old Mincho/);
       expect(heading.fontWeight).toBe(400);
     }
+  });
+
+  it('moves everything MUI draws on the one row from `motion.ts`', () => {
+    // Every one of MUI's seven duration slots and four easing slots lands on
+    // the row's two numbers and one curve — a button, a field's label and the
+    // one dialog in the app all read their motion from here rather than from
+    // a default nobody chose.
+    const durationValues = new Set(Object.values(theme.transitions.duration));
+    const easingValues = new Set(Object.values(theme.transitions.easing));
+
+    expect(durationValues).toEqual(
+      new Set([MOTION_DURATIONS_MS.quick, MOTION_DURATIONS_MS.settle]),
+    );
+    expect(easingValues).toEqual(new Set([MOTION_EASING]));
+  });
+
+  it('turns off all motion under prefers-reduced-motion, not only its own four consumers', () => {
+    // The camera, the screen shift, the petals and the garden's cloth already
+    // ask `REDUCED_MOTION_QUERY` themselves; this is the backstop for
+    // everything MUI draws, which cannot be asked the same question and could
+    // not be trusted to ask it consistently one component at a time.
+    const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
+      Record<string, unknown> | undefined;
+    const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as
+      Record<string, unknown> | undefined;
+    const everything = media?.['*, *::before, *::after'] as Record<string, string> | undefined;
+
+    expect(everything?.transitionDuration).toMatch(/!important/);
+    expect(everything?.animationDuration).toMatch(/!important/);
   });
 });
