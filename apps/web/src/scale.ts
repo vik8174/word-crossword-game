@@ -78,6 +78,14 @@ export const inRem = (level: number): string => `${level / 16}rem`;
  * is fetched at one weight only and is not in this list at all — anything
  * asking it for bold would be handed a thickened imitation
  * (see {@link DISPLAY_FONT_FAMILY}).
+ *
+ * The semibold is six hundred and the text face has no six hundred in it: the
+ * family runs 300, 400, 500, 700, 900. Asked for six hundred with a seven
+ * hundred present, a browser draws the seven hundred — its own weight-matching
+ * rule, not a thickened imitation of the four hundred, and the file is declared
+ * in `index.html` at the weight it actually is. So the number here is the one
+ * the interface means and the file drawn is a real face; what is lost is that
+ * the semibold is a little heavier than it was when a system font served it.
  */
 export const WEIGHTS = { regular: 400, semibold: 600 } as const;
 
@@ -114,11 +122,15 @@ export const SPACING_STEPS: readonly number[] = [0, 4, 8, 12, 16, 24, 32, 48];
 export const gapAt = (step: number): string => `${SPACING_STEPS[step] ?? 0}px`;
 
 /**
- * The text face: whatever the reader's own system draws best.
+ * Whatever the reader's own system draws best, and the last thing every face
+ * here falls back to.
  *
- * Nothing is fetched for it, so the first screen is drawn the moment its HTML
- * arrives and there is no flash of one font being replaced by another on the
- * page a visitor lands on.
+ * It is not a face of its own any more. It was the text face until issue #124 —
+ * chosen by nobody, which was the whole complaint: two of the three faces had
+ * been picked and this one was what the operating system happened to hold. What
+ * it is now is the ground under the other two: the thing drawn on the first
+ * frame, before a file has arrived, and the thing drawn instead if one never
+ * does.
  */
 export const SYSTEM_FONT_FAMILY = [
   '-apple-system',
@@ -129,6 +141,19 @@ export const SYSTEM_FONT_FAMILY = [
   'Arial',
   'sans-serif',
 ].join(', ');
+
+/**
+ * The one family two of the three roles below name, with what to draw while it
+ * is on its way.
+ *
+ * It is written once and read twice, and that is a saving of one list rather
+ * than a claim that the two roles are one thing: the sign face and the text
+ * face were chosen separately and happen to have been chosen the same. A ticket
+ * that changes either of them splits this constant in two rather than editing
+ * it in place — otherwise renaming the face over the gates would silently
+ * restyle every sentence in the app.
+ */
+const ZEN_KAKU_GOTHIC = ['"Zen Kaku Gothic New"', '"Hiragino Sans"', '"Yu Gothic"'].join(', ');
 
 /**
  * The display face: the letters of the crossword, and the two largest levels.
@@ -150,9 +175,11 @@ export const SYSTEM_FONT_FAMILY = [
  * the system font while the face is still on its way.
  *
  * It is on the two large levels and on the grid, and it is kept off everything
- * smaller on purpose: it is a latin face at one weight, and at thirteen or
- * seventeen pixels it is read more slowly than whatever the reader's own system
- * would have drawn.
+ * smaller on purpose. That used to be said as a hunch; issue #124 measured it.
+ * Its lowercase is 43% of its own size against the 48% of the face below and
+ * the 51% of a system sans, so seventeen pixels of it stand 15% shorter than
+ * seventeen pixels of what a reader is used to — which is a headline getting a
+ * long neck, and an aside disappearing.
  */
 export const DISPLAY_FONT_FAMILY = [
   '"Zen Old Mincho"',
@@ -181,15 +208,39 @@ export const DISPLAY_FONT_FAMILY = [
  * somebody reading it (issue #115). The 9.4 KB behind it is counted against the
  * ceiling either way (`apps/web/build/first-visit-weight.ts`).
  */
-export const SIGN_FONT_FAMILY = [
-  '"Zen Kaku Gothic New"',
-  '"Hiragino Sans"',
-  '"Yu Gothic"',
-  SYSTEM_FONT_FAMILY,
-].join(', ');
+export const SIGN_FONT_FAMILY = [ZEN_KAKU_GOTHIC, SYSTEM_FONT_FAMILY].join(', ');
 
 /** The one weight the sign face is fetched at: light, as a sign is lettered. */
 export const SIGN_FONT_WEIGHT = 300;
+
+/**
+ * The text face: everything that is read rather than looked at.
+ *
+ * Fields, hints, counters, the labels on buttons, the names of panels, the
+ * names of players — all of it, on the two small levels and on the two headings
+ * below the display face.
+ *
+ * It is the same family as the sign face and a different job. The garden
+ * letters that family at 300 with the letters held apart, which is lettering;
+ * this is the same family set as text, at 400 and at the semibold below. Two
+ * more files, 19.0 KB together, and they are what put a first visit over the
+ * ceiling that was there before — see
+ * `apps/web/build/first-visit-weight.ts`, which now says 218.
+ *
+ * Chosen against three others on real screens of the game (issue #124). The
+ * measurement that decided the shape of the choice rather than the winner: a
+ * face with two weights costs about twenty kilobytes and there were twelve to
+ * spend, so every candidate but one was a decision about the ceiling and not
+ * about a typeface.
+ *
+ * The system stack is still the tail of it. Nothing on the landing page is set
+ * in this face — the name of the game and the one button there are lettering —
+ * so the first screen is drawn without waiting for these files. `/create` is
+ * where it is first read, which is why they are preloaded rather than merely
+ * declared: fetched late, the face lands on a screen already laid out and moves
+ * a paragraph somebody is reading by a line of it.
+ */
+export const TEXT_FONT_FAMILY = [ZEN_KAKU_GOTHIC, SYSTEM_FONT_FAMILY].join(', ');
 
 /**
  * How far apart the letters of a sign are held, as a share of their own size.

@@ -7,7 +7,7 @@ import {
   SIGN_FONT_FAMILY,
   SIGN_FONT_WEIGHT,
   SIGN_TRACKING,
-  SYSTEM_FONT_FAMILY,
+  TEXT_FONT_FAMILY,
   TEXT_LEVELS,
   WEIGHTS,
 } from './scale';
@@ -52,7 +52,11 @@ const displayLevel = (level: number) => ({
 });
 
 /**
- * Text: the reader's own system font, on one of the two small levels.
+ * Text: the text face, on one of the two small levels.
+ *
+ * The family is not named here. It is the one the theme is set in, so a variant
+ * that says nothing about a family gets the text face and there is one place
+ * that decides which face that is.
  *
  * @param level - The level it is set on, from {@link TEXT_LEVELS}
  * @param weight - Which of the two weights, from {@link WEIGHTS}
@@ -77,7 +81,7 @@ const textLevel = (level: number, weight: number) => ({
  * meant lands on the scale instead of on a default.
  */
 export const TYPOGRAPHY: TypographyVariantsOptions = {
-  fontFamily: SYSTEM_FONT_FAMILY,
+  fontFamily: TEXT_FONT_FAMILY,
   fontWeightRegular: WEIGHTS.regular,
   // Two weights, so `medium` and `bold` are the same semibold rather than a
   // third and a fourth thickness nobody chose between.
@@ -90,9 +94,8 @@ export const TYPOGRAPHY: TypographyVariantsOptions = {
   h4: displayLevel(TEXT_LEVELS.heading),
 
   // Below the display face a heading is a label on a panel rather than
-  // something to look at, and a label is read fastest in the font the
-  // reader's system draws — at the size of the text under it, told apart by
-  // its weight.
+  // something to look at, so it is set in the text face — at the size of the
+  // text under it, told apart by its weight alone.
   h5: textLevel(TEXT_LEVELS.body, WEIGHTS.semibold),
   h6: textLevel(TEXT_LEVELS.body, WEIGHTS.semibold),
   subtitle1: textLevel(TEXT_LEVELS.body, WEIGHTS.semibold),

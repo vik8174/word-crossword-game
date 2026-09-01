@@ -234,12 +234,16 @@ describe('theme', () => {
     expect(surfaces).not.toContain(theme.palette.sakura.dark);
   });
 
-  it('draws the interface in the system font and fetches one face for the crossword', () => {
-    // Nothing is fetched for the interface, so the landing page is drawn the
-    // moment its HTML lands. The face that is fetched is declared in
-    // `index.html`, latin only, at one weight — so every heading using it names
-    // that weight rather than being handed an imitation of a bolder one.
+  it('reads in one face and looks at another, each falling back to the system', () => {
+    // Two faces are fetched and they do different jobs: the crossword and the
+    // two large levels are the mincho, everything read is the gothic (issue
+    // #124). Both are declared in `index.html`, latin only. The mincho is
+    // fetched at one weight — so every heading using it names that weight
+    // rather than being handed an imitation of a bolder one.
     expect(theme.typography.fontFamily).not.toMatch(/Zen Old Mincho/);
+    expect(theme.typography.fontFamily).toMatch(/^"Zen Kaku Gothic New"/);
+    // Whatever a reader's own system draws is the tail of every stack here, so
+    // a first frame and a failed fetch both have something to show.
     expect(theme.typography.fontFamily).toMatch(/system|apple|sans-serif/i);
 
     for (const heading of [
