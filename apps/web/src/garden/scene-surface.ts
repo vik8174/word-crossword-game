@@ -46,13 +46,20 @@ export type BandPlace = 'left' | 'right' | 'centre';
 const BAND_HAIRLINE = `${BAND_EDGE_WIDTH}px solid ${BAND_EDGE}`;
 
 /**
- * How a band is held against its frame, and which of its edges carry the line.
+ * How a band is held against its frame, and which of its edges face the
+ * picture.
  *
- * A band down the middle is held by its own margins between both edges of the
- * frame rather than by a `transform`. A transform makes a containing block of
- * its own, and this is the file that says nothing in this app may be fixed
- * inside one (`docs/decisions/0030-where-movement-is-allowed.md`): leaving one
- * lying about behind the interface is how that rule stops being true later.
+ * A band down a side runs off the edge of the frame, so it has one edge facing
+ * the picture and one that never does. A band down the middle has the picture
+ * on both sides of it, so it has two. That is the whole of the difference
+ * between the three, and it is why the hairline is not a property of a band but
+ * of an edge (see {@link fullHeightBandSx}).
+ *
+ * The middle one is held by its own margins between both edges of the frame
+ * rather than by a `transform`. A transform makes a containing block of its
+ * own, and this is the file that says nothing in this app may be fixed inside
+ * one (`docs/decisions/0030-where-movement-is-allowed.md`): leaving one lying
+ * about behind the interface is how that rule stops being true later.
  */
 const BAND_PLACES: Record<BandPlace, CSSObject> = {
   left: { left: 0, borderRight: BAND_HAIRLINE },
@@ -70,10 +77,21 @@ const BAND_PLACES: Record<BandPlace, CSSObject> = {
  * The band drawn out to the top and the bottom of its frame, where it stands
  * in it.
  *
- * The hairline is on the inner edge and nowhere else: it is what tells the
- * reader where the interface stops and the forest starts, and a box drawn all
- * the way round would be a panel, which is the thing this is not. A band down
- * the middle has two inner edges, so it carries the line down both.
+ * The hairline goes on an edge that has the picture beyond it, and on no other:
+ * it is what tells the reader where the interface stops and the forest starts,
+ * and a box drawn all the way round would be a panel, which is the thing this
+ * is not. Said that way it is one rule with no cases in it — a band down a side
+ * carries one line, a band down the middle carries two, and a band as wide as
+ * the frame it is in carries none, because there is no picture left beside it
+ * for a line to be the beginning of.
+ *
+ * That last one is the phone at the gate, and it is why the width is a most
+ * rather than a measurement. The band is never wider than its frame, and the
+ * width it may not exceed is also the width at which the lines go: one number,
+ * written once and used twice, so the lines cannot go on standing where the
+ * forest has already stopped. The threshold is read off the window while the
+ * width is read off the frame, which is the same length in both places this is
+ * used — each frame is a box the full width of the page.
  *
  * The middle is the third place and not a fourth kind of thing. A room puts its
  * words in a column at the side and the board between them; the gate has one
@@ -91,21 +109,22 @@ const BAND_PLACES: Record<BandPlace, CSSObject> = {
  * would not.
  *
  * @param place - Which edge of the frame it runs down, or the middle of it
- * @param width - How wide it is, as a CSS length
+ * @param atMost - The widest it is allowed to be, as a CSS length
  * @returns The band, ready to be given to a decorative box
  *
  * @example
  * <Box aria-hidden sx={fullHeightBandSx('left', 'calc(15rem + 32px)')} />
  */
-export const fullHeightBandSx = (place: BandPlace, width: string): CSSObject => ({
+export const fullHeightBandSx = (place: BandPlace, atMost: string): CSSObject => ({
   display: 'block',
   position: 'absolute',
   top: 0,
   bottom: 0,
-  width,
+  width: `min(${atMost}, 100%)`,
   backgroundColor: BAND,
   pointerEvents: 'none',
   ...BAND_PLACES[place],
+  [`@media (max-width: ${atMost})`]: { border: 'none' },
 });
 
 /**

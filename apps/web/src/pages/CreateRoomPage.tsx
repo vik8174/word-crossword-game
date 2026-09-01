@@ -20,23 +20,27 @@ const PAGE_PADDING_STEP = 4;
 const PAGE_PADDING = gapAt(PAGE_PADDING_STEP);
 
 /**
- * How wide the column standing on the band is.
+ * The widest the band down the middle is allowed to be.
  *
- * The length the line of this form has always been read at, said as a width of
- * its own now that the form is no longer a box with padding round it.
+ * Also the width at which it stops being narrower than the window, and so the
+ * width at which its hairlines go — one number doing both jobs, which is the
+ * only way the two can be kept from drifting apart (`garden/scene-surface.ts`).
+ * On a phone the band is therefore the whole width of the window with no line
+ * down either side, and that is the point rather than a fallback: a band with a
+ * finger of forest left showing beside it is a card again.
+ *
+ * In `rem`, so that it grows with the size the reader has set their own text
+ * in, and as one term rather than a sum, so that the threshold can be said in
+ * the same units without arithmetic in a media query.
  */
-const COLUMN_WIDTH = '32rem';
+const BAND_WIDTH = '34rem';
 
 /**
- * How wide the band down the middle is: the column, and the page's own padding
- * either side of it — the same arithmetic a band in a room is measured by
- * (`components/RoomShell.tsx`).
- *
- * Never wider than the window. On a phone that makes it the whole width, and
- * that is the point rather than a fallback: a band with a finger of forest left
- * showing either side of it is a card again.
+ * How wide the column standing on the band is: the band, less the page's own
+ * padding either side of it — the same arithmetic a band in a room is measured
+ * by, run the other way (`components/RoomShell.tsx`).
  */
-const BAND_WIDTH = `min(calc(${COLUMN_WIDTH} + ${PAGE_PADDING} + ${PAGE_PADDING}), 100%)`;
+const COLUMN_WIDTH = `calc(${BAND_WIDTH} - ${PAGE_PADDING} - ${PAGE_PADDING})`;
 
 /**
  * Shown when no two words share a letter. Different from words being dropped:
@@ -191,6 +195,13 @@ export const CreateRoomPage = () => {
         // (`garden/scene-surface.ts`).
         position: 'relative',
         minHeight: '100dvh',
+        // A column, so that the space the form does not use can be given to the
+        // form rather than left under it. Items are not stretched: the name of
+        // the step is only as wide as its own letters, and the rule under it
+        // stops where the last letter does.
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
         px: PAGE_PADDING_STEP,
         py: 5,
         ...ON_SCENE_SX,
@@ -201,7 +212,10 @@ export const CreateRoomPage = () => {
       <Typography
         component="h1"
         variant="signage"
-        sx={(theme) => stepTitleSx(theme, `-${PAGE_PADDING}`)}
+        // The gap under the title is the title's own, not the form's: the form
+        // is centred by margins that go to nothing the moment it is taller than
+        // the window, and a gap made of those would go with them.
+        sx={(theme) => ({ ...stepTitleSx(theme, `-${PAGE_PADDING}`), marginBottom: gapAt(5) })}
       >
         New game
       </Typography>
@@ -209,8 +223,17 @@ export const CreateRoomPage = () => {
       {/* Positioned, because the band is: an absolute box paints over the
         ordinary flow beside it, and what is written on a band has to be on top
         of it. Its own width is the band's less the padding either side, which
-        is what puts the two of them concentric at every width. */}
-      <Box sx={{ position: 'relative', maxWidth: COLUMN_WIDTH, mx: 'auto', mt: 5 }}>
+        is what puts the two of them concentric at every width.
+
+        Centred in what is left of the band by margins rather than by
+        `justify-content`, and that is the whole reason for the flex column
+        above. Centring a column that has become taller than the window pushes
+        the top of it off the top of the page, where no amount of scrolling
+        reaches it — and this form does grow: an error, or the list of words
+        that would not fit, is another block of text. An auto margin is zero
+        when there is no room to give away, so at that point the form simply
+        stands under its title again. */}
+      <Box sx={{ position: 'relative', width: '100%', maxWidth: COLUMN_WIDTH, m: 'auto' }}>
         {renderPhase()}
       </Box>
     </Box>
