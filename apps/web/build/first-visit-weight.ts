@@ -24,11 +24,15 @@
 /**
  * The most a first visit to the landing page may cost, in bytes over the wire.
  *
- * Two hundred and eighteen kibibytes, and it has been raised twice: 178 before
- * the garden, 210 for it, and 218 now for the face the interface is read in.
- * The room to move is deliberate and it is not a budget to spend. Raising this
- * is a decision somebody makes on purpose, in a pull request, with a reason —
- * which is the whole point of it being a number in a file rather than a habit.
+ * Two hundred and eighteen kibibytes. It arrived at 210 with the garden and has
+ * been raised once, to 218, for the face the interface is read in; 178 is
+ * sometimes quoted alongside those two but was never a ceiling — it is what a
+ * first visit weighed before the garden, when nothing was holding it to
+ * anything. The room to move is deliberate and it is not a budget to spend.
+ * Raising this is a decision somebody makes on purpose, in a pull request, with
+ * a reason, and now with a record beside it
+ * (`docs/decisions/0032-what-the-first-visit-ceiling-measures.md`) — which is
+ * the whole point of it being a number in a file rather than a habit.
  *
  * The reason this time, written down so that whoever raises it next has one to
  * be measured against. Everything read in this app was drawn in whatever font
