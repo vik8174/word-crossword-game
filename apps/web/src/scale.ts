@@ -173,10 +173,13 @@ export const DISPLAY_FONT_FAMILY = [
  * takes its face from the same place the interface does, rather than naming a
  * font of its own that nothing else in the app could be held to.
  *
- * Declared in `index.html` and **not** preloaded. Nothing in the interface is
- * set in it, so a browser fetches the 9.4 KB behind it only once something on
- * the page actually asks for the family — which today is nothing, and a first
- * visit costs the same as it did before this face existed.
+ * Declared in `index.html` and preloaded there. It was not, when it arrived,
+ * and that was right at the time: nothing in the interface was set in it. The
+ * garden changed it — the landing page is a gate with the name of the game
+ * lettered over it, so the one thing on the first screen is set in this face,
+ * and a face fetched after the first paint would swap that name out from under
+ * somebody reading it (issue #115). The 9.4 KB behind it is counted against the
+ * ceiling either way (`apps/web/build/first-visit-weight.ts`).
  */
 export const SIGN_FONT_FAMILY = [
   '"Zen Kaku Gothic New"',
