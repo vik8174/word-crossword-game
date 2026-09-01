@@ -6,7 +6,7 @@ import { type CrosswordLayout, generateCrossword, validateWordList } from 'share
 
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm } from '../components/WordListForm';
-import { BAND_SX, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
+import { fullHeightBandSx, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
 import { roomPath } from '../rooms/room-link';
@@ -17,6 +17,26 @@ import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /** The step of the row this page keeps between itself and the edge of the window. */
 const PAGE_PADDING_STEP = 4;
+const PAGE_PADDING = gapAt(PAGE_PADDING_STEP);
+
+/**
+ * How wide the column standing on the band is.
+ *
+ * The length the line of this form has always been read at, said as a width of
+ * its own now that the form is no longer a box with padding round it.
+ */
+const COLUMN_WIDTH = '32rem';
+
+/**
+ * How wide the band down the middle is: the column, and the page's own padding
+ * either side of it — the same arithmetic a band in a room is measured by
+ * (`components/RoomShell.tsx`).
+ *
+ * Never wider than the window. On a phone that makes it the whole width, and
+ * that is the point rather than a fallback: a band with a finger of forest left
+ * showing either side of it is a card again.
+ */
+const BAND_WIDTH = `min(calc(${COLUMN_WIDTH} + ${PAGE_PADDING} + ${PAGE_PADDING}), 100%)`;
 
 /**
  * Shown when no two words share a letter. Different from words being dropped:
@@ -154,29 +174,43 @@ export const CreateRoomPage = () => {
 
   return (
     // Still at the gate, so the step is named in the corner of the window with
-    // the temple's red run under it, and the form stands on the same band a
-    // list of words does. Nothing here is centred over the middle of the
-    // picture: that is where the path goes.
-    <Box component="main" sx={{ px: PAGE_PADDING_STEP, py: 5, ...ON_SCENE_SX }}>
+    // the temple's red run under it. What stands under it is a band down the
+    // middle of the window rather than a box held against its left edge, and
+    // that is a decision reversed rather than a layout tidied: #118 kept
+    // everything off the middle of the picture because that is where the path
+    // through the gate goes. Seen on a screen, the interface standing beside
+    // the opening read as a form laid over a photograph. It stands in the
+    // opening now — this screen is somebody walking in, and the path is where
+    // walking in happens (issue #123).
+    <Box
+      component="main"
+      sx={{
+        // What the band is measured against, and why it is at least a window
+        // tall: it runs from the top of the page to the bottom, and the page is
+        // never shorter than the window and grows with what the form has to say
+        // (`garden/scene-surface.ts`).
+        position: 'relative',
+        minHeight: '100dvh',
+        px: PAGE_PADDING_STEP,
+        py: 5,
+        ...ON_SCENE_SX,
+      }}
+    >
+      <Box aria-hidden sx={fullHeightBandSx('centre', BAND_WIDTH)} />
+
       <Typography
         component="h1"
         variant="signage"
-        sx={(theme) => stepTitleSx(theme, `-${gapAt(PAGE_PADDING_STEP)}`)}
+        sx={(theme) => stepTitleSx(theme, `-${PAGE_PADDING}`)}
       >
         New game
       </Typography>
 
-      <Box
-        sx={{
-          maxWidth: '34rem',
-          mt: 5,
-          p: 5,
-          // No red line along the top of it: the step's own rule is directly
-          // above, and two of them a step apart read as one underline drawn
-          // twice.
-          ...BAND_SX,
-        }}
-      >
+      {/* Positioned, because the band is: an absolute box paints over the
+        ordinary flow beside it, and what is written on a band has to be on top
+        of it. Its own width is the band's less the padding either side, which
+        is what puts the two of them concentric at every width. */}
+      <Box sx={{ position: 'relative', maxWidth: COLUMN_WIDTH, mx: 'auto', mt: 5 }}>
         {renderPhase()}
       </Box>
     </Box>
