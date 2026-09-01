@@ -41,6 +41,29 @@ const Connecting = () => (
   </Stack>
 );
 
+/** What the page is, said once for every phase of a room — including the two `Waiting` stands in for. */
+const ROOM_HEADING = 'Game room';
+
+/**
+ * A heading that is there to be read aloud and not to be looked at.
+ *
+ * Kept in step with the identical style `RoomShell` gives the same heading
+ * on the screen a game is played on, rather than imported from there: the
+ * two live in files `eslint-plugin-react-refresh` requires to export only
+ * components, so a shared constant would need a third file for two lines.
+ */
+const UNSEEN_HEADING = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  padding: 0,
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+} as const;
+
 /**
  * Stands in for a room screen on the two occasions there is no room to frame:
  * waiting for word of one, and being told there is none.
@@ -56,7 +79,12 @@ const Connecting = () => (
  *
  * Centred over whatever the garden already shows, since neither `connecting`
  * nor `unavailable` has a place of its own for the camera to travel to (see
- * `locationFor`).
+ * `locationFor`). Named the same page a real room screen is, unseen for the
+ * same reason `RoomShell` says it unseen on the screen a game is played
+ * on — a reader moving by headings still finds one, even for a wait that
+ * `unavailable` can leave them sitting through indefinitely — and capped to
+ * the width `RoomMiddleColumn` reads a notice at, so a long one still breaks
+ * into lines somebody finishes reading.
  */
 const Waiting = ({ children }: { readonly children: ReactNode }) => (
   <Box
@@ -69,7 +97,13 @@ const Waiting = ({ children }: { readonly children: ReactNode }) => (
       ...ON_SCENE_SX,
     }}
   >
-    {children}
+    <Box sx={{ maxWidth: '32rem' }}>
+      <Typography component="h1" variant="h1" sx={UNSEEN_HEADING}>
+        {ROOM_HEADING}
+      </Typography>
+
+      {children}
+    </Box>
   </Box>
 );
 
