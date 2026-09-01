@@ -82,6 +82,15 @@ export const HomePage = () => {
           left: action.x,
           top: action.y,
           transform: 'translate(-50%, -50%)',
+          // A fixed box given `left` and no `right` is offered the room from
+          // `left` to the edge of the window, and the transform moves it only
+          // once that width is settled — so on a phone the label was wrapped by
+          // where the button stands rather than by how much room there is. It
+          // takes the width of what is in it, and is held back to nine tenths
+          // of the window only if a reader's own text size would take it past
+          // that — where the label wraps, and both lines are centred.
+          width: 'max-content',
+          maxWidth: '90vw',
         }}
       >
         <Button
@@ -96,8 +105,17 @@ export const HomePage = () => {
             fontSize: inRem(TEXT_LEVELS.body),
             px: BUTTON_PADDING.across,
             py: BUTTON_PADDING.down,
-            // The label is centred inside the padding, so what the trailing
-            // tracking pushes off centre is the words and not the box.
+            // This is a link and not a `button`, and the browser's own
+            // `text-align: center` is on the latter alone — so without this the
+            // label inherits `start` from the body and a wrapped one stacks to
+            // the left. Said here rather than left to the tag.
+            textAlign: 'center',
+            // The tracking is put after the last letter as well as between, and
+            // a centred line counts that trailing space as part of its own
+            // width: the letters land half a space left of the middle, by the
+            // same amount on every line however many there are. Taking the
+            // whole space off the right of the box puts them back on the middle
+            // of the button, in one line and in two.
             paddingRight: `calc(${theme.spacing(BUTTON_PADDING.across)} - ${SIGN_TRACKING})`,
           })}
         >
