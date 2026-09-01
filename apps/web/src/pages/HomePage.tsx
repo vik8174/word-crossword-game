@@ -7,7 +7,7 @@ import { gateChrome } from '../garden/gate-chrome';
 import { SCENE } from '../garden/scene-palette';
 import { ON_SCENE_SX } from '../garden/scene-surface';
 import { useViewport } from '../garden/use-viewport';
-import { inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
+import { GATE_NAME_SIZE, inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
 import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /** How wide the button that stands in the gate is padded, as steps of the row. */
@@ -23,9 +23,11 @@ const BUTTON_PADDING = { across: 5, down: 3 } as const;
  * because a first screen with one action on it should look like one.
  *
  * Both are lettered rather than written — the sign face out of
- * `theme.typography.signage`, at three of the app's own levels so that the name
- * comes down as the window narrows instead of running off it. Nothing about the
- * face, the capitals or the tracking is decided here.
+ * `theme.typography.signage`, at three sizes off `scale.ts`'s own ladder so
+ * that the name comes down as the window narrows instead of running off it
+ * (the widest of the three, {@link GATE_NAME_SIZE}, is a sign's and not one of
+ * the four text levels). Nothing about the face, the capitals or the tracking
+ * is decided here.
  *
  * Joining an existing game does not start here: players arrive straight at
  * their room link (issue #5), so the only action this page offers is creating
@@ -46,6 +48,15 @@ export const HomePage = () => {
           left: title.x,
           top: title.y,
           transform: 'translate(-50%, -50%)',
+          // A fixed box given `left` and no `right` is offered the room from
+          // `left` to the edge of the window for its shrink-to-fit width, and
+          // the transform that recentres it only runs after that width is
+          // settled — the same trap the button was in (#127). At `title`
+          // (31px) the name never asked for more than that happened to allow;
+          // at a larger size on desktop it does, so the box gets the same fix
+          // there. Left alone below `md` on purpose: nothing here changes what
+          // a phone or a tablet already shows.
+          width: { md: 'max-content' },
           maxWidth: '90vw',
           textAlign: 'center',
         }}
@@ -57,13 +68,15 @@ export const HomePage = () => {
             fontSize: {
               xs: inRem(TEXT_LEVELS.body),
               sm: inRem(TEXT_LEVELS.heading),
-              md: inRem(TEXT_LEVELS.title),
+              md: inRem(GATE_NAME_SIZE),
             },
             // The tracking is put after the last letter as well as between, so
             // a centred line sits half a letter to the right without this.
             marginRight: `-${SIGN_TRACKING}`,
             color: SCENE.cream,
-            textShadow: '0 2px 18px rgba(6, 20, 16, 0.9)',
+            // Tighter than it was: an 18px blur softened the edges of the
+            // letters and gave away part of the weight they already have.
+            textShadow: '0 1px 6px rgba(6, 20, 16, 0.85)',
           }}
         >
           Word Crossword Game
@@ -72,7 +85,7 @@ export const HomePage = () => {
         {/* The temple's red, under the name of the place it belongs to. */}
         <Box
           aria-hidden
-          sx={{ width: '68%', height: '2px', mx: 'auto', mt: 3, backgroundColor: SCENE.vermilion }}
+          sx={{ width: '72%', height: '3px', mx: 'auto', mt: 3, backgroundColor: SCENE.vermilion }}
         />
       </Box>
 
