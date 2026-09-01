@@ -24,13 +24,35 @@
 /**
  * The most a first visit to the landing page may cost, in bytes over the wire.
  *
- * Two hundred and ten kibibytes. It was 178 before the garden and the garden is
- * what the difference is for; the room to move is deliberate and it is not a
- * budget to spend. Raising this is a decision somebody makes on purpose, in a
- * pull request, with a reason — which is the whole point of it being a number
- * in a file rather than a habit.
+ * Two hundred and eighteen kibibytes, and it has been raised twice: 178 before
+ * the garden, 210 for it, and 218 now for the face the interface is read in.
+ * The room to move is deliberate and it is not a budget to spend. Raising this
+ * is a decision somebody makes on purpose, in a pull request, with a reason —
+ * which is the whole point of it being a number in a file rather than a habit.
+ *
+ * The reason this time, written down so that whoever raises it next has one to
+ * be measured against. Everything read in this app was drawn in whatever font
+ * the reader's operating system happened to hold, beside two faces that had
+ * been chosen on purpose; issue #124 chose the third. Text wants two weights,
+ * no face worth having offers two for the twelve kibibytes that were left, and
+ * so the choice was never between typefaces — it was this number moving or the
+ * interface keeping a face nobody picked. The two files weigh 19.0 KB and a
+ * first visit now costs 215.1 on the build that checks it.
+ *
+ * Eight rather than seven, and the extra one is not for spending either. A
+ * build that uploads its source maps carries the debug ids that go with them
+ * and comes out about 1.5 KiB heavier than the build this number is checked
+ * against: 216.6 rather than 215.1, measured on the same commit. That is the
+ * one a player actually fetches, since a deployment uploads maps and CI does
+ * not — so a ceiling set a few tenths above what CI weighs would be no ceiling
+ * at all for what ships. Seven would have left the shipped bundle four tenths
+ * of a kibibyte of room; eight leaves it one and a half, and gzip moves by more
+ * than four tenths between releases on chunks nobody touched.
+ *
+ * What this number may not do is drift. It is here to be argued with, and a
+ * failure it causes has to mean something.
  */
-export const FIRST_VISIT_CEILING_BYTES = 210 * 1024;
+export const FIRST_VISIT_CEILING_BYTES = 218 * 1024;
 
 /** One file a first visit fetches, and what it weighs compressed. */
 export interface FetchedFile {

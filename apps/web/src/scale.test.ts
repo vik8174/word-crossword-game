@@ -5,8 +5,10 @@ import {
   inRem,
   SIGN_FONT_FAMILY,
   SIGN_FONT_WEIGHT,
+  SIGN_TRACKING,
   SPACING_STEPS,
   SYSTEM_FONT_FAMILY,
+  TEXT_FONT_FAMILY,
   TEXT_LEVELS,
   WEIGHTS,
 } from './scale';
@@ -71,14 +73,16 @@ describe('the scale', () => {
 
 describe('the three faces', () => {
   it('keeps the display face on the two large levels and off everything smaller', () => {
-    // It is a latin face at one weight, and at thirteen or seventeen pixels it
-    // is read more slowly than whatever the reader's own system would draw.
+    // Its lowercase stands 43% of its own size against the text face's 48%, so
+    // seventeen pixels of it read 11% shorter than seventeen pixels of the
+    // sentences around it — which is a face for looking at and not for reading
+    // (measured in issue #124).
     for (const heading of ['h1', 'h2', 'h3', 'h4'] as const) {
       expect(theme.typography[heading].fontFamily).toBe(DISPLAY_FONT_FAMILY);
     }
 
     for (const text of ['h5', 'h6', 'subtitle1', 'subtitle2', 'body1', 'body2'] as const) {
-      expect(theme.typography[text].fontFamily ?? SYSTEM_FONT_FAMILY).not.toMatch(/Zen Old Mincho/);
+      expect(theme.typography[text].fontFamily ?? TEXT_FONT_FAMILY).not.toMatch(/Zen Old Mincho/);
     }
   });
 
@@ -93,11 +97,27 @@ describe('the three faces', () => {
     expect(theme.typography.signage.letterSpacing).toBeDefined();
   });
 
-  it('fetches nothing for the text of the interface', () => {
-    // The landing page is drawn the moment its HTML lands, so nothing a visitor
-    // reads first is waiting on a font.
-    expect(theme.typography.fontFamily).toBe(SYSTEM_FONT_FAMILY);
+  it('sets the text of the interface in the text face, and falls back to the system', () => {
+    // Everything read rather than looked at is in this face (issue #124), and
+    // it is named once — a variant that says nothing about a family gets it.
+    expect(theme.typography.fontFamily).toBe(TEXT_FONT_FAMILY);
+    expect(TEXT_FONT_FAMILY).toMatch(/^"Zen Kaku Gothic New"/);
+    // The system stack is the tail of it rather than a face of its own: it is
+    // what a first frame is drawn in, and what is drawn if the file never
+    // arrives.
+    expect(TEXT_FONT_FAMILY.endsWith(SYSTEM_FONT_FAMILY)).toBe(true);
     expect(SYSTEM_FONT_FAMILY).not.toMatch(/Zen/);
+  });
+
+  it('tells lettering from text by weight and tracking, not by family', () => {
+    // The sign face and the text face were chosen separately and were chosen
+    // the same, so the family no longer separates them and nothing may be left
+    // resting on it. What separates them is the job: a sign is lettered light
+    // and held apart, text is neither.
+    expect(theme.typography.signage.fontWeight).toBe(SIGN_FONT_WEIGHT);
+    expect(theme.typography.signage.fontWeight).not.toBe(WEIGHTS.regular);
+    expect(theme.typography.signage.letterSpacing).toBe(SIGN_TRACKING);
+    expect(theme.typography.body1.letterSpacing).toBeUndefined();
   });
 });
 

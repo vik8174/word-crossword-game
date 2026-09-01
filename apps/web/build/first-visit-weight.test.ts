@@ -119,6 +119,6 @@ describe('the ceiling itself', () => {
     // Written down as a test because the number is a decision rather than a
     // measurement: changing it is somebody deciding the landing page may cost
     // more, which is a thing a reviewer should have to see.
-    expect(FIRST_VISIT_CEILING_BYTES).toBe(210 * KIB);
+    expect(FIRST_VISIT_CEILING_BYTES).toBe(218 * KIB);
   });
 });
