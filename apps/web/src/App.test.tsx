@@ -40,8 +40,11 @@ describe('App', () => {
     open(roomPath('room-1'));
 
     // Fetched when the address asks for it rather than shipped with the landing
-    // page (issue #92), so the room arrives a tick after the render.
-    expect(await screen.findByRole('heading', { name: /game room/i })).toBeInTheDocument();
+    // page (issue #92), so the room arrives a tick after the render. Signing in
+    // never resolves in this test, so the room stays on `connecting` — which is
+    // exactly the screen this asserts, since it has no frame of its own to find
+    // instead (issue #132).
+    expect(await screen.findByText(/connecting to the game/i)).toBeInTheDocument();
   });
 
   it('shows that something is coming while the room is on its way', async () => {
@@ -58,7 +61,7 @@ describe('App', () => {
     // app that is working would look like one that is broken, and this is what
     // the shift between screens is drawn over (issue #93).
     expect(screen.getByRole('progressbar', { name: /loading/i })).toBeInTheDocument();
-    expect(await screen.findByRole('heading', { name: /game room/i })).toBeInTheDocument();
+    expect(await screen.findByText(/connecting to the game/i)).toBeInTheDocument();
   });
 
   it('explains an address it knows nothing about instead of showing a blank page', () => {

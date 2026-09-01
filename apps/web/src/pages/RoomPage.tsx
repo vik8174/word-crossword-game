@@ -11,10 +11,10 @@ import { RoomGame } from '../components/RoomGame';
 import { RoomInvitePanel } from '../components/RoomInvitePanel';
 import { RoomJoin } from '../components/RoomJoin';
 import { RoomLobby } from '../components/RoomLobby';
-import { RoomMiddleColumn, RoomShell } from '../components/RoomShell';
 import { ScreenShift } from '../components/ScreenShift';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import { RewardCloth } from '../garden/RewardCloth';
+import { ON_SCENE_SX } from '../garden/scene-surface';
 import { useRoomGarden } from '../garden/use-room-garden';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
@@ -41,6 +41,72 @@ const Connecting = () => (
   </Stack>
 );
 
+/** What the page is, said once for every phase of a room — including the two `Waiting` stands in for. */
+const ROOM_HEADING = 'Game room';
+
+/**
+ * A heading that is there to be read aloud and not to be looked at.
+ *
+ * Kept in step with the identical style `RoomShell` gives the same heading
+ * on the screen a game is played on, rather than imported from there: the
+ * two live in files `eslint-plugin-react-refresh` requires to export only
+ * components, so a shared constant would need a third file for two lines.
+ */
+const UNSEEN_HEADING = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  padding: 0,
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+} as const;
+
+/**
+ * Stands in for a room screen on the two occasions there is no room to frame:
+ * waiting for word of one, and being told there is none.
+ *
+ * Draws no room shape at all — no header, no zones, nothing a viewer could
+ * mistake for a room that exists — because there isn't one yet, or there
+ * never will be. Earlier both stood inside the same frame every real screen
+ * of a room draws, so a guest opening an invite link cold saw that frame
+ * appear at the gate the moment the visit began, then disappear and
+ * reappear a second later in the doorway the camera had by then arrived at:
+ * the same shape twice, empty both times (issue #132). This has none for
+ * either to draw, so there is nothing to see twice.
+ *
+ * Centred over whatever the garden already shows, since neither `connecting`
+ * nor `unavailable` has a place of its own for the camera to travel to (see
+ * `locationFor`). Named the same page a real room screen is, unseen for the
+ * same reason `RoomShell` says it unseen on the screen a game is played
+ * on — a reader moving by headings still finds one, even for a wait that
+ * `unavailable` can leave them sitting through indefinitely — and capped to
+ * the width `RoomMiddleColumn` reads a notice at, so a long one still breaks
+ * into lines somebody finishes reading.
+ */
+const Waiting = ({ children }: { readonly children: ReactNode }) => (
+  <Box
+    sx={{
+      minHeight: '100dvh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      p: 5,
+      ...ON_SCENE_SX,
+    }}
+  >
+    <Box sx={{ maxWidth: '32rem' }}>
+      <Typography component="h1" variant="h1" sx={UNSEEN_HEADING}>
+        {ROOM_HEADING}
+      </Typography>
+
+      {children}
+    </Box>
+  </Box>
+);
+
 /**
  * Picks the one screen this room is showing, and hands it what it needs.
  *
@@ -63,19 +129,15 @@ const RoomScreenView = ({
   switch (screen.kind) {
     case 'connecting':
       return (
-        <RoomShell>
-          <RoomMiddleColumn>
-            <Connecting />
-          </RoomMiddleColumn>
-        </RoomShell>
+        <Waiting>
+          <Connecting />
+        </Waiting>
       );
     case 'unavailable':
       return (
-        <RoomShell>
-          <RoomMiddleColumn>
-            <RoomUnavailableNotice reason={screen.reason} />
-          </RoomMiddleColumn>
-        </RoomShell>
+        <Waiting>
+          <RoomUnavailableNotice reason={screen.reason} />
+        </Waiting>
       );
     case 'join':
       return (
@@ -242,11 +304,13 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
  * nickname. From there the screen follows the room live, so players see each
  * other arrive.
  *
- * The page itself is nothing but the address: every screen of a room draws its
- * own frame, and they all draw the same one (see `RoomShell`). It used to be a
- * `Container maxWidth="sm"`, which gave the board 552 pixels however wide the
- * window was, and the blocks stacked above and below it took the rest out of the
- * size of a square (issue #101).
+ * The page itself is nothing but the address: every screen that has a room to
+ * show draws the same frame (see `RoomShell`), and the two that do not —
+ * waiting for word of one, or being told there is none — draw none of it
+ * either (see {@link Waiting}). It used to be a `Container maxWidth="sm"`,
+ * which gave the board 552 pixels however wide the window was, and the blocks
+ * stacked above and below it took the rest out of the size of a square
+ * (issue #101).
  *
  * @example
  * <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
@@ -256,11 +320,9 @@ export const RoomPage = () => {
 
   if (roomId === undefined) {
     return (
-      <RoomShell>
-        <RoomMiddleColumn>
-          <RoomUnavailableNotice reason="missing" />
-        </RoomMiddleColumn>
-      </RoomShell>
+      <Waiting>
+        <RoomUnavailableNotice reason="missing" />
+      </Waiting>
     );
   }
 

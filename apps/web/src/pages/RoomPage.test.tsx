@@ -383,6 +383,39 @@ describe('RoomPage', () => {
 
       expect(unsubscribe).toHaveBeenCalledOnce();
     });
+
+    // A visitor who has not yet been told what the room is stands wherever the
+    // garden already does — the gate, for a link opened cold — and used to be
+    // handed a full room frame to stand in while they waited there: a header,
+    // three zones. That frame is what a room looks like once it exists, so a
+    // guest saw it appear at the gate and then again, moments later, in the
+    // doorway the camera had by then arrived at — the same frame twice, with
+    // nothing behind it either time (issue #132). Waiting for news of a room
+    // that has not answered yet is not a room, so it gets none of that shape —
+    // it still gets the same unseen heading every real room screen carries,
+    // since a reader moving by headings finds one on every other screen here.
+    it('shows no room frame while waiting for the first snapshot', async () => {
+      renderRoomPage();
+
+      await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
+
+      expect(screen.getByRole('status')).toHaveTextContent(/connecting/i);
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Game room');
+      expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    });
+
+    it('shows no room frame either for a link that leads nowhere', async () => {
+      renderRoomPage();
+      await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
+
+      await act(async () => {
+        emitRoom({ exists: () => false, data: () => undefined });
+      });
+
+      expect(screen.getByText(/no game at this link/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Game room');
+      expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    });
   });
 
   describe('the link to the room', () => {
