@@ -277,14 +277,25 @@ export const theme = createTheme({
     // answered, so this rule and theirs never race: theirs stops a canvas from
     // being painted, and this one stops a `transition` or `animation` CSS
     // property from doing anything once painted.
+    //
+    // `CircularProgress` is named out of it on purpose. ADR 0030 turns off
+    // movement that disorients — petals, a camera flight, a screen sliding —
+    // and a spinner is not that: it is the one way this app says "wait", and
+    // on the `connecting` screen (`RoomPage.tsx`'s `Waiting`) it is the only
+    // thing on the page since issue #132 took the room's frame off it. Frozen
+    // by `animation-iteration-count: 1`, it turns once and stops, which reads
+    // as broken rather than calm — a promise of "something is happening" that
+    // stops being true. So it keeps spinning under reduced motion; nothing
+    // else does.
     MuiCssBaseline: {
       styleOverrides: {
         [REDUCED_MOTION_MEDIA]: {
-          '*, *::before, *::after': {
-            animationDuration: '0.01ms !important',
-            animationIterationCount: '1 !important',
-            transitionDuration: '0.01ms !important',
-          },
+          '*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle), *::before, *::after':
+            {
+              animationDuration: '0.01ms !important',
+              animationIterationCount: '1 !important',
+              transitionDuration: '0.01ms !important',
+            },
         },
       },
     },

@@ -281,9 +281,24 @@ describe('theme', () => {
       Record<string, unknown> | undefined;
     const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as
       Record<string, unknown> | undefined;
-    const everything = media?.['*, *::before, *::after'] as Record<string, string> | undefined;
+    const selector = Object.keys(media ?? {}).find((key) => key.includes('*::before'));
+    const everything = selector ? (media?.[selector] as Record<string, string>) : undefined;
 
     expect(everything?.transitionDuration).toMatch(/!important/);
     expect(everything?.animationDuration).toMatch(/!important/);
+  });
+
+  it('leaves the page spinner turning under prefers-reduced-motion, so "wait" stays true', () => {
+    // A frozen `CircularProgress` reads as broken rather than calm, and on the
+    // `connecting` screen it is the only thing on the page (issue #132 took
+    // the room's frame off it) — so it is named out of the freeze above.
+    const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
+      Record<string, unknown> | undefined;
+    const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as
+      Record<string, unknown> | undefined;
+    const selector = Object.keys(media ?? {}).find((key) => key.includes('*::before'));
+
+    expect(selector).toContain(':not(.MuiCircularProgress-root)');
+    expect(selector).toContain(':not(.MuiCircularProgress-circle)');
   });
 });
