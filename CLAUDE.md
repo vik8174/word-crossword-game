@@ -37,6 +37,15 @@ The project runs on four session roles. **First, determine your role:**
 
 Planner and Dispatcher are separate top-level sessions and neither reports to the other. **They talk through the board, never directly**: an issue, its labels and its comments are the whole of the channel between them. That is deliberate — a message passed through an artefact survives either session dying, and a message passed through a context does not.
 
+Each role is a file, so none of this has to be pasted into a session by hand. The two Viktor opens himself are skills — `/planner` and `/dispatcher` — and the two the Dispatcher spawns are agents, `worker` and `challenger`, which carry their own model and tool list so a caller cannot get either wrong. The sections below say what each role is; the files say how it works.
+
+| Role       | File                                 |
+| ---------- | ------------------------------------ |
+| Planner    | `.claude/skills/planner/SKILL.md`    |
+| Dispatcher | `.claude/skills/dispatcher/SKILL.md` |
+| Worker     | `.claude/agents/worker.md`           |
+| Challenger | `.claude/agents/challenger.md`       |
+
 ### If you are a Worker
 
 - You implement **one** assigned issue — from branch to open pull request
