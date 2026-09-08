@@ -11,7 +11,7 @@ import { GATE_NAME_SIZE, inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
 import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /** How wide the button that stands in the gate is padded, as steps of the row. */
-const BUTTON_PADDING = { across: 5, down: 3 } as const;
+const BUTTON_PADDING = { across: 6, down: 4 } as const;
 
 /**
  * Landing page — the gate, and the one thing there is to do at it.
@@ -115,7 +115,7 @@ export const HomePage = () => {
             // Lettered rather than written, off the same face and the same
             // tracking the name over the gate is: the two of them are one sign.
             ...theme.typography.signage,
-            fontSize: inRem(TEXT_LEVELS.body),
+            fontSize: inRem(TEXT_LEVELS.heading),
             px: BUTTON_PADDING.across,
             py: BUTTON_PADDING.down,
             // This is a link and not a `button`, and the browser's own
@@ -130,6 +130,22 @@ export const HomePage = () => {
             // whole space off the right of the box puts them back on the middle
             // of the button, in one line and in two.
             paddingRight: `calc(${theme.spacing(BUTTON_PADDING.across)} - ${SIGN_TRACKING})`,
+            // This is the one button on the whole first screen, so it is
+            // drawn with a heavier edge than every other `MuiButton-contained`
+            // in the app — `ON_SCENE_SX` sets `1.5px` for all of them
+            // (`scene-surface.ts`). A plain `borderWidth` here loses to that
+            // rule outright: `ON_SCENE_SX` reaches it through two classes
+            // (`.css-x .MuiButton-contained`), a specificity a single
+            // generated class here cannot match. Doubling this button's own
+            // class ties that — same two classes' worth — and a tie is
+            // settled by which style tag was inserted later, which today
+            // happens to be this one but is an accident of mount order rather
+            // than something to build on. Tripled, it outweighs the ancestor
+            // rule regardless of order: three classes beat two, which is why
+            // this reaches for `'&&&'` rather than `!important` — a component
+            // that changes nothing anywhere else in the app still wins on its
+            // own terms, not on who loaded last.
+            '&&&': { borderWidth: '2px' },
           })}
         >
           Create a game
