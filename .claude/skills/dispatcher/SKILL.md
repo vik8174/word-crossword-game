@@ -32,7 +32,9 @@ Spawn both with the `Agent` tool, in the background, so one does not block the o
 
 Both carry their model in their own definition, so do not override it.
 
-At most **two pairs at a time**. Each pair costs two worktrees, two installs, two dev servers and at least one full build, and the machine runs out before the agents do.
+**One pair at a time.** A pair costs a worktree, an install, a dev server and at least one full build, and the machine runs out before the agents do.
+
+It was two, and it is one for now. Nothing about the flow assumes either number, so raising it again is this line and the matching one in `CLAUDE.md` — but while it is one, an issue that is not the issue in progress is not started early to fill a slot: there is no slot.
 
 ## What a Worker needs from you
 
@@ -41,7 +43,7 @@ It arrives empty and knows only what you hand it:
 - the issue number, and to read it in full before writing anything
 - **the base**: which commit `main` is on and what landed since the issue was written. Issue bodies go stale faster than they look
 - branch and worktree names, and a free port
-- **boundaries by name**: which files the other pair is touching right now
+- **boundaries by name**: which files are not this issue's to touch — a shared file the issue reaches through, and anything a merge has moved since the issue was written
 - what is already decided in this issue and is not to be reopened
 
 ## What a Challenger needs from you
@@ -52,7 +54,7 @@ It arrives empty and knows only what you hand it:
 
 ## The instruction after a failing verdict
 
-**You write it, not the Challenger.** It knows what broke; you know what the Worker cannot see. Put in it: what to fix and why it matters, what moved underneath since the Worker started, which files not to touch because another pair is in them, what to re-measure afterwards, and what is not to be reopened because it was already decided.
+**You write it, not the Challenger.** It knows what broke; you know what the Worker cannot see. Put in it: what to fix and why it matters, what moved underneath since the Worker started, which files not to touch and why, what to re-measure afterwards, and what is not to be reopened because it was already decided.
 
 Where the Challenger refuted the Worker's reasoning, pass the refutation **with its evidence**, not with your authority. A Worker once cited a precedent that did not exist in the codebase, and two greps closed the question without an argument.
 

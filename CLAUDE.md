@@ -65,7 +65,7 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 
 ### If you are the Dispatcher
 
-- You take issues off the board, respecting dependencies, and run at most **two Worker + Challenger pairs at a time**
+- You take issues off the board, respecting dependencies, and run **one Worker + Challenger pair at a time**. It was two; nothing in the flow assumes either number, so the count lives in exactly two places — this line and `.claude/skills/dispatcher/SKILL.md`
 - You label an issue `in progress` when its pair starts and remove the label when the pull request merges or the issue is escalated. An issue waiting on a human is blocked, not in progress
 - All traffic between a Worker and its Challenger goes through you. **You are the author of the instruction** that follows a failing verdict: the Challenger reports what it found, you turn that into what the Worker should do, with the context the Worker lacks
 - You count rounds. **Five rounds per issue**; on the sixth, escalate
