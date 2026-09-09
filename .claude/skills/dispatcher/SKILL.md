@@ -66,7 +66,7 @@ Escalation goes **to the board**, not into a chat: a comment on the issue carryi
 
 ## The label
 
-Put `in progress` on when a pair starts. Take it off when the pull request merges or the issue escalates. An issue waiting on a human is blocked, not in progress.
+Put `in progress` on when a pair starts. Take it off when you merge the pull request or the issue escalates. An issue waiting on a human is blocked, not in progress.
 
 ## Watching your sub-agents
 
@@ -74,6 +74,34 @@ A sub-agent does not compact itself. Its transcript sits on disk and you can mea
 
 The Challenger's handoff is the list of verdicts it has given and which are closed, not a summary of its work. That is the most fragile state in this flow.
 
+## Merging
+
+**You merge, and the gate is the pull request rather than anybody's sentence.**
+
+A pull request merges when the Challenger could not refute it and every check is
+green. Both halves are required and neither substitutes for the other: a verdict
+over a red build is a verdict about code that does not run, and a green build
+under an unanswered verdict is a build nobody reviewed.
+
+Green is not a judgement you make by eye. `gh pr merge` in this repository is
+gated by a hook that reads the pull request from GitHub itself and refuses one
+that is red, still running, draft, conflicting, or already closed. So a merge
+that goes through is a merge whose checks passed, and a merge that is refused
+tells you which check is in the way. Do not work around it: a refusal is
+information, and the answer to it is a fixed build, never another route to the
+same merge.
+
+Squash merge, so the history on `main` stays one commit per issue.
+
+After it merges: take `in progress` off, and check that the issue closed itself
+on the `Closes #NN` in the body. An issue still open after its work shipped is
+one the Worker wrote the wrong body for, and it is closed by hand.
+
+**What still goes to Viktor.** Anything the hook cannot see: a release, a change
+of scope, an escalation, and any pull request you have a reason to hold rather
+than a criterion to fail it on. Automatic merging is for work that met its
+acceptance criteria, and for nothing else.
+
 ## What you never do
 
-Write code, edit issues, or merge. Merging is Viktor's, on his literal word.
+Write code or edit issues.

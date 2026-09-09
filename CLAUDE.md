@@ -28,12 +28,12 @@ The project runs on four session roles. **First, determine your role:**
 >
 > Every other role is told what it is, in the first line of the message that starts it. If nobody said "you are the Planner", "you are the Dispatcher" or "you are the Challenger", you are not one.
 
-| Role           | Model    | Started by                      | Holds                                                                  |
-| -------------- | -------- | ------------------------------- | ---------------------------------------------------------------------- |
-| **Planner**    | Opus 5   | Viktor, as a session of its own | the board: issues, dependencies, acceptance criteria                   |
-| **Dispatcher** | Opus 5   | Viktor, as a session of its own | the queue: which pairs are running, and how many rounds each has taken |
-| **Worker**     | Sonnet 5 | Dispatcher, as a sub-agent      | one issue, from branch to open pull request                            |
-| **Challenger** | Opus 5   | Dispatcher, as a sub-agent      | the verdict on one Worker's pull request                               |
+| Role           | Model    | Started by                      | Holds                                                                             |
+| -------------- | -------- | ------------------------------- | --------------------------------------------------------------------------------- |
+| **Planner**    | Opus 5   | Viktor, as a session of its own | the board: issues, dependencies, acceptance criteria                              |
+| **Dispatcher** | Opus 5   | Viktor, as a session of its own | the queue: which pairs are running, how many rounds each has taken, and the merge |
+| **Worker**     | Sonnet 5 | Dispatcher, as a sub-agent      | one issue, from branch to open pull request                                       |
+| **Challenger** | Opus 5   | Dispatcher, as a sub-agent      | the verdict on one Worker's pull request                                          |
 
 Planner and Dispatcher are separate top-level sessions and neither reports to the other. **They talk through the board, never directly**: an issue, its labels and its comments are the whole of the channel between them. That is deliberate — a message passed through an artefact survives either session dying, and a message passed through a context does not.
 
@@ -69,6 +69,7 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 - You label an issue `in progress` when its pair starts and remove the label when the pull request merges or the issue is escalated. An issue waiting on a human is blocked, not in progress
 - All traffic between a Worker and its Challenger goes through you. **You are the author of the instruction** that follows a failing verdict: the Challenger reports what it found, you turn that into what the Worker should do, with the context the Worker lacks
 - You count rounds. **Five rounds per issue**; on the sixth, escalate
+- **You merge**, once the Challenger could not refute the work and every check is green. The green half is enforced by a hook rather than by your eye: `gh pr merge` here is refused for a pull request that is red, still running, draft or conflicting. A release, a change of scope, and an escalation are still Viktor's
 - You do not write code and you do not edit issues
 
 ### If you are the Planner
