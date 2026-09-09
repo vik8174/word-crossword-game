@@ -14,7 +14,7 @@ import { RoomLobby } from '../components/RoomLobby';
 import { ScreenShift } from '../components/ScreenShift';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import { RewardCloth } from '../garden/RewardCloth';
-import { ON_SCENE_SX } from '../garden/scene-surface';
+import { ON_SCENE_SX, SENTENCE_BAND_SX } from '../garden/scene-surface';
 import { useRoomGarden } from '../garden/use-room-garden';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
@@ -31,9 +31,21 @@ import { finishedWordsOf } from '../rooms/word-visibility';
 import { funnelScreenFor } from '../telemetry/funnel';
 import { useScreenReached } from '../telemetry/use-screen-reached';
 
-/** Shown while the visitor is being signed in and the first snapshot is on its way. */
+/**
+ * Shown while the visitor is being signed in and the first snapshot is on its
+ * way.
+ *
+ * Stands on the same band every other sentence in this room stands on
+ * ({@link SENTENCE_BAND_SX}): unlike {@link Waiting}, which this sits inside
+ * of, it has no sheet of its own between it and the forest, and cream read
+ * straight off the scene falls short of 4.5 at the gate's brightest point
+ * (issue #136). `RoomUnavailableNotice`, `Waiting`'s other tenant, already
+ * stands on an `Alert`'s own opaque paper, so the band is given here and not
+ * in `Waiting` itself — a second sheet under a sheet that already has one
+ * would be a darker rectangle behind the notice rather than a fix.
+ */
 const Connecting = () => (
-  <Stack direction="row" spacing={4} sx={{ alignItems: 'center' }}>
+  <Stack direction="row" spacing={4} sx={{ alignItems: 'center', ...SENTENCE_BAND_SX }}>
     <CircularProgress size={24} />
     <Typography variant="body1" role="status">
       Connecting to the game...

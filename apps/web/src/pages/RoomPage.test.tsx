@@ -7,6 +7,7 @@ import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { BAND } from '../garden/scene-palette';
 import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from '../rooms/presence';
 import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
 import { theme } from '../theme';
@@ -402,6 +403,20 @@ describe('RoomPage', () => {
       expect(screen.getByRole('status')).toHaveTextContent(/connecting/i);
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Game room');
       expect(screen.queryByRole('banner')).not.toBeInTheDocument();
+    });
+
+    // Cream read straight off the forest falls short of the small-text
+    // threshold at the gate's brightest point (issue #136), because this line
+    // has no zone of its own to stand in. It stands on the same band every
+    // other sentence without one stands on instead.
+    it('stands the connecting line on the same band every other bandless sentence stands on', async () => {
+      renderRoomPage();
+
+      await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
+
+      expect(screen.getByRole('status').parentElement).toHaveStyle({
+        backgroundColor: BAND,
+      });
     });
 
     it('shows no room frame either for a link that leads nowhere', async () => {
