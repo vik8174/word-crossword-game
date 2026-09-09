@@ -11,7 +11,7 @@ import { GATE_NAME_SIZE, inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
 import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /** How wide the button that stands in the gate is padded, as steps of the row. */
-const BUTTON_PADDING = { across: 5, down: 3 } as const;
+const BUTTON_PADDING = { across: 6, down: 4 } as const;
 
 /**
  * Landing page — the gate, and the one thing there is to do at it.
