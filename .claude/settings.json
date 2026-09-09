@@ -33,7 +33,9 @@
       "Bash(gh issue view *)",
       "Bash(gh pr view *)",
       "Bash(gh pr list *)",
-      "Bash(gh repo view *)"
+      "Bash(gh repo view *)",
+      "Bash(gh pr merge *)",
+      "Bash(gh pr checks *)"
     ],
     "deny": [
       "Bash(git push --force *)",
