@@ -9,17 +9,17 @@ import { useRoomGarden } from './use-room-garden';
 /** A garden that draws nothing and answers for everything it was asked. */
 const gardenAround = () => {
   const showAir = vi.fn();
-  const showLocation = vi.fn();
+  const showScene = vi.fn();
   const wrapper = ({ children }: { children: ReactNode }) => (
-    <GardenControlsContext value={{ showAir, showLocation }}>{children}</GardenControlsContext>
+    <GardenControlsContext value={{ showAir, showScene }}>{children}</GardenControlsContext>
   );
 
-  return { showAir, showLocation, wrapper };
+  return { showAir, showScene, wrapper };
 };
 
 /** The hook, opened on one screen and free to be moved to the next. */
 const openRoomOn = (kind: RoomScreen['kind']) => {
-  const { showAir, showLocation, wrapper } = gardenAround();
+  const { showAir, showScene, wrapper } = gardenAround();
   const { result, rerender, unmount } = renderHook(({ shown }) => useRoomGarden(shown), {
     initialProps: { shown: kind },
     wrapper,
@@ -27,7 +27,7 @@ const openRoomOn = (kind: RoomScreen['kind']) => {
 
   return {
     showAir,
-    showLocation,
+    showScene,
     unmount,
     hasEnded: () => result.current,
     becomes: (next: RoomScreen['kind']) => rerender({ shown: next }),
@@ -45,6 +45,20 @@ describe('useRoomGarden', () => {
     const room = openRoomOn('lobby');
 
     room.becomes('playing');
+
+    expect(room.showAir).toHaveBeenLastCalledWith('still');
+  });
+
+  it('keeps the background still once a game is finished, so no petal falls in the hall', () => {
+    // The hall has no sky in it: a finished game does not get the petals back,
+    // it gets the cloth (`RewardCloth`). Regression coverage for a real bug —
+    // `airFor('finished')` used to answer `petals`, which was safe only while
+    // the camera's own doorway culling drew nothing indoors regardless; once
+    // the camera was removed (issue #152) that culling went with it, and the
+    // stale answer here let petals fall inside the temple.
+    const room = openRoomOn('playing');
+
+    room.becomes('finished');
 
     expect(room.showAir).toHaveBeenLastCalledWith('still');
   });
@@ -91,14 +105,35 @@ describe('useRoomGarden', () => {
     expect(room.showAir).toHaveBeenLastCalledWith('still');
   });
 
+  it('stands the window at the doors while waiting on the room to say what it is', () => {
+    // `connecting` and `unavailable` are both the threshold: a visitor who has
+    // not been let in yet, rather than a visitor still outside the gate.
+    expect(openRoomOn('connecting').showScene).toHaveBeenLastCalledWith('doors');
+    expect(openRoomOn('unavailable').showScene).toHaveBeenLastCalledWith('doors');
+  });
+
+  it('stands the nickname form at the gate, the same picture home and create share', () => {
+    expect(openRoomOn('join').showScene).toHaveBeenLastCalledWith('gate');
+  });
+
   it('moves the window to the doors for a lobby and into the hall for a game', () => {
     const room = openRoomOn('lobby');
 
-    expect(room.showLocation).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'doors' }));
+    expect(room.showScene).toHaveBeenLastCalledWith('doors');
 
     room.becomes('playing');
 
-    expect(room.showLocation).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'hall' }));
+    expect(room.showScene).toHaveBeenLastCalledWith('hall');
+  });
+
+  it('keeps the hall up when a finished game is answered', () => {
+    // The reward is a cloth laid over the same table, not a journey out of it —
+    // `finished` shows the same picture `playing` did.
+    const room = openRoomOn('playing');
+
+    room.becomes('finished');
+
+    expect(room.showScene).toHaveBeenLastCalledWith('hall');
   });
 
   it('gives the background back when the room is left', () => {
@@ -107,6 +142,6 @@ describe('useRoomGarden', () => {
     room.unmount();
 
     expect(room.showAir).toHaveBeenLastCalledWith('petals');
-    expect(room.showLocation).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'gate' }));
+    expect(room.showScene).toHaveBeenLastCalledWith('gate');
   });
 });

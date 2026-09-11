@@ -3,12 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { airFor, isGreeting } from './room-air';
 
 describe('airFor', () => {
-  it('puts petals behind every screen of a room but the game', () => {
+  it('puts petals behind every screen before a game and while it waits', () => {
     expect(airFor('connecting')).toBe('petals');
     expect(airFor('unavailable')).toBe('petals');
     expect(airFor('join')).toBe('petals');
     expect(airFor('lobby')).toBe('petals');
-    expect(airFor('finished')).toBe('petals');
   });
 
   it('leaves the background of a game still', () => {
@@ -17,6 +16,13 @@ describe('airFor', () => {
 
   it('leaves a game somebody ended still as well', () => {
     expect(airFor('closed-early')).toBe('still');
+  });
+
+  it('draws no petals once a game is finished, because the hall has no sky in it', () => {
+    // A finished game stands inside the temple's hall, and no petal falls
+    // indoors — geometry that used to be enforced by the camera's own doorway
+    // culling and is now this switch's alone to keep (issue #152).
+    expect(airFor('finished')).toBe('still');
   });
 });
 

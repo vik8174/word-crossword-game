@@ -405,10 +405,11 @@ describe('RoomPage', () => {
       expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     });
 
-    // Cream read straight off the forest falls short of the small-text
-    // threshold at the gate's brightest point (issue #136), because this line
-    // has no zone of its own to stand in. It stands on the same band every
-    // other sentence without one stands on instead.
+    // Cream read straight off the scene falls short of the small-text
+    // threshold (issue #136, measured against the gate before issue #152
+    // moved this screen onto the doors), because this line has no zone of its
+    // own to stand in. It stands on the same band every other sentence
+    // without one stands on instead.
     it('stands the connecting line on the same band every other bandless sentence stands on', async () => {
       renderRoomPage();
 
@@ -742,8 +743,9 @@ describe('RoomPage', () => {
       // so there is nothing of it on this screen but a count of what is in it
       // (issue #115). It used to be drawn here, empty and already the size it
       // would be played at (issue #101); what that bought — a board that does
-      // not move when the game begins — is now the camera going through the
-      // doorway instead, and the doorway is the middle of this window.
+      // not move when the game begins — is the doorway itself now, visible in
+      // the picture and left empty, and the doorway is the middle of this
+      // window (issue #152 removed the camera that used to travel through it).
       expect(screen.getByRole('heading', { name: /the crossword/i })).toBeInTheDocument();
       expect(screen.getByText(/words are hidden in this grid/i)).toBeInTheDocument();
       expect(screen.queryByRole('group', { name: /crossword grid/i })).not.toBeInTheDocument();

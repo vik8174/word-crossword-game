@@ -8,8 +8,8 @@ import { SCENE, SCENE_INK_DIM } from '../garden/scene-palette';
  *
  * It is a component of its own because two screens say it and they say it in
  * different places. In the hall the board is on the screen and this stands over
- * it; at the doors of the temple there is no board yet — the doorway in the
- * middle of that screen is what the camera flies through, so nothing of the
+ * it; at the doors of the temple there is no board yet — the middle of that
+ * screen is the doorway, visible in the picture itself, so nothing of the
  * interface may stand in it — and this is all there is of the crossword, in the
  * band at the side (issue #115).
  *

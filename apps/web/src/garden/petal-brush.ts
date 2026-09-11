@@ -1,14 +1,22 @@
 import type { Petal, Sky } from './petals';
-import type { Rect } from './world';
 
 /**
- * The part of a canvas the garden draws through, and nothing else.
+ * The part of a canvas the garden draws petals through, and nothing else.
  *
  * Narrowed to nine calls and two properties rather than taken as a whole
  * `CanvasRenderingContext2D` for one reason: a browser context satisfies this
  * without being told to, and so does an object a test can read back. Nothing
  * here has to be cast, and nothing about the drawing has to be guessed at from
  * a screenshot.
+ *
+ * This file used to be `paint-petals.ts`, and drew each petal against a
+ * doorway rectangle that culled the ones falling "indoors" — a rule that made
+ * sense while the scene was one continuous painted world with a camera moving
+ * through it (issue #115, ADR 0031). Issue #152 replaces that world with three
+ * separate pictures switched by which screen is showing, so there is no
+ * doorway rectangle left to cull against: a petal is either on screen, over
+ * whichever picture is currently shown, or it is not drawn at all because the
+ * whole layer has faded out (`PetalLayer.tsx`, `room-air.ts`).
  */
 export interface PetalBrush {
   clearRect(x: number, y: number, width: number, height: number): void;
@@ -59,34 +67,6 @@ const paintPetal = (brush: PetalBrush, petal: Petal): void => {
 };
 
 /**
- * Whether this petal is over the hall rather than over the garden.
- *
- * The doorway of the temple is a hole in the weather, and this is the whole of
- * that rule: a petal whose place falls inside the doorway is not drawn. It is
- * geometry and not a setting — there is nothing anywhere that says the weather
- * has been switched off indoors, so the same rule holds at every magnification
- * and goes on holding while a camera is moving through the doorway.
- *
- * A doorway with no width or no height is no doorway, and holds nothing. That
- * is not a special case so much as the ordinary reading of a rectangle: it
- * matters because a window that has not been laid out yet projects the doorway
- * to a point, and a point that swallowed the weather would leave a blank page
- * wherever a canvas was measured before it was on the screen.
- *
- * @param petal - Where it is
- * @param indoors - Where the doorway falls in the window, or `null` when it is nowhere
- * @returns Whether it falls inside
- */
-const isIndoors = (petal: Petal, indoors: Rect | null): boolean =>
-  indoors !== null &&
-  indoors.width > 0 &&
-  indoors.height > 0 &&
-  petal.x >= indoors.x &&
-  petal.x <= indoors.x + indoors.width &&
-  petal.y >= indoors.y &&
-  petal.y <= indoors.y + indoors.height;
-
-/**
  * The whole sky, drawn over whatever was there a frame ago.
  *
  * The frame is cleared rather than drawn over with a colour: this canvas is
@@ -98,26 +78,20 @@ const isIndoors = (petal: Petal, indoors: Rect | null): boolean =>
  * @param petals - The sky as it stands
  * @param sky - The area being cleared and drawn into
  * @param colour - The one colour every petal is drawn in, from the theme
- * @param indoors - Where the temple's doorway falls in the window; petals there are not drawn
  *
  * @example
- * paintPetals(context, petals, sky, theme.palette.sakura.main, openingOnScreen(frame, sky));
+ * paintPetals(context, petals, sky, theme.palette.sakura.main);
  */
 export const paintPetals = (
   brush: PetalBrush,
   petals: readonly Petal[],
   sky: Sky,
   colour: string,
-  indoors: Rect | null = null,
 ): void => {
   brush.clearRect(0, 0, sky.width, sky.height);
   brush.fillStyle = colour;
 
   for (const petal of petals) {
-    if (isIndoors(petal, indoors)) {
-      continue;
-    }
-
     paintPetal(brush, petal);
   }
 };

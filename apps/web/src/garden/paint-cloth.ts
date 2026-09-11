@@ -1,6 +1,6 @@
-import { seeded } from './brushwork';
+import type { Rect, Viewport } from './canvas-layer';
 import { CLOTH, clothBand, closed, dimming } from './cloth';
-import type { Rect, Viewport } from './world';
+import { seeded } from './seeded-random';
 
 /**
  * The cloth being laid, painted into the window a finished game is looking at.

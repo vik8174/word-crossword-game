@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 
-import type { Viewport } from './world';
+import type { Viewport } from './canvas-layer';
 
 /**
- * Where a thing in the world is on the screen, for anything that is not drawn
- * on the canvas.
+ * How big the window is, for anything that has to work it out in JavaScript
+ * rather than in CSS.
  *
- * The name of the game hangs over the gate rather than in a corner, and it goes
- * on hanging there when the window changes shape or the camera moves. That
- * cannot be done in CSS: the gate is at a place in a painting, and where that
- * place lands depends on which part of the world the window is showing.
+ * Its one caller today is the greeting cloth: {@link RewardCloth} paints a
+ * banner on a `<canvas>`, and a canvas has no CSS to size a shape with, so the
+ * band the banner hangs in ({@link clothBand}) has to be worked out in code
+ * from how big the window actually is.
  *
  * It is a hook and not a measurement of the DOM on purpose. Nothing is read
  * back off the page, so there is no first frame drawn in the wrong position and

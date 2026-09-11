@@ -6,8 +6,8 @@
  * time. `theme.ts` never mentioned `transitions`, so a button, a field and the
  * one dialog in the app were each moving on whatever MUI happens to ship —
  * four different curves and seven different durations nobody had chosen,
- * standing next to the deliberate, measured motion of the camera and the
- * screen shift (`docs/decisions/0030-where-movement-is-allowed.md`).
+ * standing next to the deliberate, measured motion of the screen shift
+ * (`docs/decisions/0030-where-movement-is-allowed.md`).
  *
  * Two durations rather than MUI's seven, because the interface only ever asks
  * two questions of a control: does it change in place (a button darkening, a
@@ -19,14 +19,13 @@
  * moving, not a scene settling, and a control that darkens the same way it
  * lightens reads as one thing rather than as two habits sewn together.
  *
- * The camera, the screen shift, the garden's canvases and the page spinner
- * are not on this row and are not folded onto it. Each already carries its
- * own measured number, decided and tested on its own terms
- * (`garden/camera.ts`, `components/screen-shift.ts`, `garden/canvas-layer.ts`,
- * `garden/cloth.ts`, `pages/PageLoading.tsx`) — moving one of those numbers
- * onto a shared row would let a change meant for a button move the camera
- * with it. This ticket is about the motion nobody had chosen, not about the
- * motion that was already chosen carefully.
+ * The screen shift, the petal layer's fade and the page spinner are not on
+ * this row and are not folded onto it. Each already carries its own measured
+ * number, decided and tested on its own terms (`components/screen-shift.ts`,
+ * `garden/canvas-layer.ts`, `garden/cloth.ts`, `pages/PageLoading.tsx`) —
+ * moving one of those numbers onto a shared row would let a change meant for
+ * a button move the weather with it. This ticket is about the motion nobody
+ * had chosen, not about the motion that was already chosen carefully.
  */
 
 /** How long a control takes to change in place: a button darkening, a field's label lifting. */

@@ -1,9 +1,45 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { RoomScreen } from '../rooms/room-screen';
-import { DEFAULT_AIR, useGardenControls } from './garden-controls';
-import { DEFAULT_LOCATION, locationFor } from './locations';
+import { DEFAULT_AIR, DEFAULT_SCENE, type SceneId, useGardenControls } from './garden-controls';
 import { airFor, isGreeting } from './room-air';
+
+/**
+ * Which picture a room's screen stands in front of.
+ *
+ * Written as a switch over every kind, with no `default`, for the same reason
+ * `airFor` is: a screen added to `RoomScreen` and not placed here fails to
+ * compile. Unlike the world this replaces (issue #152), every screen has a
+ * picture of its own — there is no screen left that stands "wherever the
+ * garden already was", because there is no travelling between the pictures
+ * for one to stand still in the middle of.
+ *
+ * `connecting` and `unavailable` go to `doors` rather than to `gate`: both are
+ * what a visitor sees while the room decides whether to let them in, which is
+ * the temple's threshold rather than the way in from outside
+ * (`handoffs/scenes/README.md`).
+ *
+ * @param kind - Which screen the room is showing
+ * @returns The picture it stands in front of
+ *
+ * @example
+ * sceneFor('playing'); // 'hall' — inside, with the board on the shoji
+ * sceneFor('connecting'); // 'doors' — waiting at the threshold
+ */
+const sceneFor = (kind: RoomScreen['kind']): SceneId => {
+  switch (kind) {
+    case 'connecting':
+    case 'unavailable':
+    case 'lobby':
+      return 'doors';
+    case 'join':
+      return 'gate';
+    case 'playing':
+    case 'finished':
+    case 'closed-early':
+      return 'hall';
+  }
+};
 
 /**
  * The garden behind a room, told what the room is doing and where it is
@@ -21,17 +57,10 @@ import { airFor, isGreeting } from './room-air';
  * terminal, so a room that woke to the screen would wake again on every reload
  * (`docs/decisions/0030-where-movement-is-allowed.md`). That memory is the
  * reason this hook answers rather than only telling: what a finished game is
- * greeted with is no longer anything the garden does — the hall has no sky in
- * it — so the room lays a cloth over its own table instead, and this is where
- * the one moment it does so is known
+ * greeted with is no longer anything the garden does — the reward is a cloth
+ * the room lays over its own table instead, and this is where the one moment
+ * it does so is known
  * (`docs/decisions/0031-one-camera-and-what-it-promises.md`).
- *
- * Where the screen stands is told from here for a third reason of its own: two
- * of the seven screens have no place of their own, and `locationFor` says so by
- * answering `null`. A room that cannot be reached is news about the room and
- * not a journey, so the garden is left standing wherever it already was — which
- * for an invite link opened cold is the gate, and for a room that expired
- * mid-game is the hall it expired in.
  *
  * @param kind - Which of the room's screens is showing
  * @returns Whether the game ended while this session was watching
@@ -40,37 +69,33 @@ import { airFor, isGreeting } from './room-air';
  * const hasEnded = useRoomGarden(screen.kind);
  */
 export const useRoomGarden = (kind: RoomScreen['kind']): boolean => {
-  const { showAir, showLocation } = useGardenControls();
+  const { showAir, showScene } = useGardenControls();
   const shown = useRef<RoomScreen['kind'] | null>(null);
   const [hasEnded, setHasEnded] = useState(false);
 
   useEffect(() => {
     const before = shown.current;
-    const location = locationFor(kind);
 
     shown.current = kind;
     showAir(airFor(kind));
-
-    if (location !== null) {
-      showLocation(location);
-    }
+    showScene(sceneFor(kind));
 
     if (isGreeting(before, kind)) {
       setHasEnded(true);
     }
-  }, [kind, showAir, showLocation]);
+  }, [kind, showAir, showScene]);
 
   // A room is the only place in this app where the air is anything but petals
-  // and the window stands anywhere but at the gate, so leaving one takes both
-  // of its rules with it: an address opened after a game would otherwise
-  // inherit the stillness of a board that is no longer there, and the inside of
-  // a temple nobody is in.
+  // and the picture is anything but the gate, so leaving one takes both of its
+  // rules with it: an address opened after a game would otherwise inherit the
+  // stillness of a board that is no longer there, and the inside of a temple
+  // nobody is in.
   useEffect(
     () => () => {
       showAir(DEFAULT_AIR);
-      showLocation(DEFAULT_LOCATION);
+      showScene(DEFAULT_SCENE);
     },
-    [showAir, showLocation],
+    [showAir, showScene],
   );
 
   return hasEnded;

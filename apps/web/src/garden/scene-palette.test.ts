@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest';
 
 import { theme } from '../theme';
 import { CLOTH } from './cloth';
-import { spreadOf } from './colour-spread';
-import { SHOJI_PAPER } from './paint-hall';
 import { INK } from './petals';
-import { BLOSSOM, BLOSSOM_SHIFT } from './paint-sakura';
-import { BAND, CONTROL, SCENE, SCENE_EDGE, SCENE_INK_DIM, VEIL } from './scene-palette';
+import {
+  BAND,
+  CONTROL,
+  SCENE,
+  SCENE_EDGE,
+  SCENE_INK_DIM,
+  SHOJI_PAPER,
+  VEIL,
+} from './scene-palette';
 
 /**
  * What this file is for: the garden writes cream on a painting, and a painting
@@ -124,34 +129,17 @@ const laidOver = (paint: { readonly rgb: Rgb; readonly alpha: number }, behind: 
 const dimOver = (surface: Rgb): Rgb => laidOver(asRgba(SCENE_INK_DIM), surface);
 
 /**
- * The lightest tone a cherry is painted in.
- *
- * Worked out from the ramp and the shift the tree is actually drawn with rather
- * than written down here, because a blossom is not a token — it is the temple's
- * own reds taken most of the way to paper ({@link paintSakura}), and a hand
- * that later moves it a further tenth towards `cream` should fail here rather
- * than in somebody's eyes.
- */
-const lightestBlossom = (): string => {
-  const tones = spreadOf(BLOSSOM, BLOSSOM_SHIFT).flat();
-
-  return tones.reduce(
-    (brightest, tone) => (lightness(asRgb(tone)) > lightness(asRgb(brightest)) ? tone : brightest),
-    tones[0] ?? SHOJI_PAPER[0],
-  );
-};
-
-/**
  * Every surface a sentence can land on, brightest first.
  *
- * The blossom of the cherry trees is the brightest of them, and the lit paper
- * of the temple's doors — which had held that place — is second. Both are the
- * reason for the list: they are brighter than the rest of the picture by a long
- * way, the paper is what the crossword stands against, and the blossom hangs in
- * the window a visitor arrives in.
+ * The lit paper of the temple's doors is the brightest of them by a long way —
+ * it is what the crossword stands against, and every claim this file makes
+ * about text being readable is, at bottom, a claim about that one surface. The
+ * scene stopped being painted stroke by stroke in issue #152, so a cherry
+ * blossom's exact tone is no longer a ramp this file can compute; the paper
+ * remains a value in code (`scene-palette.ts`'s `SHOJI_PAPER`) because the
+ * greeting cloth is still drawn from it, unlike the rest of the scene.
  */
 const SURFACES = [
-  { name: 'the blossom of a cherry', paint: lightestBlossom() },
   { name: 'the lit paper of the doors', paint: SHOJI_PAPER[0] },
   { name: 'the same paper further down', paint: SHOJI_PAPER[2] },
   { name: 'the wall of the hall', paint: SCENE.bark },

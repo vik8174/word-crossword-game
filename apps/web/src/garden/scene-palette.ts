@@ -78,6 +78,20 @@ export const SCENE = {
 export type SceneColour = (typeof SCENE)[keyof typeof SCENE];
 
 /**
+ * The paper of the temple's doors, from where the light hits it to where it
+ * does not.
+ *
+ * Used by the greeting cloth (`cloth.ts`) rather than by anything painted on a
+ * canvas: the doors and the hall are both raster pictures now (issue #152), so
+ * this is no longer the gradient a procedurally-drawn shoji screen was filled
+ * with. It stays a value in this file because it is still a colour the scene
+ * is made of — the cloth is "literally the paper of the doors they walked
+ * through" (`cloth.ts`), and that claim is about the temple's own material, not
+ * about how any particular picture of it was produced.
+ */
+export const SHOJI_PAPER = ['#E4D8B6', '#D6C9A3', '#C3B48D'] as const;
+
+/**
  * How much the picture is put down by, everywhere the interface stands on it.
  *
  * This is the general answer to legibility, and it is one answer rather than a
