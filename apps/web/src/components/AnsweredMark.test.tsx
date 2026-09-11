@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { SCENE } from '../garden/scene-palette';
+import { SCENE, SCENE_EDGE } from '../garden/scene-palette';
 import { AnsweredMark } from './AnsweredMark';
 
 describe('AnsweredMark', () => {
@@ -14,6 +14,10 @@ describe('AnsweredMark', () => {
     // is present, and nothing fills the disc itself.
     expect(style.boxShadow).not.toBe('');
     expect(style.backgroundColor).not.toBe(SCENE.vermilionLit);
+    // Drawn at the boundary-of-a-control weight and not the fainter one a
+    // merely decorative rule gets — a return to `SCENE_LINE` would pass every
+    // other assertion here and read below 3∶1 on the band (issue #150).
+    expect(style.boxShadow).toContain(SCENE_EDGE);
   });
 
   it('draws a filled disc for a word that has been answered, not an open ring', () => {
