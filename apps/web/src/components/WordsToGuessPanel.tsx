@@ -6,7 +6,7 @@ import { WordEntryList } from './WordEntryList';
 
 /** Said over the words the others are explaining to this player. */
 const GUESS_HINT =
-  'The others explain these to you. Type them into the highlighted squares, and name one by its number to ask for it again. Tap one to go to its first empty square.';
+  'The others explain these to you. Type them into the highlighted squares, and name one by its number to ask for it again. Tap one to go to its first empty square. A lit dot means it has been answered.';
 
 interface WordsToGuessPanelProps {
   /** The words hidden from this player — they are the ones typing them in. */
@@ -44,6 +44,8 @@ export const WordsToGuessPanel = ({ words, onSelectWord }: WordsToGuessPanelProp
 
   const entries: readonly WordEntry[] = words.map((word) => ({
     id: word.id,
+    reference: nameOf(word),
+    word: null,
     name: `${nameOf(word)}${word.isSolved ? ' — answered' : ' — still to answer'}`,
     location: { cells: word.cells, orientation: word.orientation },
     isSolved: word.isSolved,

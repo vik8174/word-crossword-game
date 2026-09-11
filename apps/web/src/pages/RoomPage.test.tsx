@@ -984,8 +984,12 @@ describe('RoomPage', () => {
 
       // `cat` and `car` begin in the same square and share its number, so the
       // direction is what tells them apart — which is how the players say them.
-      expect(screen.getByText(/1 down — car/i)).toBeInTheDocument();
-      expect(screen.getByText(/1 across — still to answer/i)).toBeInTheDocument();
+      // Read off each row's accessible name rather than its visible text: the
+      // state is a mark on screen and a word in the name (issue #150).
+      expect(screen.getByRole('button', { name: /1 down — car/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /1 across — still to answer/i }),
+      ).toBeInTheDocument();
       expect(screen.getByText('0 of 1 answered.')).toBeInTheDocument();
     });
 
@@ -1126,7 +1130,7 @@ describe('RoomPage', () => {
 
       expect(gridLetters()).toBe('CAR');
       expect(within(grid()).queryByLabelText(/yours to explain/i)).not.toBeInTheDocument();
-      expect(screen.getByText(/1 down — car — answered/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /1 down — car — answered/i })).toBeInTheDocument();
       expect(screen.getByLabelText(/row 1, column 1\b/i)).not.toHaveAccessibleName(
         /one of your words/i,
       );
@@ -1145,7 +1149,7 @@ describe('RoomPage', () => {
       expect(gridLetters()).toBe('CATAR');
       expect(screen.queryByLabelText(/a letter of one of your words/i)).not.toBeInTheDocument();
       expect(screen.getByText('1 of 1 answered.')).toBeInTheDocument();
-      expect(screen.getByText(/1 across — answered/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /1 across — answered/i })).toBeInTheDocument();
     });
 
     it('leaves the room to another ticket to finish', async () => {
@@ -1181,7 +1185,7 @@ describe('RoomPage', () => {
 
       // `car` is Bob's to explain and Vik has just answered it: there is
       // nothing left to explain, and the panel says so as well as the grid.
-      expect(screen.getByText(/1 down — car — answered/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /1 down — car — answered/i })).toBeInTheDocument();
     });
 
     it('fills two of a player own crossing words without the cursor going astray', async () => {
@@ -1456,8 +1460,14 @@ describe('RoomPage', () => {
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByText('cat')).toBeInTheDocument();
-      expect(screen.getByText('car')).toBeInTheDocument();
+      // Scoped to the finished panel itself rather than the whole page: the
+      // leaving screen still has `car` in its own words-to-explain index while
+      // the shift is running, and a bare `getByText` would pass on that alone
+      // — this is the one place the whole crossword, secrets included, is
+      // meant to be spelled out (`GameCompletedPanel.tsx`).
+      const finishedPanel = screen.getByRole('region', { name: /every word is in/i });
+      expect(within(finishedPanel).getByText('cat')).toBeInTheDocument();
+      expect(within(finishedPanel).getByText('car')).toBeInTheDocument();
     });
 
     it('gives a player who comes back to the link their finished game, not a refusal', async () => {

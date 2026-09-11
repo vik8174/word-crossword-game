@@ -33,18 +33,25 @@ describe('WordsToExplainPanel', () => {
   it('names every word this player explains, by its number and its direction', () => {
     renderPanel([explained('w0', 3, 'apple'), explained('w2', 7, 'bread')]);
 
-    expect(screen.getByText('3 across — apple')).toBeInTheDocument();
-    expect(screen.getByText('7 across — bread')).toBeInTheDocument();
+    expect(screen.getByText('3 across')).toBeInTheDocument();
+    expect(screen.getByText('apple')).toBeInTheDocument();
+    expect(screen.getByText('7 across')).toBeInTheDocument();
+    expect(screen.getByText('bread')).toBeInTheDocument();
   });
 
   it('says a word is done in words, not only by striking it through', () => {
     renderPanel([explained('w0', 3, 'apple', true)]);
 
-    // Struck through and recoloured for whoever is looking, and said outright
-    // for whoever cannot tell grey from black.
-    expect(screen.getByText('3 across — apple — answered')).toHaveStyle({
-      textDecoration: 'line-through',
-    });
+    // Said outright in the row's accessible name, whatever the eye is given —
+    // and struck through as well, so the mark beside it is never the only cue.
+    expect(screen.getByRole('button', { name: '3 across — apple — answered' })).toBeInTheDocument();
+    expect(screen.getByText('apple')).toHaveStyle({ textDecoration: 'line-through' });
+  });
+
+  it('explains the mark in its hint', () => {
+    renderPanel([explained('w0', 3, 'apple')]);
+
+    expect(screen.getByText(/A lit dot means it has been answered\./)).toBeInTheDocument();
   });
 
   it('reports where a tapped word runs, and nothing that could be spelled out', () => {
