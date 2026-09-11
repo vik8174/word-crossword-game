@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import type { Viewport } from './canvas-layer';
 import { CLOSED_AT, clothBand } from './cloth';
 import { type ClothBrush, paintCloth } from './paint-cloth';
-import type { Viewport } from './world';
 
 const DESKTOP: Viewport = { width: 1440, height: 900 };
 

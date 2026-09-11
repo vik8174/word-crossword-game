@@ -14,8 +14,8 @@ import {
  * What this file is for: the bands below are a place on `gate.jpg`, measured
  * against its real pixels rather than computed from anything (issue #151,
  * `handoffs/scenes/README.md`). There is no formula here to exercise the way
- * `world.test.ts` exercises `frameFor` — what there is to hold still is that
- * the numbers do not quietly drift, and that the box built from them is
+ * a geometry module's arithmetic once was — what there is to hold still is
+ * that the numbers do not quietly drift, and that the box built from them is
  * positioned as a percentage of the stage rather than of the window in some
  * other unit that would stop meaning the same thing on a phone.
  */

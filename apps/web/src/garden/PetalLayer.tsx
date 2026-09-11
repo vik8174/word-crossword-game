@@ -6,11 +6,9 @@ import { useEffect, useRef, useState } from 'react';
 import { REDUCED_MOTION_QUERY } from '../components/screen-shift';
 import { FADE_MS, fitToWindow, LAYERS, layerSx } from './canvas-layer';
 import type { GardenAir } from './garden-controls';
-import { paintPetals } from './paint-petals';
+import { paintPetals } from './petal-brush';
 import { driftPetals, fillSky, type Petal, petalsWanted } from './petals';
-import type { Camera } from './use-camera';
 import { useDocumentVisible } from './use-document-visible';
-import { frameFor, openingOnScreen } from './world';
 
 /**
  * The most a single frame is allowed to be worth, in seconds.
@@ -35,29 +33,19 @@ const LONGEST_FRAME_SECONDS = 1 / 15;
  * - **A tab nobody is looking at** stops the loop and leaves the last frame on
  *   the canvas, so a phone in a pocket is not drawing a garden.
  *
- * It has nothing to say about the end of a game any more. The petals were the
- * greeting once, and a finished game now stands inside the temple where they do
- * not fall at all, so what greets a player is the cloth the room lays over its
- * own table ({@link RewardCloth},
- * `docs/decisions/0031-one-camera-and-what-it-promises.md`).
- *
- * Where the window is standing matters here for one reason: the temple's
- * doorway is a hole in the weather, and a petal that falls across it is not
- * drawn (see {@link openingOnScreen}). The camera is asked for that place once
- * a frame rather than given it, because the doorway moves and grows for the
- * length of every journey, and a petal culled against the doorway as it stood a
- * second ago is a petal missing out of the middle of the sky.
+ * It never stops for a change of picture. Which of the three scenes is
+ * standing behind the app is this canvas's neighbour, not its business — this
+ * is one layer for the life of the tab, painted over whichever picture
+ * `Garden.tsx` is currently showing underneath it, and it never resets when
+ * that picture changes (`handoffs/scenes/README.md`). It also no longer culls
+ * against a doorway: that rule belonged to a continuous painted world with a
+ * camera moving through it (issue #115), and issue #152 replaces that world
+ * with three separate pictures, so a petal is either on screen or the whole
+ * layer has faded out — there is no third place for one to fall into.
  *
  * @param props.air - Whether petals are falling behind this screen
- * @param props.camera - Where the window is standing, which is where the doorway is
  */
-export const PetalLayer = ({
-  air,
-  camera,
-}: {
-  readonly air: GardenAir;
-  readonly camera: Camera;
-}) => {
+export const PetalLayer = ({ air }: { readonly air: GardenAir }) => {
   const theme = useTheme();
   const isStill = useMediaQuery(REDUCED_MOTION_QUERY);
   const isAwake = useDocumentVisible();
@@ -130,20 +118,14 @@ export const PetalLayer = ({
           ? fillSky(sky, Math.random)
           : driftPetals(petals.current, seconds, sky, wanted, Math.random);
 
-      paintPetals(
-        brush,
-        petals.current,
-        sky,
-        colour,
-        openingOnScreen(frameFor(camera.at(), sky), sky),
-      );
+      paintPetals(brush, petals.current, sky, colour);
       frame = window.requestAnimationFrame(step);
     };
 
     frame = window.requestAnimationFrame(step);
 
     return () => window.cancelAnimationFrame(frame);
-  }, [camera, colour, isAwake, isDrawing, isStill]);
+  }, [colour, isAwake, isDrawing, isStill]);
 
   if (isStill) {
     return null;

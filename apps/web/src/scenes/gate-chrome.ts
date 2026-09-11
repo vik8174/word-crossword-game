@@ -41,18 +41,18 @@ export const GATE_TAGLINE_BAND = { top: 12.5, bottom: 15.1 } as const;
 export const GATE_LOCKUP_X = { left: 24, right: 77 } as const;
 
 /**
- * The ink the lockup is set in: sumi, not the cream the painted garden writes
- * on its own canopy.
+ * The ink the lockup is set in: sumi, not the cream the scene's own palette
+ * writes on its canopy.
  *
  * Cream fails almost everywhere on this sky — 94% of the band `gate-chrome.ts`
  * used to pin the name to, measured against the real pixels of `gate.jpg`
  * (issue #151). Sumi is what the same measurement clears with room, in the
  * clear band above. It is written as its own literal rather than read off
  * `garden/scene-palette.ts`'s `SCENE.barkDeep` — the two happen to be the same
- * hex, but one is a token of the forest the procedural garden still paints for
- * every other screen, and the other is a colour chosen against a photograph
- * that palette has nothing to do with; a future scene with a different sky is
- * free to need a different ink without touching either.
+ * hex, but one is a token of the palette every scene's chrome still shares
+ * (`SCENE`, `scene-palette.ts`), and the other is a colour chosen against a
+ * photograph that token has nothing to do with; a future scene with a
+ * different sky is free to need a different ink without touching either.
  */
 export const GATE_INK = '#1C1A1A';
 

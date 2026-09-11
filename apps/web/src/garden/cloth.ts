@@ -1,7 +1,6 @@
-import { eased } from './camera';
-import { SHOJI_PAPER } from './paint-hall';
-import { CONTROL, SCENE } from './scene-palette';
-import type { Rect, Viewport } from './world';
+import type { Rect, Viewport } from './canvas-layer';
+import { eased } from './easing';
+import { CONTROL, SCENE, SHOJI_PAPER } from './scene-palette';
 
 /**
  * The cloth a finished game is answered with: how long it takes, where it

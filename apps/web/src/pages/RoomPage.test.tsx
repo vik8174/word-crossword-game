@@ -405,10 +405,11 @@ describe('RoomPage', () => {
       expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     });
 
-    // Cream read straight off the forest falls short of the small-text
-    // threshold at the gate's brightest point (issue #136), because this line
-    // has no zone of its own to stand in. It stands on the same band every
-    // other sentence without one stands on instead.
+    // Cream read straight off the scene falls short of the small-text
+    // threshold (issue #136, measured against the gate before issue #152
+    // moved this screen onto the doors), because this line has no zone of its
+    // own to stand in. It stands on the same band every other sentence
+    // without one stands on instead.
     it('stands the connecting line on the same band every other bandless sentence stands on', async () => {
       renderRoomPage();
 

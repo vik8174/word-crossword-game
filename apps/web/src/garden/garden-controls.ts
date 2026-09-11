@@ -1,20 +1,17 @@
 import { createContext, useContext } from 'react';
 
-import type { Location } from './locations';
-
 /**
  * What anything drawn inside the garden can ask of it.
  *
  * It is two verbs and no state, on purpose. Whether petals are falling, and
- * where in the world the window is standing, are the garden's own business and
- * nothing else's — a screen that could read either would sooner or later be
- * written to decide something by it.
+ * which of the three pictures is standing behind the app, are the garden's own
+ * business and nothing else's — a screen that could read either would sooner
+ * or later be written to decide something by it.
  *
- * There used to be a third, `greet`, which asked the sky to thicken at the end
- * of a game. It is gone rather than unused: the end of a game happens inside
- * the temple, the weather does not come indoors, and what answers a finished
- * game now is a cloth the room lays over its own table
- * (`docs/decisions/0031-one-camera-and-what-it-promises.md`).
+ * There used to be a third verb, `showLocation`, which asked a camera to fly
+ * to a point of one continuous painted world. Issue #152 removes that world:
+ * a scene is a picture now, not a place with coordinates, so what a screen
+ * says is simply which of the three pictures it stands in front of.
  */
 
 /**
@@ -36,12 +33,34 @@ export type GardenAir = 'petals' | 'still';
  */
 export const DEFAULT_AIR: GardenAir = 'petals';
 
+/**
+ * One of the three pictures the app stands in front of.
+ *
+ * Not a point in a world and not a magnification — a scene is a picture, full
+ * stop (issue #152). `gate` is the torii with the temple visible through it
+ * (`home`, `create`, `join`); `doors` is the temple's entrance, its own
+ * interior visible through the open doors (`connecting`, `unavailable`,
+ * `lobby`); `hall` is that same interior, seen from inside it (`playing`,
+ * `finished`, `closed-early`). See `handoffs/scenes/README.md` for the
+ * content chain that makes the three read as one place.
+ */
+export type SceneId = 'gate' | 'doors' | 'hall';
+
+/**
+ * Which picture stands behind the app when nothing has said otherwise.
+ *
+ * The gate, because it is where every first visit is: the landing page and the
+ * page a game is made on are both in front of it, and a room that has been
+ * left takes its own picture with it.
+ */
+export const DEFAULT_SCENE: SceneId = 'gate';
+
 /** The garden, as the app is allowed to touch it. */
 export interface GardenControls {
   /** Says what the air should be from now on. */
   readonly showAir: (air: GardenAir) => void;
-  /** Says which of the four places the window is standing in from now on. */
-  readonly showLocation: (location: Location) => void;
+  /** Says which picture should stand behind the app from now on. */
+  readonly showScene: (scene: SceneId) => void;
 }
 
 /**
@@ -53,7 +72,7 @@ export interface GardenControls {
  */
 const NO_GARDEN: GardenControls = {
   showAir: () => {},
-  showLocation: () => {},
+  showScene: () => {},
 };
 
 export const GardenControlsContext = createContext<GardenControls>(NO_GARDEN);
@@ -64,6 +83,6 @@ export const GardenControlsContext = createContext<GardenControls>(NO_GARDEN);
  * @returns The two things a screen may ask of it
  *
  * @example
- * const { showAir, showLocation } = useGardenControls();
+ * const { showAir, showScene } = useGardenControls();
  */
 export const useGardenControls = (): GardenControls => useContext(GardenControlsContext);
