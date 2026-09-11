@@ -86,36 +86,49 @@ room screen on the procedural forest, so the actual brush strokes — `paint-sce
 `paint-landmarks.ts`, the torii itself — are still reachable from other routes
 and could not be deleted here. What came out was `garden/gate-chrome.ts`
 alone, a small position-calculation module with no drawing in it, replaced by
-`scenes/gate-chrome.ts` of about the same size. Measured on the CI-style build
-(no `SENTRY_AUTH_TOKEN`, `apps/web/.env` filled with real Firebase config):
-**216.961 KiB before this ticket, 217.038 KiB after** (222,168 → 222,247 bytes)
-— a first visit **0.08 KiB heavier** rather than lighter. Nobody could have
-known this figure before the build produced it, which is the entire point of
-a tracer bullet — and what it found is that the code freed by this ticket
-alone is close to zero, not the large number the phrase "deletes the gate's
-painting path" suggested going in. The large deletion — the whole `paint-*`
-family, 5,682 lines of non-test code per
-`handoffs/scenes/component-inventory.md` — is still ahead of the release, in
-the ticket that takes `/create` and `/join` off the garden too.
+`scenes/gate-chrome.ts` of about the same size.
 
-**The Deploy-build figure is not in this record, and the reason is worth
-being precise about.** An earlier draft of this ADR claimed `217.1 KiB`,
-attributed to `sourcemaps.disable: 'disable-upload'` with a placeholder
-`SENTRY_AUTH_TOKEN` — the theory being that this setting stamps debug ids into
-the built chunks locally, without needing a real token or an actual upload.
-Checked directly, byte for byte: a `dist/` built with a placeholder token and
-`disable: 'disable-upload'` is **identical**, file for file, to one built with
-no token at all. The plugin's release-creation call fails authentication
-(`401 Invalid token`) before it reaches whatever step would modify a chunk, so
-nothing about the build is actually exercised — the number that draft reported
-was a CI-style number wearing a Deploy-style label. The real gap this project
-already knows about (ADR 0032, roughly 1.5 KiB on commit `9dd4f1f`) can only be
-produced by a build holding a genuine, working Sentry token that gets far
-enough to inject debug ids — which is exactly the upload this ticket was told
-not to perform silently. The Deploy-build before/after figure is therefore
-unmeasured here; it needs either a real token supplied for one deliberate,
-consented build, or waiting for the number CI itself reports once this pull
-request is deployed.
+**Two builds, not one, because a token changes the bundle rather than only the
+upload.** `apps/web/.env` holds real Firebase config throughout. Whether
+`SENTRY_AUTH_TOKEN` is set decides whether `sentryVitePlugin` runs at all
+(`shouldUploadSourceMaps`) — when it does, `build.sourcemap` becomes `'hidden'`
+and every chunk gets a debug id stamped into it as part of the local bundling
+step, before the plugin ever makes a network call. That stamping does not need
+a _working_ token, only a non-empty one: a garbage string still gets the
+chunks stamped and then fails authentication (`401 Invalid token`) on the
+separate, later call that would create a release — so the weight this stamping
+adds is measurable with no real upload and no working credentials, exactly the
+way ADR 0032 measured it on a real deploy at `9dd4f1f` (roughly 1.5 KiB there).
+
+|                                | no token (CI-style)     | a token, working or not (Deploy-style) |
+| ------------------------------ | ----------------------- | -------------------------------------- |
+| before this ticket (`12298f4`) | 220,851 B = 215.675 KiB | 222,168 B = 216.961 KiB                |
+| after (`6899d0a`)              | 220,958 B = 215.779 KiB | 222,263 B = 217.054 KiB                |
+| change                         | +107 B (+0.10 KiB)      | +95 B (+0.09 KiB)                      |
+
+Both rows move by about a tenth of a kibibyte, heavier rather than lighter —
+what a token is set to does not change _what this ticket_ did, only the
+constant it is measured against. Nobody could have known either figure before
+the build produced it, which is the entire point of a tracer bullet, and what
+it found is that the code freed by this ticket alone is close to zero, not the
+large number the phrase "deletes the gate's painting path" suggested going in.
+The large deletion — the whole `paint-*` family, 5,682 lines of non-test code
+per `handoffs/scenes/component-inventory.md` — is still ahead of the release,
+in the ticket that takes `/create` and `/join` off the garden too.
+
+**An earlier draft of this record got the mechanism backwards.** It reported
+`sourcemaps.disable: 'disable-upload'` plus a placeholder token as producing a
+`dist/` byte-for-byte identical to one built with no token — and concluded
+from that identity that a placeholder token proves nothing, so it measured
+only the "CI-style" row above and left the rest unmeasured. Both halves of
+that were checked again, directly: setting `sourcemaps.disable: 'disable-upload'`
+does make the two builds identical, for _any_ token, because in this plugin
+version that setting turns off the chunk stamping too rather than only the
+upload it says it disables — so the draft's own test method could never have
+found a difference, whatever it was measuring. Removing that one option and
+measuring a plain build against the plugin exactly as it ships (no local
+modification, only the environment variable toggled) is what produces the two
+distinct rows above.
 
 **A second scene changes nothing about how this works.** `doors.avif` and
 `hall.avif`, when their tickets arrive, are more files in `public/scenes/`
