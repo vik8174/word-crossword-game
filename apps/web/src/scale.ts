@@ -1,6 +1,6 @@
 /**
- * The two rows this interface is measured with, and the three faces it is set
- * in.
+ * The two rows this interface is measured with, and the four roles a face
+ * plays in it.
  *
  * They are here rather than inside the theme for the same reason the colours
  * are written down as tokens: a size that is chosen at the place it is used is
@@ -13,6 +13,23 @@
  * read a face or a level without going through a theme they are not drawn by:
  * the scene of issue #115 paints its text onto a canvas, and canvas has no
  * variants.
+ *
+ * There used to be three faces and a serif among them (issue #124): a display
+ * face for the crossword and the two large levels, a sign face for lettering,
+ * and a text face for everything read. Issue #147 dropped the serif — the
+ * board's letters run 11px to 24px, and a face that spends its quality on
+ * stroke contrast loses that contrast first at the sizes this board actually
+ * draws at. What was left of its job, once the board moved off it, was four
+ * short panel headings and one `h1` nobody sees rendered — fifteen and a half
+ * kibibytes for that is not a trade this app makes. See
+ * `docs/decisions/0034-one-text-family-and-a-logotype.md`.
+ *
+ * Four roles now, not three: a **logotype** ({@link LOGOTYPE_FONT_FAMILY}),
+ * fetched for eight glyphs and one route; a **sign** ({@link
+ * SIGN_FONT_FAMILY}) for lettering; a **text** ({@link TEXT_FONT_FAMILY}) for
+ * everything read, including the board's letters now; and a **heading** —
+ * the same family as text, told apart from it by weight alone
+ * ({@link WEIGHTS}), and nothing else.
  */
 
 /**
@@ -89,20 +106,20 @@ export const inRem = (level: number): string => `${level / 16}rem`;
  * The two weights the interface is set in.
  *
  * Two, because a third is a distinction nobody makes on purpose: what is not
- * ordinary text is a heading, and a heading is already a size. The display face
- * is fetched at one weight only and is not in this list at all — anything
- * asking it for bold would be handed a thickened imitation
- * (see {@link DISPLAY_FONT_FAMILY}).
+ * ordinary text is a heading, and a heading is already a size. Both name a
+ * weight the text family actually ships — 400 and 700 — rather than asking a
+ * browser to imitate one it does not have. Only 300 (the sign face's own),
+ * 400 and 700 are ever fetched; a rule naming 500 or 600 would be a weight
+ * nobody chose, matched to whichever real file the browser judges closest.
  *
- * The semibold is six hundred and the text face has no six hundred in it: the
- * family runs 300, 400, 500, 700, 900. Asked for six hundred with a seven
- * hundred present, a browser draws the seven hundred — its own weight-matching
- * rule, not a thickened imitation of the four hundred, and the file is declared
- * in `index.html` at the weight it actually is. So the number here is the one
- * the interface means and the file drawn is a real face; what is lost is that
- * the semibold is a little heavier than it was when a system font served it.
+ * `bold` used to be requested as 600 and matched by the browser to the 700
+ * file that was the only thing present above 400 — a working trick, but one
+ * that named a weight nothing in the family is. Issue #147 made the board's
+ * heading role a real, deliberate 700 (`docs/decisions/
+ * 0034-one-text-family-and-a-logotype.md`), so the number here now says what
+ * is actually drawn rather than what a browser used to be left to guess at.
  */
-export const WEIGHTS = { regular: 400, semibold: 600 } as const;
+export const WEIGHTS = { regular: 400, bold: 700 } as const;
 
 /**
  * Every gap in the interface, and there are no others.
@@ -158,7 +175,7 @@ export const SYSTEM_FONT_FAMILY = [
 ].join(', ');
 
 /**
- * The one family two of the three roles below name, with what to draw while it
+ * The one family two of the four roles below name, with what to draw while it
  * is on its way.
  *
  * It is written once and read twice, and that is a saving of one list rather
@@ -171,38 +188,24 @@ export const SYSTEM_FONT_FAMILY = [
 const ZEN_KAKU_GOTHIC = ['"Zen Kaku Gothic New"', '"Hiragino Sans"', '"Yu Gothic"'].join(', ');
 
 /**
- * The display face: the letters of the crossword, and the two largest levels.
+ * The logotype: the name of the game, over the gates, and nowhere else.
  *
- * A letter in the grid is the single thing a player looks at for twenty minutes
- * together, which is the whole of why it is worth any bytes at all. It costs
- * 15.9 KB: one weight, latin only, declared in `index.html`.
+ * A display face chosen for one word standing eight glyphs tall rather than for
+ * reading — `WORD GARDEN` is `W O R D G A E N`, and the file behind this
+ * constant is subset to exactly those letters plus a space, weighing well
+ * under a kibibyte (measured in the pull request that added it,
+ * `docs/decisions/0034-one-text-family-and-a-logotype.md`). Declared in
+ * `index.html` without a preload, the same way the sign face arrived before
+ * anything used it: a `@font-face` nobody's CSS names yet costs nothing to
+ * fetch, only to declare.
  *
- * Served from this app's own origin rather than linked from a font host, and
- * that is a measurement rather than a preference: the stylesheet a font host
- * answers with for this family is 58 KB gzipped, because it lists every
- * Japanese subset of the face — a third of what a first visit to the landing
- * page costs in total, spent before a byte of the font itself is fetched. The
- * word list refuses anything but latin anyway (`word-list-validator`,
- * `word-not-latin`), so the `unicode-range` in `index.html` says latin and the
- * file behind it is the latin subset alone.
- *
- * `font-display: swap` is set with it, so the board is ruled and readable in
- * the system font while the face is still on its way.
- *
- * It is on the two large levels and on the grid, and it is kept off everything
- * smaller on purpose. That used to be said as a hunch; issue #124 measured it.
- * Its lowercase is 43% of its own size against the 48% of the face below and
- * the 51% of a system sans, so seventeen pixels of it stand 15% shorter than
- * seventeen pixels of what a reader is used to — which is a headline getting a
- * long neck, and an aside disappearing.
+ * Where the name stands, in what colour and at what size is not decided here —
+ * that is issue #148's. This constant is the face and the subset, ready for it.
  */
-export const DISPLAY_FONT_FAMILY = [
-  '"Zen Old Mincho"',
-  '"Hiragino Mincho ProN"',
-  '"Iowan Old Style"',
-  'Georgia',
-  'serif',
-].join(', ');
+export const LOGOTYPE_FONT_FAMILY = ['"Dela Gothic One"', SYSTEM_FONT_FAMILY].join(', ');
+
+/** The one weight the logotype is fetched at, and the only one it has. */
+export const LOGOTYPE_FONT_WEIGHT = 400;
 
 /**
  * The sign face: what is painted onto a sign rather than written on paper.
@@ -229,18 +232,23 @@ export const SIGN_FONT_FAMILY = [ZEN_KAKU_GOTHIC, SYSTEM_FONT_FAMILY].join(', ')
 export const SIGN_FONT_WEIGHT = 300;
 
 /**
- * The text face: everything that is read rather than looked at.
+ * The text face: everything that is read rather than looked at, and now the
+ * board's letters as well.
  *
  * Fields, hints, counters, the labels on buttons, the names of panels, the
- * names of players — all of it, on the two small levels and on the two headings
- * below the display face.
+ * names of players — all of it, on the two small levels, and on the four
+ * heading levels above them told apart by weight alone
+ * ({@link WEIGHTS}). Issue #147 moved the crossword's letters onto it too:
+ * a serif that spent its quality on stroke contrast lost that contrast first
+ * at the sizes the board draws its letters at (11px to 24px), so the board now
+ * reads in the same 400 that already shipped for every sentence in the app —
+ * no new file, no new bytes.
  *
  * It is the same family as the sign face and a different job. The garden
  * letters that family at 300 with the letters held apart, which is lettering;
- * this is the same family set as text, at 400 and at the semibold below. Two
- * more files, 19.0 KB together, and they are what put a first visit over the
- * ceiling that was there before — see
- * `apps/web/build/first-visit-weight.ts`, which now says 218.
+ * this is the same family set as text, at 400 and at the bold below. Two files,
+ * 19.0 KB together, and they are what put a first visit over the ceiling that
+ * was there before — see `apps/web/build/first-visit-weight.ts`.
  *
  * Chosen against three others on real screens of the game (issue #124). The
  * measurement that decided the shape of the choice rather than the winner: a
