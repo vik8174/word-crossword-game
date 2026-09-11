@@ -57,11 +57,19 @@ export const HomePage = () => {
           component="h1"
           variant="signage"
           sx={{
-            fontSize: {
-              xs: inRem(TEXT_LEVELS.aside),
-              sm: inRem(TEXT_LEVELS.body),
-              md: inRem(TEXT_LEVELS.title),
-            },
+            // A continuous formula off the viewport's width rather than three
+            // discrete steps pinned to MUI's breakpoints. The breakpoint
+            // version passed at 375, 834 and 1440 (the three widths the
+            // ticket names) but failed everywhere from 900 to about 1185px
+            // wide: `title` (31px) needs roughly 628px to set "Word Crossword
+            // Game" on one line, and the band is 53% of the viewport, so a
+            // single line was only possible from ~1185px up — `md`'s own
+            // floor is 900. `2.4vw` is a hair under the exact ratio that
+            // formula implies (0.53 / (628/31) ≈ 2.62vw), so the text clears
+            // one line at every width it can rather than at three sampled
+            // points, clamped to the same floor and ceiling the discrete
+            // steps used (`aside` 13px, `title` 31px).
+            fontSize: 'clamp(13px, 2.4vw, 31px)',
             // Tight on purpose: the clear band of sky this sits in is a
             // twentieth of the picture's own height, and the theme's own
             // `signage` line height (1.25) is written for a sign with room
@@ -77,7 +85,20 @@ export const HomePage = () => {
             // stage with `getBoundingClientRect` at 1440, 834 and 375, a
             // negative margin here was the reason the rendered name cleared
             // the box's own 77% right edge at every one of the three widths.
-            color: GATE_INK,
+            //
+            // `&&&` rather than a plain `color`: `ON_SCENE_SX` on this page's
+            // own `<main>` carries `'& .MuiTypography-root': { color:
+            // 'inherit' }` (`garden/scene-surface.ts`), a descendant rule at
+            // specificity (0,2,0). A single generated `sx` class targeting
+            // this element directly is only (0,1,0), so that rule always won
+            // regardless of source order — sumi was never reaching the
+            // screen, cream was, unmeasured because the only test on this
+            // colour checked the constant rather than a rendered pixel. Three
+            // ampersands repeat this element's own class three times,
+            // (0,3,0), which beats (0,2,0) outright rather than depending on
+            // which rule happens to be inserted last (issue #126 hit the same
+            // trap first).
+            '&&&': { color: GATE_INK },
           }}
         >
           Word Crossword Game
