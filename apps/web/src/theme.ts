@@ -128,15 +128,16 @@ declare module '@mui/material/styles' {
 }
 
 /**
- * The three faces, the four levels and the row of gaps this app is drawn with
- * are in `scale.ts`, and the typography below is nothing but those handed to
- * MUI. Two of them leave again through this module — the crossword reads the
- * display face here, and the scene of issue #115 reads the sign face out of
- * `theme.typography.signage` — so the theme stays the one thing a component
- * asks about how the app looks
+ * The four roles a face plays, the four levels and the row of gaps this app is
+ * drawn with are in `scale.ts`, and the typography below is nothing but those
+ * handed to MUI. Two of them leave again through this module — the crossword
+ * reads the text face here (its letters and its numbers alike, since issue
+ * #147 dropped the serif that used to set them apart), and the scene of issue
+ * #115 reads the sign face out of `theme.typography.signage` — so the theme
+ * stays the one thing a component asks about how the app looks
  * (`docs/decisions/0028-a-design-system-inside-the-mui-theme.md`).
  */
-export { DISPLAY_FONT_FAMILY, SIGN_FONT_FAMILY } from './scale';
+export { SIGN_FONT_FAMILY, TEXT_FONT_FAMILY } from './scale';
 
 /**
  * The app's design system: a palette of named tokens, and the typography drawn

@@ -2,7 +2,6 @@ import type { TypographyVariantsOptions } from '@mui/material/styles';
 import type { CSSProperties } from 'react';
 
 import {
-  DISPLAY_FONT_FAMILY,
   inRem,
   SIGN_FONT_FAMILY,
   SIGN_FONT_WEIGHT,
@@ -37,14 +36,17 @@ declare module '@mui/material/Typography' {
 }
 
 /**
- * A heading: the display face at its one weight, on one of the two large
- * levels.
+ * A heading: the text face at its bold weight, on one of the four levels.
+ *
+ * The family is not named here either, for the same reason {@link textLevel}
+ * does not name it — a heading used to be a different face from the text
+ * around it (issue #124); issue #147 dropped that face, and a heading is now
+ * told apart from a paragraph by weight and size alone.
  *
  * @param level - The level it is set on, from {@link TEXT_LEVELS}
  */
-const displayLevel = (level: number) => ({
-  fontFamily: DISPLAY_FONT_FAMILY,
-  fontWeight: WEIGHTS.regular,
+const headingLevel = (level: number) => ({
+  fontWeight: WEIGHTS.bold,
   fontSize: inRem(level),
   // Tighter than the text below it, because a heading of two lines that is
   // leaded like a paragraph reads as two headings.
@@ -76,43 +78,43 @@ const textLevel = (level: number, weight: number) => ({
  * level it belongs to: a variant left unsaid would keep a size of MUI's own
  * and so quietly be a fifth.
  *
- * The display face has two levels rather than four, and MUI has four slots for
+ * The heading role has two levels rather than four, and MUI has four slots for
  * it. All four are pinned to those two, so reaching for `h3` where `h2` was
  * meant lands on the scale instead of on a default.
  */
 export const TYPOGRAPHY: TypographyVariantsOptions = {
   fontFamily: TEXT_FONT_FAMILY,
   fontWeightRegular: WEIGHTS.regular,
-  // Two weights, so `medium` and `bold` are the same semibold rather than a
-  // third and a fourth thickness nobody chose between.
-  fontWeightMedium: WEIGHTS.semibold,
-  fontWeightBold: WEIGHTS.semibold,
+  // Two weights, so `medium` and `bold` are the same bold rather than a third
+  // and a fourth thickness nobody chose between.
+  fontWeightMedium: WEIGHTS.bold,
+  fontWeightBold: WEIGHTS.bold,
 
-  h1: displayLevel(TEXT_LEVELS.title),
-  h2: displayLevel(TEXT_LEVELS.heading),
-  h3: displayLevel(TEXT_LEVELS.heading),
-  h4: displayLevel(TEXT_LEVELS.heading),
+  h1: headingLevel(TEXT_LEVELS.title),
+  h2: headingLevel(TEXT_LEVELS.heading),
+  h3: headingLevel(TEXT_LEVELS.heading),
+  h4: headingLevel(TEXT_LEVELS.heading),
 
-  // Below the display face a heading is a label on a panel rather than
-  // something to look at, so it is set in the text face — at the size of the
-  // text under it, told apart by its weight alone.
-  h5: textLevel(TEXT_LEVELS.body, WEIGHTS.semibold),
-  h6: textLevel(TEXT_LEVELS.body, WEIGHTS.semibold),
-  subtitle1: textLevel(TEXT_LEVELS.body, WEIGHTS.semibold),
-  subtitle2: textLevel(TEXT_LEVELS.aside, WEIGHTS.semibold),
+  // Below the four heading levels, a heading is a label on a panel rather
+  // than something to look at, so it is set at the size of the text under
+  // it — told apart from a paragraph by weight alone.
+  h5: textLevel(TEXT_LEVELS.body, WEIGHTS.bold),
+  h6: textLevel(TEXT_LEVELS.body, WEIGHTS.bold),
+  subtitle1: textLevel(TEXT_LEVELS.body, WEIGHTS.bold),
+  subtitle2: textLevel(TEXT_LEVELS.aside, WEIGHTS.bold),
 
   body1: textLevel(TEXT_LEVELS.body, WEIGHTS.regular),
   body2: textLevel(TEXT_LEVELS.aside, WEIGHTS.regular),
   caption: textLevel(TEXT_LEVELS.aside, WEIGHTS.regular),
   overline: {
-    ...textLevel(TEXT_LEVELS.aside, WEIGHTS.semibold),
+    ...textLevel(TEXT_LEVELS.aside, WEIGHTS.bold),
     textTransform: 'uppercase',
     letterSpacing: '0.08em',
   },
 
   // A button says what pressing it does, in the words of the sentence beside
   // it rather than shouted in capitals.
-  button: { ...textLevel(TEXT_LEVELS.body, WEIGHTS.semibold), textTransform: 'none' },
+  button: { ...textLevel(TEXT_LEVELS.body, WEIGHTS.bold), textTransform: 'none' },
 
   // The third role, which nothing in the interface uses and the garden does:
   // lettering on a sign, in capitals held apart (issue #115).
