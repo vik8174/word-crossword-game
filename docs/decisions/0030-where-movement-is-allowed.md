@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+**The landing page left the garden entirely in [#151](https://github.com/vik8174/word-crossword-game/issues/151).** "Petals everywhere except the game" below no longer includes it: `/` stands on `gate.avif`, a photograph with no canvas behind it at all, so there is nothing there for `prefers-reduced-motion` or a hidden tab to switch off. Everything else this record decides — `/create`, the nickname form, the lobby, and the two ending screens — is untouched; the boundary is drawn in [ADR 0033](0033-a-second-ceiling-for-a-picture.md) and in the ticket itself.
+
 ## Context
 
 This release gives the game a look, and two of its tickets put things in motion: [#93](https://github.com/vik8174/word-crossword-game/issues/93) animates the change from one screen to another, and [#103](https://github.com/vik8174/word-crossword-game/issues/103) puts falling petals behind the app and a greeting at the end of a game.

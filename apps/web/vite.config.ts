@@ -1,6 +1,6 @@
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
@@ -20,8 +20,15 @@ import {
   routeChunks,
   routePreloadScript,
 } from './build/route-preload.ts';
+import { type ScenePreload, scenePreloadScript } from './build/scene-preload.ts';
+import {
+  SCENE_IMAGE_CEILING_BYTES,
+  type SceneImageFile,
+  tooHeavySceneReport,
+} from './build/scene-weight.ts';
 import { shouldUploadSourceMaps } from './build/source-map-upload.ts';
 import { ROOM_ROUTE_PATTERN } from './src/rooms/room-link.ts';
+import { GATE_AVIF } from './src/scenes/gate-scene-paths.ts';
 
 /**
  * Where the maps go. Neither is a secret, and there is one project for both
@@ -124,6 +131,48 @@ const preloadRoomRoute = (): Plugin => {
   };
 };
 
+/** Which address the gate's picture is drawn on, and what it is served as. */
+const GATE_SCENE: Omit<ScenePreload, 'href'> = { path: '/', type: 'image/avif' };
+
+/**
+ * Preloads the gate's picture, only on `/`.
+ *
+ * Why a static `<link>` in `index.html` cannot do this is
+ * `build/scene-preload.ts`'s to explain: one document serves every address
+ * (Firebase Hosting rewrite), so a tag written into it by hand would preload
+ * the gate's picture for `/create`, `/join` and `/room/<id>` as well, none of
+ * which ever draw it. This plugin's own part is the same shape as
+ * {@link preloadRoomRoute}'s: turn a path this build already knows
+ * (`GateScene.tsx`'s own {@link GATE_AVIF}) into a script gated on the
+ * address, rather than a tag that cannot tell addresses apart.
+ */
+const preloadGateScene = (): Plugin => {
+  let base = '/';
+
+  return {
+    name: 'preload-gate-scene',
+    apply: 'build',
+
+    configResolved(config) {
+      base = config.base;
+    },
+
+    transformIndexHtml: {
+      order: 'post',
+
+      handler(html) {
+        // `GATE_AVIF` is already root-absolute (`/scenes/gate.avif`), and
+        // `base` ends in `/` whenever it is not itself just `/` — trimming
+        // one before joining is what keeps a non-root base from doubling it.
+        const prefix = base === '/' ? '' : base.replace(/\/$/, '');
+        const script = scenePreloadScript([{ ...GATE_SCENE, href: `${prefix}${GATE_AVIF}` }]);
+
+        return { html, tags: [{ tag: 'script', children: script, injectTo: 'head' as const }] };
+      },
+    },
+  };
+};
+
 /** The one file a visitor asks for by name, and everything else follows from it. */
 const HTML_FILE = 'index.html';
 
@@ -200,6 +249,60 @@ const capFirstVisit = (): Plugin => {
   };
 };
 
+/** Where the raster scenes are copied from `public/` into the built output. */
+const SCENES_DIR = 'scenes';
+
+/**
+ * Fails the build when a scene image has got too heavy.
+ *
+ * Why there is a second ceiling at all, separate from
+ * {@link FIRST_VISIT_CEILING_BYTES}, is in `build/scene-weight.ts`. This
+ * plugin's own part is smaller still: `public/scenes/*` is copied verbatim
+ * into `dist/scenes/` by Vite's own handling of `public/`, so the files are
+ * already sitting there once the bundle is written — nothing has to be found
+ * in the HTML or the bundle graph the way a font does.
+ */
+const capSceneImages = (): Plugin => {
+  let outDir = 'dist';
+
+  return {
+    name: 'cap-scene-images',
+    apply: 'build',
+
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+
+    writeBundle() {
+      const scenesDir = resolve(outDir, SCENES_DIR);
+
+      if (!existsSync(scenesDir)) {
+        return;
+      }
+
+      const files: readonly SceneImageFile[] = readdirSync(scenesDir).map((name) => ({
+        fileName: `${SCENES_DIR}/${name}`,
+        bytes: statSync(resolve(scenesDir, name)).size,
+      }));
+      const complaint = tooHeavySceneReport(files, SCENE_IMAGE_CEILING_BYTES);
+
+      if (complaint !== null) {
+        this.error(complaint);
+
+        return;
+      }
+
+      for (const file of files) {
+        console.log(
+          `Scene image: ${file.fileName} is ${(file.bytes / 1024).toFixed(1)} KiB, of ${(
+            SCENE_IMAGE_CEILING_BYTES / 1024
+          ).toFixed(1)} KiB allowed.`,
+        );
+      }
+    },
+  };
+};
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // Deliberately not `VITE_`-prefixed. Vite embeds every `VITE_` variable into
@@ -222,7 +325,9 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       preloadRoomRoute(),
+      preloadGateScene(),
       capFirstVisit(),
+      capSceneImages(),
       ...(uploadsSourceMaps
         ? [
             sentryVitePlugin({

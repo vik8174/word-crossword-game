@@ -41,19 +41,26 @@ import { useCamera } from './use-camera';
  * in it, so the weather cannot greet anybody indoors, and the greeting is a
  * cloth the room lays over its own table ({@link RewardCloth}).
  *
- * All the layers are mounted here, above the router and outside the shift, so
- * that they are one canvas for the life of the tab rather than one per page: a
- * background that started again every time an address changed would be a page
- * reloading, said in petals. It is also why they cannot live any lower down at
- * all — a `transform` makes a containing block of its own, and `position: fixed`
- * inside one is fixed to the animation rather than to the window
+ * All the layers are mounted outside the shift, so that they are one canvas
+ * for as long as a session stays among the screens that share it rather than
+ * one per page: a background that started again every time an address
+ * changed within them would be a page reloading, said in petals. It is also
+ * why they cannot live any lower down at all — a `transform` makes a
+ * containing block of its own, and `position: fixed` inside one is fixed to
+ * the animation rather than to the window
  * (`docs/decisions/0030-where-movement-is-allowed.md`).
+ *
+ * It no longer wraps every route. `/` stands on its own photograph now and
+ * creates no canvas at all (`scenes/GateScene.tsx`, issue #151), so `App.tsx`
+ * mounts this component for every other route and leaves the gate outside it
+ * — one canvas for the eight screens that still share a place, rather than a
+ * canvas nobody there is looking at.
  *
  * @param props.children - The app, drawn in front of it
  *
  * @example
  * <Garden>
- *   <BrowserRouter>…</BrowserRouter>
+ *   <Routes>…</Routes>
  * </Garden>
  */
 export const Garden = ({ children }: { readonly children: ReactNode }) => {
