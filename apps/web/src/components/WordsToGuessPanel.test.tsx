@@ -33,7 +33,7 @@ describe('WordsToGuessPanel', () => {
   it('numbers the words this player guesses without naming them or their length', () => {
     renderPanel([guessable('w1', 4, 'cheese')]);
 
-    expect(screen.getByText('4 down — still to answer')).toBeInTheDocument();
+    expect(screen.getByText('4 down')).toBeInTheDocument();
     // Neither the word nor its length: working the spelling out is their game,
     // and the squares in the grid are the only thing that measures it.
     expect(document.body.textContent).not.toMatch(/cheese/i);
@@ -43,7 +43,16 @@ describe('WordsToGuessPanel', () => {
   it('says a word is done in words, not only by striking it through', () => {
     renderPanel([guessable('w1', 4, 'cheese', true)]);
 
-    expect(screen.getByText('4 down — answered')).toHaveStyle({ textDecoration: 'line-through' });
+    // Said outright in the row's accessible name, whatever the eye is given —
+    // and struck through as well, so the mark beside it is never the only cue.
+    expect(screen.getByRole('button', { name: '4 down — answered' })).toBeInTheDocument();
+    expect(screen.getByText('4 down')).toHaveStyle({ textDecoration: 'line-through' });
+  });
+
+  it('explains the mark in its hint', () => {
+    renderPanel([guessable('w1', 4, 'cheese')]);
+
+    expect(screen.getByText(/A lit dot means it has been answered\./)).toBeInTheDocument();
   });
 
   it('reports how far this player has got with their own words', () => {
