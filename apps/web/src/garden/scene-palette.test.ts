@@ -202,28 +202,41 @@ describe('what the garden writes on', () => {
     }
   });
 
-  it('reads the label off every control, in both of the states a control has', () => {
-    // A control is not text on a surface but a surface of its own with text on
-    // it, so what has to clear the threshold is its label against its own fill —
-    // and its fill lets the picture through, which means the picture is part of
-    // the measurement. The resting state is here for the same reason the pressed
-    // one is not: waiting for the other player is the state somebody looks at
-    // longest.
-    const states = [
-      { name: 'the one action', fill: CONTROL.fill, ink: CONTROL.ink },
-      { name: 'a control that is waiting', fill: CONTROL.restingFill, ink: CONTROL.restingInk },
-    ];
+  // The control's own three states used to be measured here, laid over every
+  // surface in {@link SURFACES}, because a translucent fill let the picture
+  // through and the picture was part of what had to be measured. Issue #149
+  // made every one of `CONTROL`'s fills opaque precisely so that this would
+  // stop being true: the label now reads the same figure against its fill on
+  // the gate, the doors and the hall alike, and re-measuring it against every
+  // surface a scene can paint behind it would only prove the same number six
+  // times over. That figure now lives in `theme.test.ts`, beside the label
+  // size it is held to, and this file goes back to what it is for — the
+  // picture, not the interface standing on it.
 
-    for (const surface of SURFACES) {
-      for (const state of states) {
-        const control = laidOver(asRgba(state.fill), banded(surface.paint));
-        const label = laidOver(asRgba(state.ink), control);
+  it('paints the control opaque, in the three reds issue #149 settled on', () => {
+    // Written down as exact values rather than only as a contrast figure,
+    // because the same ratio can be reached by an opaque colour or by a
+    // translucent one with the picture behind it — and the whole point of this
+    // ticket was that the second of those reads differently at every pixel of
+    // the pill, on every scene it stands on (`scene-surface.ts`).
+    expect(CONTROL.fill).toBe('#DA4620');
+    expect(CONTROL.litFill).toBe('#E45926');
+    expect(CONTROL.restingFill).toBe('#93290F');
+    expect(CONTROL.restingInk).toBe('rgba(243, 236, 217, 0.78)');
+  });
 
-        expect(contrast(label, control), `${state.name} on ${surface.name}`).toBeGreaterThan(
-          SMALL_TEXT,
-        );
-      }
+  it('never lets the control read a word off its own lit edge', () => {
+    // `vermilionLit` used to be the control's hover fill — the very thing this
+    // ticket found at 2.50:1, the worst figure anywhere in the app. Issue #149
+    // retires it from carrying text for good: it stays the forest's brushed
+    // highlight (`paint-temple.ts`, `AnsweredMark.tsx`) and the control's own
+    // edge is a gold that is not read out of the scene's palette at all, so
+    // the two can never be reunited by a later hand reaching for the same
+    // token out of habit.
+    for (const colour of [CONTROL.fill, CONTROL.litFill, CONTROL.ink, CONTROL.restingFill]) {
+      expect(colour).not.toBe(SCENE.vermilionLit);
     }
+    expect(CONTROL.edge).not.toBe(SCENE.vermilionLit);
   });
 
   it('shows the edge of a field, which is the whole of what says there is one', () => {
@@ -244,13 +257,15 @@ describe('what the garden writes on', () => {
     // Recorded rather than left to be rediscovered: this is the measurement the
     // hall was resized around, and a future release that grows the paper back
     // over the whole window will fail here rather than in somebody's eyes.
+    //
+    // A control standing straight on the lit paper used to be measured here
+    // too, back when its fill was translucent and the paper showed through it.
+    // Issue #149 made the fill opaque, which is the whole point of opacity: a
+    // control's label no longer depends on what is behind the control, so
+    // there is nothing left of that case for this file to hold — `theme.test.ts`
+    // now measures the label against its own fill directly, with no surface
+    // in the question at all.
     expect(contrast(asRgb(SCENE.cream), veiled(SHOJI_PAPER[0]))).toBeLessThan(COMPONENT_EDGE);
-
-    // And the same about a control standing straight on it, which is why every
-    // control in this app is either in a band or in the shade of the forest.
-    const bare = laidOver(asRgba(CONTROL.fill), veiled(SHOJI_PAPER[0]));
-
-    expect(contrast(laidOver(asRgba(CONTROL.ink), bare), bare)).toBeLessThan(SMALL_TEXT);
   });
 });
 

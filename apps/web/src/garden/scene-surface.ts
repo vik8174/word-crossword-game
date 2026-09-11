@@ -252,18 +252,52 @@ export const ON_SCENE_SX: CSSObject = {
   '&& .MuiFormHelperText-root.Mui-error': { color: SCENE.cream },
 
   // The one action, in the one colour that carries an action anywhere in this
-  // place. Translucent, so the forest goes on behind it and the control is
-  // standing in the picture rather than on it — but the edge and the label are
-  // not, because those are the parts that have to be read.
+  // place. Opaque now rather than translucent (issue #149): the picture no
+  // longer shows through the fill, so the label reads the same figure on the
+  // gate, the doors and the hall. The edge and the sun dot stand in every
+  // state alike and none of the overrides below touches them; the lift does
+  // too, but only because each of them restates it (see below).
   '& .MuiButton-contained': {
     backgroundColor: CONTROL.fill,
     color: CONTROL.ink,
     border: `1.5px solid ${CONTROL.edge}`,
-    '&:hover': { backgroundColor: CONTROL.litFill },
+    boxShadow: CONTROL.lift,
+    // The sun dot before the label. A pseudo-element rather than markup added
+    // at every call site, because the mark belongs to the control and not to
+    // whichever page happens to render one — the same reason the fill and the
+    // edge are declared here rather than passed as props.
+    '&::before': {
+      content: '""',
+      display: 'inline-block',
+      width: '6px',
+      height: '6px',
+      marginRight: '8px',
+      verticalAlign: 'middle',
+      borderRadius: '50%',
+      backgroundColor: CONTROL.mark,
+      boxShadow: '0 0 0 3px rgba(255, 246, 230, 0.28)',
+    },
+    // `boxShadow` is restated in every one of the four states below rather
+    // than left to inherit from the rule above. `disableElevation`
+    // (`theme.ts`) gives MUI's own button styles a `boxShadow: 'none'` on
+    // `:hover`, `:active`, `.Mui-focusVisible` and `.Mui-disabled` alike —
+    // still present in the sheet, not removed by this fix — and since none of
+    // the overrides below used to mention `boxShadow` at all, MUI's was the
+    // only rule saying anything about it: the lift silently disappeared on a
+    // press, on a tab-to-focus and while waiting, and on hover, the one state
+    // this ticket's own contrast figure is measured on. Each block below now
+    // wins the same way `&&&`/`GATE_INK` does in `HomePage.tsx` (issue #126):
+    // this rule sits inside `& .MuiButton-contained`, so its compiled selector
+    // carries one more class than MUI's own generated rule for the same
+    // pseudo-class or state, and the extra class is what decides it — not the
+    // absence of a competing declaration.
+    '&:hover': { backgroundColor: CONTROL.litFill, boxShadow: CONTROL.lift },
+    '&:active': { boxShadow: CONTROL.lift },
+    '&.Mui-focusVisible': { boxShadow: CONTROL.lift },
     '&.Mui-disabled': {
       backgroundColor: CONTROL.restingFill,
       color: CONTROL.restingInk,
-      borderColor: CONTROL.restingEdge,
+      boxShadow: CONTROL.lift,
     },
   },
   '& .MuiButton-outlined': {
