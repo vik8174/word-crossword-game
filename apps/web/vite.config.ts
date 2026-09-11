@@ -1,6 +1,6 @@
 import { sentryVitePlugin } from '@sentry/vite-plugin';
 import react from '@vitejs/plugin-react';
-import { readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
@@ -20,6 +20,11 @@ import {
   routeChunks,
   routePreloadScript,
 } from './build/route-preload.ts';
+import {
+  SCENE_IMAGE_CEILING_BYTES,
+  type SceneImageFile,
+  tooHeavySceneReport,
+} from './build/scene-weight.ts';
 import { shouldUploadSourceMaps } from './build/source-map-upload.ts';
 import { ROOM_ROUTE_PATTERN } from './src/rooms/room-link.ts';
 
@@ -200,6 +205,60 @@ const capFirstVisit = (): Plugin => {
   };
 };
 
+/** Where the raster scenes are copied from `public/` into the built output. */
+const SCENES_DIR = 'scenes';
+
+/**
+ * Fails the build when a scene image has got too heavy.
+ *
+ * Why there is a second ceiling at all, separate from
+ * {@link FIRST_VISIT_CEILING_BYTES}, is in `build/scene-weight.ts`. This
+ * plugin's own part is smaller still: `public/scenes/*` is copied verbatim
+ * into `dist/scenes/` by Vite's own handling of `public/`, so the files are
+ * already sitting there once the bundle is written — nothing has to be found
+ * in the HTML or the bundle graph the way a font does.
+ */
+const capSceneImages = (): Plugin => {
+  let outDir = 'dist';
+
+  return {
+    name: 'cap-scene-images',
+    apply: 'build',
+
+    configResolved(config) {
+      outDir = resolve(config.root, config.build.outDir);
+    },
+
+    writeBundle() {
+      const scenesDir = resolve(outDir, SCENES_DIR);
+
+      if (!existsSync(scenesDir)) {
+        return;
+      }
+
+      const files: readonly SceneImageFile[] = readdirSync(scenesDir).map((name) => ({
+        fileName: `${SCENES_DIR}/${name}`,
+        bytes: statSync(resolve(scenesDir, name)).size,
+      }));
+      const complaint = tooHeavySceneReport(files, SCENE_IMAGE_CEILING_BYTES);
+
+      if (complaint !== null) {
+        this.error(complaint);
+
+        return;
+      }
+
+      for (const file of files) {
+        console.log(
+          `Scene image: ${file.fileName} is ${(file.bytes / 1024).toFixed(1)} KiB, of ${(
+            SCENE_IMAGE_CEILING_BYTES / 1024
+          ).toFixed(1)} KiB allowed.`,
+        );
+      }
+    },
+  };
+};
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // Deliberately not `VITE_`-prefixed. Vite embeds every `VITE_` variable into
@@ -223,6 +282,7 @@ export default defineConfig(({ mode }) => {
       react(),
       preloadRoomRoute(),
       capFirstVisit(),
+      capSceneImages(),
       ...(uploadsSourceMaps
         ? [
             sentryVitePlugin({

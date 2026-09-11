@@ -49,4 +49,30 @@ describe('HomePage', () => {
       expect(reportedEvents()).toEqual([{ name: 'screen_reached', params: { screen: 'home' } }]);
     });
   });
+
+  it('stands on a picture rather than a canvas (issue #151)', () => {
+    // The one acceptance criterion a screenshot cannot argue with: this route
+    // creates no `<canvas>` at all, whatever `getContext` would answer if it
+    // did. `App.test.tsx` covers the same claim at the routing level, where
+    // the boundary between this page and the garden is actually decided.
+    const { container } = renderHomePage();
+
+    expect(container.querySelector('canvas')).toBeNull();
+  });
+
+  it('draws the gate as an image with a decoding fallback', () => {
+    const { container } = renderHomePage();
+
+    // A screen reader has nothing to read off a picture that is entirely
+    // lettering and one button already on the page, so the image itself is
+    // decorative (`alt=""`) rather than described a second time.
+    const img = container.querySelector('img');
+
+    expect(img).toHaveAttribute('src', '/scenes/gate.jpg');
+    expect(img).toHaveAttribute('alt', '');
+    expect(container.querySelector('source[type="image/avif"]')).toHaveAttribute(
+      'srcset',
+      '/scenes/gate.avif',
+    );
+  });
 });

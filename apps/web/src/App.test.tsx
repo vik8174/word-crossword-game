@@ -22,7 +22,8 @@ vi.mock('firebase/firestore', () => ({
 
 const open = (path: string) => {
   window.history.pushState({}, '', path);
-  render(<App />);
+
+  return render(<App />);
 };
 
 afterEach(() => {
@@ -30,14 +31,19 @@ afterEach(() => {
 });
 
 describe('App', () => {
-  it('renders the home route by default', () => {
-    render(<App />);
+  it('renders the home route by default, standing on its own picture rather than the garden', () => {
+    const { container } = render(<App />);
 
     expect(screen.getByRole('heading', { name: /word crossword game/i })).toBeInTheDocument();
+
+    // The boundary issue #151 draws: the gate creates no canvas at all, unlike
+    // every other route, which the garden still paints on one — asserted below
+    // on `/room` and the catch-all.
+    expect(container.querySelector('canvas')).toBeNull();
   });
 
-  it('opens a room at the address invite links point at', async () => {
-    open(roomPath('room-1'));
+  it('opens a room at the address invite links point at, inside the garden', async () => {
+    const { container } = open(roomPath('room-1'));
 
     // Fetched when the address asks for it rather than shipped with the landing
     // page (issue #92), so the room arrives a tick after the render. Signing in
@@ -45,6 +51,10 @@ describe('App', () => {
     // exactly the screen this asserts, since it has no frame of its own to find
     // instead (issue #132).
     expect(await screen.findByText(/connecting to the game/i)).toBeInTheDocument();
+
+    // `connecting` has no place of its own (`locationFor`), but it is still a
+    // room screen and stands in the garden's forest — only `/` leaves it.
+    expect(container.querySelectorAll('canvas').length).toBeGreaterThan(0);
   });
 
   it('shows that something is coming while the room is on its way', async () => {

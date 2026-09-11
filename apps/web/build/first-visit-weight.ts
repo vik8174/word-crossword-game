@@ -19,6 +19,13 @@
  * entry by static import, and every file the HTML asks for on its own account —
  * which is the typefaces, preloaded or merely declared. Chunks behind a lazy
  * route are not on it and neither is anything a click causes.
+ *
+ * A scene image is not on it either, even though `/` preloads one. Issue #151
+ * split what used to be one number into two the moment a picture joined the
+ * typefaces on the first screen: this ceiling covers what it always covered,
+ * and a second, separate one covers the picture
+ * (`apps/web/build/scene-weight.ts`,
+ * `docs/decisions/0033-a-second-ceiling-for-a-picture.md`).
  */
 
 /**
@@ -67,15 +74,27 @@ export interface FetchedFile {
 }
 
 /**
- * What the HTML preloads: the files it tells a browser to fetch at once.
+ * What the HTML preloads a typeface for: the font files it tells a browser to
+ * fetch at once.
+ *
+ * Restricted to `as="font"` rather than every `rel="preload"` link, because
+ * this ceiling is the one named in {@link FIRST_VISIT_CEILING_BYTES} — HTML,
+ * chunks and typefaces — and a route may preload something else that is not
+ * one of those: `/` preloads `gate.avif` for the same reason a face is
+ * preloaded, landing before the screen it belongs to is laid out, and that
+ * image is weighed against a ceiling of its own instead
+ * (`apps/web/build/scene-weight.ts`,
+ * `docs/decisions/0033-a-second-ceiling-for-a-picture.md`). Counting it here
+ * too would charge the same kilobytes against two ceilings that are
+ * deliberately kept apart.
  *
  * @param html - The built `index.html`
- * @returns What it preloads, as the paths written in it
+ * @returns What it preloads a font for, as the paths written in it
  */
 const preloadedHrefs = (html: string): readonly string[] =>
   [...html.matchAll(/<link\b[^>]*>/g)]
     .map(([tag]) => tag)
-    .filter((tag) => /\brel=["']?preload\b/.test(tag))
+    .filter((tag) => /\brel=["']?preload\b/.test(tag) && /\bas=["']?font\b/.test(tag))
     .map((tag) => /\bhref=["']([^"']+)["']/.exec(tag)?.[1])
     .filter((href): href is string => href !== undefined);
 

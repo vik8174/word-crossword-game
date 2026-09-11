@@ -2,6 +2,12 @@
 
 Status: Accepted
 
+**Split in two by [0033](0033-a-second-ceiling-for-a-picture.md).** This
+ceiling still measures exactly what it measures here — the HTML, the chunks
+and the typefaces — but it is no longer the only one: a raster scene image is
+weighed against a ceiling of its own, because a painting and a script are not
+the same kind of cost.
+
 ## Context
 
 A first visit to the landing page may not weigh more than a number written down in `apps/web/build/first-visit-weight.ts`, and a build that goes over it fails. The gate arrived with the garden ([#118](https://github.com/vik8174/word-crossword-game/issues/118)) at 210 KiB, because that is the release that put a painting behind the app and two typefaces in front of it, and it was the first release where a screenshot could cost a hundred kilobytes without anybody noticing.
