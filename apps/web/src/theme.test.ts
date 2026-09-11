@@ -235,12 +235,11 @@ describe('theme', () => {
     expect(surfaces).not.toContain(theme.palette.sakura.dark);
   });
 
-  it('reads in one face and looks at another, each falling back to the system', () => {
-    // Two faces are fetched and they do different jobs: the crossword and the
-    // two large levels are the mincho, everything read is the gothic (issue
-    // #124). Both are declared in `index.html`, latin only. The mincho is
-    // fetched at one weight — so every heading using it names that weight
-    // rather than being handed an imitation of a bolder one.
+  it('reads everything in one family, headings told apart from text by weight alone', () => {
+    // One face is fetched for reading, in three weights. Issue #147 dropped
+    // the serif the board and the four headings used to be set in — its
+    // stroke contrast lost first at the sizes the board draws its letters
+    // at, 11px to 24px. Declared in `index.html`, latin only.
     expect(theme.typography.fontFamily).not.toMatch(/Zen Old Mincho/);
     expect(theme.typography.fontFamily).toMatch(/^"Zen Kaku Gothic New"/);
     // Whatever a reader's own system draws is the tail of every stack here, so
@@ -253,8 +252,10 @@ describe('theme', () => {
       theme.typography.h3,
       theme.typography.h4,
     ]) {
-      expect(heading.fontFamily).toMatch(/Zen Old Mincho/);
-      expect(heading.fontWeight).toBe(400);
+      // Not merely "not the serif" — a heading that resolved to some other,
+      // unrelated family would also pass that weaker check.
+      expect(heading.fontFamily).toBe(theme.typography.fontFamily);
+      expect(heading.fontWeight).toBe(700);
     }
   });
 

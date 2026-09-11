@@ -3,7 +3,7 @@ import { type SxProps, type Theme } from '@mui/material/styles';
 import { type ChangeEvent, type FocusEvent, useLayoutEffect, useRef } from 'react';
 
 import type { GuessEntryCell } from '../rooms/guess-board';
-import { DISPLAY_FONT_FAMILY, type GridSurfaces } from '../theme';
+import { type GridSurfaces, TEXT_FONT_FAMILY } from '../theme';
 import { CELL_SIDE } from './board-geometry';
 
 /**
@@ -17,11 +17,18 @@ import { CELL_SIDE } from './board-geometry';
  * It is sized from the square rather than from the page, so it keeps its share
  * of a square that shrinks — down to a floor, because a number that went on
  * scaling would stop being a number and become a smudge in a corner.
+ *
+ * The family is named rather than left to inherit it, even though it would
+ * resolve to the same text face either way: a square this player types into
+ * is an `input`, which the letter below takes its own family back onto for
+ * the same reason (`inherit` would take a font from a box the number is not
+ * drawn on the same layer as).
  */
 const NUMBER_SX: SxProps<Theme> = {
   position: 'absolute',
   top: '1px',
   left: '2px',
+  fontFamily: TEXT_FONT_FAMILY,
   fontSize: `max(8px, calc(${CELL_SIDE} * 0.3))`,
   fontWeight: 700,
   lineHeight: 1,
@@ -215,11 +222,14 @@ export const GridSquare = ({
     backgroundColor: (theme: Theme) => theme.palette.grid[squareSurface(cell)],
     display: 'grid',
     placeItems: 'center',
-    // The one place in the app that fetches a typeface, and the reason it is
-    // worth fetching: a player looks at these letters for twenty minutes
-    // together. One weight is loaded, so the weight is named rather than left
-    // to be imitated (`theme.ts`).
-    fontFamily: DISPLAY_FONT_FAMILY,
+    // The text face, named rather than left to inherit it: an `input` below
+    // takes none of the page's typography on its own (see the override at
+    // the bottom of this file), and a letter said here should match the one
+    // said there rather than track it by accident. Issue #147 moved the
+    // board's letters here from a face of their own — the board's smallest
+    // letters run 11px, where that face's stroke contrast was the first thing
+    // to go (`scale.ts`).
+    fontFamily: TEXT_FONT_FAMILY,
     // The letter keeps its share of the square rather than a size of its own,
     // so a board drawn small stays a board of letters rather than of dots.
     fontSize: `calc(${CELL_SIDE} * 0.55)`,
@@ -268,10 +278,11 @@ export const GridSquare = ({
             borderColor: cell.isRefused ? 'error.dark' : 'secondary.main',
             padding: 0,
             textAlign: 'center',
-            // Said again rather than inherited: an input takes none of the page's
-            // typography on its own, and `inherit` would take it from the box
-            // around the square, which is drawn in the interface font.
-            fontFamily: DISPLAY_FONT_FAMILY,
+            // Said again rather than left to the spread above: an input takes
+            // none of the page's typography on its own, and restating it here
+            // is what keeps this square's family tied to `square`'s rather
+            // than to whichever family happens to surround the board.
+            fontFamily: TEXT_FONT_FAMILY,
             fontWeight: 400,
             color: 'text.primary',
           }}
