@@ -1460,12 +1460,14 @@ describe('RoomPage', () => {
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByText('cat')).toBeInTheDocument();
-      // Twice on the page during the shift rather than once: the leaving
-      // screen still has `car` in its own words-to-explain index, and the
-      // entering one spells it out again — the same doubling as the message
-      // above, issue #116.
-      expect(screen.getAllByText('car').length).toBeGreaterThan(0);
+      // Scoped to the finished panel itself rather than the whole page: the
+      // leaving screen still has `car` in its own words-to-explain index while
+      // the shift is running, and a bare `getByText` would pass on that alone
+      // — this is the one place the whole crossword, secrets included, is
+      // meant to be spelled out (`GameCompletedPanel.tsx`).
+      const finishedPanel = screen.getByRole('region', { name: /every word is in/i });
+      expect(within(finishedPanel).getByText('cat')).toBeInTheDocument();
+      expect(within(finishedPanel).getByText('car')).toBeInTheDocument();
     });
 
     it('gives a player who comes back to the link their finished game, not a refusal', async () => {

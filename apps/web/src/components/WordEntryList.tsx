@@ -22,14 +22,22 @@ interface WordEntryListProps {
 }
 
 /**
- * The sentence of a row when it is done, dimmed and struck through wherever it
- * has anything to strike — the reference always, the word too where this half
- * of the game draws one.
+ * The sentence of a row when it is done, struck through wherever it has
+ * anything to strike — the reference always, the word too where this half of
+ * the game draws one — and dimmed wherever the surface underneath lets that
+ * show.
+ *
+ * The dimming is inherited rather than new here, and so is its one gap: on
+ * the band a room stands its zones on, `scene-surface.ts`'s
+ * `.MuiTypography-body2` rule is more specific than this `sx` and wins, so a
+ * done row on that band is struck through without being dimmed. Pre-existing
+ * and out of scope for issue #150, which is why the third signal below is the
+ * one this ticket can actually promise everywhere.
  *
  * Kept apart from {@link AnsweredMark} on purpose: whether a word is done is
- * said by three things that do not depend on each other — this styling, the
- * mark's own shape, and the sentence in the row's accessible name — so no
- * single one of them carries the state alone (issue #150).
+ * said by things that do not depend on each other — this styling, the mark's
+ * own shape, and the sentence in the row's accessible name — so no single one
+ * of them carries the state alone (issue #150).
  */
 const doneSx = {
   textDecoration: 'line-through',
@@ -63,8 +71,9 @@ const REFERENCE_TRACK_WIDTH = '5.6em';
  * by line is handed the same sentence a sighted player reads across three
  * columns, never half of it (issue #150).
  *
- * Whether a word is done is said three ways that do not depend on each other:
- * struck through and dimmed here, a different shape in {@link AnsweredMark},
+ * Whether a word is done is said more than one way, and the ways do not
+ * depend on each other: struck through (and dimmed, where the surface lets
+ * it — see {@link doneSx}) here, a different shape in {@link AnsweredMark},
  * and outright in {@link WordEntry.name} — so it never rests on telling one
  * mark's colour from another.
  *

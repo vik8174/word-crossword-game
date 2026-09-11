@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box';
 
-import { SCENE, SCENE_LINE } from '../garden/scene-palette';
+import { SCENE, SCENE_EDGE } from '../garden/scene-palette';
 
 interface AnsweredMarkProps {
   /** `true` once the word behind this row has been answered. */
@@ -18,12 +18,18 @@ interface AnsweredMarkProps {
  *
  * The two states are two shapes rather than two colours of the same one — a
  * filled disc against a hollow ring — so the distinction survives greyscale
- * and colour blindness on its own, before the row's other cues (the struck-
- * through word, the dimmed track) are counted at all. It is drawn in the same
- * red the garden already spends on every action it offers
- * ({@link SCENE.vermilionLit}, `garden/scene-palette.ts`) rather than in a
- * colour of its own, so introducing it here does not give this place a second
- * accent to keep apart from the first.
+ * and colour blindness on its own, before the row's other cue (the struck-
+ * through word) is counted at all. It is drawn in the same red the garden
+ * already spends on every action it offers ({@link SCENE.vermilionLit},
+ * `garden/scene-palette.ts`) rather than in a colour of its own, so
+ * introducing it here does not give this place a second accent to keep apart
+ * from the first.
+ *
+ * The ring is drawn at {@link SCENE_EDGE} rather than the fainter
+ * `SCENE_LINE` a merely decorative rule would use: this circle is what says a
+ * word is still open, so it is owed the boundary-of-a-control weight
+ * `scene-palette.test.ts` holds `SCENE_EDGE` to (3∶1) rather than the weight a
+ * divider is owed and nothing more.
  *
  * @param props.isSolved - Whether to draw it lit or as an open ring
  *
@@ -41,7 +47,7 @@ export const AnsweredMark = ({ isSolved }: AnsweredMarkProps) => (
       alignSelf: 'center',
       ...(isSolved
         ? { backgroundColor: SCENE.vermilionLit }
-        : { boxShadow: `inset 0 0 0 1.5px ${SCENE_LINE}` }),
+        : { boxShadow: `inset 0 0 0 1.5px ${SCENE_EDGE}` }),
     }}
   />
 );
