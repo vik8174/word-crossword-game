@@ -151,7 +151,11 @@ made the same kind of distinction for a scene image paid for by one route;
 this one is the same idea for a typeface paid for by one string.
 
 **What issue #148 inherits:** a face and a subset, both measured, neither
-placed. It chooses where `LOGOTYPE_FONT_FAMILY` is drawn, at what size, in
-what colour, and whether the `@font-face` needs a preload once something
-finally names it — at which point its weight joins the ceiling total the way
-every other declared face already does (`docs/decisions/0032-what-the-first-visit-ceiling-measures.md`).
+placed. Its weight is already in the ceiling total this ADR's own numbers
+report — declaring a `@font-face` counts against `FIRST_VISIT_CEILING_BYTES`
+regardless of whether anything fetches it
+(`docs/decisions/0032-what-the-first-visit-ceiling-measures.md`) — so #148
+inherits that cost paid rather than owing it. What #148 chooses is where
+`LOGOTYPE_FONT_FAMILY` is drawn, at what size, in what colour, and whether the
+`@font-face` needs a preload once something finally names it, at which point
+the bytes it already counts start actually being fetched.
