@@ -19,11 +19,14 @@ interface AnsweredMarkProps {
  * The two states are two shapes rather than two colours of the same one — a
  * filled disc against a hollow ring — so the distinction survives greyscale
  * and colour blindness on its own, before the row's other cue (the struck-
- * through word) is counted at all. It is drawn in the same red the garden
- * already spends on every action it offers ({@link SCENE.vermilionLit},
- * `garden/scene-palette.ts`) rather than in a colour of its own, so
- * introducing it here does not give this place a second accent to keep apart
- * from the first.
+ * through word) is counted at all. It is drawn in the temple's own lit red
+ * ({@link SCENE.vermilionLit}, `garden/scene-palette.ts`) rather than in a
+ * colour of its own, so introducing it here does not give this place a
+ * second accent to keep apart from the first — the same red the forest
+ * already paints its lit woodwork in, not the control's own fill (issue
+ * #149 retired `vermilionLit` from carrying text, which this mark does not:
+ * it is decorative and `aria-hidden`, with the word "answered" said
+ * elsewhere).
  *
  * The ring is drawn at {@link SCENE_EDGE} rather than the fainter
  * `SCENE_LINE` a merely decorative rule would use: this circle is what says a
