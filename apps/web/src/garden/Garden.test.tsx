@@ -1,5 +1,6 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { REDUCED_MOTION_QUERY } from '../components/screen-shift';
@@ -95,9 +96,20 @@ const drawFrame = (at: number) => {
   });
 };
 
-/** Somebody in the app who can tell the garden what the screen is doing. */
+/**
+ * Somebody in the app who can tell the garden what the screen is doing.
+ *
+ * Claims the gate on mount, the way `CreateRoomPage` does — the scene starts
+ * `null` and stays that way until somebody says otherwise, so a fixture that
+ * never claimed one would leave every test below staring at no picture at all
+ * (issue #152's second finding).
+ */
 const Player = () => {
   const { showAir, showScene } = useGardenControls();
+
+  useEffect(() => {
+    showScene('gate');
+  }, [showScene]);
 
   return (
     <>
@@ -211,6 +223,24 @@ describe('Garden', () => {
     drawFrame(16);
 
     expect(petalsDrawn).toBeGreaterThan(0);
+  });
+
+  it('draws no picture at all until something has said which one it wants', () => {
+    // Regression coverage for a real bug: a default scene here used to mean a
+    // cold `/room/<id>` fetched the gate's picture in full before the room's
+    // own lazy chunk had even loaded, on top of whichever picture the room
+    // then turned out to need (issue #152's second finding). Nobody in this
+    // render — unlike `Player` — has claimed a scene yet.
+    const { container } = render(
+      <ThemeProvider theme={theme}>
+        <Garden>
+          <button type="button">say nothing about the scene</button>
+        </Garden>
+      </ThemeProvider>,
+    );
+
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('picture')).toBeNull();
   });
 
   it('shows a different picture at once when the screen says to', () => {

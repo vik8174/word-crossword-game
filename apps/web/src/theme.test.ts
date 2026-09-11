@@ -272,11 +272,13 @@ describe('theme', () => {
     expect(easingValues).toEqual(new Set([MOTION_EASING]));
   });
 
-  it('turns off all motion under prefers-reduced-motion, not only its own four consumers', () => {
-    // The camera, the screen shift, the petals and the garden's cloth already
-    // ask `REDUCED_MOTION_QUERY` themselves; this is the backstop for
-    // everything MUI draws, which cannot be asked the same question and could
-    // not be trusted to ask it consistently one component at a time.
+  it('turns off all motion under prefers-reduced-motion, not only its own three consumers', () => {
+    // The screen shift, the petals and the garden's cloth already ask
+    // `REDUCED_MOTION_QUERY` themselves; this is the backstop for everything
+    // MUI draws, which cannot be asked the same question and could not be
+    // trusted to ask it consistently one component at a time. There used to
+    // be a fourth consumer, the camera, removed along with the rest of the
+    // painted world it flew through (issue #152).
     const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
       Record<string, unknown> | undefined;
     const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as

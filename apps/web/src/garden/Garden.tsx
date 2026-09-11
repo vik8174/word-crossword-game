@@ -4,7 +4,6 @@ import { type ReactNode, useMemo, useState } from 'react';
 import { LAYERS, layerSx } from './canvas-layer';
 import {
   DEFAULT_AIR,
-  DEFAULT_SCENE,
   type GardenAir,
   type GardenControls,
   GardenControlsContext,
@@ -33,6 +32,14 @@ import { VEIL } from './scene-palette';
  * greeted with is not here at all: the hall has no sky in it, so the greeting
  * is a cloth the room lays over its own table ({@link RewardCloth}).
  *
+ * The scene starts as `null`, not as a guess. Every screen that stands here
+ * says which picture it wants — `/create` on its own mount, a room through
+ * {@link useRoomGarden} — and until one of them has, {@link GardenScene} draws
+ * nothing rather than a default that might be wrong. A default of `gate` used
+ * to mean a cold `/room/<id>` fetched the gate's picture in full before the
+ * room's own lazy chunk had even finished loading, on top of whichever
+ * picture that room turned out to need (issue #152's own second finding).
+ *
  * All the layers are mounted outside the shift, so that they are one garden
  * for as long as a session stays among the screens that share it rather than
  * one per page: a background that started again every time an address
@@ -57,7 +64,7 @@ import { VEIL } from './scene-palette';
  */
 export const Garden = ({ children }: { readonly children: ReactNode }) => {
   const [air, setAir] = useState<GardenAir>(DEFAULT_AIR);
-  const [scene, setScene] = useState<SceneId>(DEFAULT_SCENE);
+  const [scene, setScene] = useState<SceneId | null>(null);
 
   // Built once, so that nothing below re-runs an effect because the garden was
   // handed to it again — and every one of those effects is something that says

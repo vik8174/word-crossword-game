@@ -47,11 +47,14 @@ export const DEFAULT_AIR: GardenAir = 'petals';
 export type SceneId = 'gate' | 'doors' | 'hall';
 
 /**
- * Which picture stands behind the app when nothing has said otherwise.
+ * Which picture a room hands back to when it is left.
  *
- * The gate, because it is where every first visit is: the landing page and the
- * page a game is made on are both in front of it, and a room that has been
- * left takes its own picture with it.
+ * The gate, because it is where every session not inside a room stands:
+ * `/create`'s own mount claims it directly, and a room that is left takes its
+ * own picture with it (`use-room-garden.ts`'s cleanup). It is not what
+ * `Garden` starts on — starting on a guess is exactly the second finding
+ * issue #152 was corrected for, so `Garden`'s own initial scene is `null`
+ * until something has actually said which picture it wants.
  */
 export const DEFAULT_SCENE: SceneId = 'gate';
 

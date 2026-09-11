@@ -42,9 +42,24 @@ const SCENES: Record<SceneId, ScenePicture> = {
  * ticket's to build (#153); this one only has to stop painting a world that no
  * longer exists.
  *
- * @param props.scene - Which of the three pictures to show
+ * `scene` is nullable and drawing nothing when it is `null` is the point, not
+ * a loading state to be tidied away. `Garden` mounts before anything has said
+ * which picture it wants — a lazy route's own chunk has to arrive and render
+ * before `useRoomGarden` can call `showScene` — and defaulting eagerly to
+ * `gate` here used to mean every `/room/<id>` fetched the gate's picture in
+ * full before ever showing it, on top of whichever picture the room actually
+ * needed. Drawing nothing until a real answer arrives costs one thing instead:
+ * a frame or two with no picture at all, behind a `Suspense` fallback that was
+ * already covering the same frames.
+ *
+ * @param props.scene - Which of the three pictures to show, or `null` before
+ * anything has said
  */
-export const GardenScene = ({ scene }: { readonly scene: SceneId }) => {
+export const GardenScene = ({ scene }: { readonly scene: SceneId | null }) => {
+  if (scene === null) {
+    return null;
+  }
+
   const picture = SCENES[scene];
 
   return (

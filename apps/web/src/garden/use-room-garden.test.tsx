@@ -49,6 +49,20 @@ describe('useRoomGarden', () => {
     expect(room.showAir).toHaveBeenLastCalledWith('still');
   });
 
+  it('keeps the background still once a game is finished, so no petal falls in the hall', () => {
+    // The hall has no sky in it: a finished game does not get the petals back,
+    // it gets the cloth (`RewardCloth`). Regression coverage for a real bug —
+    // `airFor('finished')` used to answer `petals`, which was safe only while
+    // the camera's own doorway culling drew nothing indoors regardless; once
+    // the camera was removed (issue #152) that culling went with it, and the
+    // stale answer here let petals fall inside the temple.
+    const room = openRoomOn('playing');
+
+    room.becomes('finished');
+
+    expect(room.showAir).toHaveBeenLastCalledWith('still');
+  });
+
   it('says a game was played to the end, so the room can lay the cloth', () => {
     const room = openRoomOn('playing');
 
