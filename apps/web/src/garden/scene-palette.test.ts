@@ -228,8 +228,8 @@ describe('what the garden writes on', () => {
   it('never lets the control read a word off its own lit edge', () => {
     // `vermilionLit` used to be the control's hover fill — the very thing this
     // ticket found at 2.50:1, the worst figure anywhere in the app. Issue #149
-    // retires it from carrying text for good: it stays the forest's brushed
-    // highlight (`paint-temple.ts`, `AnsweredMark.tsx`) and the control's own
+    // retires it from carrying text for good: it stays a decorative highlight
+    // elsewhere (`CrosswordGrid.tsx`, `AnsweredMark.tsx`) and the control's own
     // edge is a gold that is not read out of the scene's palette at all, so
     // the two can never be reunited by a later hand reaching for the same
     // token out of habit.
