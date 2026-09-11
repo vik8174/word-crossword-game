@@ -1,10 +1,7 @@
 import Box from '@mui/material/Box';
 
 import { VEIL } from '../garden/scene-palette';
-
-/** Where the shipped gate images live, cut fresh from the source PNG (issue #151). */
-const GATE_AVIF = '/scenes/gate.avif';
-const GATE_JPG = '/scenes/gate.jpg';
+import { GATE_AVIF, GATE_JPG } from './gate-scene-paths';
 
 /**
  * The gate itself: a photograph rather than a place painted stroke by stroke.

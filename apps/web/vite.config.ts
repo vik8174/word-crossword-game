@@ -20,6 +20,7 @@ import {
   routeChunks,
   routePreloadScript,
 } from './build/route-preload.ts';
+import { type ScenePreload, scenePreloadScript } from './build/scene-preload.ts';
 import {
   SCENE_IMAGE_CEILING_BYTES,
   type SceneImageFile,
@@ -27,6 +28,7 @@ import {
 } from './build/scene-weight.ts';
 import { shouldUploadSourceMaps } from './build/source-map-upload.ts';
 import { ROOM_ROUTE_PATTERN } from './src/rooms/room-link.ts';
+import { GATE_AVIF } from './src/scenes/gate-scene-paths.ts';
 
 /**
  * Where the maps go. Neither is a secret, and there is one project for both
@@ -124,6 +126,48 @@ const preloadRoomRoute = (): Plugin => {
         return script === ''
           ? undefined
           : { html, tags: [{ tag: 'script', children: script, injectTo: 'head' as const }] };
+      },
+    },
+  };
+};
+
+/** Which address the gate's picture is drawn on, and what it is served as. */
+const GATE_SCENE: Omit<ScenePreload, 'href'> = { path: '/', type: 'image/avif' };
+
+/**
+ * Preloads the gate's picture, only on `/`.
+ *
+ * Why a static `<link>` in `index.html` cannot do this is
+ * `build/scene-preload.ts`'s to explain: one document serves every address
+ * (Firebase Hosting rewrite), so a tag written into it by hand would preload
+ * the gate's picture for `/create`, `/join` and `/room/<id>` as well, none of
+ * which ever draw it. This plugin's own part is the same shape as
+ * {@link preloadRoomRoute}'s: turn a path this build already knows
+ * (`GateScene.tsx`'s own {@link GATE_AVIF}) into a script gated on the
+ * address, rather than a tag that cannot tell addresses apart.
+ */
+const preloadGateScene = (): Plugin => {
+  let base = '/';
+
+  return {
+    name: 'preload-gate-scene',
+    apply: 'build',
+
+    configResolved(config) {
+      base = config.base;
+    },
+
+    transformIndexHtml: {
+      order: 'post',
+
+      handler(html) {
+        // `GATE_AVIF` is already root-absolute (`/scenes/gate.avif`), and
+        // `base` ends in `/` whenever it is not itself just `/` — trimming
+        // one before joining is what keeps a non-root base from doubling it.
+        const prefix = base === '/' ? '' : base.replace(/\/$/, '');
+        const script = scenePreloadScript([{ ...GATE_SCENE, href: `${prefix}${GATE_AVIF}` }]);
+
+        return { html, tags: [{ tag: 'script', children: script, injectTo: 'head' as const }] };
       },
     },
   };
@@ -281,6 +325,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       preloadRoomRoute(),
+      preloadGateScene(),
       capFirstVisit(),
       capSceneImages(),
       ...(uploadsSourceMaps

@@ -95,7 +95,8 @@ export const GATE_TAGLINE_SX: CSSObject = bandSx(GATE_TAGLINE_BAND);
  *
  * Read off the picture rather than off a formula, the same way the lockup is:
  * the torii's posts sit at roughly two fifths and three fifths of the frame's
- * width in `gate.png` and stay there under `object-fit: cover`, because a
+ * width in the source artwork the shipped images are cut from, and stay there
+ * under `object-fit: cover`, because a
  * point at the horizontal middle of a centred cover crop is at the horizontal
  * middle of the viewport whatever the window's own aspect ratio does to the
  * sides. Held a little above the temple's stairs rather than the middle of the

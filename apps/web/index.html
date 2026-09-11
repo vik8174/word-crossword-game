@@ -5,19 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Word Crossword Game</title>
 
-    <!-- The gate, standing behind the landing page before a line of the app has
-      run (issue #151). `GateScene` renders the same `<picture>` client-side, so
-      this is the browser fetching what it will be told to draw a moment later
-      rather than a first fetch of its own — without it, a route rendered by
-      React only starts asking for the image once the bundle has executed, and
-      this is the single largest thing the first screen paints.
-
-      Counted against the scene ceiling rather than the first-visit one
-      (apps/web/build/scene-weight.ts,
-      docs/decisions/0033-a-second-ceiling-for-a-picture.md) — see
-      `first-visit-weight.ts#preloadedHrefs`, which reads `as="font"` alone. -->
-    <link rel="preload" href="/scenes/gate.avif" as="image" type="image/avif" />
-
     <!-- The two families this app has files for, in four files. Which of them
       plays which role, and why any of them is worth its bytes, is in
       src/scale.ts.

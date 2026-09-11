@@ -48,16 +48,27 @@ over 218 KiB. `capSceneImages` (new) reads every file Vite copies out of
 180 KiB — a scene is paid for once per route, not added to the pictures no
 other route fetches, so this is a per-file ceiling rather than a sum.
 
-**A scene image counts against neither total by accident.** `/` preloads
-`gate.avif` with a `<link rel="preload" as="image">`, for the same reason a
+**A scene image counts against neither total by accident, and only on the
+address that draws it.** `/` preloads `gate.avif`, for the same reason a
 typeface is preloaded — a route rendered by React only starts fetching an
 image once the bundle has executed, and a picture arriving after the screen
-around it is already the largest thing on that screen. Before this ticket,
-`first-visit-weight.ts#preloadedHrefs` counted every `rel="preload"` link
-regardless of what it was for, which would have folded the image straight
-into the 218 KiB total the moment it was preloaded. It is now filtered to
-`as="font"`, so a preloaded scene image is left to the ceiling that is
-actually its own.
+around it is already the largest thing on that screen. But it cannot be a
+plain `<link rel="preload">` written into `index.html`: Firebase Hosting
+rewrites every address in the app to that one document
+(`build/route-preload.ts`), so a tag written into it by hand would preload
+`gate.avif` for `/create`, `/join` and `/room/<id>` too, none of which
+`GateScene` ever draws — exactly the cost per route this ADR says a scene must
+never carry. `build/scene-preload.ts` solves it the way `route-preload.ts`
+already solves the same problem for a room's chunks: a script, injected into
+`<head>`, that checks `location.pathname` once the browser already knows it
+and creates the `<link>` itself only on `/`.
+
+Because the preload is a script rather than a `<link>` tag in the built HTML,
+it was never at risk of being counted by
+`first-visit-weight.ts#preloadedHrefs`, which only reads literal `<link>`
+tags. That function is filtered to `as="font"` regardless, as a second guard
+against a future static `<link rel="preload" as="image">` being added back by
+hand and silently folded into the 218 KiB total.
 
 **This does not reopen ADR 0032's protection.** That ADR exists to stop
 _code_ drifting back up unnoticed — a few thousand brush strokes, a library
@@ -78,9 +89,9 @@ alone, a small position-calculation module with no drawing in it, replaced by
 `scenes/gate-chrome.ts` of about the same size. Measured on the Deploy build
 (`sourcemaps.disable: 'disable-upload'`, no real token or upload needed — the
 weight comes from the debug ids the plugin stamps into chunks, not from
-sending them anywhere): **216.7 KiB before this ticket, 217.1 KiB after**, a
-first visit **0.4 KiB heavier** rather than lighter. The CI-style build (no
-token) moves by the same 0.4 KiB, from 215.4 to 215.8. Nobody could have known
+sending them anywhere): **216.7 KiB before this ticket, 216.8 KiB after**, a
+first visit **0.1 KiB heavier** rather than lighter. The CI-style build (no
+token) moves by the same 0.1 KiB, from 215.4 to 215.5. Nobody could have known
 this figure before the build produced it, which is the entire point of a
 tracer bullet — and what it found is that the code freed by this ticket alone
 is close to zero, not the large number the phrase "deletes the gate's painting

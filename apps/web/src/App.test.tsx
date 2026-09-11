@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { roomPath } from './rooms/room-link';
@@ -79,5 +79,33 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { name: /does not exist/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /go to the start/i })).toHaveAttribute('href', '/');
+  });
+
+  it('mounts the garden on leaving the gate and unmounts it on returning, in one session', async () => {
+    // The boundary in App.tsx is not just which route renders which page — it
+    // is <Garden> itself being mounted only for the eight screens that share
+    // it, decided fresh on every navigation rather than once for the tab's
+    // life. Every other case in this file renders each address on its own, so
+    // none of them exercises an actual client-side navigation across that
+    // boundary within one mounted app.
+    const { container } = render(<App />);
+
+    expect(container.querySelector('canvas')).toBeNull();
+
+    fireEvent.click(screen.getByRole('link', { name: /create a game/i }));
+
+    // CreateRoomPage reaches for Firestore/Auth as soon as it mounts, which is
+    // why it is loaded on demand — `findByRole` waits out that tick.
+    expect(await screen.findByRole('button', { name: /create room/i })).toBeInTheDocument();
+    expect(container.querySelectorAll('canvas').length).toBeGreaterThan(0);
+
+    // Back to the gate, the way a browser's own back button does it — a real
+    // `popstate`, not a second `render()` of a fresh app.
+    window.history.back();
+
+    expect(
+      await screen.findByRole('heading', { name: /word crossword game/i }),
+    ).toBeInTheDocument();
+    expect(container.querySelector('canvas')).toBeNull();
   });
 });
