@@ -6,7 +6,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { GATE_ACTION_SX, GATE_INK, GATE_NAME_SX } from '../scenes/gate-chrome';
 import { GateScene } from '../scenes/GateScene';
 import { ON_SCENE_SX } from '../garden/scene-surface';
-import { GATE_NAME_SIZE, inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
+import { inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
 import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /** How wide the button that stands in the gate is padded, as steps of the row. */
@@ -25,12 +25,19 @@ const BUTTON_PADDING = { across: 6, down: 4 } as const;
  * world (`scenes/gate-chrome.ts`).
  *
  * Both are lettered rather than written — the sign face out of
- * `theme.typography.signage`, at three sizes off `scale.ts`'s own ladder so
- * that the name comes down as the window narrows instead of running off it
- * (the widest of the three, {@link GATE_NAME_SIZE}, is a sign's and not one of
- * the four text levels). Nothing about the face, the capitals, the tracking or
- * the words themselves is decided here — the name and a tagline are #148's,
- * and this page stands whatever they are in the same measured band.
+ * `theme.typography.signage`, at three sizes off `scale.ts`'s own ladder
+ * (`aside`, `body`, `title`) chosen so the rendered name — however many lines
+ * it wraps to at that width — stays inside the measured band rather than
+ * merely fitting under a discrete breakpoint's nominal size: `title` (31px)
+ * is already the widest that keeps a single line inside the band's height at
+ * a desktop width, and `aside` (13px) is the largest that still fits two
+ * lines inside it at a phone's. `GATE_NAME_SIZE`, one step above `title`, was
+ * sized for the previous, unconstrained `max-content` box and does not fit
+ * this one at any width — left in `scale.ts` for whichever later round of
+ * canvas 1 (#148) decides what replaces it, not read from here. Nothing about
+ * the face, the capitals, the tracking or the words themselves is decided
+ * here — the name and a tagline are #148's, and this page stands whatever
+ * they are in the same measured band.
  *
  * Joining an existing game does not start here: players arrive straight at
  * their room link (issue #5), so the only action this page offers is creating
@@ -51,9 +58,9 @@ export const HomePage = () => {
           variant="signage"
           sx={{
             fontSize: {
-              xs: inRem(TEXT_LEVELS.body),
-              sm: inRem(TEXT_LEVELS.heading),
-              md: inRem(GATE_NAME_SIZE),
+              xs: inRem(TEXT_LEVELS.aside),
+              sm: inRem(TEXT_LEVELS.body),
+              md: inRem(TEXT_LEVELS.title),
             },
             // Tight on purpose: the clear band of sky this sits in is a
             // twentieth of the picture's own height, and the theme's own
@@ -61,9 +68,15 @@ export const HomePage = () => {
             // around it rather than a lockup measured down to a tenth of a
             // percent (`handoffs/scenes/README.md`).
             lineHeight: 1,
-            // The tracking is put after the last letter as well as between, so
-            // a centred line sits half a letter to the right without this.
-            marginRight: `-${SIGN_TRACKING}`,
+            // No trailing-tracking margin here, unlike the button below: that
+            // trick shifts a flex item's own centring math by the width it
+            // removes, which is correct against `transform: translate(-50%)`
+            // (the previous, painted gate's own centring) but overshoots the
+            // right edge of a `justifyContent: 'center'` flex box by roughly
+            // the same amount instead of correcting it — measured against the
+            // stage with `getBoundingClientRect` at 1440, 834 and 375, a
+            // negative margin here was the reason the rendered name cleared
+            // the box's own 77% right edge at every one of the three widths.
             color: GATE_INK,
           }}
         >
