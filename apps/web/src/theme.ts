@@ -7,10 +7,10 @@ import { TYPOGRAPHY } from './typography';
  * The system setting that means no movement at all, spelled out again rather
  * than imported.
  *
- * `components/screen-shift.ts` declares the same string for the camera, the
- * screen shift and the garden's canvases to read with `useMediaQuery` — a
- * check that runs in JavaScript, once, at the moment each of those decides
- * whether to move. A style block cannot ask a hook a question; what it can do
+ * `components/screen-shift.ts` declares the same string for the screen shift
+ * and the garden's canvases to read with `useMediaQuery` — a check that runs
+ * in JavaScript, once, at the moment each of those decides whether to move. A
+ * style block cannot ask a hook a question; what it can do
  * is hold the same query as a CSS `@media` rule, which the browser
  * re-evaluates on its own the moment the setting changes, with nothing to
  * import and nothing to grow stale. The two are the same query written for
