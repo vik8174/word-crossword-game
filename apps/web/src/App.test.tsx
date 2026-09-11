@@ -37,8 +37,8 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: /word crossword game/i })).toBeInTheDocument();
 
     // The boundary issue #151 draws: the gate creates no canvas at all, unlike
-    // every other route, which the garden still paints on one — asserted below
-    // on `/room` and the catch-all.
+    // every other route, which the garden still draws its falling petals on
+    // one — asserted below on `/room` and the catch-all.
     expect(container.querySelector('canvas')).toBeNull();
   });
 
@@ -52,8 +52,9 @@ describe('App', () => {
     // instead (issue #132).
     expect(await screen.findByText(/connecting to the game/i)).toBeInTheDocument();
 
-    // `connecting` has no place of its own (`locationFor`), but it is still a
-    // room screen and stands in the garden's forest — only `/` leaves it.
+    // `connecting` stands in front of the doors picture (`sceneFor` in
+    // `garden/use-room-garden.ts`), and the garden's falling petals still run
+    // behind it on a canvas of their own — only `/` leaves the garden entirely.
     expect(container.querySelectorAll('canvas').length).toBeGreaterThan(0);
   });
 

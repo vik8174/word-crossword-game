@@ -19,11 +19,21 @@ import type { GardenAir } from './garden-controls';
  * the silence during a game is a decision, and the way to lose it is for
  * somebody to add an eighth screen and be given whichever answer came first.
  *
+ * `finished` is `still` rather than `petals`, and that is not the silence of a
+ * game in progress — it is geometry. A finished game stands inside the
+ * temple's hall, and no petal is drawn indoors (`handoffs/scenes/README.md`,
+ * `docs/manual-checks.md`). Before issue #152 that was true regardless of what
+ * this function answered, because the camera's own doorway culling drew
+ * nothing indoors either way; once the camera and its culling were gone, the
+ * hall stopped being a place petals could be kept out of by geometry alone,
+ * and this switch became the only thing keeping them out.
+ *
  * @param kind - Which screen the room is showing
  * @returns `petals` behind it, or `still`
  *
  * @example
  * airFor('playing'); // 'still' — nothing moves behind the board
+ * airFor('finished'); // 'still' — the hall has no sky in it either
  */
 export const airFor = (kind: RoomScreen['kind']): GardenAir => {
   switch (kind) {
@@ -31,12 +41,14 @@ export const airFor = (kind: RoomScreen['kind']): GardenAir => {
     case 'unavailable':
     case 'join':
     case 'lobby':
-    case 'finished':
       return 'petals';
     // The board is what the screen is for, and a game ended early is not a
     // thing to put a garden behind: there are words nobody answered on it.
+    // `finished` joins them for a different reason: the hall has no sky in
+    // it, and the reward is the cloth rather than the weather coming back.
     case 'playing':
     case 'closed-early':
+    case 'finished':
       return 'still';
   }
 };

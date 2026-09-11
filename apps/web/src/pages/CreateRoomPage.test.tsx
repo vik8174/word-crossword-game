@@ -6,6 +6,7 @@ import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword } from 'shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { GardenControlsContext } from '../garden/garden-controls';
 import { ROOM_ROUTE_PATTERN } from '../rooms/room-link';
 import { CreateRoomPage } from './CreateRoomPage';
 
@@ -113,6 +114,29 @@ afterEach(() => {
 });
 
 describe('CreateRoomPage', () => {
+  it('claims the gate as its own picture on mount, rather than trusting a default', () => {
+    // The scene `Garden` starts on is `null`, not a guess (issue #152's second
+    // finding): a screen that never says which picture it wants is left with
+    // none, which is a silent failure a green CI run would not otherwise
+    // catch — nothing here renders visibly differently either way. `/create`
+    // has to be the one screen of the four `Garden` wraps that claims `gate`
+    // for itself, since neither `/room/:id` (through `useRoomGarden`) nor the
+    // catch-all route ever will.
+    const showScene = vi.fn();
+
+    render(
+      <GardenControlsContext value={{ showAir: vi.fn(), showScene }}>
+        <MemoryRouter initialEntries={['/create']}>
+          <Routes>
+            <Route path="/create" element={<CreateRoomPage />} />
+          </Routes>
+        </MemoryRouter>
+      </GardenControlsContext>,
+    );
+
+    expect(showScene).toHaveBeenCalledWith('gate');
+  });
+
   describe('the word list', () => {
     it('keeps the room locked until the list and the nickname are both usable', () => {
       renderPage();

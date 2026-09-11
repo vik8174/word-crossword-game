@@ -138,9 +138,11 @@ interface RoomShellProps {
    * The middle of the screen, which is the board on every screen that has one.
    *
    * A screen may have none, and the lobby is that screen: it stands at the doors
-   * of the temple, the doorway is what fills the middle of the window, and the
-   * camera goes through it when the game begins (issue #115). What that screen
-   * puts in the middle is nothing.
+   * of the temple, and the doorway is what fills the middle of the window — the
+   * hall behind it is visible through that same opening in the picture (issue
+   * #115; a camera used to travel through it when the game began, a mechanism
+   * issue #152 removed without changing what stands in the middle). What that
+   * screen puts there is nothing.
    */
   readonly children?: ReactNode;
 }

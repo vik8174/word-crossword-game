@@ -6,16 +6,19 @@ import { GATE_AVIF, GATE_JPG } from './gate-scene-paths';
 /**
  * The gate itself: a photograph rather than a place painted stroke by stroke.
  *
- * `/` used to stand on the same canvas every other screen still does — the
- * forest `SceneLayer` paints from `world.ts`, with a camera that could in
- * principle travel to it. Issue #151 takes the landing page off that canvas
- * entirely: no `<canvas>` is created on this route, and what stands behind the
- * interface here is `gate.avif` (with a JPEG fallback for a browser that
- * cannot decode it), full-bleed and cropped to the window by `object-fit:
- * cover` rather than panned to it. `garden/` goes on painting the same forest
- * for `/create`, `/join` and every screen of a room — this component is not a
- * second way of drawing that place, it is the one route that no longer stands
- * in it.
+ * `/` used to stand on the same canvas every other screen once did — a forest
+ * `SceneLayer` painted from `world.ts`, with a camera that could in principle
+ * travel to it. Issue #151 took the landing page off that canvas first, before
+ * either the canvas or the camera existed anywhere else: no `<canvas>` is
+ * created on this route, and what stands behind the interface here is
+ * `gate.avif` (with a JPEG fallback for a browser that cannot decode it),
+ * full-bleed and cropped to the window by `object-fit: cover` rather than
+ * panned to it. Issue #152 later took the canvas and the camera off every
+ * other route too — `/create`, `/join` and every screen of a room now stand in
+ * front of one of three photographs the same way this one does, drawn by
+ * `garden/GardenScene.tsx` rather than by this component: `/` reuses its own
+ * exact files (`gate.avif`, `gate.jpg`) but is not wired through it, since this
+ * route creates no `Garden` at all.
  *
  * The veil is the one piece the two share on purpose: {@link VEIL} is the
  * general answer to reading an interface off a picture, painted or
