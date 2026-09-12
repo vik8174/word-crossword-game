@@ -38,17 +38,22 @@ Add a line to `[Unreleased]` in `CHANGELOG.md` for any user-facing change. This 
 
 Do not merge. Report back: which acceptance criteria are done, the pull request link, decisions you took and why, and, in a block of its own, every question where you stopped instead of guessing.
 
-**Put that report in the pull request as well**, as a comment:
+**Record that report as well**, for the round the Foreman told you:
 
 ```bash
-gh pr comment <number> --body '...'
+scripts/record-round.sh <issue> <round> report <<'EOF'
+...the report...
+EOF
 ```
 
-The same content, once. It is not duplication for its own sake: your report is
-what stops a deliberate decision being read as a defect, and while it lives only
-in the Foreman's context it dies when that session compacts — after which the
-Inspector is handed a paraphrase and Viktor, on a phone, is handed nothing. In
-the pull request it stays where both of them already look.
+The same content, once, in a file under `handoffs/verdicts/<issue>/` that
+outlives both sessions. Your report is what stops a deliberate decision being
+read as a defect, and while it lives only in the Foreman's context it dies when
+that session compacts, after which the Inspector is handed a paraphrase.
+
+Do not post it to the pull request. A comment there is a publication on an
+outside service, and a sub-agent is refused one however the settings read. The
+file is the record.
 
 ## Speaking before you are finished
 
@@ -69,7 +74,9 @@ the next hour of your work is worthless without an answer.
 
 ## When a verdict comes back
 
-It arrives through the Foreman, with an instruction. Two things it is not:
+It arrives through the Foreman, with an instruction. Read the verdict itself first, in full, from `handoffs/verdicts/<issue>/round-<N>-verdict.md`: the instruction says what to do, the verdict says what was measured.
+
+Two things it is not:
 
 - It is not a licence to change something outside this issue. A remark about one screen has previously been read as permission to undo a decision on another one, and it was not
 - It is not an order to implement what you believe is wrong. If you disagree, say so **with an argument** and stop. A disagreement is escalated, not argued in circles

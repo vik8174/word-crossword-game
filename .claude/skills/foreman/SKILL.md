@@ -66,6 +66,7 @@ It arrives empty and knows only what you hand it:
 - branch and worktree names, and a free port
 - **boundaries by name**: which files are not this issue's to touch — a shared file the issue reaches through, and anything a merge has moved since the issue was written
 - what is already decided in this issue and is not to be reopened
+- **the round number**, and from round 2 on, the path of the verdict it is answering
 
 ## When a sub-agent speaks first
 
@@ -86,28 +87,37 @@ Where the answer is on the board, give it and let them carry on. Where it is a
 criterion that allowed two readings, that is the Architect's, and it goes up rather
 than round again.
 
-## Both of them write to the pull request
+## Both of them record each round
 
-A Worker posts its report there; an Inspector posts each verdict. You still get
-both directly, and the instruction after a failing verdict is still yours to
-write — this changes nothing about the routing.
+A Worker records its report and an Inspector each verdict, through
+`scripts/record-round.sh`, as `handoffs/verdicts/<issue>/round-<N>-report.md`
+and `round-<N>-verdict.md`. You still get both directly, and the instruction
+after a failing verdict is still yours to write.
 
-What it changes is what survives you. Verdicts are the most fragile state in
-this flow: they live in one context, and a compaction takes with them which
-findings are already closed. In the pull request they outlast the pair, the
-Worker reads what the Inspector actually measured instead of your paraphrase of
-it, and Viktor can read both from a phone without asking you.
+Give them the round number every time, since the file name carries it. Round 1
+is the first build; each failing verdict and its fix makes the next.
 
-Read the thread before you write an instruction. If a verdict you are about to
-relay is already in the pull request in the Inspector's own numbers, point at it
-rather than restating it — your instruction carries what the Worker cannot see,
-not what it can.
+What the files change is what survives you. Verdicts are the most fragile state
+in this flow, and a compaction takes with it which findings are already closed.
+On disk they outlast the pair: the Worker reads what the Inspector actually
+measured instead of your paraphrase, and a later round's Inspector reads which
+of its findings are closed.
+
+None of it goes to the pull request. A comment on GitHub is a publication, and a
+sub-agent is refused one whatever the settings allow. Do not post a verdict on
+their behalf either: publishing what a sub-agent was refused is the same refusal
+routed around. What Viktor reads from a phone is your own line on the issue when
+it merges (see "Merging").
+
+Point at the file rather than restating it. Your instruction carries what the
+Worker cannot see, not what it can read for itself.
 
 ## What an Inspector needs from you
 
 - the pull request and the issue
 - **the Worker's report in full**. Without it a deliberate, explained decision reads as a defect
 - its own port, not the Worker's
+- **the round number**, and the folder its earlier verdicts on this issue are recorded in
 
 ## The instruction after a failing verdict
 
@@ -228,6 +238,15 @@ Squash merge, so the history on `main` stays one commit per issue.
 After it merges: take `in progress` off, and check that the issue closed itself
 on the `Closes #NN` in the body. An issue still open after its work shipped is
 one the Worker wrote the wrong body for, and it is closed by hand.
+
+Then leave one line of your own on the issue, for Viktor to read from a phone:
+which round the Inspector could not refute, and where the verdicts are recorded.
+It is your record of your own action, in your own words, and it quotes no
+verdict.
+
+```bash
+gh issue comment <number> --body 'Merged in #<pr>. The Inspector could not refute round 2. Verdicts: handoffs/verdicts/<number>/'
+```
 
 **What still goes to Viktor.** Anything the hook cannot see: a release, a change
 of scope, an escalation, and any pull request you have a reason to hold rather
