@@ -56,11 +56,36 @@ Add the ADR in the same pull request that makes the architectural change — not
 
 Every user-facing pull request adds a line to the `[Unreleased]` section of [`CHANGELOG.md`](CHANGELOG.md), following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Working process: coordinator + workers
+## Working process: the Refutation Loop
 
-The project runs on a coordinator + workers model (see [`CLAUDE.md`](CLAUDE.md) for the full description, including how a session determines its own role):
+Work moves through four session roles, and one claim passes between them: _the
+acceptance criteria are met_. The loop exists to try to refute that claim. See
+[`CLAUDE.md`](CLAUDE.md) for the full description, including how a session
+determines its own role.
 
-- **Worker** — a session handed one specific issue. It implements exactly that issue up to an open pull request, plans nothing beyond it, does not merge its own pull request, and finishes with a concise report. Model: Sonnet 5
-- **Coordinator** — one separate session Viktor runs himself. It does not implement tickets; it prepares handoffs, verifies reports, and decides what comes next. Model: Opus 5
+| Role          | Holds                                                         | Model    |
+| ------------- | ------------------------------------------------------------- | -------- |
+| **Setter**    | the board: issues, dependencies, criteria that can be checked | Opus 5   |
+| **Foreman**   | the queue, the round count, and the merge                     | Opus 5   |
+| **Maker**     | one issue, from branch to open pull request                   | Sonnet 5 |
+| **Inspector** | the verdict on one Maker's pull request                       | Opus 5   |
 
-If a session was handed an issue or a handoff, it is a worker, not the coordinator.
+Four things about it are worth knowing before reading anything else:
+
+- **A Maker never merges its own pull request**, and an Inspector never commits,
+  pushes or merges at all. The Foreman merges, and only on a pull request GitHub
+  itself reports as green.
+- **Nobody talks to anybody directly.** Every message between a Maker and its
+  Inspector goes through the Foreman; the Setter and the Foreman pass work
+  through the board — an issue, its labels, its comments — and never through a
+  conversation.
+- **A pair is spawned per issue and stopped when it ends.** It is never carried
+  into the next one.
+- **A failing verdict is a round, not a failure.** Five are allowed per issue;
+  the sixth, or a disagreement the Maker can argue, goes up.
+
+If a session was handed an issue or a handoff document, it is a Maker.
+
+The roles were called Planner, Dispatcher, Worker and Challenger before the loop
+was named; `CLAUDE.md` carries the table, and the old names are left standing in
+the git history and in `docs/decisions/`.
