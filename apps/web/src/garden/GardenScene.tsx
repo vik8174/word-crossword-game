@@ -118,9 +118,10 @@ const ScenePictureLayer = ({
  *
  * A fresh instance per transition, given a key by the caller for the same
  * reason {@link ShownPicture} keys its own picture by generation: mounted
- * anew every time `GardenScene` gives it a new one, which is what lets
- * **Back to the gate** replay the same two animations a second time in the
- * same session rather than finding them already spent.
+ * anew every time `GardenScene` gives it a new one, which is what lets the
+ * same two animations replay a second time in the same session rather than
+ * being found already spent — `connecting` to `join` to `lobby`, the
+ * ordinary way a guest joins a room, plays both crossfades back to back.
  */
 const SceneLight = () => (
   <>
