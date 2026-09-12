@@ -1,3 +1,4 @@
+import { ThemeProvider } from '@mui/material/styles';
 import { render, screen, waitFor } from '@testing-library/react';
 import { logEvent } from 'firebase/analytics';
 import { MemoryRouter } from 'react-router-dom';
@@ -5,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Garden } from '../garden/Garden';
 import { GardenControlsContext } from '../garden/garden-controls';
+import { theme } from '../theme';
 import { HomePage } from './HomePage';
 
 // Analytics is the system boundary: mocked so what this page reports can be
@@ -22,18 +24,23 @@ const reportedEvents = () =>
 
 /**
  * Renders the page the way `App.tsx` actually does: inside the same `Garden`
- * every other route shares, with its petal layer switched off (issue #166).
- * The picture behind this page is `GardenScene`'s now rather than a component
- * of its own, so a render with no `Garden` around it would see no picture at
- * all — a fixture that stopped meaning what these tests need it to.
+ * every other route shares (issue #166), with the app's own theme around it —
+ * `Garden` now always mounts `PetalLayer`, which reads `theme.palette.sakura`
+ * (`PetalLayer.tsx`), a token this app's theme adds and MUI's default theme
+ * does not carry. The picture behind this page is `GardenScene`'s now rather
+ * than a component of its own, so a render with no `Garden` around it would
+ * see no picture at all — a fixture that stopped meaning what these tests
+ * need it to.
  */
 const renderHomePage = () =>
   render(
-    <MemoryRouter>
-      <Garden petals={false}>
-        <HomePage />
-      </Garden>
-    </MemoryRouter>,
+    <ThemeProvider theme={theme}>
+      <MemoryRouter>
+        <Garden>
+          <HomePage />
+        </Garden>
+      </MemoryRouter>
+    </ThemeProvider>,
   );
 
 beforeEach(() => {
@@ -108,19 +115,6 @@ describe('HomePage', () => {
     );
 
     expect(showScene).toHaveBeenCalledWith('gate');
-  });
-
-  it('stands on a picture rather than a canvas (issue #151)', () => {
-    // The one acceptance criterion a screenshot cannot argue with: this route
-    // creates no `<canvas>` at all, whatever `getContext` would answer if it
-    // did — not even through the `Garden` it now shares with every other
-    // route, since its petal layer is switched off here (issue #166).
-    // `App.test.tsx` covers the same claim at the routing level, where the
-    // boundary between this page and the garden's weather is actually
-    // decided.
-    const { container } = renderHomePage();
-
-    expect(container.querySelector('canvas')).toBeNull();
   });
 
   it('draws the gate as an image with a decoding fallback', () => {

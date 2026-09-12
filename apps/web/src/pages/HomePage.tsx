@@ -27,12 +27,12 @@ const BUTTON_PADDING = { across: 6, down: 4 } as const;
  * It is a photograph rather than a painting (issue #151), drawn by the same
  * `GardenScene` every other screen shares rather than by a component of its
  * own: this page claims the `gate` scene on mount, in a layout effect rather
- * than the plain one `CreateRoomPage` claims its own in, and `App.tsx` mounts
- * `Garden` here with its petal layer switched off (issue #166) — so the
- * picture behind this page now crossfades like any other change of scene,
- * but this route still creates no canvas of its own and no petal falls here,
- * which was and remains issue #151's point. The layout effect matters
- * because `/` is the first frame of a session with nothing behind it yet:
+ * than the plain one `CreateRoomPage` claims its own in. `App.tsx` mounts
+ * `Garden` here the same way it does everywhere else (issue #166) — so the
+ * picture behind this page crossfades like any other change of scene, and
+ * the same weather falls behind it as behind every other screen `Garden`
+ * wraps. The layout effect matters because `/` is the first frame of a
+ * session with nothing behind it yet:
  * `Garden` renders nothing while its `scene` is still `null`, and a plain
  * effect runs only after the browser has already painted that, which is
  * exactly the pictureless frame this ticket exists to close, reappearing at

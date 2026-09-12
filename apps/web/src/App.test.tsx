@@ -31,18 +31,17 @@ afterEach(() => {
 });
 
 describe('App', () => {
-  it('renders the home route by default, standing on the garden picture but none of its weather', () => {
+  it('renders the home route by default, standing on the garden picture and its weather', () => {
     const { container } = render(<App />);
 
     expect(screen.getByRole('heading', { name: /word garden/i })).toBeInTheDocument();
 
-    // `/` shares the garden's picture and its one veil now (issue #166) but
-    // not its weather: the gate creates no canvas at all, unlike every other
-    // route, which the garden still draws its falling petals on one —
-    // asserted below on `/room` and the catch-all. What `/` shares and what it
-    // does not is `Garden.test.tsx`'s and `HomePage.test.tsx`'s to cover in
-    // detail; this file only exercises the routing boundary between them.
-    expect(container.querySelector('canvas')).toBeNull();
+    // `/` shares the garden's picture, its one veil and its falling petals now
+    // (issue #166), the same as every other route `Garden` wraps — asserted
+    // below on `/room` and the catch-all. What `/` shares is `Garden.test.tsx`'s
+    // and `HomePage.test.tsx`'s to cover in detail; this file only exercises
+    // the routing boundary between them.
+    expect(container.querySelector('canvas')).not.toBeNull();
   });
 
   it('opens a room at the address invite links point at, inside the garden', async () => {
@@ -56,10 +55,9 @@ describe('App', () => {
     expect(await screen.findByText(/connecting to the game/i)).toBeInTheDocument();
 
     // `connecting` stands in front of the doors picture (`sceneFor` in
-    // `garden/use-room-garden.ts`), and the garden's falling petals still run
-    // behind it on a canvas of their own — only `/` leaves out the weather,
-    // and only ever did (issue #151); the picture and the veil are shared with
-    // every route now, `/` included (issue #166).
+    // `garden/use-room-garden.ts`), and the garden's falling petals run behind
+    // it on a canvas of their own — the same canvas every route gets now, `/`
+    // included (issue #166).
     expect(container.querySelectorAll('canvas').length).toBeGreaterThan(0);
   });
 
@@ -87,41 +85,43 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: /go to the start/i })).toHaveAttribute('href', '/');
   });
 
-  it('switches the weather off and on crossing the gate, in one session, without ever losing the picture', async () => {
-    // The boundary in App.tsx is not which page renders — it is `<Garden>`'s
-    // own `petals` prop, flipped by which route is open, while `Garden` itself
-    // stays mounted for the whole session (issue #166; it used to be mounted
-    // or not, the same boundary one layer higher — issue #151). Every other
-    // case in this file renders each address on its own, so none of them
-    // exercises an actual client-side navigation across that boundary within
-    // one mounted app, or could show a picture surviving it.
+  it('keeps the same picture and the same canvas crossing the gate, in one session', async () => {
+    // `Garden` mounts once for the whole session and stays mounted across
+    // every route it wraps, `/` included (issue #166) — it used to be mounted
+    // or not depending on the route (issue #151). Every other case in this
+    // file renders each address on its own, so none of them exercises an
+    // actual client-side navigation within one mounted app, or could show a
+    // picture and a canvas surviving it.
     const { container } = render(<App />);
-
-    expect(container.querySelector('canvas')).toBeNull();
 
     // The exact `<img>` standing behind `/` is still standing behind `/create`
     // once the navigation settles — proof, at the level of DOM node identity
     // rather than of timing, that nothing ever unmounted the picture in
     // between. A version that recreated it (the defect this issue fixes: a
     // ~300ms window with no photograph in it while `/create`'s lazy chunk
-    // loaded) would hand back a different node here.
+    // loaded) would hand back a different node here. The same is true of the
+    // canvas the petals fall through: it is `Garden`'s, not the route's, and
+    // nothing about leaving `/` should recreate it either.
     const gateImgBefore = container.querySelector('picture img');
+    const canvasBefore = container.querySelector('canvas');
+
+    expect(canvasBefore).not.toBeNull();
 
     fireEvent.click(screen.getByRole('link', { name: /create a game/i }));
 
     // CreateRoomPage reaches for Firestore/Auth as soon as it mounts, which is
     // why it is loaded on demand — `findByRole` waits out that tick.
     expect(await screen.findByRole('button', { name: /create room/i })).toBeInTheDocument();
-    expect(container.querySelectorAll('canvas').length).toBeGreaterThan(0);
     expect(container.querySelector('picture img')).toBe(gateImgBefore);
+    expect(container.querySelector('canvas')).toBe(canvasBefore);
 
     // Back to the gate, the way a browser's own back button does it — a real
     // `popstate`, not a second `render()` of a fresh app.
     window.history.back();
 
     expect(await screen.findByRole('heading', { name: /word garden/i })).toBeInTheDocument();
-    expect(container.querySelector('canvas')).toBeNull();
     expect(container.querySelector('picture img')).toBe(gateImgBefore);
+    expect(container.querySelector('canvas')).toBe(canvasBefore);
   });
 
   it('crossfades the gate into a room opened from it, in one session (issue #166)', async () => {

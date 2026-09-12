@@ -30,11 +30,11 @@ import { VEIL } from './scene-palette';
  * so two screens standing on the same picture do not change it and nothing
  * below re-renders for them at all.
  *
- * Petals fall over the garden except the one screen a game is played on and
- * the gate — the second exception is {@link petals} below, not this layer
- * knowing where it stands — and they never stop or reset for a change of
- * picture — they are a canvas of their own that knows nothing about which
- * scene is underneath it (`PetalLayer.tsx`, `handoffs/scenes/README.md`).
+ * Petals fall over the garden except the one screen a game is played on —
+ * that exception is `airFor` in `room-air.ts`, not this layer knowing where
+ * it stands — and they never stop or reset for a change of picture — they
+ * are a canvas of their own that knows nothing about which scene is
+ * underneath it (`PetalLayer.tsx`, `handoffs/scenes/README.md`).
  * What a finished game is greeted with is not here at all: the hall has no
  * sky in it, so the greeting is a cloth the room lays over its own table
  * ({@link RewardCloth}).
@@ -57,11 +57,10 @@ import { VEIL } from './scene-palette';
  * the animation rather than to the window
  * (`docs/decisions/0030-where-movement-is-allowed.md`).
  *
- * It wraps every route, `/` included (issue #166) — but not with the same
- * layers. `App.tsx` passes {@link petals} as `false` for `/`: the picture and
- * the veil stand behind the landing page exactly as they do everywhere else,
- * so a change of scene crossfades across that boundary the same way it does
- * inside it, but no canvas is created there and no petal falls
+ * It wraps every route, `/` included (issue #166), with the same layers as
+ * every other screen: the picture, the veil and the weather all stand behind
+ * the landing page exactly as they do everywhere else, so a change of scene
+ * crossfades across that boundary the same way it does inside it
  * (`scenes/gate-chrome.ts`'s stage percentages depend on nothing but this —
  * the landing page's own root is the fixed, full-viewport box they are
  * measured against, unrelated to which layers this component mounts beside
@@ -69,21 +68,13 @@ import { VEIL } from './scene-palette';
  * its own scene, so the scene is still never defaulted.
  *
  * @param props.children - The app, drawn in front of it
- * @param props.petals - Whether the weather falls here; `false` on the one
- * route that keeps its own look (issue #151, unchanged by #166)
  *
  * @example
- * <Garden petals>
+ * <Garden>
  *   <Routes>…</Routes>
  * </Garden>
  */
-export const Garden = ({
-  children,
-  petals = true,
-}: {
-  readonly children: ReactNode;
-  readonly petals?: boolean;
-}) => {
+export const Garden = ({ children }: { readonly children: ReactNode }) => {
   const [air, setAir] = useState<GardenAir>(DEFAULT_AIR);
   const [scene, setScene] = useState<SceneId | null>(null);
 
@@ -95,7 +86,7 @@ export const Garden = ({
   return (
     <GardenControlsContext value={controls}>
       <GardenScene scene={scene} />
-      {petals && <PetalLayer air={air} />}
+      <PetalLayer air={air} />
 
       {/* The place, put down under the interface. One dimming over the whole
         picture rather than a plate behind every sentence: a plate a line would
