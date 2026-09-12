@@ -26,3 +26,7 @@ Recorded in [issue #68](https://github.com/vik8174/word-crossword-game/issues/68
 **Strict tracking protection in the player's browser blocks GA4 outright.**
 Firefox classes requests to `google-analytics.com/g/collect` as a tracker; at its current level it lets them through, and a stricter one would not. The trap is that blocked events look exactly like a working internal-traffic mark: empty in both cases, with nothing to say which. The network tab tells them apart, and no analytics report can.
 Found on production on 2026-08-21, during the 1.1.0 release, and written down for the first time in [issue #81](https://github.com/vik8174/word-crossword-game/issues/81) — it is not our decision and has no ADR. Lifted by: nothing we own. It is a setting in somebody else's browser.
+
+**With `prefers-reduced-motion` on, a change of scene happens without travelling.**
+The gate, the doors and the hall otherwise crossfade into one another — a push, a warm bloom, the temple's own red opening out of the middle — and none of it plays for a reader who has turned animation off: no push, no bloom, no sun. The place is simply the next place.
+Recorded in [ADR 0030](decisions/0030-where-movement-is-allowed.md) and [ADR 0031](decisions/0031-one-camera-and-what-it-promises.md). Lifted by: nothing, and here "nothing" is a promise rather than an absence — the setting is the reader's own answer, already given.

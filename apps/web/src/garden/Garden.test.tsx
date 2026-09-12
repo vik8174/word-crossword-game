@@ -7,6 +7,7 @@ import { REDUCED_MOTION_QUERY } from '../components/screen-shift';
 import { theme } from '../theme';
 import { Garden } from './Garden';
 import { useGardenControls } from './garden-controls';
+import { SCENE_FADE_MS } from './scene-transition';
 
 /**
  * Answers the media queries the garden asks, the way a browser would.
@@ -140,9 +141,20 @@ const openTheApp = () =>
 
 const press = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
 
-/** The jpg the scene picture is currently drawn from. */
+/**
+ * The jpg the scene picture is currently drawn from.
+ *
+ * Reads the picture that is settled or arriving, never one that is on its way
+ * out: while a crossfade is running (issue #153) both are briefly on the
+ * page, and a query for the first `<img>` in the document would find whichever
+ * one happens to come first in the markup rather than the one a screen change
+ * actually asked for.
+ */
 const pictureSrc = (container: HTMLElement): string | null =>
-  container.querySelector('img')?.getAttribute('src') ?? null;
+  container
+    .querySelector('[data-scene-role="settled"], [data-scene-role="arriving"]')
+    ?.querySelector('img')
+    ?.getAttribute('src') ?? null;
 
 beforeEach(() => {
   frames = [];
@@ -243,19 +255,32 @@ describe('Garden', () => {
     expect(container.querySelector('picture')).toBeNull();
   });
 
-  it('shows a different picture at once when the screen says to', () => {
+  it('crossfades to a different picture when the screen says to', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
     const { container } = openTheApp();
     const before = pictureSrc(container);
 
     press('walk to the doors');
 
+    // Both on the page for as long as the crossfade runs: the picture that
+    // was is still there, on its way out, underneath the one arriving
+    // (issue #153).
+    expect(container.querySelector('[data-scene-role="leaving"]')).not.toBeNull();
+
     const after = pictureSrc(container);
 
-    // A plain attribute swap rather than a journey: the transition between two
-    // pictures is the next ticket's to build (#153).
     expect(after).not.toBeNull();
     expect(after).not.toBe(before);
     expect(after).toContain('doors');
+
+    act(() => {
+      vi.advanceTimersByTime(SCENE_FADE_MS);
+    });
+
+    // The fade is over: the picture that was is taken off the page rather
+    // than left standing behind the one that replaced it.
+    expect(container.querySelector('[data-scene-role="leaving"]')).toBeNull();
   });
 
   it('fades the garden out for a game and then stops drawing it', () => {
