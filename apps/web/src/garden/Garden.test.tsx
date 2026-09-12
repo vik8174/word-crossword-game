@@ -7,6 +7,7 @@ import { REDUCED_MOTION_QUERY } from '../components/screen-shift';
 import { theme } from '../theme';
 import { Garden } from './Garden';
 import { useGardenControls } from './garden-controls';
+import { VEIL } from './scene-palette';
 import { SCENE_FADE_MS } from './scene-transition';
 
 /**
@@ -304,5 +305,25 @@ describe('Garden', () => {
 
     expect(dropFrame).toHaveBeenCalled();
     expect(frames).toHaveLength(0);
+  });
+
+  it('paints one veil over the picture, not a second one merely gone unnoticed (issue #166)', () => {
+    // `GateScene` and `Garden` each used to paint `VEIL`, correct only because
+    // the two never coexisted (issue #166 put every route, `/` included,
+    // behind this one component). Counting elements at the veil's exact
+    // colour is what would have caught two of them standing on one picture.
+    const { container } = render(
+      <ThemeProvider theme={theme}>
+        <Garden>
+          <Player />
+        </Garden>
+      </ThemeProvider>,
+    );
+
+    const veils = Array.from(container.querySelectorAll('*')).filter(
+      (element) => getComputedStyle(element).backgroundColor === VEIL,
+    );
+
+    expect(veils).toHaveLength(1);
   });
 });

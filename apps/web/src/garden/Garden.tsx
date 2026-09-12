@@ -30,20 +30,23 @@ import { VEIL } from './scene-palette';
  * so two screens standing on the same picture do not change it and nothing
  * below re-renders for them at all.
  *
- * Petals fall over all of it except the one screen a game is played on, and
- * they never stop or reset for a change of picture — they are a canvas of
- * their own that knows nothing about which scene is underneath it
- * (`PetalLayer.tsx`, `handoffs/scenes/README.md`). What a finished game is
- * greeted with is not here at all: the hall has no sky in it, so the greeting
- * is a cloth the room lays over its own table ({@link RewardCloth}).
+ * Petals fall over the garden except the one screen a game is played on —
+ * that exception is `airFor` in `room-air.ts`, not this layer knowing where
+ * it stands — and they never stop or reset for a change of picture — they
+ * are a canvas of their own that knows nothing about which scene is
+ * underneath it (`PetalLayer.tsx`, `handoffs/scenes/README.md`).
+ * What a finished game is greeted with is not here at all: the hall has no
+ * sky in it, so the greeting is a cloth the room lays over its own table
+ * ({@link RewardCloth}).
  *
  * The scene starts as `null`, not as a guess. Every screen that stands here
- * says which picture it wants — `/create` on its own mount, a room through
- * {@link useRoomGarden} — and until one of them has, {@link GardenScene} draws
- * nothing rather than a default that might be wrong. A default of `gate` used
- * to mean a cold `/room/<id>` fetched the gate's picture in full before the
- * room's own lazy chunk had even finished loading, on top of whichever
- * picture that room turned out to need (issue #152's own second finding).
+ * says which picture it wants — `/` and `/create` each on their own mount, a
+ * room through {@link useRoomGarden} — and until one of them has,
+ * {@link GardenScene} draws nothing rather than a default that might be
+ * wrong. A default of `gate` used to mean a cold `/room/<id>` fetched the
+ * gate's picture in full before the room's own lazy chunk had even finished
+ * loading, on top of whichever picture that room turned out to need (issue
+ * #152's own second finding).
  *
  * All the layers are mounted outside the shift, so that they are one garden
  * for as long as a session stays among the screens that share it rather than
@@ -54,11 +57,15 @@ import { VEIL } from './scene-palette';
  * the animation rather than to the window
  * (`docs/decisions/0030-where-movement-is-allowed.md`).
  *
- * It does not wrap every route. `/` stands on its own photograph and creates
- * no extra picture underneath it (`scenes/GateScene.tsx`, issue #151), so
- * `App.tsx` mounts this component for every other route and leaves the gate
- * outside it — one garden for the eight screens that still share one, rather
- * than a picture nobody there is looking at.
+ * It wraps every route, `/` included (issue #166), with the same layers as
+ * every other screen: the picture, the veil and the weather all stand behind
+ * the landing page exactly as they do everywhere else, so a change of scene
+ * crossfades across that boundary the same way it does inside it
+ * (`scenes/gate-chrome.ts`'s stage percentages depend on nothing but this —
+ * the landing page's own root is the fixed, full-viewport box they are
+ * measured against, unrelated to which layers this component mounts beside
+ * it). `HomePage` claims `gate` on mount the same way `CreateRoomPage` claims
+ * its own scene, so the scene is still never defaulted.
  *
  * @param props.children - The app, drawn in front of it
  *
@@ -83,7 +90,9 @@ export const Garden = ({ children }: { readonly children: ReactNode }) => {
 
       {/* The place, put down under the interface. One dimming over the whole
         picture rather than a plate behind every sentence: a plate a line would
-        cut the place into pieces, and this leaves it a place. */}
+        cut the place into pieces, and this leaves it a place. Painted here
+        alone, and unconditionally: two dimmings over one picture would read
+        darker than either, and `/` gets no less of it than any other route. */}
       <Box aria-hidden sx={{ ...layerSx(LAYERS.veil), backgroundColor: VEIL }} />
 
       {children}

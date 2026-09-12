@@ -1,7 +1,7 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Garden } from './garden/Garden';
 import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -26,32 +26,24 @@ const RoomPage = lazy(() =>
   import('./pages/RoomPage').then((module) => ({ default: module.RoomPage })),
 );
 
-/** The one address that stands on its own picture rather than in the garden. */
+/** The landing page's own address. */
 const GATE_PATH = '/';
 
 /**
  * The routes, and the reporting of which of them is open.
  *
- * A component of its own because `usePageView` and `useLocation` both read the
- * current route, which only something inside the router can do.
+ * A component of its own because `usePageView` reads the current route, which
+ * only something inside the router can do.
  *
- * The garden wraps every route but the landing page (issue #151). It used to
- * wrap all of them uniformly, sitting above the router entirely, on the
- * reasoning that a background restarting at every address would read as a page
- * reloading. That reasoning still holds for the eight screens that go on
- * standing in the painted forest — `/create`, `/join` and every screen of a
- * room keep the one canvas for as long as a session stays among them — but `/`
- * no longer stands there at all: it is `gate.avif`, and creating the garden's
- * canvas underneath a route that never paints on it would be exactly the
- * un-costed rendering this app has already been bitten by once
- * (`apps/web/build/first-visit-weight.ts`). Leaving the gate is therefore a
- * background actually changing rather than one restarting, which is the case
- * the old reasoning was never about.
+ * The garden wraps every route, `/` included — the picture, the veil and the
+ * weather stand behind the landing page exactly as they do everywhere else,
+ * so a change of scene crossfades across it the same way it does between any
+ * other two screens, and the ~300ms gap a lazy chunk used to load behind is
+ * gone with it (issue #166). `HomePage` claims the `gate` scene on mount, the
+ * same way `CreateRoomPage` claims its own.
  */
 const RoutedPages = () => {
   usePageView();
-
-  const { pathname } = useLocation();
 
   const routes = (
     <Suspense fallback={<PageLoading />}>
@@ -64,7 +56,7 @@ const RoutedPages = () => {
     </Suspense>
   );
 
-  return pathname === GATE_PATH ? routes : <Garden>{routes}</Garden>;
+  return <Garden>{routes}</Garden>;
 };
 
 /**

@@ -5,8 +5,9 @@
  * address in the app to (`build/route-preload.ts`), so a plain `<link
  * rel="preload">` written into it by hand is not a preload for `/` alone — it
  * is a preload for `/create`, `/join` and `/room/<id>` as well, none of which
- * `GateScene` ever draws (issue #151). That would ask every one of those
- * visitors to fetch a scene image nobody there shows them, which is exactly
+ * need it fetched before their own bundle has even run (issue #151). That
+ * would ask every one of those visitors to fetch a scene image before there
+ * is any script on the page to decide whether they need it, which is exactly
  * what `docs/decisions/0033-a-second-ceiling-for-a-picture.md` says a scene
  * image must never cost: it is paid for once, by the one route that draws it.
  *

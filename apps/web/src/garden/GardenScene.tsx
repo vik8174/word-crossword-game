@@ -27,10 +27,10 @@ interface ScenePicture {
 /**
  * The three pictures the garden switches between, keyed by {@link SceneId}.
  *
- * `gate` reuses the exact files `scenes/GateScene.tsx` draws on `/` (issue
- * #151) rather than a second copy of the same picture: `/create` and `/join`
- * stand in front of the same torii the landing page does, so a visitor who
- * has already fetched it for `/` pays nothing to see it again here.
+ * `gate` is the one file `/`, `/create` and `/join` all draw through this same
+ * component (issue #166; `/` alone before it, issue #151): a visitor who has
+ * already fetched it for one of the three pays nothing to see it again on
+ * another.
  */
 const SCENES: Record<SceneId, ScenePicture> = {
   gate: { avif: GATE_AVIF, jpg: GATE_JPG },
@@ -139,7 +139,7 @@ const SceneLight = () => (
  * — the forest, the temple and the hall are photographs now, not a few
  * thousand brush strokes (issue #152). Which one is shown is still decided by
  * `garden-controls.ts`/`use-room-garden.ts`; `object-fit: cover` is what
- * `GateScene.tsx` already draws `/` with, so a percentage measured against one
+ * `HomePage.tsx` already draws `/` with, so a percentage measured against one
  * of these pictures (`scenes/gate-chrome.ts`) is a percentage measured against
  * exactly what this component shows.
  *
@@ -162,16 +162,16 @@ const SceneLight = () => (
  * a frame or two with no picture at all, behind a `Suspense` fallback that was
  * already covering the same frames.
  *
- * The picture that does not crossfade in is not an edge case about the start
- * of a session: `Garden` mounts fresh every time `/` is left — `App.tsx`
- * mounts it for every route but the landing page — so this is what happens on
- * **every arrival from the landing page**, the ordinary way into the app
- * rather than a rare first visit. That picture has nothing behind it to fade
- * from, `scene` having been `null` rather than another picture, but it
+ * The picture that does not crossfade in is a real edge case now rather than
+ * "every arrival from the landing page": `App.tsx` mounts `Garden` for every
+ * route, `/` included (issue #166), so it mounts once for the whole life of a
+ * tab rather than once per visit to the eight screens that used to share it.
+ * `scene` is `null` only for the handful of frames between that one mount and
+ * whichever screen renders first claiming its own picture — `/` claims `gate`
+ * the same way `/create` always has — so the picture with nothing to fade
+ * from is the first picture of a session and nothing after it. It still
  * pushes forward from the moment it appears, the same as every picture after
- * it. [Issue #166](https://github.com/vik8174/word-crossword-game/issues/166)
- * is where `/` joins this component, and this is the sentence it will make
- * untrue.
+ * it.
  *
  * @param props.scene - Which of the three pictures to show, or `null` before
  * anything has said

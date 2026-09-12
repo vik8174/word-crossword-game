@@ -1,11 +1,12 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import { useLayoutEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
-import { GATE_ACTION_SX, GATE_INK, GATE_NAME_SX, GATE_TAGLINE_SX } from '../scenes/gate-chrome';
-import { GateScene } from '../scenes/GateScene';
+import { useGardenControls } from '../garden/garden-controls';
 import { ON_SCENE_SX } from '../garden/scene-surface';
+import { GATE_ACTION_SX, GATE_INK, GATE_NAME_SX, GATE_TAGLINE_SX } from '../scenes/gate-chrome';
 import {
   inRem,
   LOGOTYPE_FONT_FAMILY,
@@ -23,14 +24,26 @@ const BUTTON_PADDING = { across: 6, down: 4 } as const;
 /**
  * Landing page — the gate, and the one thing there is to do at it.
  *
- * It is a photograph rather than a painting (issue #151): `GateScene` stands
- * `gate.avif` full-bleed behind the page, and this route creates no canvas at
- * all — the procedural forest `garden/` still paints for `/create`, `/join`
- * and every screen of a room goes on being drawn there, untouched. The name
- * hangs in the clear sky above the torii and the button stands in its opening,
- * both placed against percentages of the picture measured for legibility
- * against the real pixels of `gate.jpg` rather than computed from a painted
- * world (`scenes/gate-chrome.ts`).
+ * It is a photograph rather than a painting (issue #151), drawn by the same
+ * `GardenScene` every other screen shares rather than by a component of its
+ * own: this page claims the `gate` scene on mount, in a layout effect rather
+ * than the plain one `CreateRoomPage` claims its own in. `App.tsx` mounts
+ * `Garden` here the same way it does everywhere else (issue #166) — so the
+ * picture behind this page crossfades like any other change of scene, and
+ * the same weather falls behind it as behind every other screen `Garden`
+ * wraps. The layout effect matters because `/` is the first frame of a
+ * session with nothing behind it yet:
+ * `Garden` renders nothing while its `scene` is still `null`, and a plain
+ * effect runs only after the browser has already painted that, which is
+ * exactly the pictureless frame this ticket exists to close, reappearing at
+ * the other end of the journey. A layout effect claims the scene, and the
+ * render it causes, before that paint happens.
+ * The name hangs in the clear sky above the torii and the button stands in
+ * its opening, both placed against percentages of the picture measured for
+ * legibility against the real pixels of `gate.jpg` rather than computed from
+ * a painted world (`scenes/gate-chrome.ts`). Those percentages are read
+ * against this component's own root below, `position: fixed; inset: 0`, which
+ * is unchanged by where the picture itself is drawn.
  *
  * The name is lettered rather than written, in the logotype — Dela Gothic
  * One, the one weight it has, sumi with a cream offset behind it — sized off
@@ -54,10 +67,24 @@ const BUTTON_PADDING = { across: 6, down: 4 } as const;
 export const HomePage = () => {
   useScreenReached('home');
 
+  const { showScene } = useGardenControls();
+
+  // A layout effect, not a plain one: `/` is the first frame of a session
+  // with nothing behind it yet, unlike `/create`, which always arrives with
+  // a picture already standing there from wherever it was reached. `Garden`
+  // renders nothing while `scene` is still `null`, and a passive effect runs
+  // only after the browser has already painted that — a flat frame with the
+  // logotype, the tagline and the button standing on nothing, measured under
+  // throttling at 24-62ms, which is the very defect this ticket exists to
+  // close, moved from the exit to the entrance. A layout effect runs before
+  // the paint, so the claim above and the render it causes both happen
+  // first, and the browser never gets a frame with no photograph in it.
+  useLayoutEffect(() => {
+    showScene('gate');
+  }, [showScene]);
+
   return (
     <Box component="main" sx={{ ...ON_SCENE_SX, position: 'fixed', inset: 0 }}>
-      <GateScene />
-
       <Box sx={GATE_NAME_SX}>
         <Typography
           component="h1"

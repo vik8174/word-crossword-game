@@ -50,8 +50,9 @@ export type SceneId = 'gate' | 'doors' | 'hall';
  * Which picture a room hands back to when it is left.
  *
  * The gate, because it is where every session not inside a room stands:
- * `/create`'s own mount claims it directly, and a room that is left takes its
- * own picture with it (`use-room-garden.ts`'s cleanup). It is not what
+ * `/` and `/create` each claim it directly on their own mount, and a room
+ * that is left takes its own picture with it (`use-room-garden.ts`'s
+ * cleanup). It is not what
  * `Garden` starts on — starting on a guess is exactly the second finding
  * issue #152 was corrected for, so `Garden`'s own initial scene is `null`
  * until something has actually said which picture it wants.
