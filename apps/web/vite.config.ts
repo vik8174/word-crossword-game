@@ -141,10 +141,11 @@ const GATE_SCENE: Omit<ScenePreload, 'href'> = { path: '/', type: 'image/avif' }
  * `build/scene-preload.ts`'s to explain: one document serves every address
  * (Firebase Hosting rewrite), so a tag written into it by hand would preload
  * the gate's picture for `/create`, `/join` and `/room/<id>` as well, none of
- * which ever draw it. This plugin's own part is the same shape as
- * {@link preloadRoomRoute}'s: turn a path this build already knows
- * (`GateScene.tsx`'s own {@link GATE_AVIF}) into a script gated on the
- * address, rather than a tag that cannot tell addresses apart.
+ * which need it fetched before their own bundle has even run. This plugin's
+ * own part is the same shape as {@link preloadRoomRoute}'s: turn a path this
+ * build already knows (`scenes/gate-scene-paths.ts`'s own {@link GATE_AVIF})
+ * into a script gated on the address, rather than a tag that cannot tell
+ * addresses apart.
  */
 const preloadGateScene = (): Plugin => {
   let base = '/';

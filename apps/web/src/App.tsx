@@ -26,7 +26,7 @@ const RoomPage = lazy(() =>
   import('./pages/RoomPage').then((module) => ({ default: module.RoomPage })),
 );
 
-/** The one address that stands on its own picture rather than in the garden. */
+/** The one address whose picture carries no weather over it. */
 const GATE_PATH = '/';
 
 /**
@@ -35,18 +35,23 @@ const GATE_PATH = '/';
  * A component of its own because `usePageView` and `useLocation` both read the
  * current route, which only something inside the router can do.
  *
- * The garden wraps every route but the landing page (issue #151). It used to
- * wrap all of them uniformly, sitting above the router entirely, on the
- * reasoning that a background restarting at every address would read as a page
- * reloading. That reasoning still holds for the eight screens that go on
- * standing in the painted forest — `/create`, `/join` and every screen of a
- * room keep the one canvas for as long as a session stays among them — but `/`
- * no longer stands there at all: it is `gate.avif`, and creating the garden's
- * canvas underneath a route that never paints on it would be exactly the
- * un-costed rendering this app has already been bitten by once
- * (`apps/web/build/first-visit-weight.ts`). Leaving the gate is therefore a
- * background actually changing rather than one restarting, which is the case
- * the old reasoning was never about.
+ * The garden wraps every route, `/` included — the picture and the veil stand
+ * behind the landing page exactly as they do everywhere else, so a change of
+ * scene crossfades across it the same way it does between any other two
+ * screens, and the ~300ms gap a lazy chunk used to load behind is gone with it
+ * (issue #166). It used to leave `/` outside entirely (issue #151): that
+ * boundary was drawn to keep the garden's canvas — a `requestAnimationFrame`
+ * loop and falling petals — off a route that never painted on it, which is
+ * still true and still the point, but the picture underneath that canvas
+ * turned out to cost nothing extra to show there too. `Garden` is a static
+ * import, so `apps/web/build/first-visit-weight.ts` was already counting the
+ * whole garden — picture, petals and all — on every first visit before this
+ * ticket, `/` included; what stood outside `/` was the code actually
+ * *running* there, not the bytes. So the boundary moved down by one layer
+ * rather than closing altogether: `Garden` mounts everywhere now, but its
+ * `petals` prop is `false` for `/`, which is what keeps the canvas and the
+ * weather off it. `HomePage` claims the `gate` scene on mount, the same way
+ * `CreateRoomPage` claims its own.
  */
 const RoutedPages = () => {
   usePageView();
@@ -64,7 +69,7 @@ const RoutedPages = () => {
     </Suspense>
   );
 
-  return pathname === GATE_PATH ? routes : <Garden>{routes}</Garden>;
+  return <Garden petals={pathname !== GATE_PATH}>{routes}</Garden>;
 };
 
 /**

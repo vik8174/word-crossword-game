@@ -54,20 +54,33 @@ import { VEIL } from './scene-palette';
  * the animation rather than to the window
  * (`docs/decisions/0030-where-movement-is-allowed.md`).
  *
- * It does not wrap every route. `/` stands on its own photograph and creates
- * no extra picture underneath it (`scenes/GateScene.tsx`, issue #151), so
- * `App.tsx` mounts this component for every other route and leaves the gate
- * outside it — one garden for the eight screens that still share one, rather
- * than a picture nobody there is looking at.
+ * It wraps every route, `/` included (issue #166) — but not with the same
+ * layers. `App.tsx` passes {@link petals} as `false` for `/`: the picture and
+ * the veil stand behind the landing page exactly as they do everywhere else,
+ * so a change of scene crossfades across that boundary the same way it does
+ * inside it, but no canvas is created there and no petal falls
+ * (`scenes/gate-chrome.ts`'s stage percentages depend on nothing but this —
+ * the landing page's own root is the fixed, full-viewport box they are
+ * measured against, unrelated to which layers this component mounts beside
+ * it). `HomePage` claims `gate` on mount the same way `CreateRoomPage` claims
+ * its own scene, so the scene is still never defaulted.
  *
  * @param props.children - The app, drawn in front of it
+ * @param props.petals - Whether the weather falls here; `false` on the one
+ * route that keeps its own look (issue #151, unchanged by #166)
  *
  * @example
- * <Garden>
+ * <Garden petals>
  *   <Routes>…</Routes>
  * </Garden>
  */
-export const Garden = ({ children }: { readonly children: ReactNode }) => {
+export const Garden = ({
+  children,
+  petals = true,
+}: {
+  readonly children: ReactNode;
+  readonly petals?: boolean;
+}) => {
   const [air, setAir] = useState<GardenAir>(DEFAULT_AIR);
   const [scene, setScene] = useState<SceneId | null>(null);
 
@@ -79,11 +92,13 @@ export const Garden = ({ children }: { readonly children: ReactNode }) => {
   return (
     <GardenControlsContext value={controls}>
       <GardenScene scene={scene} />
-      <PetalLayer air={air} />
+      {petals && <PetalLayer air={air} />}
 
       {/* The place, put down under the interface. One dimming over the whole
         picture rather than a plate behind every sentence: a plate a line would
-        cut the place into pieces, and this leaves it a place. */}
+        cut the place into pieces, and this leaves it a place. Painted here
+        alone, and unconditionally: two dimmings over one picture would read
+        darker than either, and `/` gets no less of it than any other route. */}
       <Box aria-hidden sx={{ ...layerSx(LAYERS.veil), backgroundColor: VEIL }} />
 
       {children}

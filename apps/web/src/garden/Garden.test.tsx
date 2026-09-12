@@ -7,6 +7,7 @@ import { REDUCED_MOTION_QUERY } from '../components/screen-shift';
 import { theme } from '../theme';
 import { Garden } from './Garden';
 import { useGardenControls } from './garden-controls';
+import { VEIL } from './scene-palette';
 import { SCENE_FADE_MS } from './scene-transition';
 
 /**
@@ -304,5 +305,33 @@ describe('Garden', () => {
 
     expect(dropFrame).toHaveBeenCalled();
     expect(frames).toHaveLength(0);
+  });
+
+  it('draws the picture and the one veil with no weather at all, when asked for none (issue #166)', () => {
+    // `/` is the one route that mounts this component with `petals={false}`
+    // (`App.tsx`): the picture and the dimming over it still stand, since
+    // `/` is not leaving the garden any more, but no canvas is created and no
+    // frame is ever requested.
+    const { container } = render(
+      <ThemeProvider theme={theme}>
+        <Garden petals={false}>
+          <Player />
+        </Garden>
+      </ThemeProvider>,
+    );
+
+    expect(container.querySelectorAll('canvas')).toHaveLength(0);
+    expect(pictureSrc(container)).not.toBeNull();
+    expect(frames).toHaveLength(0);
+
+    // One veil, not a second one merely gone unnoticed (issue #166's own
+    // trap): `GateScene` and `Garden` each used to paint `VEIL`, correct only
+    // because the two never coexisted. Counting elements at the veil's exact
+    // colour is what would have caught two of them standing on one picture.
+    const veils = Array.from(container.querySelectorAll('*')).filter(
+      (element) => getComputedStyle(element).backgroundColor === VEIL,
+    );
+
+    expect(veils).toHaveLength(1);
   });
 });

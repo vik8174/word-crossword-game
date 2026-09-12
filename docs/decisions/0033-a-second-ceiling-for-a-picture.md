@@ -56,10 +56,11 @@ around it is already the largest thing on that screen. But it cannot be a
 plain `<link rel="preload">` written into `index.html`: Firebase Hosting
 rewrites every address in the app to that one document
 (`build/route-preload.ts`), so a tag written into it by hand would preload
-`gate.avif` for `/create`, `/join` and `/room/<id>` too, none of which
-`GateScene` ever draws — exactly the cost per route this ADR says a scene must
-never carry. `build/scene-preload.ts` solves it the way `route-preload.ts`
-already solves the same problem for a room's chunks: a script, injected into
+`gate.avif` for `/create`, `/join` and `/room/<id>` too, none of which need it
+fetched before their own bundle has even run — exactly the cost per route this
+ADR says a scene must never carry. `build/scene-preload.ts` solves it the way
+`route-preload.ts` already solves the same problem for a room's chunks: a
+script, injected into
 `<head>`, that checks `location.pathname` once the browser already knows it
 and creates the `<link>` itself only on `/`.
 
