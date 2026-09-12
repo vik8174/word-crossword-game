@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CONTROL } from './garden/scene-palette';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
 import { theme } from './theme';
 
@@ -162,6 +163,48 @@ describe('theme', () => {
     }
   });
 
+  it('holds every state of the gate button to the bar its label size sets', () => {
+    // The label this control actually carries, measured live off `HomePage.tsx`
+    // (`getComputedStyle`): 17px at weight 300, not the 11.5px/700 issue #149's
+    // own PRD (#145) describes as unchanged — a mockup figure that never
+    // matched what `ON_SCENE_SX` and `theme.typography.signage` render, and
+    // this ticket does not touch label size or weight either way (issue #149's
+    // own boundary). Either figure is far under the 18.66px-bold floor WCAG
+    // calls "large text", so the bar every one of the three states is measured
+    // against is 4.5:1, the same one small text anywhere else in this app is
+    // held to.
+    //
+    // Only the resting fill clears it. That is not an oversight: `#DA4620` is
+    // the temple's own red, chosen deliberately and rejected as a colour to
+    // darken further, and the PRD accepts 3.93:1 in writing rather than
+    // resolving it here. Arithmetic makes the same true of the hover fill —
+    // `#E45926` was picked for margin over the 3:1 a decorative edge is owed,
+    // not for 4.5:1 — though the PRD's own "Open" section names only the
+    // resting state; this test holds both of the label's two accepted
+    // shortfalls to their own measured floor rather than to the bar they miss,
+    // so a further regression is still caught. The waiting state's ink was
+    // already 78% before this ticket touched anything — not 55% as the PRD's
+    // own "today" figure has it — and against an opaque `restingFill` it does
+    // clear 4.5:1 outright.
+    const SMALL_TEXT = 4.5;
+    const states = [
+      { name: 'at rest', fill: CONTROL.fill, ink: CONTROL.ink, floor: 3.9 },
+      { name: 'under a finger', fill: CONTROL.litFill, ink: CONTROL.ink, floor: 3.3 },
+      {
+        name: 'not yet pressable',
+        fill: CONTROL.restingFill,
+        ink: CONTROL.restingInk,
+        floor: SMALL_TEXT,
+      },
+    ];
+
+    for (const state of states) {
+      expect(contrastBetween(state.ink, state.fill), state.name).toBeGreaterThanOrEqual(
+        state.floor,
+      );
+    }
+  });
+
   it('tells the four states of a square apart with the colour taken out', () => {
     // Empty, mine, the ones I explain, the ones the group answered. A player
     // who reads a word they are explaining as one already answered stops
@@ -235,12 +278,11 @@ describe('theme', () => {
     expect(surfaces).not.toContain(theme.palette.sakura.dark);
   });
 
-  it('reads in one face and looks at another, each falling back to the system', () => {
-    // Two faces are fetched and they do different jobs: the crossword and the
-    // two large levels are the mincho, everything read is the gothic (issue
-    // #124). Both are declared in `index.html`, latin only. The mincho is
-    // fetched at one weight — so every heading using it names that weight
-    // rather than being handed an imitation of a bolder one.
+  it('reads everything in one family, headings told apart from text by weight alone', () => {
+    // One face is fetched for reading, in three weights. Issue #147 dropped
+    // the serif the board and the four headings used to be set in — its
+    // stroke contrast lost first at the sizes the board draws its letters
+    // at, 11px to 24px. Declared in `index.html`, latin only.
     expect(theme.typography.fontFamily).not.toMatch(/Zen Old Mincho/);
     expect(theme.typography.fontFamily).toMatch(/^"Zen Kaku Gothic New"/);
     // Whatever a reader's own system draws is the tail of every stack here, so
@@ -253,8 +295,10 @@ describe('theme', () => {
       theme.typography.h3,
       theme.typography.h4,
     ]) {
-      expect(heading.fontFamily).toMatch(/Zen Old Mincho/);
-      expect(heading.fontWeight).toBe(400);
+      // Not merely "not the serif" — a heading that resolved to some other,
+      // unrelated family would also pass that weaker check.
+      expect(heading.fontFamily).toBe(theme.typography.fontFamily);
+      expect(heading.fontWeight).toBe(700);
     }
   });
 
@@ -272,11 +316,13 @@ describe('theme', () => {
     expect(easingValues).toEqual(new Set([MOTION_EASING]));
   });
 
-  it('turns off all motion under prefers-reduced-motion, not only its own four consumers', () => {
-    // The camera, the screen shift, the petals and the garden's cloth already
-    // ask `REDUCED_MOTION_QUERY` themselves; this is the backstop for
-    // everything MUI draws, which cannot be asked the same question and could
-    // not be trusted to ask it consistently one component at a time.
+  it('turns off all motion under prefers-reduced-motion, not only its own three consumers', () => {
+    // The screen shift, the petals and the garden's cloth already ask
+    // `REDUCED_MOTION_QUERY` themselves; this is the backstop for everything
+    // MUI draws, which cannot be asked the same question and could not be
+    // trusted to ask it consistently one component at a time. There used to
+    // be a fourth consumer, the camera, removed along with the rest of the
+    // painted world it flew through (issue #152).
     const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
       Record<string, unknown> | undefined;
     const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as

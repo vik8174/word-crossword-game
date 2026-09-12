@@ -37,12 +37,15 @@ import { useScreenReached } from '../telemetry/use-screen-reached';
  *
  * Stands on the same band every other sentence in this room stands on
  * ({@link SENTENCE_BAND_SX}): unlike {@link Waiting}, which this sits inside
- * of, it has no sheet of its own between it and the forest, and cream read
- * straight off the scene falls short of 4.5 at the gate's brightest point
- * (issue #136). `RoomUnavailableNotice`, `Waiting`'s other tenant, already
- * stands on an `Alert`'s own opaque paper, so the band is given here and not
- * in `Waiting` itself — a second sheet under a sheet that already has one
- * would be a darker rectangle behind the notice rather than a fix.
+ * of, it has no sheet of its own between it and the scene, and cream read
+ * straight off a scene this busy falls short of 4.5 (issue #136, measured
+ * against the gate before issue #152 moved this screen onto the doors — the
+ * band's own contrast was not remeasured against the new picture, only the
+ * scene it stands on changed). `RoomUnavailableNotice`, `Waiting`'s other
+ * tenant, already stands on an `Alert`'s own opaque paper, so the band is
+ * given here and not in `Waiting` itself — a second sheet under a sheet that
+ * already has one would be a darker rectangle behind the notice rather than a
+ * fix.
  */
 const Connecting = () => (
   <Stack direction="row" spacing={4} sx={{ alignItems: 'center', ...SENTENCE_BAND_SX }}>
@@ -84,14 +87,16 @@ const UNSEEN_HEADING = {
  * mistake for a room that exists — because there isn't one yet, or there
  * never will be. Earlier both stood inside the same frame every real screen
  * of a room draws, so a guest opening an invite link cold saw that frame
- * appear at the gate the moment the visit began, then disappear and
- * reappear a second later in the doorway the camera had by then arrived at:
- * the same shape twice, empty both times (issue #132). This has none for
- * either to draw, so there is nothing to see twice.
+ * appear the moment the visit began, then disappear and reappear a second
+ * later once the room had said what it was: the same shape twice, empty both
+ * times (issue #132). This has none for either to draw, so there is nothing
+ * to see twice.
  *
- * Centred over whatever the garden already shows, since neither `connecting`
- * nor `unavailable` has a place of its own for the camera to travel to (see
- * `locationFor`). Named the same page a real room screen is, unseen for the
+ * Centred over the doors, which is the picture both `connecting` and
+ * `unavailable` stand in front of (see `sceneFor` in
+ * `garden/use-room-garden.ts`) — a visitor waiting to learn whether a room
+ * will let them in, standing at its threshold rather than at the gate.
+ * Named the same page a real room screen is, unseen for the
  * same reason `RoomShell` says it unseen on the screen a game is played
  * on — a reader moving by headings still finds one, even for a wait that
  * `unavailable` can leave them sitting through indefinitely — and capped to

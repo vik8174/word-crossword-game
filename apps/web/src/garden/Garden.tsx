@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box';
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 
 import { LAYERS, layerSx } from './canvas-layer';
 import {
@@ -7,96 +7,81 @@ import {
   type GardenAir,
   type GardenControls,
   GardenControlsContext,
+  type SceneId,
 } from './garden-controls';
-import { DEFAULT_LOCATION, type Location } from './locations';
+import { GardenScene } from './GardenScene';
 import { PetalLayer } from './PetalLayer';
 import { VEIL } from './scene-palette';
-import { SceneLayer } from './SceneLayer';
-import { useCamera } from './use-camera';
 
 /**
- * The garden the whole app is drawn in front of: a place, the weather in it,
- * the dimming that lets an interface be read off both, and the one camera that
- * moves between the places.
+ * The garden the whole app is drawn in front of: one of three pictures, the
+ * weather over it, and the dimming that lets an interface be read off both.
  *
- * The place is a forest with a temple in it, and every screen of this app stands
- * somewhere in it (see {@link locationFor}). That is not decoration: the lobby
- * is the doors of the temple, a game is the hall behind them, and going from one
- * to the other is a camera travelling and getting closer rather than a page
- * being replaced. Walking into the temple needs no second scene at all — the
- * hall is painted inside the doorway, so arriving is a magnification
- * (`docs/decisions/0031-one-camera-and-what-it-promises.md`).
- *
- * The interface is taken off the screen while the camera travels and put back
- * as it arrives, and that is what this component's own element is for: one
- * `opacity`, set from inside the camera's frame rather than rendered, because a
- * journey rendered sixty times a second would spend the frames it is made of.
- * The screen ahead is already mounted and laid out by then — it is the screen
- * changing that starts the camera, so being ready is not a promise anything has
- * to keep, it is the order things happen in.
+ * The place used to be one continuous painted world with a camera flying
+ * between four points of it (issue #115, ADR 0031). Issue #152 replaces the
+ * painting with three photographs — the gate, the doors and the hall — and
+ * the camera with a plain attribute swap: a screen says which of the three it
+ * stands in front of, and `GardenScene` shows that one. The transition
+ * between them is the next ticket's to build (#153); this component only
+ * changes which picture is showing, instantly.
  *
  * Petals fall over all of it except the one screen a game is played on, and
- * never inside the doorway (`docs/decisions/0030-where-movement-is-allowed.md`).
- * What a finished game is answered with is no longer here: the hall has no sky
- * in it, so the weather cannot greet anybody indoors, and the greeting is a
- * cloth the room lays over its own table ({@link RewardCloth}).
+ * they never stop or reset for a change of picture — they are a canvas of
+ * their own that knows nothing about which scene is underneath it
+ * (`PetalLayer.tsx`, `handoffs/scenes/README.md`). What a finished game is
+ * greeted with is not here at all: the hall has no sky in it, so the greeting
+ * is a cloth the room lays over its own table ({@link RewardCloth}).
  *
- * All the layers are mounted here, above the router and outside the shift, so
- * that they are one canvas for the life of the tab rather than one per page: a
- * background that started again every time an address changed would be a page
- * reloading, said in petals. It is also why they cannot live any lower down at
- * all — a `transform` makes a containing block of its own, and `position: fixed`
- * inside one is fixed to the animation rather than to the window
+ * The scene starts as `null`, not as a guess. Every screen that stands here
+ * says which picture it wants — `/create` on its own mount, a room through
+ * {@link useRoomGarden} — and until one of them has, {@link GardenScene} draws
+ * nothing rather than a default that might be wrong. A default of `gate` used
+ * to mean a cold `/room/<id>` fetched the gate's picture in full before the
+ * room's own lazy chunk had even finished loading, on top of whichever
+ * picture that room turned out to need (issue #152's own second finding).
+ *
+ * All the layers are mounted outside the shift, so that they are one garden
+ * for as long as a session stays among the screens that share it rather than
+ * one per page: a background that started again every time an address
+ * changed within them would be a page reloading, said in petals. It is also
+ * why they cannot live any lower down at all — a `transform` makes a
+ * containing block of its own, and `position: fixed` inside one is fixed to
+ * the animation rather than to the window
  * (`docs/decisions/0030-where-movement-is-allowed.md`).
+ *
+ * It does not wrap every route. `/` stands on its own photograph and creates
+ * no extra picture underneath it (`scenes/GateScene.tsx`, issue #151), so
+ * `App.tsx` mounts this component for every other route and leaves the gate
+ * outside it — one garden for the eight screens that still share one, rather
+ * than a picture nobody there is looking at.
  *
  * @param props.children - The app, drawn in front of it
  *
  * @example
  * <Garden>
- *   <BrowserRouter>…</BrowserRouter>
+ *   <Routes>…</Routes>
  * </Garden>
  */
 export const Garden = ({ children }: { readonly children: ReactNode }) => {
   const [air, setAir] = useState<GardenAir>(DEFAULT_AIR);
-  const [location, setLocation] = useState<Location>(DEFAULT_LOCATION);
-  const camera = useCamera(location);
-  const screen = useRef<HTMLDivElement>(null);
+  const [scene, setScene] = useState<SceneId | null>(null);
 
   // Built once, so that nothing below re-runs an effect because the garden was
   // handed to it again — and every one of those effects is something that says
   // what the garden should be doing.
-  const controls = useMemo<GardenControls>(
-    () => ({ showAir: setAir, showLocation: setLocation }),
-    [],
-  );
-
-  useEffect(
-    () =>
-      camera.onFrame(() => {
-        const element = screen.current;
-
-        if (element !== null) {
-          element.style.opacity = String(camera.screenOpacity());
-        }
-      }),
-    [camera],
-  );
+  const controls = useMemo<GardenControls>(() => ({ showAir: setAir, showScene: setScene }), []);
 
   return (
     <GardenControlsContext value={controls}>
-      <SceneLayer camera={camera} />
-      <PetalLayer air={air} camera={camera} />
+      <GardenScene scene={scene} />
+      <PetalLayer air={air} />
 
       {/* The place, put down under the interface. One dimming over the whole
         picture rather than a plate behind every sentence: a plate a line would
         cut the place into pieces, and this leaves it a place. */}
       <Box aria-hidden sx={{ ...layerSx(LAYERS.veil), backgroundColor: VEIL }} />
 
-      {/* The app, and the one thing the camera does to it. It is a plain box
-        with nothing but that opacity on it: anything else here would be a rule
-        about how the application is laid out, decided in the background it
-        happens to be drawn on. */}
-      <Box ref={screen}>{children}</Box>
+      {children}
     </GardenControlsContext>
   );
 };

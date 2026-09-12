@@ -7,10 +7,10 @@ import { TYPOGRAPHY } from './typography';
  * The system setting that means no movement at all, spelled out again rather
  * than imported.
  *
- * `components/screen-shift.ts` declares the same string for the camera, the
- * screen shift and the garden's canvases to read with `useMediaQuery` — a
- * check that runs in JavaScript, once, at the moment each of those decides
- * whether to move. A style block cannot ask a hook a question; what it can do
+ * `components/screen-shift.ts` declares the same string for the screen shift
+ * and the garden's canvases to read with `useMediaQuery` — a check that runs
+ * in JavaScript, once, at the moment each of those decides whether to move. A
+ * style block cannot ask a hook a question; what it can do
  * is hold the same query as a CSS `@media` rule, which the browser
  * re-evaluates on its own the moment the setting changes, with nothing to
  * import and nothing to grow stale. The two are the same query written for
@@ -128,15 +128,16 @@ declare module '@mui/material/styles' {
 }
 
 /**
- * The three faces, the four levels and the row of gaps this app is drawn with
- * are in `scale.ts`, and the typography below is nothing but those handed to
- * MUI. Two of them leave again through this module — the crossword reads the
- * display face here, and the scene of issue #115 reads the sign face out of
- * `theme.typography.signage` — so the theme stays the one thing a component
- * asks about how the app looks
+ * The four roles a face plays, the four levels and the row of gaps this app is
+ * drawn with are in `scale.ts`, and the typography below is nothing but those
+ * handed to MUI. Two of them leave again through this module — the crossword
+ * reads the text face here (its letters and its numbers alike, since issue
+ * #147 dropped the serif that used to set them apart), and the scene of issue
+ * #115 reads the sign face out of `theme.typography.signage` — so the theme
+ * stays the one thing a component asks about how the app looks
  * (`docs/decisions/0028-a-design-system-inside-the-mui-theme.md`).
  */
-export { DISPLAY_FONT_FAMILY, SIGN_FONT_FAMILY } from './scale';
+export { SIGN_FONT_FAMILY, TEXT_FONT_FAMILY } from './scale';
 
 /**
  * The app's design system: a palette of named tokens, and the typography drawn
@@ -271,16 +272,19 @@ export const theme = createTheme({
     // (`docs/decisions/0030-where-movement-is-allowed.md`) is about every
     // control in the app, not only the ones this file happens to style.
     //
-    // The four consumers of `REDUCED_MOTION_QUERY` — the camera, the screen
-    // shift, the petals and the garden's cloth — already ask the same question
-    // themselves and skip their own `requestAnimationFrame` loops when it is
-    // answered, so this rule and theirs never race: theirs stops a canvas from
-    // being painted, and this one stops a `transition` or `animation` CSS
-    // property from doing anything once painted.
+    // The three consumers of `REDUCED_MOTION_QUERY` — the screen shift, the
+    // petals and the greeting cloth — already ask the same question themselves
+    // and skip their own `requestAnimationFrame` loops when it is answered, so
+    // this rule and theirs never race: theirs stops a canvas from being
+    // painted, and this one stops a `transition` or `animation` CSS property
+    // from doing anything once painted. There used to be a fourth: the camera
+    // that flew between the garden's painted locations, removed along with the
+    // rest of that world when the scenes became pictures (issue #152).
     //
     // `CircularProgress` is named out of it on purpose. ADR 0030 turns off
-    // movement that disorients — petals, a camera flight, a screen sliding —
-    // and a spinner is not that: it is the one way this app says "wait", and
+    // movement that disorients — petals, a screen sliding, a scene once had a
+    // camera flying through it — and a spinner is not that: it is the one way
+    // this app says "wait", and
     // on the `connecting` screen (`RoomPage.tsx`'s `Waiting`) it is the only
     // thing on the page since issue #132 took the room's frame off it. Frozen
     // by `animation-iteration-count: 1`, it turns once and stops, which reads

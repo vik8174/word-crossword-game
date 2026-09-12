@@ -1,11 +1,12 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword, validateWordList } from 'shared';
 
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm } from '../components/WordListForm';
+import { useGardenControls } from '../garden/garden-controls';
 import { fullHeightBandSx, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
@@ -78,14 +79,23 @@ type CreationPhase =
  * `docs/decisions/0021-one-room-address.md`).
  *
  * It is the second screen of the funnel, so it says it was reached (issue #51),
- * and it is the second screen at the gate: the garden is standing where the
- * landing page left it, which is why nothing here has to say where it is.
+ * and it is the second screen at the gate — but unlike the landing page, this
+ * one is lazy-loaded, so it claims the gate's own picture on its own mount
+ * rather than trusting `Garden` to have guessed it (`garden-controls.ts`'s
+ * `DEFAULT_SCENE`; issue #152's second finding is what a guess there used to
+ * cost).
  *
  * @example
  * <Route path="/create" element={<CreateRoomPage />} />
  */
 export const CreateRoomPage = () => {
   useScreenReached('create');
+
+  const { showScene } = useGardenControls();
+
+  useEffect(() => {
+    showScene('gate');
+  }, [showScene]);
 
   const navigate = useNavigate();
   // The field this fills is `WordListForm`'s, which is controlled: its value

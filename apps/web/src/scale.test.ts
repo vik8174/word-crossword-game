@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  DISPLAY_FONT_FAMILY,
   inRem,
+  LOGOTYPE_FONT_FAMILY,
+  LOGOTYPE_FONT_WEIGHT,
   SIGN_FONT_FAMILY,
   SIGN_FONT_WEIGHT,
   SIGN_TRACKING,
@@ -58,32 +59,51 @@ describe('the scale', () => {
   });
 
   it('sets every variant in one of the two weights, or in the sign face’s own', () => {
-    const weights: unknown[] = [WEIGHTS.regular, WEIGHTS.semibold, SIGN_FONT_WEIGHT];
+    const weights: unknown[] = [WEIGHTS.regular, WEIGHTS.bold, SIGN_FONT_WEIGHT];
 
     for (const variant of EVERY_VARIANT) {
       expect(weights).toContain(theme.typography[variant].fontWeight);
     }
 
-    // Anything reaching for bold is given the semibold rather than a third
+    // No rule anywhere may land on a weight this family does not ship: 300
+    // (the sign face), 400 and 700 are the only three files fetched, so 500
+    // and 600 must never appear as a value here.
+    expect(weights).not.toContain(500);
+    expect(weights).not.toContain(600);
+
+    // Anything reaching for bold is given the same bold rather than a third
     // weight nobody chose.
-    expect(theme.typography.fontWeightBold).toBe(WEIGHTS.semibold);
-    expect(theme.typography.fontWeightMedium).toBe(WEIGHTS.semibold);
+    expect(theme.typography.fontWeightBold).toBe(WEIGHTS.bold);
+    expect(theme.typography.fontWeightMedium).toBe(WEIGHTS.bold);
   });
 });
 
-describe('the three faces', () => {
-  it('keeps the display face on the two large levels and off everything smaller', () => {
-    // Its lowercase stands 43% of its own size against the text face's 48%, so
-    // seventeen pixels of it read 11% shorter than seventeen pixels of the
-    // sentences around it — which is a face for looking at and not for reading
-    // (measured in issue #124).
+describe('the four faces', () => {
+  it('sets the four headings in the text family, at the bold weight, and off the serif that used to carry them', () => {
+    // Issue #147 dropped the display face: the board's letters run from 11px
+    // to 24px, and a face that spends its quality on stroke contrast loses
+    // that contrast first at the sizes this board actually draws at. What is
+    // left to tell a heading from a paragraph is weight and size alone.
     for (const heading of ['h1', 'h2', 'h3', 'h4'] as const) {
-      expect(theme.typography[heading].fontFamily).toBe(DISPLAY_FONT_FAMILY);
+      expect(theme.typography[heading].fontFamily).toBe(TEXT_FONT_FAMILY);
+      expect(theme.typography[heading].fontWeight).toBe(WEIGHTS.bold);
     }
 
     for (const text of ['h5', 'h6', 'subtitle1', 'subtitle2', 'body1', 'body2'] as const) {
       expect(theme.typography[text].fontFamily ?? TEXT_FONT_FAMILY).not.toMatch(/Zen Old Mincho/);
     }
+
+    expect(TEXT_FONT_FAMILY).not.toMatch(/Zen Old Mincho/);
+    expect(SIGN_FONT_FAMILY).not.toMatch(/Zen Old Mincho/);
+  });
+
+  it('names the logotype at its one weight, subset to the eight letters of the name and a space', () => {
+    // Nothing in the interface names this family yet — where `WORD GARDEN`
+    // stands is issue #148's, not this one's. This is the face and the
+    // subset, ready for it.
+    expect(LOGOTYPE_FONT_FAMILY).toMatch(/^"Dela Gothic One"/);
+    expect(LOGOTYPE_FONT_FAMILY.endsWith(SYSTEM_FONT_FAMILY)).toBe(true);
+    expect(LOGOTYPE_FONT_WEIGHT).toBe(400);
   });
 
   it('declares the sign face in the theme, so the garden does not declare one', () => {

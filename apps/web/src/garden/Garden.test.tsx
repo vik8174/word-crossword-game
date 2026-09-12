@@ -1,21 +1,18 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { REDUCED_MOTION_QUERY } from '../components/screen-shift';
 import { theme } from '../theme';
 import { Garden } from './Garden';
 import { useGardenControls } from './garden-controls';
-import { CAMERA_MS } from './camera';
-import { DOORS, GATE } from './locations';
 
 /**
  * Answers the media queries the garden asks, the way a browser would.
  *
  * jsdom has no `matchMedia` at all, and a browser without one is read as
- * somebody who has not turned animation off, on a window with no room in it.
- * That is the ordinary case for most of this file, and the two below are the
- * two answers that change what the garden does.
+ * somebody who has not turned animation off.
  *
  * @param answer - Which queries match
  */
@@ -39,9 +36,6 @@ const browserThatAnswers = (answer: (query: string) => boolean) => {
 /** Somebody who has turned animation off in their operating system. */
 const turnAnimationOff = () => browserThatAnswers((query) => query === REDUCED_MOTION_QUERY);
 
-/** A window with enough of both dimensions for the camera to be worth having. */
-const openAWindowWithRoomInIt = () => browserThatAnswers((query) => query.includes('min-width'));
-
 /** Puts the tab in front or behind and tells the document about it. */
 const setVisibility = (state: DocumentVisibilityState) => {
   Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
@@ -62,19 +56,12 @@ const dropFrame = vi.fn();
 /**
  * A canvas that draws nothing and counts everything.
  *
- * jsdom has no canvas behind `getContext`, so without this the garden finds
- * nothing to draw through and every test below would pass by drawing nothing at
- * all — which is exactly what two of them are asserting.
- *
- * It is wide enough for the scene as well as the weather. Both layers draw
- * through the same stub, and the count above is only ever read across one frame
- * of the weather — the scene is painted when the layer is mounted and not
- * again, so it is never inside anything being counted.
+ * jsdom has no canvas behind `getContext`, so without this the petal layer
+ * finds nothing to draw through and every test below would pass by drawing
+ * nothing at all — which is exactly what two of them are asserting.
  */
 const stubCanvas = () => {
   petalsDrawn = 0;
-
-  const gradient = { addColorStop: () => {} } as unknown as CanvasGradient;
 
   const brush = {
     clearRect: () => {},
@@ -85,42 +72,18 @@ const stubCanvas = () => {
     scale: () => {},
     beginPath: () => {},
     moveTo: () => {},
-    lineTo: () => {},
     quadraticCurveTo: () => {},
-    closePath: () => {},
-    rect: () => {},
-    roundRect: () => {},
-    ellipse: () => {},
-    clip: () => {},
-    fillRect: () => {},
-    stroke: () => {},
-    createLinearGradient: () => gradient,
-    createRadialGradient: () => gradient,
     setTransform: () => {},
     fill: () => {
       petalsDrawn += 1;
     },
     globalAlpha: 1,
-    lineWidth: 1,
     fillStyle: '',
-    strokeStyle: '',
   };
 
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
     brush as unknown as CanvasRenderingContext2D,
   );
-};
-
-/** Hands out one whole frame: everything waiting for one, at the same moment. */
-const tick = (at: number) => {
-  const waiting = frames;
-
-  frames = [];
-  act(() => {
-    for (const frame of waiting) {
-      frame(at);
-    }
-  });
 };
 
 /** Hands the garden the next frame it asked for. */
@@ -133,9 +96,20 @@ const drawFrame = (at: number) => {
   });
 };
 
-/** Somebody in the app who can tell the garden what the screen is doing. */
+/**
+ * Somebody in the app who can tell the garden what the screen is doing.
+ *
+ * Claims the gate on mount, the way `CreateRoomPage` does — the scene starts
+ * `null` and stays that way until somebody says otherwise, so a fixture that
+ * never claimed one would leave every test below staring at no picture at all
+ * (issue #152's second finding).
+ */
 const Player = () => {
-  const { showAir, showLocation } = useGardenControls();
+  const { showAir, showScene } = useGardenControls();
+
+  useEffect(() => {
+    showScene('gate');
+  }, [showScene]);
 
   return (
     <>
@@ -145,10 +119,10 @@ const Player = () => {
       <button type="button" onClick={() => showAir('petals')}>
         leave the room
       </button>
-      <button type="button" onClick={() => showLocation(DOORS)}>
+      <button type="button" onClick={() => showScene('doors')}>
         walk to the doors
       </button>
-      <button type="button" onClick={() => showLocation(GATE)}>
+      <button type="button" onClick={() => showScene('gate')}>
         walk back to the gate
       </button>
     </>
@@ -165,6 +139,10 @@ const openTheApp = () =>
   );
 
 const press = (name: string) => fireEvent.click(screen.getByRole('button', { name }));
+
+/** The jpg the scene picture is currently drawn from. */
+const pictureSrc = (container: HTMLElement): string | null =>
+  container.querySelector('img')?.getAttribute('src') ?? null;
 
 beforeEach(() => {
   frames = [];
@@ -191,16 +169,17 @@ describe('Garden', () => {
     expect(frames).toHaveLength(1);
   });
 
-  it('leaves the place standing when animation is turned off, and takes the weather away', () => {
+  it('leaves the picture standing when animation is turned off, and takes the weather away', () => {
     turnAnimationOff();
 
     const { container } = openTheApp();
 
     // Not fewer petals and not slower ones: the canvas they fall on is not on
-    // the page at all, and there is no loop asking for frames. The scene stays,
-    // because a painting is not movement — somebody who has turned animation
-    // off has asked for stillness, not for a blank page.
-    expect(container.querySelectorAll('canvas')).toHaveLength(1);
+    // the page at all, and there is no loop asking for frames. The picture
+    // stays, because a photograph is not movement — somebody who has turned
+    // animation off has asked for stillness, not for a blank page.
+    expect(container.querySelectorAll('canvas')).toHaveLength(0);
+    expect(pictureSrc(container)).not.toBeNull();
     expect(frames).toHaveLength(0);
   });
 
@@ -246,74 +225,37 @@ describe('Garden', () => {
     expect(petalsDrawn).toBeGreaterThan(0);
   });
 
-  it('travels between two places rather than cutting to the second', () => {
-    openAWindowWithRoomInIt();
+  it('draws no picture at all until something has said which one it wants', () => {
+    // Regression coverage for a real bug: a default scene here used to mean a
+    // cold `/room/<id>` fetched the gate's picture in full before the room's
+    // own lazy chunk had even loaded, on top of whichever picture the room
+    // then turned out to need (issue #152's second finding). Nobody in this
+    // render — unlike `Player` — has claimed a scene yet.
+    const { container } = render(
+      <ThemeProvider theme={theme}>
+        <Garden>
+          <button type="button">say nothing about the scene</button>
+        </Garden>
+      </ThemeProvider>,
+    );
 
-    const { container } = openTheApp();
-    // The app is the last of the garden's children: the two canvases and the
-    // dimming are drawn behind it, and this is the one the camera touches.
-    const app = container.lastElementChild as HTMLElement;
-
-    press('walk to the doors');
-    tick(0);
-    tick(300);
-
-    // Part way there, and the interface is not on the screen: the middle of a
-    // journey belongs to the place alone.
-    expect(Number(app.style.opacity)).toBeLessThan(1);
-
-    tick(CAMERA_MS * 2);
-
-    expect(app.style.opacity).toBe('1');
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('picture')).toBeNull();
   });
 
-  it('asks for frames only while it is travelling', () => {
-    openAWindowWithRoomInIt();
-    openTheApp();
-    tick(0);
-
-    const settled = frames.length;
-
-    press('walk to the doors');
-
-    expect(frames.length).toBeGreaterThan(settled);
-
-    // The first frame is where a journey starts its clock, and the second is
-    // long past the end of it: the camera lands and stops asking, while the
-    // weather goes on as it always does.
-    tick(0);
-    tick(CAMERA_MS * 2);
-
-    expect(frames).toHaveLength(settled);
-  });
-
-  it('changes the place at once on a window with no room for a journey', () => {
-    // A phone sees a narrow slice of the world, so a journey across it is a
-    // stripe of green sliding past — on the device least able to spare the
-    // frames it would cost.
+  it('shows a different picture at once when the screen says to', () => {
     const { container } = openTheApp();
-    const app = container.lastElementChild as HTMLElement;
+    const before = pictureSrc(container);
 
-    frames = [];
     press('walk to the doors');
 
-    expect(frames).toHaveLength(0);
-    expect(app.style.opacity).toBe('1');
-  });
+    const after = pictureSrc(container);
 
-  it('changes the place at once when animation is turned off', () => {
-    turnAnimationOff();
-
-    const { container } = openTheApp();
-    const app = container.lastElementChild as HTMLElement;
-
-    frames = [];
-    press('walk to the doors');
-
-    // Off is off: not a shorter journey and not a gentler one, and the
-    // interface is never taken off the screen on the way.
-    expect(frames).toHaveLength(0);
-    expect(app.style.opacity).toBe('1');
+    // A plain attribute swap rather than a journey: the transition between two
+    // pictures is the next ticket's to build (#153).
+    expect(after).not.toBeNull();
+    expect(after).not.toBe(before);
+    expect(after).toContain('doors');
   });
 
   it('fades the garden out for a game and then stops drawing it', () => {
@@ -326,8 +268,8 @@ describe('Garden', () => {
 
     // Still on the page and still being drawn, because it is going rather than
     // gone — the board arrives over a background that is settling, not one that
-    // snapped off behind it. The place behind it never went anywhere.
-    expect(container.querySelectorAll('canvas')).toHaveLength(2);
+    // snapped off behind it. The picture behind it never went anywhere.
+    expect(container.querySelectorAll('canvas')).toHaveLength(1);
     expect(frames).toHaveLength(1);
 
     frames = [];

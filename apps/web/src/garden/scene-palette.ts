@@ -78,6 +78,20 @@ export const SCENE = {
 export type SceneColour = (typeof SCENE)[keyof typeof SCENE];
 
 /**
+ * The paper of the temple's doors, from where the light hits it to where it
+ * does not.
+ *
+ * Used by the greeting cloth (`cloth.ts`) rather than by anything painted on a
+ * canvas: the doors and the hall are both raster pictures now (issue #152), so
+ * this is no longer the gradient a procedurally-drawn shoji screen was filled
+ * with. It stays a value in this file because it is still a colour the scene
+ * is made of — the cloth is "literally the paper of the doors they walked
+ * through" (`cloth.ts`), and that claim is about the temple's own material, not
+ * about how any particular picture of it was produced.
+ */
+export const SHOJI_PAPER = ['#E4D8B6', '#D6C9A3', '#C3B48D'] as const;
+
+/**
  * How much the picture is put down by, everywhere the interface stands on it.
  *
  * This is the general answer to legibility, and it is one answer rather than a
@@ -140,30 +154,59 @@ export const SCENE_EDGE = 'rgba(243, 236, 217, 0.55)';
 /**
  * The one control that carries an action, in the one colour that carries one.
  *
- * Translucent, so the forest goes on behind it and the control stands in the
- * picture rather than on it. That only works where the picture is dark, which
- * is why every control in this app stands either on a band or on the shade
- * under the canopy: on the lit paper of the temple's doors the same fill
- * carries its label at 3.6 to one, and on a band over that same paper at 4.65
- * (`scene-palette.test.ts`).
+ * Opaque now, and that is a correction rather than a preference. It used to be
+ * translucent, on the reasoning that a forest going on behind it says the
+ * control is standing in the picture rather than on it — but `scene-surface.ts`
+ * paints every `.MuiButton-contained` with this fill over the veiled picture,
+ * so a translucent value put the background under the label at a different
+ * colour on every pixel of the pill, on every one of the three scenes it
+ * stands on (issue #149). Opaque means one figure covers the gate, the doors
+ * and the hall alike, and nothing here has to be re-measured per scene
+ * (`theme.test.ts`).
  *
- * The resting state is nearly opaque rather than half of it, and says it is
- * resting by going the colour of the temple's shadowed side. A control faded
- * out until it is half the picture behind it is a control nobody can read the
- * name of, which is the state a player looks at longest — the start of a game
- * is a button that waits for the other player.
+ * The resting fill is the temple's own red, unchanged: at rest is the state a
+ * player looks at longest — the start of a game is a button that waits for the
+ * other player — so it keeps the colour the control was always drawn in
+ * rather than a fresh one entering the palette for it. `litFill` is new,
+ * picked for margin rather than reused, since nothing already in the palette
+ * cleared 3:1 under this label between `vermilion` and `vermilionLit` (issue
+ * #149's PRD comment, #145).
  */
 export const CONTROL = {
-  /** What the temple's red looks like with the forest coming through it. */
-  fill: 'rgba(218, 70, 32, 0.78)',
-  /** The same under a finger. */
-  litFill: 'rgba(242, 118, 47, 0.88)',
+  /** The temple's own red, opaque: the same value as {@link SCENE.vermilion}. */
+  fill: SCENE.vermilion,
+  /** The same, brighter, under a finger — new, and not {@link SCENE.vermilionLit}. */
+  litFill: '#E45926',
   /** What is written on it. Not translucent: this is the part that is read. */
   ink: '#FFF3E2',
-  /** The brushed highlight the temple's woodwork catches along its top edge. */
-  edge: SCENE.vermilionLit,
-  /** A control that cannot be pressed yet. */
-  restingFill: 'rgba(147, 41, 15, 0.86)',
+  /**
+   * The sun dot drawn before the label — white on cream rather than the
+   * paper's own {@link SCENE.cream}, so the mark reads as a small light of its
+   * own rather than as another line of text.
+   */
+  mark: '#FFF6E6',
+  /**
+   * The 1.5 px edge round the pill: gold, decorative, and never the same
+   * colour as {@link SCENE.vermilionLit} — that stays the forest's own lit
+   * edge and never carries a word (issue #149). This one is not read off the
+   * scene's own palette at all; it belongs to the control alone.
+   */
+  edge: 'rgba(201, 162, 39, 0.85)',
+  /**
+   * The lift that separates the pill from the picture behind it — sampled just
+   * outside the pill on all three scenes, the gold edge alone reads close to
+   * 1:1 against the art over most of its perimeter, so this shadow is doing
+   * the actual work of the boundary and is not decoration to be tidied away.
+   */
+  lift: '0 10px 24px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 246, 230, 0.35)',
+  /** A control that cannot be pressed yet: the temple's shadowed side, opaque. */
+  restingFill: SCENE.vermilionDeep,
+  /**
+   * What is written on a control that cannot be pressed yet, unchanged by this
+   * ticket: it was already seventy-eight per cent, not fifty-five as issue
+   * #149's own PRD comment describes it — a translucent label is read off the
+   * fill it sits on, and the two only agree once the fill above is opaque
+   * (`theme.test.ts`).
+   */
   restingInk: 'rgba(243, 236, 217, 0.78)',
-  restingEdge: 'rgba(242, 118, 47, 0.4)',
 } as const;

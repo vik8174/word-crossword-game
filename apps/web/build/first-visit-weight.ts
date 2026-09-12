@@ -19,6 +19,13 @@
  * entry by static import, and every file the HTML asks for on its own account —
  * which is the typefaces, preloaded or merely declared. Chunks behind a lazy
  * route are not on it and neither is anything a click causes.
+ *
+ * A scene image is not on it either, even though `/` preloads one. Issue #151
+ * split what used to be one number into two the moment a picture joined the
+ * typefaces on the first screen: this ceiling covers what it always covered,
+ * and a second, separate one covers the picture
+ * (`apps/web/build/scene-weight.ts`,
+ * `docs/decisions/0033-a-second-ceiling-for-a-picture.md`).
  */
 
 /**
@@ -45,16 +52,22 @@
  *
  * Eight rather than seven, and the extra one is not for spending either. A
  * build that uploads its source maps carries the debug ids that go with them
- * and comes out about 1.5 KiB heavier than the build this number is checked
- * against: 216.6 rather than 215.1, measured on the same commit. That is the
- * one a player actually fetches, since a deployment uploads maps and CI does
- * not — so a ceiling set a few tenths above what CI weighs would be no ceiling
- * at all for what ships. Seven would have left the shipped bundle four tenths
- * of a kibibyte of room; eight leaves it one and a half, and gzip moves by more
- * than four tenths between releases on chunks nobody touched.
+ * and comes out heavier than the build this number is checked against, measured
+ * on the same commit. That is the one a player actually fetches, since a
+ * deployment uploads maps and CI does not — so a ceiling set a few tenths above
+ * what CI weighs would be no ceiling at all for what ships.
  *
  * What this number may not do is drift. It is here to be argued with, and a
  * failure it causes has to mean something.
+ *
+ * Issue #147 dropped a face rather than adding one — the serif the crossword
+ * and the four headings used to be set in, once the board itself moved off it
+ * (its stroke contrast lost first at the sizes the board draws its letters at,
+ * 11px to 24px). A first visit went from 215.8 to 201.4 on the build that
+ * checks it, and from 217.1 to 202.6 on the one that ships — the ceiling did
+ * not move, and does not have to: room freed by dropping a face is room for
+ * the next one that earns its bytes, not a ceiling this file lowers on its
+ * own.
  */
 export const FIRST_VISIT_CEILING_BYTES = 218 * 1024;
 
@@ -67,15 +80,27 @@ export interface FetchedFile {
 }
 
 /**
- * What the HTML preloads: the files it tells a browser to fetch at once.
+ * What the HTML preloads a typeface for: the font files it tells a browser to
+ * fetch at once.
+ *
+ * Restricted to `as="font"` rather than every `rel="preload"` link, because
+ * this ceiling is the one named in {@link FIRST_VISIT_CEILING_BYTES} — HTML,
+ * chunks and typefaces — and a route may preload something else that is not
+ * one of those: `/` preloads `gate.avif` for the same reason a face is
+ * preloaded, landing before the screen it belongs to is laid out, and that
+ * image is weighed against a ceiling of its own instead
+ * (`apps/web/build/scene-weight.ts`,
+ * `docs/decisions/0033-a-second-ceiling-for-a-picture.md`). Counting it here
+ * too would charge the same kilobytes against two ceilings that are
+ * deliberately kept apart.
  *
  * @param html - The built `index.html`
- * @returns What it preloads, as the paths written in it
+ * @returns What it preloads a font for, as the paths written in it
  */
 const preloadedHrefs = (html: string): readonly string[] =>
   [...html.matchAll(/<link\b[^>]*>/g)]
     .map(([tag]) => tag)
-    .filter((tag) => /\brel=["']?preload\b/.test(tag))
+    .filter((tag) => /\brel=["']?preload\b/.test(tag) && /\bas=["']?font\b/.test(tag))
     .map((tag) => /\bhref=["']([^"']+)["']/.exec(tag)?.[1])
     .filter((href): href is string => href !== undefined);
 
@@ -108,7 +133,7 @@ const declaredFontHrefs = (html: string): readonly string[] =>
  * @returns Each of them once, as the paths written in it
  *
  * @example
- * assetHrefs(html); // ['/fonts/zen-old-mincho-v13-latin-400.woff2', ...]
+ * assetHrefs(html); // ['/fonts/zen-kaku-gothic-new-v18-latin-400.woff2', ...]
  */
 export const assetHrefs = (html: string): readonly string[] => [
   ...new Set([...preloadedHrefs(html), ...declaredFontHrefs(html)]),

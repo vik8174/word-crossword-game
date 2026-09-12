@@ -50,10 +50,13 @@ interface RoomLobbyProps {
  * Everything this screen has stands in the zone on the left — who is in the
  * room, the link that brings the other one, what the crossword is, and the one
  * control that starts it. The middle is left empty, and that is the whole of
- * the arrangement: this screen stands at the doors of the temple, the doorway
- * is what fills the middle of it, and the camera goes through that doorway when
- * the game begins (issue #115). Anything put there would be standing in the way
- * of the next screen.
+ * the arrangement: this screen stands at the doors of the temple, and the
+ * doorway is what fills the middle of it — the hall behind it is visible
+ * through that same opening in the picture itself (issue #115; the doorway
+ * used to be something a camera travelled through to arrive at the game, a
+ * mechanism issue #152 removed, but the picture and the empty middle it asks
+ * for are unchanged). Anything put there would be standing in the way of the
+ * next screen.
  *
  * So the board is not drawn here, and that is a change of mind rather than an
  * oversight. It used to be, empty and already the size it would be played at,

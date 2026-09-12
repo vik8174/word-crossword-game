@@ -1,8 +1,10 @@
+import { ThemeProvider } from '@mui/material/styles';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { checkGuess, type GridPosition } from 'shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { GuessableWord, WordLocation } from '../rooms/word-visibility';
+import { theme } from '../theme';
 import { WordsToGuessPanel } from './WordsToGuessPanel';
 
 const CELLS: readonly GridPosition[] = [
@@ -33,7 +35,7 @@ describe('WordsToGuessPanel', () => {
   it('numbers the words this player guesses without naming them or their length', () => {
     renderPanel([guessable('w1', 4, 'cheese')]);
 
-    expect(screen.getByText('4 down — still to answer')).toBeInTheDocument();
+    expect(screen.getByText('4 down')).toBeInTheDocument();
     // Neither the word nor its length: working the spelling out is their game,
     // and the squares in the grid are the only thing that measures it.
     expect(document.body.textContent).not.toMatch(/cheese/i);
@@ -43,7 +45,16 @@ describe('WordsToGuessPanel', () => {
   it('says a word is done in words, not only by striking it through', () => {
     renderPanel([guessable('w1', 4, 'cheese', true)]);
 
-    expect(screen.getByText('4 down — answered')).toHaveStyle({ textDecoration: 'line-through' });
+    // Said outright in the row's accessible name, whatever the eye is given —
+    // and struck through as well, so the mark beside it is never the only cue.
+    expect(screen.getByRole('button', { name: '4 down — answered' })).toBeInTheDocument();
+    expect(screen.getByText('4 down')).toHaveStyle({ textDecoration: 'line-through' });
+  });
+
+  it('explains the mark in its hint', () => {
+    renderPanel([guessable('w1', 4, 'cheese')]);
+
+    expect(screen.getByText(/A lit dot means it has been answered\./)).toBeInTheDocument();
   });
 
   it('reports how far this player has got with their own words', () => {
@@ -74,5 +85,22 @@ describe('WordsToGuessPanel', () => {
     renderPanel([guessable('w1', 4, 'cheese')]);
 
     expect(screen.getByRole('list')).toHaveAccessibleName(/yours to guess/i);
+  });
+
+  it('sets its heading in the text family at the bold weight', () => {
+    // Issue #147 dropped the serif that used to carry the panel headings —
+    // checked on the rendered element's computed style, the way a screen
+    // actually resolves it, rather than on the theme's own config object.
+    render(
+      <ThemeProvider theme={theme}>
+        <WordsToGuessPanel words={[guessable('w1', 4, 'cheese')]} onSelectWord={onSelectWord} />
+      </ThemeProvider>,
+    );
+
+    const style = getComputedStyle(screen.getByRole('heading', { name: /yours to guess/i }));
+
+    expect(style.fontFamily).toMatch(/Zen Kaku Gothic New/);
+    expect(style.fontFamily).not.toMatch(/Zen Old Mincho/);
+    expect(style.fontWeight).toBe('700');
   });
 });

@@ -1,12 +1,31 @@
-import type { Viewport } from './world';
-
 /**
- * What the garden's two canvases have in common: where they sit, and how a
- * bitmap is kept the size of the window it is stretched over.
+ * What the garden's canvases have in common: where they sit, and how a bitmap
+ * is kept the size of the window it is stretched over.
  *
  * Two files draw through this and one lays a colour over them, which is why it
  * is a file rather than three copies of the same six properties.
  */
+
+/** The window a canvas is drawn in, in CSS pixels. */
+export interface Viewport {
+  readonly width: number;
+  readonly height: number;
+}
+
+/**
+ * A rectangle in CSS pixels, given by its top left corner.
+ *
+ * Used by the greeting cloth to say where its own banner falls in the window
+ * (`cloth.ts`, `paint-cloth.ts`). It used to be shared with a second kind of
+ * rectangle — a part of the painted world, in world units rather than pixels —
+ * before issue #152 removed the world the second kind belonged to.
+ */
+export interface Rect {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
 
 /**
  * How long the weather takes to go, and to come back.

@@ -6,7 +6,7 @@ import { WordEntryList } from './WordEntryList';
 
 /** Said over the words this player explains out loud. */
 const EXPLAIN_HINT =
-  'These are written into the grid for you alone, in italics on the dashed squares. Explain each one out loud — say anything except the word itself. The ones already answered are crossed out. Tap one to find it in the grid.';
+  'These are written into the grid for you alone, in italics on the dashed squares. Explain each one out loud — say anything except the word itself. The ones already answered are crossed out. Tap one to find it in the grid. A lit dot means it has been answered.';
 
 interface WordsToExplainPanelProps {
   /** The words hidden from the other player — this one reads them and says them. */
@@ -47,6 +47,8 @@ interface WordsToExplainPanelProps {
 export const WordsToExplainPanel = ({ words, onSelectWord }: WordsToExplainPanelProps) => {
   const entries: readonly WordEntry[] = words.map((word) => ({
     id: word.id,
+    reference: nameOf(word),
+    word: word.word,
     name: `${nameOf(word)} — ${word.word}${word.isSolved ? ' — answered' : ''}`,
     location: { cells: word.cells, orientation: word.orientation },
     isSolved: word.isSolved,

@@ -1,7 +1,7 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Garden } from './garden/Garden';
 import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -26,51 +26,61 @@ const RoomPage = lazy(() =>
   import('./pages/RoomPage').then((module) => ({ default: module.RoomPage })),
 );
 
+/** The one address that stands on its own picture rather than in the garden. */
+const GATE_PATH = '/';
+
 /**
  * The routes, and the reporting of which of them is open.
  *
- * A component of its own because `usePageView` reads the current route, which
- * only something inside the router can do.
+ * A component of its own because `usePageView` and `useLocation` both read the
+ * current route, which only something inside the router can do.
+ *
+ * The garden wraps every route but the landing page (issue #151). It used to
+ * wrap all of them uniformly, sitting above the router entirely, on the
+ * reasoning that a background restarting at every address would read as a page
+ * reloading. That reasoning still holds for the eight screens that go on
+ * standing in the painted forest — `/create`, `/join` and every screen of a
+ * room keep the one canvas for as long as a session stays among them — but `/`
+ * no longer stands there at all: it is `gate.avif`, and creating the garden's
+ * canvas underneath a route that never paints on it would be exactly the
+ * un-costed rendering this app has already been bitten by once
+ * (`apps/web/build/first-visit-weight.ts`). Leaving the gate is therefore a
+ * background actually changing rather than one restarting, which is the case
+ * the old reasoning was never about.
  */
 const RoutedPages = () => {
   usePageView();
 
-  return (
+  const { pathname } = useLocation();
+
+  const routes = (
     <Suspense fallback={<PageLoading />}>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path={GATE_PATH} element={<HomePage />} />
         <Route path="/create" element={<CreateRoomPage />} />
         <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
   );
+
+  return pathname === GATE_PATH ? routes : <Garden>{routes}</Garden>;
 };
 
 /**
- * App root — wires up the MUI theme, the garden behind it and client-side
- * routing.
+ * App root — wires up the MUI theme and client-side routing.
  *
  * `/room/:roomId` is the address invite links point at, and the catch-all
  * behind it is not decoration: links travel through chats that truncate them,
  * and an unmatched route renders nothing at all.
- *
- * The garden is outside the router rather than on any page, because it is one
- * background for the life of the tab: petals that started again at every
- * address would say a page had reloaded when none had. Which screens they fall
- * behind is the room's to answer (see {@link useRoomGarden}), and the answer is
- * every screen but the one a game is played on
- * (`docs/decisions/0030-where-movement-is-allowed.md`).
  */
 export const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Garden>
-        <BrowserRouter>
-          <RoutedPages />
-        </BrowserRouter>
-      </Garden>
+      <BrowserRouter>
+        <RoutedPages />
+      </BrowserRouter>
     </ThemeProvider>
   );
 };

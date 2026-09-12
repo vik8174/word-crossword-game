@@ -30,10 +30,10 @@ const WORDS = {
 /**
  * The cloth, and the one thing there is to do once it is down.
  *
- * This is the whole of what a finished game is answered with. The camera does
- * not pull back and the room is not left: the player stays at the table they
- * played at, and a cloth is drawn across it from both sides carrying a pattern
- * that was already printed on it
+ * This is the whole of what a finished game is answered with. The hall behind
+ * the room does not change and the room is not left: the player stays at the
+ * table they played at, and a cloth is drawn across it from both sides
+ * carrying a pattern that was already printed on it
  * (`docs/decisions/0031-one-camera-and-what-it-promises.md`).
  *
  * The paper is painted and the words are not. A canvas cannot be read out, kept
@@ -45,11 +45,11 @@ const WORDS = {
  * Two readers get the result rather than the event, and they get it in the same
  * way — the cloth is not laid faster, it is simply already down with the words
  * on it. One is somebody who turned animation off in their operating system,
- * which is the answer the camera and the petals give and which no setting in
- * this app overrides. The other is somebody who was not there: a game that
- * ended while the tab was behind another one has already ended by the time they
- * look, and an event played for them then is the reload case wearing a
- * different hat (`docs/decisions/0030-where-movement-is-allowed.md`).
+ * which is the answer the screen shift and the petals give and which no
+ * setting in this app overrides. The other is somebody who was not there: a
+ * game that ended while the tab was behind another one has already ended by
+ * the time they look, and an event played for them then is the reload case
+ * wearing a different hat (`docs/decisions/0030-where-movement-is-allowed.md`).
  *
  * @param props.summary - The one line the game has to say for itself
  *

@@ -12,7 +12,7 @@ const KIB = 1024;
 describe('assetHrefs', () => {
   it('finds what the HTML fetches before anything has run', () => {
     const html = `
-      <link rel="preload" href="/fonts/zen-old-mincho-v13-latin-400.woff2" as="font" crossorigin />
+      <link rel="preload" href="/fonts/some-face-v1-latin-400.woff2" as="font" crossorigin />
       <link rel="stylesheet" href="/assets/index.css" />
       <script type="module" src="/assets/index.js"></script>
     `;
@@ -20,7 +20,7 @@ describe('assetHrefs', () => {
     // The typefaces are the whole reason this exists: they are copied out of
     // `public/` and named by hand, so a measurement taken off the bundle alone
     // would miss twenty-five kilobytes every first visit pays for.
-    expect(assetHrefs(html)).toEqual(['/fonts/zen-old-mincho-v13-latin-400.woff2']);
+    expect(assetHrefs(html)).toEqual(['/fonts/some-face-v1-latin-400.woff2']);
   });
 
   it('counts a face the HTML declares without preloading it', () => {
@@ -55,6 +55,20 @@ describe('assetHrefs', () => {
     // cost, and counting it would make the ceiling meaningless in the direction
     // that matters.
     expect(assetHrefs(html)).toEqual([]);
+  });
+
+  it('leaves a preloaded scene image to the ceiling that is its own', () => {
+    const html = `
+      <link rel="preload" href="/fonts/some-face-v1-latin-400.woff2" as="font" crossorigin />
+      <link rel="preload" href="/scenes/gate.avif" as="image" />
+    `;
+
+    // Issue #151: the gate's picture is preloaded for the same reason a face
+    // is, but it is weighed against a ceiling of its own
+    // (`scene-weight.ts`) rather than this one — otherwise the same
+    // kilobytes would be charged against two ceilings kept deliberately
+    // separate.
+    expect(assetHrefs(html)).toEqual(['/fonts/some-face-v1-latin-400.woff2']);
   });
 
   it('finds nothing in an HTML that asks for nothing', () => {
