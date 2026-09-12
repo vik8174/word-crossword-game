@@ -122,8 +122,14 @@ export const HomePage = () => {
               // photograph, even where the two happen to match today. It
               // carries no contrast duty of its own — it reads against the
               // sumi letter it sits behind, which is where an offset is
-              // supposed to read, and the letter is what clears 4.5:1 against
-              // the sky.
+              // supposed to read. Measured over the scene's real pixels plus
+              // its veil, the letter itself is median 3.41:1 against the sky
+              // with the offset present or not: large text (31px at 1440,
+              // 30.86px at 834) clears the 3:1 WCAG threshold that size gets,
+              // at 98.9% and 99.1%, but 375's 13.875px falls under the same
+              // 4.5:1 the offset does not carry — a shortfall this ticket
+              // inherits rather than introduces (`main` measures the same
+              // band at 3.42:1 median, 0.1% at 4.5:1).
               textShadow: '0.05em 0.05em 0 #F3ECD9',
             },
           }}

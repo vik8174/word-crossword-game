@@ -126,10 +126,11 @@ describe('HomePage', () => {
 
   it('carries the cream offset behind the sumi name, down and right by 0.05em', () => {
     // PRD #145's own reference lockup sets this in the same direction:
-    // `text-shadow: 0.05em 0.05em 0 #F3ECD9`. Without it the name reads at
-    // 0% of the gate's clear sky passing 4.5:1 contrast, measured over the
-    // scene's real pixels plus its veil — the offset is what the criterion's
-    // ink is actually legible against, not decoration on top of it.
+    // `text-shadow: 0.05em 0.05em 0 #F3ECD9`. It carries no contrast duty of
+    // its own — measured over the scene's real pixels plus its veil, the
+    // name is median 3.41:1 against the sky whether or not this shadow is
+    // there. It reads against the sumi letter it sits behind instead, which
+    // is where PRD #145 says an offset is supposed to read.
     renderHomePage();
 
     const heading = screen.getByRole('heading', { name: /word garden/i });
