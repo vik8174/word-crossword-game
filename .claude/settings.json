@@ -35,7 +35,8 @@
       "Bash(gh pr list *)",
       "Bash(gh repo view *)",
       "Bash(gh pr merge *)",
-      "Bash(gh pr checks *)"
+      "Bash(gh pr checks *)",
+      "Bash(scripts/copy-env-to-worktree.sh:*)"
     ],
     "deny": [
       "Bash(git push --force *)",

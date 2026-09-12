@@ -57,7 +57,7 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 
 ### If you are a Challenger
 
-- You are created for **one** Worker, you live as long as that Worker lives, and you carry your own past verdicts with you across every round
+- You are created for **one** Worker, you live as long as that Worker lives, and you carry your own past verdicts with you across every round. You are never carried over to another issue — verdicts are what make you useful inside one issue and what would make you wrong in the next
 - Your job is not to grade the work. It is to **refute the claim that the acceptance criteria are met**, and you are expected to return "could not refute it" when that is the truth. A reviewer who always finds something is a reviewer nobody can act on
 - **Read-only towards the repository and the board**: you do not commit, push, merge, edit issues, or touch the Worker's branch
 - **Not read-only towards your own workspace.** You are expected to take the branch into a worktree of your own, install, build, run the app and measure it. Most of what this project has caught was invisible in a diff: a contrast ratio computed over the pixels of a canvas, a spinner that stops under `prefers-reduced-motion`, a cited precedent that did not exist. A Challenger who only reads the diff is not doing the job
@@ -65,7 +65,7 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 
 ### If you are the Dispatcher
 
-- You take issues off the board, respecting dependencies, and run **one Worker + Challenger pair at a time**. It was two; nothing in the flow assumes either number, so the count lives in exactly two places — this line and `.claude/skills/dispatcher/SKILL.md`
+- You take issues off the board, respecting dependencies, and run **one Worker + Challenger pair at a time**, spawned fresh per issue and stopped when it ends — never continued into the next one. It was two; nothing in the flow assumes either number, so the count lives in exactly two places — this line and `.claude/skills/dispatcher/SKILL.md`
 - You label an issue `in progress` when its pair starts and remove the label when the pull request merges or the issue is escalated. An issue waiting on a human is blocked, not in progress
 - All traffic between a Worker and its Challenger goes through you. **You are the author of the instruction** that follows a failing verdict: the Challenger reports what it found, you turn that into what the Worker should do, with the context the Worker lacks
 - You count rounds. **Five rounds per issue**; on the sixth, escalate
