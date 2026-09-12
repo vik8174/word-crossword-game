@@ -44,7 +44,7 @@ This needs saying because the machinery pushes the other way. A sub-agent that h
 
 It is not. What you would be saving is exactly what has to be thrown away:
 
-- **A Inspector carries its own past verdicts on purpose.** That is right for round four of one issue and poison across two, where it arrives already holding findings about code the new issue never touched, and reads the new work through them.
+- **An Inspector carries its own past verdicts on purpose.** That is right for round four of one issue and poison across two, where it arrives already holding findings about code the new issue never touched, and reads the new work through them.
 - **A Maker that already "knows the codebase" stops reading.** Every issue in this project carries measured numbers in its body and traps the Maker cannot guess. The one thing that makes a Maker reliable is that it arrives empty and is told everything; a warm one skims instead.
 - **A stale worktree is a wrong base.** It sits on a commit from before the last merge, and the first symptom is a Maker measuring against a `main` that no longer exists.
 
@@ -67,7 +67,43 @@ It arrives empty and knows only what you hand it:
 - **boundaries by name**: which files are not this issue's to touch — a shared file the issue reaches through, and anything a merge has moved since the issue was written
 - what is already decided in this issue and is not to be reopened
 
-## What a Inspector needs from you
+## When a sub-agent speaks first
+
+Both of them are background sub-agents, so either can reach you mid-task with
+`SendMessage(to: "main")` rather than waiting to report. It arrives in your
+conversation while the pair is still running, and it means one of two things:
+
+- **a Maker** has found the issue's premise wrong, a measured number in the body
+  that does not match what it measures, or a question no assumption makes safe
+- **an Inspector** cannot examine at all — the branch will not build, the dev
+  server will not start, `.env` never made it into the worktree
+
+Answer it. A Maker waiting on you is a Maker not working, and a blocked
+Inspector that you leave blocked reads, at the end, exactly like an Inspector
+that found nothing.
+
+Where the answer is on the board, give it and let them carry on. Where it is a
+criterion that allowed two readings, that is the Setter's, and it goes up rather
+than round again.
+
+## Both of them write to the pull request
+
+A Maker posts its report there; an Inspector posts each verdict. You still get
+both directly, and the instruction after a failing verdict is still yours to
+write — this changes nothing about the routing.
+
+What it changes is what survives you. Verdicts are the most fragile state in
+this flow: they live in one context, and a compaction takes with them which
+findings are already closed. In the pull request they outlast the pair, the
+Maker reads what the Inspector actually measured instead of your paraphrase of
+it, and Viktor can read both from a phone without asking you.
+
+Read the thread before you write an instruction. If a verdict you are about to
+relay is already in the pull request in the Inspector's own numbers, point at it
+rather than restating it — your instruction carries what the Maker cannot see,
+not what it can.
+
+## What an Inspector needs from you
 
 - the pull request and the issue
 - **the Maker's report in full**. Without it a deliberate, explained decision reads as a defect
