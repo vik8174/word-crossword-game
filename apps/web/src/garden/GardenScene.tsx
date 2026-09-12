@@ -48,10 +48,10 @@ interface ShownPicture {
    * Which time this picture was shown, not which picture it is.
    *
    * Used as the React key of the element this picture is drawn in, so that
-   * showing `gate` again later — `finished` to `home` on **Back to the
-   * gate**, after having stood on `doors` and `hall` in between — mounts a
-   * fresh element rather than reusing the one from the session's first
-   * picture. A fresh element is a fresh `animation`, which is this
+   * showing `doors` again later — `connecting` to `join` to `lobby`, the
+   * ordinary way a guest joins a room, having stood on `gate` in between —
+   * mounts a fresh element rather than reusing the one from the session's
+   * first picture. A fresh element is a fresh `animation`, which is this
    * component's answer to the prototype's "replay the bloom and the sun,
    * remove the class, force a reflow, add it back" — React already
    * guarantees a new element the browser has never animated before, so
@@ -161,10 +161,16 @@ const SceneLight = () => (
  * a frame or two with no picture at all, behind a `Suspense` fallback that was
  * already covering the same frames.
  *
- * The very first picture a session sees does not crossfade in — there is
- * nothing behind it to fade from, `scene` having been `null` rather than
- * another picture — but it pushes forward from the moment it appears, the
- * same as every picture after it.
+ * The picture that does not crossfade in is not an edge case about the start
+ * of a session: `Garden` mounts fresh every time `/` is left — `App.tsx`
+ * mounts it for every route but the landing page — so this is what happens on
+ * **every arrival from the landing page**, the ordinary way into the app
+ * rather than a rare first visit. That picture has nothing behind it to fade
+ * from, `scene` having been `null` rather than another picture, but it
+ * pushes forward from the moment it appears, the same as every picture after
+ * it. [Issue #166](https://github.com/vik8174/word-crossword-game/issues/166)
+ * is where `/` joins this component, and this is the sentence it will make
+ * untrue.
  *
  * @param props.scene - Which of the three pictures to show, or `null` before
  * anything has said
@@ -181,11 +187,12 @@ export const GardenScene = ({ scene }: { readonly scene: SceneId | null }) => {
     //
     // The generation is derived from the state this render already has,
     // rather than counted in a ref, so that showing the same picture twice —
-    // `finished` to `home` and, in a later session, `finished` to `home`
-    // again — never risks the second `gate` being reconciled against the
-    // element the first one left behind. A ref bumped here would still work,
-    // but would be a value mutated during render for no reason: everything
-    // this needs is already sitting in `shown`.
+    // `connecting` to `join` and back to `lobby`, doors to gate and back to
+    // doors, which is the ordinary way a guest joins a room — never risks the
+    // second `doors` being reconciled against the element the first one left
+    // behind. A ref bumped here would still work, but would be a value
+    // mutated during render for no reason: everything this needs is already
+    // sitting in `shown`.
     const generation = (shown?.generation ?? 0) + 1;
 
     if (shown !== null && !isStill) {

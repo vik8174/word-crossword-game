@@ -123,7 +123,7 @@ describe('GardenScene', () => {
     expect(layerWithRole(container, 'leaving')).toBe(gate);
   });
 
-  it('replays the bloom and the sun for "Back to the gate", run twice in a session', () => {
+  it('replays the bloom and the sun when a scene comes round again, run twice in a session', () => {
     const { container, rerender } = render(<GardenScene scene="gate" />);
 
     rerender(<GardenScene scene="doors" />);
@@ -139,8 +139,10 @@ describe('GardenScene', () => {
       vi.advanceTimersByTime(SCENE_FADE_MS);
     });
 
-    // Back to the gate: the same transition, run a second time in the same
-    // session, onto a picture this component has already shown once before.
+    // The same transition, run a second time in the same session, onto a
+    // picture this component has already shown once before — the guarantee
+    // that makes it safe for a real scene id to recur, such as `doors`
+    // appearing again once a guest's nickname form crossfades back to it.
     rerender(<GardenScene scene="gate" />);
     const secondLight = sceneLightElements(container);
 
