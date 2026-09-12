@@ -3,10 +3,18 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 
-import { GATE_ACTION_SX, GATE_INK, GATE_NAME_SX } from '../scenes/gate-chrome';
+import { GATE_ACTION_SX, GATE_INK, GATE_NAME_SX, GATE_TAGLINE_SX } from '../scenes/gate-chrome';
 import { GateScene } from '../scenes/GateScene';
 import { ON_SCENE_SX } from '../garden/scene-surface';
-import { inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
+import {
+  inRem,
+  LOGOTYPE_FONT_FAMILY,
+  LOGOTYPE_FONT_WEIGHT,
+  LOGOTYPE_TRACKING,
+  SIGN_TRACKING,
+  TEXT_FONT_FAMILY,
+  TEXT_LEVELS,
+} from '../scale';
 import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /** How wide the button that stands in the gate is padded, as steps of the row. */
@@ -24,20 +32,18 @@ const BUTTON_PADDING = { across: 6, down: 4 } as const;
  * against the real pixels of `gate.jpg` rather than computed from a painted
  * world (`scenes/gate-chrome.ts`).
  *
- * Both are lettered rather than written — the sign face out of
- * `theme.typography.signage`, at three sizes off `scale.ts`'s own ladder
- * (`aside`, `body`, `title`) chosen so the rendered name — however many lines
- * it wraps to at that width — stays inside the measured band rather than
- * merely fitting under a discrete breakpoint's nominal size: `title` (31px)
- * is already the widest that keeps a single line inside the band's height at
- * a desktop width, and `aside` (13px) is the largest that still fits two
- * lines inside it at a phone's. `GATE_NAME_SIZE`, one step above `title`, was
- * sized for the previous, unconstrained `max-content` box and does not fit
- * this one at any width — left in `scale.ts` for whichever later round of
- * canvas 1 (#148) decides what replaces it, not read from here. Nothing about
- * the face, the capitals, the tracking or the words themselves is decided
- * here — the name and a tagline are #148's, and this page stands whatever
- * they are in the same measured band.
+ * The name is lettered rather than written, in the logotype — Dela Gothic
+ * One, the one weight it has, sumi with a cream offset behind it — sized off
+ * a `vw`-driven `clamp()` so the rendered line stays inside `GATE_NAME_BAND`
+ * continuously rather than at a handful of sampled widths (issue #148, the
+ * same technique the name's own sizing already used for its previous string,
+ * before this one). `GATE_NAME_SIZE`, one step above `title` in `scale.ts`,
+ * was sized for the previous, unconstrained `max-content` box this text no
+ * longer sits in — left there for a later ticket, not read from here. The
+ * tagline underneath is set in the interface's own text face instead: it
+ * needs six letters — C, P, T, I, V, S — the logotype's subset does not
+ * carry, cutting a wider subset being issue #147's call and not this page's
+ * to reopen.
  *
  * Joining an existing game does not start here: players arrive straight at
  * their room link (issue #5), so the only action this page offers is creating
@@ -55,37 +61,42 @@ export const HomePage = () => {
       <Box sx={GATE_NAME_SX}>
         <Typography
           component="h1"
-          variant="signage"
           sx={{
-            // A continuous formula off the viewport's width rather than three
-            // discrete steps pinned to MUI's breakpoints. The breakpoint
-            // version passed at 375, 834 and 1440 (the three widths the
-            // ticket names) but failed everywhere from 900 to about 1185px
-            // wide: `title` (31px) needs roughly 628px to set "Word Crossword
-            // Game" on one line, and the band is 53% of the viewport, so a
-            // single line was only possible from ~1185px up — `md`'s own
-            // floor is 900. `2.4vw` is a hair under the exact ratio that
-            // formula implies (0.53 / (628/31) ≈ 2.62vw), so the text clears
-            // one line at every width it can rather than at three sampled
-            // points, clamped to the same floor and ceiling the discrete
-            // steps used (`aside` 13px, `title` 31px).
-            fontSize: 'clamp(13px, 2.4vw, 31px)',
+            fontFamily: LOGOTYPE_FONT_FAMILY,
+            fontWeight: LOGOTYPE_FONT_WEIGHT,
+            // A continuous formula off the viewport's width rather than a
+            // handful of steps pinned to MUI's breakpoints — the same
+            // technique the previous string on this line was sized with, and
+            // for the same reason: a value sampled at a few widths passes at
+            // those widths and nowhere it wasn't checked. `3.7vw` is a hair
+            // under the exact ratio the band's own width and this string's
+            // measured one imply (0.53 / (409.4 / 31) ≈ 4.01vw at the
+            // ceiling), so "WORD GARDEN" clears one line inside
+            // `GATE_NAME_BAND` at every width rather than at three sampled
+            // points, clamped to the floor and ceiling of `scale.ts`'s own
+            // ladder (`aside` 13px, `title` 31px).
+            fontSize: 'clamp(13px, 3.7vw, 31px)',
             // Tight on purpose: the clear band of sky this sits in is a
-            // twentieth of the picture's own height, and the theme's own
-            // `signage` line height (1.25) is written for a sign with room
-            // around it rather than a lockup measured down to a tenth of a
-            // percent (`handoffs/scenes/README.md`).
+            // twentieth of the picture's own height, and a line height with
+            // room in it moves the rendered line outside a box measured down
+            // to a tenth of a percent (`handoffs/scenes/README.md`).
             lineHeight: 1,
-            // No trailing-tracking margin here, unlike the button below: that
-            // trick shifts a flex item's own centring math by the width it
-            // removes, which is correct against `transform: translate(-50%)`
-            // (the previous, painted gate's own centring) but overshoots the
-            // right edge of a `justifyContent: 'center'` flex box by roughly
-            // the same amount instead of correcting it — measured against the
-            // stage with `getBoundingClientRect` at 1440, 834 and 375, a
-            // negative margin here was the reason the rendered name cleared
-            // the box's own 77% right edge at every one of the three widths.
-            //
+            textTransform: 'uppercase',
+            letterSpacing: LOGOTYPE_TRACKING,
+            // The tracking sits after the last letter as well as between, so
+            // a centred line counts it as part of its own width and the
+            // letters land half a tracking short of the middle. Taking the
+            // whole space off the right corrects it, the same way the button
+            // below does for its own tracking — safe to do here, unlike the
+            // previous string on this line, because it is the flex item's
+            // own box that is centred (`justifyContent: 'center'` in
+            // `GATE_NAME_SX`) and a negative margin on that same box shrinks
+            // it by exactly the width it removes, rather than a margin meant
+            // for a `transform: translate(-50%)` box shifting a second,
+            // unrelated box's centring math (the trap the previous string
+            // hit, `getBoundingClientRect` at 1440, 834 and 375 catching the
+            // rendered name clearing the band's 77% right edge).
+            marginRight: `-${LOGOTYPE_TRACKING}`,
             // `&&&` rather than a plain `color`: `ON_SCENE_SX` on this page's
             // own `<main>` carries `'& .MuiTypography-root': { color:
             // 'inherit' }` (`garden/scene-surface.ts`), a descendant rule at
@@ -98,10 +109,60 @@ export const HomePage = () => {
             // (0,3,0), which beats (0,2,0) outright rather than depending on
             // which rule happens to be inserted last (issue #126 hit the same
             // trap first).
+            '&&&': {
+              color: GATE_INK,
+              // The cream offset PRD #145 calls for: a second, lighter copy
+              // of the letter shown down and right of the sumi one, so the
+              // edge it peeks out from behind reads as a colour block
+              // slightly out of register rather than as a shadow. `0.05em`
+              // both ways, sumi's own cream (`garden/scene-palette.ts`'s
+              // `SCENE.cream`, `#F3ECD9`) written as its own literal for the
+              // same reason `GATE_INK` is: a token every scene's chrome
+              // shares is not the same thing as a colour chosen against one
+              // photograph, even where the two happen to match today. It
+              // carries no contrast duty of its own — it reads against the
+              // sumi letter it sits behind, which is where an offset is
+              // supposed to read. Measured over the scene's real pixels plus
+              // its veil, the letter itself is median 3.41:1 against the sky
+              // with the offset present or not: large text (31px at 1440,
+              // 30.86px at 834) clears the 3:1 WCAG threshold that size gets,
+              // at 98.9% and 99.1%, but 375's 13.875px falls under the same
+              // 4.5:1 the offset does not carry — a shortfall this ticket
+              // inherits rather than introduces (`main` measures the same
+              // band at 3.42:1 median, 0.1% at 4.5:1).
+              textShadow: '0.05em 0.05em 0 #F3ECD9',
+            },
+          }}
+        >
+          WORD GARDEN
+        </Typography>
+      </Box>
+
+      <Box sx={GATE_TAGLINE_SX}>
+        <Typography
+          sx={{
+            fontFamily: TEXT_FONT_FAMILY,
+            fontWeight: 400,
+            // A tenth the size of the name's own ladder step — the tagline is
+            // read, not lettered, and the band under the name is about half
+            // its height, so the same `vw`-driven `clamp()` technique is used
+            // at a smaller floor and ceiling rather than at a fixed size that
+            // would only fit one width.
+            fontSize: 'clamp(9px, 1.8vw, 13px)',
+            lineHeight: 1,
+            textTransform: 'uppercase',
+            letterSpacing: '0.3em',
+            // No trailing-tracking margin here, unlike the name above: the
+            // PRD's own reference lockup (the logotype comment artifact on
+            // #145) sets this line's `.tag` with the same `0.3em` tracking
+            // and no `margin-right` correction, only the name's `.name` gets
+            // one. Its own inked centre sits a couple of pixels off the
+            // name's as a result — measured and left rather than corrected,
+            // since the reference the criteria point at renders the same way.
             '&&&': { color: GATE_INK },
           }}
         >
-          Word Crossword Game
+          A cooperative crossword
         </Typography>
       </Box>
 
@@ -112,8 +173,14 @@ export const HomePage = () => {
           variant="contained"
           size="large"
           sx={(theme) => ({
-            // Lettered rather than written, off the same face and the same
-            // tracking the name over the gate is: the two of them are one sign.
+            // Lettered rather than written, off the sign face
+            // (`theme.typography.signage`) — not the same face the name over
+            // the gate is set in any more (issue #148 moved the name onto the
+            // logotype, Dela Gothic One, a face this button's label cannot
+            // borrow: it is subset to the eight letters of `WORD GARDEN` and
+            // has none of "Create a game"'s own). The button keeps the sign
+            // face instead, the same lettering `garden/` draws its own labels
+            // in (issue #115).
             ...theme.typography.signage,
             fontSize: inRem(TEXT_LEVELS.body),
             px: BUTTON_PADDING.across,

@@ -1,4 +1,4 @@
-# Word Crossword Game
+# Word Garden
 
 A cooperative web game for two players: a crossword where each player explains the words hidden from the other (as in Alias/Taboo), while the other guesses and fills the answers into a shared grid. The MVP targets vocabulary growth and spoken English practice.
 

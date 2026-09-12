@@ -33,7 +33,38 @@ describe('HomePage', () => {
   it('renders the game title', () => {
     renderHomePage();
 
-    expect(screen.getByRole('heading', { name: /word crossword game/i })).toBeInTheDocument();
+    const heading = screen.getByRole('heading', { name: /word garden/i });
+
+    expect(heading).toBeInTheDocument();
+    // No dot, mark or rule after the name (settled in PRD #145) — a regexp
+    // anchored on both ends catches trailing punctuation a substring match
+    // would miss.
+    expect(heading).toHaveTextContent(/^WORD GARDEN$/i);
+  });
+
+  it('sets the name in the logotype, not the sign face the button below uses', () => {
+    // The logotype's subset is exactly the eight letters of `WORD GARDEN`
+    // plus a space (`index.html`), so this is also a check that the name
+    // does not silently fall back to a face with the letters it lacks. A test
+    // on `LOGOTYPE_FONT_FAMILY` itself would pass whether or not this
+    // component actually reached for it — checked here on the rendered
+    // element's computed style instead.
+    renderHomePage();
+
+    const heading = screen.getByRole('heading', { name: /word garden/i });
+
+    expect(getComputedStyle(heading).fontFamily).toContain('Dela Gothic One');
+  });
+
+  it('renders the tagline in capitals, in the text face, with no number', () => {
+    renderHomePage();
+
+    const tagline = screen.getByText(/cooperative crossword/i);
+
+    expect(tagline).toHaveTextContent(/^A COOPERATIVE CROSSWORD$/i);
+    expect(getComputedStyle(tagline).fontFamily).toContain('Zen Kaku Gothic New');
+    expect(getComputedStyle(tagline).textTransform).toBe('uppercase');
+    expect(tagline).not.toHaveTextContent(/\d/);
   });
 
   it('offers the way into a new game', () => {
@@ -88,8 +119,24 @@ describe('HomePage', () => {
     // a screen actually resolves it, rather than on the value handed to `sx`.
     renderHomePage();
 
-    const heading = screen.getByRole('heading', { name: /word crossword game/i });
+    const heading = screen.getByRole('heading', { name: /word garden/i });
 
     expect(getComputedStyle(heading).color).toBe('rgb(28, 26, 26)');
+  });
+
+  it('carries the cream offset behind the sumi name, down and right by 0.05em', () => {
+    // PRD #145's own reference lockup sets this in the same direction:
+    // `text-shadow: 0.05em 0.05em 0 #F3ECD9`. It carries no contrast duty of
+    // its own — measured over the scene's real pixels plus its veil, the
+    // name is median 3.41:1 against the sky whether or not this shadow is
+    // there. It reads against the sumi letter it sits behind instead, which
+    // is where PRD #145 says an offset is supposed to read.
+    renderHomePage();
+
+    const heading = screen.getByRole('heading', { name: /word garden/i });
+    const shadow = getComputedStyle(heading).textShadow;
+
+    expect(shadow).toMatch(/#F3ECD9|rgb\(243,\s*236,\s*217\)/i);
+    expect(shadow).toMatch(/0\.05em 0\.05em/);
   });
 });
