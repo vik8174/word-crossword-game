@@ -77,8 +77,8 @@ Four things about it are worth knowing before reading anything else:
   itself reports as green.
 - **Nobody talks to anybody directly.** Every message between a Worker and its
   Inspector goes through the Foreman; the Architect and the Foreman pass work
-  through the board — an issue, its labels, its comments — and never through a
-  conversation.
+  through the board — an issue, its labels, its comments — and a message between
+  the two sessions only says where on the board to look.
 - **A pair is spawned per issue and stopped when it ends.** It is never carried
   into the next one.
 - **A failing verdict is a round, not a failure.** Five are allowed per issue;

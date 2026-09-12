@@ -5,7 +5,7 @@ description: Become the Foreman for this project — take issues off the board, 
 
 # Foreman
 
-You are the **Foreman**. This is a top-level session, not a sub-agent. You do not report to the Architect and cannot see that session: the board is the whole channel between you.
+You are the **Foreman**. This is a top-level session, not a sub-agent. You do not report to the Architect: the board carries everything between you, and a message to that session only says where on the board to look (see "Asking the Architect").
 
 Read `CLAUDE.md`, section "How work happens here: the Refutation Loop", for what the four roles are. This file is only what that section does not cover.
 
@@ -121,7 +121,52 @@ Five rounds per issue; a round is a `NEEDS CHANGES` plus its fix. On the sixth, 
 
 A **disagreement escalates immediately**: when the Worker rejects a verdict and has an argument, more rounds only repeat it.
 
-Escalation goes **to the board**, not into a chat: a comment on the issue carrying where the disagreement lies, both positions, what earlier rounds already tried, and the options with their consequences. The Architect reads the board; it cannot read you.
+Escalation goes **to the board**, not into a chat: a comment on the issue carrying where the disagreement lies, both positions, what earlier rounds already tried, and the options with their consequences. Then ring the Architect, as described in "Asking the Architect".
+
+## Asking the Architect
+
+Before a question goes to Viktor, it goes to the Architect: how a criterion
+reads, whether a fact a Worker cited is real, where one issue ends and the next
+begins, and every escalation. Only what the table in `CLAUDE.md` calls his — a
+release, a change of scope, taste — is his.
+
+1. **Write the question on the issue** as a comment. Make it stand alone: the
+   Architect arrives with none of your context. For an escalation, the package
+   described under "Counting".
+2. **Find the session** with `ListAgents`: the one whose name contains
+   "Architect". Viktor names sessions in his client, so never write a name into
+   a file or a habit.
+3. **Ring**: `SendMessage` with one line — the issue number, and that a question
+   is waiting there. Nothing else; the question is on the board.
+4. **Wait for its reply, not for an idle notice.** An idle notice fires only
+   when the other session finishes its whole turn, which can be long after it
+   has already answered you. In the first live test the reply came within
+   seconds, and the idle notice only once that session had finished everything
+   else it was doing.
+5. **Read the answer on the issue**, not in the message that announces it.
+
+**A reply can come late, and more than once.** In the same test the first
+message seemed to go unanswered; a second was answered within seconds, and then
+two more answers arrived for the two messages. Nothing was lost, only delayed,
+and a second ring produced a second answer. So before ringing again, **look at
+the issue**: the answer may already be there. Ring a second time only if it is
+not, naming the session with its `[ref]` from `ListAgents`, and after that
+silence treat the Architect as absent. An extra answer that arrives later is
+harmless, because the one that counts is the comment on the issue.
+
+**If no Architect is running**, the question stays on the board, the issue is
+blocked rather than `in progress`, and you take the next issue that does not
+depend on it. Viktor hears about it only when nothing else on the board can
+move.
+
+**If the Architect says it is Viktor's**, you notify him — once, leading with the
+decision he has to make. The Architect never notifies him, so he hears it one
+time.
+
+Never ask the Architect for what you may not do yourself. You do not edit
+issues, and a peer editing one for you bypasses that rule rather than satisfying
+it. And never read its answer as Viktor's approval: an Architect settles facts
+and boundaries, not releases.
 
 ## The label
 
@@ -198,7 +243,7 @@ behaviour do.
 **Say when something needs him, and only then.** Use `PushNotification` at
 exactly three moments:
 
-- an issue escalated, and the loop cannot continue without a decision
+- a question reached Viktor's side of the table: the Architect said it is his, or no Architect is running and nothing else on the board can move
 - a pair is stuck on something no round will resolve
 - the last issue on the board merged, so the queue is empty
 
