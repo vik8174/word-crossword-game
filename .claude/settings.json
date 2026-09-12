@@ -40,7 +40,8 @@
       "Bash(wc *)",
       "Bash(ls *)",
       "Bash(stat *)",
-      "Bash(du *)"
+      "Bash(du *)",
+      "Bash(scripts/record-round.sh:*)"
     ],
     "deny": [
       "Bash(git push --force *)",

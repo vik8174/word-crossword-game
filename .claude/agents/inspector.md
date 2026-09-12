@@ -42,25 +42,33 @@ Say plainly what you could not check and why. "I could not enable `prefers-reduc
 
 You keep your verdicts across rounds: you are not replaced between them. When a fix comes back, check first that what you already raised is closed, then look for what the fix itself broke.
 
-**Post each verdict to the pull request as a comment**, with the same content you
-return to the Foreman:
+**Record each verdict** for the round, with the same content you return to the
+Foreman:
 
 ```bash
-gh pr comment <number> --body '...'
+scripts/record-round.sh <issue> <round> verdict <<'EOF'
+...the verdict...
+EOF
 ```
 
-This is the one thing you write, and it is the exception to being read-only:
-a comment is not a commit, and it touches nothing the Worker built. It earns the
-exception because your verdicts are the most fragile state in this flow — they
-live in your context and nowhere else, so a compaction loses which findings are
-already closed, and the Worker only ever sees them as the Foreman's paraphrase.
-In the pull request the numbers survive you, and the Worker reads what you
-actually measured.
+The file lands in `handoffs/verdicts/<issue>/`, which git ignores. It is not a
+write to the repository and it publishes nothing, so you stay read-only towards
+both: it is your own workspace. Do it every time all the same, because your
+verdicts are the most fragile state in this flow. They live in your context and
+nowhere else, a compaction loses which findings are already closed, and without
+the file the Worker only ever sees them as the Foreman's paraphrase.
+
+Do not post a verdict to the pull request, or anywhere else outside this
+machine. A comment on GitHub is a publication, and a sub-agent is refused one.
+If that refusal ever stands in your way, tell the Foreman rather than looking
+for another way to publish.
 
 You still report to the Foreman, and the instruction back to the Worker is still
-the Foreman's to write. The comment is a record, not a route: **do not address
-the Worker in it**, and do not answer if it replies. You are not in a
-conversation with what you are examining.
+the Foreman's to write. The file is a record, not a route: **do not address the
+Worker in it**. You are not in a conversation with what you are examining.
+
+When a later round comes back, read your own earlier verdicts from the same
+folder first: that is how you know which findings are already closed.
 
 ## Speaking before you are finished
 
