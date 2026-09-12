@@ -208,6 +208,19 @@ export const LOGOTYPE_FONT_FAMILY = ['"Dela Gothic One"', SYSTEM_FONT_FAMILY].jo
 export const LOGOTYPE_FONT_WEIGHT = 400;
 
 /**
+ * How far apart the logotype's own letters stand — settled on real renders in
+ * PRD #145, not the sign face's {@link SIGN_TRACKING}: the two were chosen on
+ * two different faces at two different sizes and only happen to be close.
+ *
+ * A centred line counts the space this puts after the last letter as part of
+ * its own width, which would sit the visible letters left of the middle by
+ * half of it. Issue #148's own lockup takes that space off the right rather
+ * than leaving it in, the same correction {@link SIGN_TRACKING} already gets
+ * for the button below the gate.
+ */
+export const LOGOTYPE_TRACKING = '0.34em';
+
+/**
  * The sign face: what is painted onto a sign rather than written on paper.
  *
  * A modern Japanese gothic at its lightest weight, set in capitals with the

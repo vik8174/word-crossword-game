@@ -33,7 +33,38 @@ describe('HomePage', () => {
   it('renders the game title', () => {
     renderHomePage();
 
-    expect(screen.getByRole('heading', { name: /word crossword game/i })).toBeInTheDocument();
+    const heading = screen.getByRole('heading', { name: /word garden/i });
+
+    expect(heading).toBeInTheDocument();
+    // No dot, mark or rule after the name (settled in PRD #145) — a regexp
+    // anchored on both ends catches trailing punctuation a substring match
+    // would miss.
+    expect(heading).toHaveTextContent(/^WORD GARDEN$/i);
+  });
+
+  it('sets the name in the logotype, not the sign face the button below uses', () => {
+    // The logotype's subset is exactly the eight letters of `WORD GARDEN`
+    // plus a space (`index.html`), so this is also a check that the name
+    // does not silently fall back to a face with the letters it lacks. A test
+    // on `LOGOTYPE_FONT_FAMILY` itself would pass whether or not this
+    // component actually reached for it — checked here on the rendered
+    // element's computed style instead.
+    renderHomePage();
+
+    const heading = screen.getByRole('heading', { name: /word garden/i });
+
+    expect(getComputedStyle(heading).fontFamily).toContain('Dela Gothic One');
+  });
+
+  it('renders the tagline in capitals, in the text face, with no number', () => {
+    renderHomePage();
+
+    const tagline = screen.getByText(/cooperative crossword/i);
+
+    expect(tagline).toHaveTextContent(/^A COOPERATIVE CROSSWORD$/i);
+    expect(getComputedStyle(tagline).fontFamily).toContain('Zen Kaku Gothic New');
+    expect(getComputedStyle(tagline).textTransform).toBe('uppercase');
+    expect(tagline).not.toHaveTextContent(/\d/);
   });
 
   it('offers the way into a new game', () => {
@@ -88,7 +119,7 @@ describe('HomePage', () => {
     // a screen actually resolves it, rather than on the value handed to `sx`.
     renderHomePage();
 
-    const heading = screen.getByRole('heading', { name: /word crossword game/i });
+    const heading = screen.getByRole('heading', { name: /word garden/i });
 
     expect(getComputedStyle(heading).color).toBe('rgb(28, 26, 26)');
   });
