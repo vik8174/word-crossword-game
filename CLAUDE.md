@@ -46,7 +46,7 @@ repository, and the names below mean these four seats and nothing more general.
 | **Worker**    | Sonnet 5 | Foreman, as a sub-agent         | one issue, from branch to open pull request                                       |
 | **Inspector** | Opus 5   | Foreman, as a sub-agent         | the verdict on one Worker's pull request                                          |
 
-Architect and Foreman are separate top-level sessions and neither reports to the other. **They talk through the board, never directly**: an issue, its labels and its comments are the whole of the channel between them. That is deliberate — a message passed through an artefact survives either session dying, and a message passed through a context does not.
+Architect and Foreman are separate top-level sessions and neither reports to the other. **Everything between them is written on the board**, and a message from one session to the other only says where on it to look. That is deliberate — a message passed through an artefact survives either session dying, and a message passed through a context does not. The message is a doorbell, not a letter: if one goes unanswered, nothing is lost but time.
 
 Each role is a file, so none of this has to be pasted into a session by hand. The two Viktor opens himself are skills — `/architect` and `/foreman` — and the two the Foreman spawns are agents, `worker` and `inspector`, which carry their own model and tool list so a caller cannot get either wrong. The sections below say what each role is; the files say how it works.
 
