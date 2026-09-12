@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { useGardenControls } from '../garden/garden-controls';
@@ -26,11 +26,18 @@ const BUTTON_PADDING = { across: 6, down: 4 } as const;
  *
  * It is a photograph rather than a painting (issue #151), drawn by the same
  * `GardenScene` every other screen shares rather than by a component of its
- * own: this page claims the `gate` scene on mount, the way `CreateRoomPage`
- * claims its own, and `App.tsx` mounts `Garden` here with its petal layer
- * switched off (issue #166) — so the picture behind this page now crossfades
- * like any other change of scene, but this route still creates no canvas of
- * its own and no petal falls here, which was and remains issue #151's point.
+ * own: this page claims the `gate` scene on mount, in a layout effect rather
+ * than the plain one `CreateRoomPage` claims its own in, and `App.tsx` mounts
+ * `Garden` here with its petal layer switched off (issue #166) — so the
+ * picture behind this page now crossfades like any other change of scene,
+ * but this route still creates no canvas of its own and no petal falls here,
+ * which was and remains issue #151's point. The layout effect matters
+ * because `/` is the first frame of a session with nothing behind it yet:
+ * `Garden` renders nothing while its `scene` is still `null`, and a plain
+ * effect runs only after the browser has already painted that, which is
+ * exactly the pictureless frame this ticket exists to close, reappearing at
+ * the other end of the journey. A layout effect claims the scene, and the
+ * render it causes, before that paint happens.
  * The name hangs in the clear sky above the torii and the button stands in
  * its opening, both placed against percentages of the picture measured for
  * legibility against the real pixels of `gate.jpg` rather than computed from
@@ -62,7 +69,17 @@ export const HomePage = () => {
 
   const { showScene } = useGardenControls();
 
-  useEffect(() => {
+  // A layout effect, not a plain one: `/` is the first frame of a session
+  // with nothing behind it yet, unlike `/create`, which always arrives with
+  // a picture already standing there from wherever it was reached. `Garden`
+  // renders nothing while `scene` is still `null`, and a passive effect runs
+  // only after the browser has already painted that — a flat frame with the
+  // logotype, the tagline and the button standing on nothing, measured under
+  // throttling at 24-62ms, which is the very defect this ticket exists to
+  // close, moved from the exit to the entrance. A layout effect runs before
+  // the paint, so the claim above and the render it causes both happen
+  // first, and the browser never gets a frame with no photograph in it.
+  useLayoutEffect(() => {
     showScene('gate');
   }, [showScene]);
 
