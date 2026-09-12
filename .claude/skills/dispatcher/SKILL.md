@@ -36,6 +36,27 @@ Both carry their model in their own definition, so do not override it.
 
 It was two, and it is one for now. Nothing about the flow assumes either number, so raising it again is this line and the matching one in `CLAUDE.md` — but while it is one, an issue that is not the issue in progress is not started early to fill a slot: there is no slot.
 
+## A pair does not outlive its issue
+
+**One issue, one pair. When the issue ends, the pair ends with it, and the next issue gets a new one.**
+
+This needs saying because the machinery pushes the other way. A sub-agent that has returned its report has not gone anywhere: `SendMessage` carries it on with its context intact, its worktree in place, its dependencies installed and its dev server up. Handing it the next issue looks like pure economy.
+
+It is not. What you would be saving is exactly what has to be thrown away:
+
+- **A Challenger carries its own past verdicts on purpose.** That is right for round four of one issue and poison across two, where it arrives already holding findings about code the new issue never touched, and reads the new work through them.
+- **A Worker that already "knows the codebase" stops reading.** Every issue in this project carries measured numbers in its body and traps the Worker cannot guess. The one thing that makes a Worker reliable is that it arrives empty and is told everything; a warm one skims instead.
+- **A stale worktree is a wrong base.** It sits on a commit from before the last merge, and the first symptom is a Worker measuring against a `main` that no longer exists.
+
+So, concretely:
+
+- a new issue is always a **new `Agent` call**, `subagent_type: "worker"` and `subagent_type: "challenger"`
+- **never `SendMessage` to the pair of a finished issue.** `SendMessage` is for rounds within one issue and for nothing else
+- before starting the next issue, check with `ListAgents` that nothing from the last one is still running, and `TaskStop` it if it is
+- remove the finished pair's worktrees. Disk is the reason the count is one, and two dead worktrees cost the same as a live pair
+
+An issue ends in one of three ways, and all three end the pair: the pull request merged, the issue escalated, or Viktor stopped it.
+
 ## What a Worker needs from you
 
 It arrives empty and knows only what you hand it:
