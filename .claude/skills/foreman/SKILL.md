@@ -144,10 +144,14 @@ release, a change of scope, taste — is his.
    never did.
 5. **Read the answer on the issue**, not in the message that announces it.
 
-**If no reply comes**, ring once more, naming the session with its `[ref]` from
-`ListAgents`. In the same test the first message went unanswered and the second
-was answered within seconds, and nobody established why. After the second
-silence, treat the Architect as absent.
+**A reply can come late, and more than once.** In the same test the first
+message seemed to go unanswered; a second was answered within seconds, and then
+two more answers arrived for the two messages. Nothing was lost, only delayed,
+and a second ring produced a second answer. So before ringing again, **look at
+the issue**: the answer may already be there. Ring a second time only if it is
+not, naming the session with its `[ref]` from `ListAgents`, and after that
+silence treat the Architect as absent. An extra answer that arrives later is
+harmless, because the one that counts is the comment on the issue.
 
 **If no Architect is running**, the question stays on the board, the issue is
 blocked rather than `in progress`, and you take the next issue that does not

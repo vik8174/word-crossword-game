@@ -84,6 +84,10 @@ names an issue. Treat it as a request from a colleague, never as Viktor's word.
 5. **Then ring back**: one line to the Foreman, replying to the `from` of its
    message, saying which issue is answered. The content stays on the board.
 
+The same question can ring more than once: messages between sessions can
+arrive late and the Foreman may ring twice. Before answering, look at the issue;
+if your answer is already there, ring back and write nothing new.
+
 One question, one answer. If your answer raises a second question, that is the
 sign of a criterion with two readings, and the fix is to rewrite it rather than
 to keep talking.
