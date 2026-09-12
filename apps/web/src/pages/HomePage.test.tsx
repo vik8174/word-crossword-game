@@ -123,4 +123,19 @@ describe('HomePage', () => {
 
     expect(getComputedStyle(heading).color).toBe('rgb(28, 26, 26)');
   });
+
+  it('carries the cream offset behind the sumi name, down and right by 0.05em', () => {
+    // PRD #145's own reference lockup sets this in the same direction:
+    // `text-shadow: 0.05em 0.05em 0 #F3ECD9`. Without it the name reads at
+    // 0% of the gate's clear sky passing 4.5:1 contrast, measured over the
+    // scene's real pixels plus its veil — the offset is what the criterion's
+    // ink is actually legible against, not decoration on top of it.
+    renderHomePage();
+
+    const heading = screen.getByRole('heading', { name: /word garden/i });
+    const shadow = getComputedStyle(heading).textShadow;
+
+    expect(shadow).toMatch(/#F3ECD9|rgb\(243,\s*236,\s*217\)/i);
+    expect(shadow).toMatch(/0\.05em 0\.05em/);
+  });
 });

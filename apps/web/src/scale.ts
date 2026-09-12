@@ -194,13 +194,14 @@ const ZEN_KAKU_GOTHIC = ['"Zen Kaku Gothic New"', '"Hiragino Sans"', '"Yu Gothic
  * reading — `WORD GARDEN` is `W O R D G A E N`, and the file behind this
  * constant is subset to exactly those letters plus a space, weighing well
  * under a kibibyte (measured in the pull request that added it,
- * `docs/decisions/0034-one-text-family-and-a-logotype.md`). Declared in
- * `index.html` without a preload, the same way the sign face arrived before
- * anything used it: a `@font-face` nobody's CSS names yet costs nothing to
- * fetch, only to declare.
+ * `docs/decisions/0034-one-text-family-and-a-logotype.md`). Preloaded in
+ * `index.html`, the same way the sign face is: issue #148 put the name of
+ * the game over the gates in this face, the one thing the first screen is
+ * lettered in, so a request that only started after first paint would swap
+ * it out from under somebody already reading it (issue #115).
  *
- * Where the name stands, in what colour and at what size is not decided here —
- * that is issue #148's. This constant is the face and the subset, ready for it.
+ * Where the name stands and at what size is `HomePage.tsx`'s, not this
+ * file's — this constant is only the face and the subset.
  */
 export const LOGOTYPE_FONT_FAMILY = ['"Dela Gothic One"', SYSTEM_FONT_FAMILY].join(', ');
 

@@ -10,23 +10,26 @@
       eight glyphs of `WORD GARDEN` and a space. Which of them plays which
       role, and why any of them is worth its bytes, is in src/scale.ts.
 
-      The three weights of Zen Kaku Gothic New are preloaded. The sign face
-      (300) was not when it arrived, and for a good reason at the time —
-      nothing in the interface asked for it. The garden does now: the landing
-      page is a gate with the name of the game lettered over it, so the one
-      thing on the first screen is set in this face, and a face fetched after
-      the first paint would swap that name out from under somebody reading it
-      (issue #115). The text face (400, 700) is preloaded for the same reason
-      one step later: nothing on the landing page is set in it, but everything
-      read on the screen after it is, and a face that lands after that screen
-      has been laid out moves what somebody has already begun reading —
-      nineteen and a half pixels of it, measured (issue #124). Issue #147
-      moved the crossword's letters onto the 400 here too, off a serif whose
-      stroke contrast lost first at the sizes the board draws at.
+      All four families are preloaded. The sign face (300) was not when it
+      arrived, and for a good reason at the time — nothing in the interface
+      asked for it. The garden changed that: the landing page is a gate with
+      the name of the game lettered over it, so the one thing on the first
+      screen is set in this face, and a face fetched after the first paint
+      would swap that name out from under somebody reading it (issue #115).
+      The text face (400, 700) is preloaded for the same reason one step
+      later: nothing on the landing page is set in it, but everything read on
+      the screen after it is, and a face that lands after that screen has been
+      laid out moves what somebody has already begun reading — nineteen and a
+      half pixels of it, measured (issue #124). Issue #147 moved the
+      crossword's letters onto the 400 here too, off a serif whose stroke
+      contrast lost first at the sizes the board draws at.
 
-      Dela Gothic One is declared, not preloaded — the same way the sign face
-      arrived before anything used it. Nothing in the interface names it yet;
-      where the name over the gates stands is issue #148's, not this one's.
+      Dela Gothic One is preloaded for the same reason as the sign face
+      before it: issue #148 put the name of the game over the gates in this
+      face, the one thing the first screen is lettered in, so a request that
+      only started after first paint would swap the name out from under
+      somebody already reading it — the same trap the sign face was declared
+      ahead of before anything named it (issue #115).
 
       Every file here is counted against the ceiling a first visit may not go
       over, preloaded or not (apps/web/build/first-visit-weight.ts). -->
@@ -47,6 +50,13 @@
     <link
       rel="preload"
       href="/fonts/zen-kaku-gothic-new-v18-latin-700.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/dela-gothic-one-v19-word-garden-400.woff2"
       as="font"
       type="font/woff2"
       crossorigin

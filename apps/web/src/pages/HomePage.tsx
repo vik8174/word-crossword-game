@@ -33,16 +33,17 @@ const BUTTON_PADDING = { across: 6, down: 4 } as const;
  * world (`scenes/gate-chrome.ts`).
  *
  * The name is lettered rather than written, in the logotype — Dela Gothic
- * One, the one weight it has — sized off a `vw`-driven `clamp()` so the
- * rendered line stays inside `GATE_NAME_BAND` continuously rather than at a
- * handful of sampled widths (issue #148, following the same technique the
- * button's own sizing used first). `GATE_NAME_SIZE`, one step above `title`
- * in `scale.ts`, was sized for the previous, unconstrained `max-content` box
- * this text no longer sits in — left there for a later ticket, not read from
- * here. The tagline underneath is set in the interface's own text face
- * instead: it needs six letters — C, P, T, I, V, S — the logotype's subset
- * does not carry, cutting a wider subset being issue #147's call and not this
- * page's to reopen.
+ * One, the one weight it has, sumi with a cream offset behind it — sized off
+ * a `vw`-driven `clamp()` so the rendered line stays inside `GATE_NAME_BAND`
+ * continuously rather than at a handful of sampled widths (issue #148, the
+ * same technique the name's own sizing already used for its previous string,
+ * before this one). `GATE_NAME_SIZE`, one step above `title` in `scale.ts`,
+ * was sized for the previous, unconstrained `max-content` box this text no
+ * longer sits in — left there for a later ticket, not read from here. The
+ * tagline underneath is set in the interface's own text face instead: it
+ * needs six letters — C, P, T, I, V, S — the logotype's subset does not
+ * carry, cutting a wider subset being issue #147's call and not this page's
+ * to reopen.
  *
  * Joining an existing game does not start here: players arrive straight at
  * their room link (issue #5), so the only action this page offers is creating
@@ -108,7 +109,23 @@ export const HomePage = () => {
             // (0,3,0), which beats (0,2,0) outright rather than depending on
             // which rule happens to be inserted last (issue #126 hit the same
             // trap first).
-            '&&&': { color: GATE_INK },
+            '&&&': {
+              color: GATE_INK,
+              // The cream offset PRD #145 calls for: a second, lighter copy
+              // of the letter shown down and right of the sumi one, so the
+              // edge it peeks out from behind reads as a colour block
+              // slightly out of register rather than as a shadow. `0.05em`
+              // both ways, sumi's own cream (`garden/scene-palette.ts`'s
+              // `SCENE.cream`, `#F3ECD9`) written as its own literal for the
+              // same reason `GATE_INK` is: a token every scene's chrome
+              // shares is not the same thing as a colour chosen against one
+              // photograph, even where the two happen to match today. It
+              // carries no contrast duty of its own — it reads against the
+              // sumi letter it sits behind, which is where an offset is
+              // supposed to read, and the letter is what clears 4.5:1 against
+              // the sky.
+              textShadow: '0.05em 0.05em 0 #F3ECD9',
+            },
           }}
         >
           WORD GARDEN
@@ -129,6 +146,13 @@ export const HomePage = () => {
             lineHeight: 1,
             textTransform: 'uppercase',
             letterSpacing: '0.3em',
+            // No trailing-tracking margin here, unlike the name above: the
+            // PRD's own reference lockup (the logotype comment artifact on
+            // #145) sets this line's `.tag` with the same `0.3em` tracking
+            // and no `margin-right` correction, only the name's `.name` gets
+            // one. Its own inked centre sits a couple of pixels off the
+            // name's as a result — measured and left rather than corrected,
+            // since the reference the criteria point at renders the same way.
             '&&&': { color: GATE_INK },
           }}
         >
