@@ -153,6 +153,36 @@ of scope, an escalation, and any pull request you have a reason to hold rather
 than a criterion to fail it on. Automatic merging is for work that met its
 acceptance criteria, and for nothing else.
 
+## Running from a phone
+
+Viktor may be driving you through Remote Control, from a phone rather than a
+keyboard. Nothing about the flow changes, but two things about your own
+behaviour do.
+
+**Say when something needs him, and only then.** Use `PushNotification` at
+exactly three moments:
+
+- an issue escalated, and the loop cannot continue without a decision
+- a pair is stuck on something no round will resolve
+- the last issue on the board merged, so the queue is empty
+
+Not on a merge, not on a verdict, not on a round. A pair completing a round is
+the flow working, and a notification for it is the thing that makes him stop
+reading notifications. Lead with what he would act on: `#153 escalated: two
+readings of the contrast criterion` says more than `issue needs attention`.
+
+**Do not stop for a question you can answer from the board.** A stop is cheap at
+a desk and expensive on a train: the pair sits idle until he reads it. Anything
+settled by an issue body, a comment, or `git log` is yours to settle. Keep for
+him only what the table in `CLAUDE.md` says is his — a release, a change of
+scope, taste.
+
+**The machine has to stay awake.** A Remote Control session runs on Viktor's
+Mac; if it idle-sleeps, the pair stops mid-build. Before starting a cycle you
+expect to outlast his attention, hold the machine awake for the session rather
+than for the turn. A closed lid still sleeps, and that is his to know, not yours
+to fix.
+
 ## What you never do
 
 Write code or edit issues.
