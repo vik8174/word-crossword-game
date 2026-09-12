@@ -34,7 +34,7 @@ describe('App', () => {
   it('renders the home route by default, standing on its own picture rather than the garden', () => {
     const { container } = render(<App />);
 
-    expect(screen.getByRole('heading', { name: /word crossword game/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /word garden/i })).toBeInTheDocument();
 
     // The boundary issue #151 draws: the gate creates no canvas at all, unlike
     // every other route, which the garden still draws its falling petals on
@@ -104,9 +104,7 @@ describe('App', () => {
     // `popstate`, not a second `render()` of a fresh app.
     window.history.back();
 
-    expect(
-      await screen.findByRole('heading', { name: /word crossword game/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /word garden/i })).toBeInTheDocument();
     expect(container.querySelector('canvas')).toBeNull();
   });
 });

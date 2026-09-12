@@ -4,6 +4,7 @@ import {
   inRem,
   LOGOTYPE_FONT_FAMILY,
   LOGOTYPE_FONT_WEIGHT,
+  LOGOTYPE_TRACKING,
   SIGN_FONT_FAMILY,
   SIGN_FONT_WEIGHT,
   SIGN_TRACKING,
@@ -98,12 +99,12 @@ describe('the four faces', () => {
   });
 
   it('names the logotype at its one weight, subset to the eight letters of the name and a space', () => {
-    // Nothing in the interface names this family yet — where `WORD GARDEN`
-    // stands is issue #148's, not this one's. This is the face and the
-    // subset, ready for it.
     expect(LOGOTYPE_FONT_FAMILY).toMatch(/^"Dela Gothic One"/);
     expect(LOGOTYPE_FONT_FAMILY.endsWith(SYSTEM_FONT_FAMILY)).toBe(true);
     expect(LOGOTYPE_FONT_WEIGHT).toBe(400);
+    // Its own tracking, settled on real renders in PRD #145 — not
+    // `SIGN_TRACKING`, which is a different face at a different size.
+    expect(LOGOTYPE_TRACKING).toBe('0.34em');
   });
 
   it('declares the sign face in the theme, so the garden does not declare one', () => {
