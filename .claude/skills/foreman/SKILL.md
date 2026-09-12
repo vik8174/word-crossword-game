@@ -138,10 +138,11 @@ release, a change of scope, taste — is his.
    a file or a habit.
 3. **Ring**: `SendMessage` with one line — the issue number, and that a question
    is waiting there. Nothing else; the question is on the board.
-4. **Wait for its reply, not for an idle notice.** The two sessions can run in
-   different permission modes, and an idle notice only crosses between sessions
-   of the same one. In the first live test the reply arrived and the idle notice
-   never did.
+4. **Wait for its reply, not for an idle notice.** An idle notice fires only
+   when the other session finishes its whole turn, which can be long after it
+   has already answered you. In the first live test the reply came within
+   seconds, and the idle notice only once that session had finished everything
+   else it was doing.
 5. **Read the answer on the issue**, not in the message that announces it.
 
 **A reply can come late, and more than once.** In the same test the first
