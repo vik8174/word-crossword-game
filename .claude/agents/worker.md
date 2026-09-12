@@ -18,7 +18,17 @@ The Dispatcher gave you a base commit. The issue body may be older than it: chec
 
 ## The trap that has cost this project two review rounds
 
-`.env` lives in `apps/web/` and is git-ignored, so a fresh worktree does not have it. Without it the dev server answers 200 with an empty page and `Missing Firebase env vars` in the console, which looks exactly like a broken app. Copy it into the worktree before anything else.
+`.env` lives in `apps/web/` and is git-ignored, so a fresh worktree does not have it. Without it the dev server answers 200 with an empty page and `Missing Firebase env vars` in the console, which looks exactly like a broken app.
+
+**Run this from your worktree, before anything else:**
+
+```bash
+scripts/copy-env-to-worktree.sh
+```
+
+It takes the files from the main working tree, it is safe to run twice, and it is the only approved way to do this — write your own `cp` and you will stop for a permission prompt, because a rule matches a command by its prefix and every hand-written shape is a new prefix. If it reports nothing copied, say so in your report rather than carrying on: every measurement you would take after that is against an app that never started.
+
+Do not read these files. This project denies it deliberately — they carry real credentials, and the script never prints what it copies.
 
 ## Finishing
 
