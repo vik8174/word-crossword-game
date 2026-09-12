@@ -112,6 +112,31 @@ export const SCENE_BLOOM_SX = {
 export const SUN_EASING = 'cubic-bezier(.2, .7, .3, 1)';
 
 /**
+ * How wide the sun is before it opens, in pixels.
+ *
+ * One number rather than three, because the other two are derived from it:
+ * the circle is as tall as it is wide, and it is pulled back by half of
+ * itself so that its centre — not its corner — sits on the point the bloom is
+ * drawn around. Written down once so that changing the size cannot leave the
+ * two halves of that arrangement disagreeing.
+ */
+const SUN_DIAMETER_PX = 84;
+
+/**
+ * Half the sun's own width, as a CSS length rather than as a number.
+ *
+ * The unit is the whole of the point. `marginLeft` and `marginTop` are
+ * spacing props, and a bare number in an `sx` is an index into the theme's
+ * own spacing scale (`SPACING_STEPS`, `theme.ts`) rather than a count of
+ * pixels. `-42` is not one of those steps, so MUI dropped both margins and
+ * handed the browser nothing: the circle rendered from its corner at 50% /
+ * 52% instead of around it, 42 px low and right of the light it belongs
+ * inside, in dev and in a production build alike. A string with a unit on it
+ * goes through untouched.
+ */
+const SUN_OFFSET = `${-SUN_DIAMETER_PX / 2}px`;
+
+/**
  * The temple's own red, opening out of the middle of the picture and gone
  * before the crossfade is: `scale(.2)` to `scale(7)`, opacity `0` through
  * `.85` back to `0`, over the same {@link SCENE_FADE_MS}.
@@ -120,15 +145,22 @@ export const SUN_EASING = 'cubic-bezier(.2, .7, .3, 1)';
  * (`scene-surface.ts`'s `CONTROL.mark`) — never a second meaning of it on one
  * screen, which is why this plays only on the scene changing and never
  * doubles as a loading indicator.
+ *
+ * It opens around 50% / 52% of the window, which is the point
+ * {@link SCENE_BLOOM_SX} draws its own light around: the sun belongs inside
+ * the bloom, and the two are registered against each other by standing on the
+ * same point rather than by being placed separately. {@link SUN_OFFSET} is
+ * what puts the circle's centre there instead of its corner, and it is a
+ * length rather than a number for a reason worth reading before touching it.
  */
 export const SCENE_SUN_SX = {
   position: 'absolute',
   left: '50%',
   top: '52%',
-  width: 84,
-  height: 84,
-  marginLeft: -42,
-  marginTop: -42,
+  width: SUN_DIAMETER_PX,
+  height: SUN_DIAMETER_PX,
+  marginLeft: SUN_OFFSET,
+  marginTop: SUN_OFFSET,
   borderRadius: '50%',
   pointerEvents: 'none',
   opacity: 0,

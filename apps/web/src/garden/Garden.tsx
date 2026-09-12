@@ -20,10 +20,15 @@ import { VEIL } from './scene-palette';
  * The place used to be one continuous painted world with a camera flying
  * between four points of it (issue #115, ADR 0031). Issue #152 replaces the
  * painting with three photographs — the gate, the doors and the hall — and
- * the camera with a plain attribute swap: a screen says which of the three it
- * stands in front of, and `GardenScene` shows that one. The transition
- * between them is the next ticket's to build (#153); this component only
- * changes which picture is showing, instantly.
+ * the camera with a picture being shown instead of another: a screen says
+ * which of the three it stands in front of, and `GardenScene` shows that one.
+ * Issue #153 gives the change between them the one standard transition — an
+ * 1800ms crossfade, a slow forward push, a warm bloom and the temple's own
+ * red opening out of the middle (`scene-transition.ts`) — which this
+ * component holds the state for and `GardenScene` plays. It runs on a change
+ * of scene and not on a change of screen: `scene` lives in a `useState` here,
+ * so two screens standing on the same picture do not change it and nothing
+ * below re-renders for them at all.
  *
  * Petals fall over all of it except the one screen a game is played on, and
  * they never stop or reset for a change of picture — they are a canvas of
