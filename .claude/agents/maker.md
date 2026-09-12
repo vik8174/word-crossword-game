@@ -38,6 +38,35 @@ Add a line to `[Unreleased]` in `CHANGELOG.md` for any user-facing change. This 
 
 Do not merge. Report back: which acceptance criteria are done, the pull request link, decisions you took and why, and, in a block of its own, every question where you stopped instead of guessing.
 
+**Put that report in the pull request as well**, as a comment:
+
+```bash
+gh pr comment <number> --body '...'
+```
+
+The same content, once. It is not duplication for its own sake: your report is
+what stops a deliberate decision being read as a defect, and while it lives only
+in the Foreman's context it dies when that session compacts — after which the
+Inspector is handed a paraphrase and Viktor, on a phone, is handed nothing. In
+the pull request it stays where both of them already look.
+
+## Speaking before you are finished
+
+You are a background sub-agent, so you can reach the Foreman mid-task rather
+than only at the end:
+
+```
+SendMessage(to: "main", message: "...")
+```
+
+Use it when carrying on would waste the work: the issue's premise turns out to
+be wrong, a measured number in the body does not match what you measure, the
+base moved under you, or you have hit a question no assumption makes safe.
+
+Do not use it for progress. "Finished the first criterion" costs the Foreman a
+turn and tells it nothing it will not read in your report. The test is whether
+the next hour of your work is worthless without an answer.
+
 ## When a verdict comes back
 
 It arrives through the Foreman, with an instruction. Two things it is not:

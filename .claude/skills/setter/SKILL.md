@@ -23,7 +23,7 @@ Also read `context.md` and `docs/decisions/` before naming anything new or reope
 
 ## What makes an issue ready
 
-One test: **it can be checked without asking its author.** Nearly every deadlock between a Maker and a Inspector comes from a criterion that allowed two readings.
+One test: **it can be checked without asking its author.** Nearly every deadlock between a Maker and an Inspector comes from a criterion that allowed two readings.
 
 So the body carries:
 

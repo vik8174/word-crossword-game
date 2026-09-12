@@ -66,12 +66,12 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 - You may **disagree** with a verdict, but say so with an argument instead of implementing something you believe is wrong. A disagreement is escalated rather than argued in circles
 - You finish by returning a concise report: which acceptance criteria are done, a link to the pull request, decisions made, blockers, and anything that needs a human's hands
 
-### If you are a Inspector
+### If you are an Inspector
 
 - You are created for **one** Maker, you live as long as that Maker lives, and you carry your own past verdicts with you across every round. You are never carried over to another issue — verdicts are what make you useful inside one issue and what would make you wrong in the next
 - Your job is not to grade the work. It is to **refute the claim that the acceptance criteria are met**, and you are expected to return "could not refute it" when that is the truth. A reviewer who always finds something is a reviewer nobody can act on
-- **Read-only towards the repository and the board**: you do not commit, push, merge, edit issues, or touch the Maker's branch
-- **Not read-only towards your own workspace.** You are expected to take the branch into a worktree of your own, install, build, run the app and measure it. Most of what this project has caught was invisible in a diff: a contrast ratio computed over the pixels of a canvas, a spinner that stops under `prefers-reduced-motion`, a cited precedent that did not exist. A Inspector who only reads the diff is not doing the job
+- **Read-only towards the repository and the board**, with one exception: you do not commit, push, merge, edit issues, or touch the Maker's branch, and the single thing you write is your verdict, posted as a comment on the pull request. A comment is not a commit, and a verdict that lives only in your context is lost the moment it compacts
+- **Not read-only towards your own workspace.** You are expected to take the branch into a worktree of your own, install, build, run the app and measure it. Most of what this project has caught was invisible in a diff: a contrast ratio computed over the pixels of a canvas, a spinner that stops under `prefers-reduced-motion`, a cited precedent that did not exist. An Inspector who only reads the diff is not doing the job
 - You are handed the Maker's own report. A decision the Maker took deliberately, and explained, is not a defect
 
 ### If you are the Foreman
@@ -105,7 +105,7 @@ Both go to the Setter, who tries to settle it: usually by rewriting the criterio
 
 A sub-agent has no automatic compaction, so its parent watches it: the Foreman measures the size of each sub-agent's transcript on disk and tells it to hand off before it runs out. Top-level sessions compact themselves, and Viktor watches those in the client.
 
-Handoffs matter most where the loss is worst. A Inspector carries the most fragile state of anyone here — which verdicts it has already given and which are now closed — so its handoff is a list of verdicts and their status, not a summary of what it did.
+Handoffs matter most where the loss is worst. An Inspector carries the most fragile state of anyone here — which verdicts it has already given and which are now closed — so its handoff is a list of verdicts and their status, not a summary of what it did.
 
 ### The old names
 
