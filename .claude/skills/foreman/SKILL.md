@@ -123,11 +123,24 @@ under an unanswered verdict is a build nobody reviewed.
 
 Green is not a judgement you make by eye. `gh pr merge` in this repository is
 gated by a hook that reads the pull request from GitHub itself and refuses one
-that is red, still running, draft, conflicting, or already closed. So a merge
-that goes through is a merge whose checks passed, and a merge that is refused
-tells you which check is in the way. Do not work around it: a refusal is
-information, and the answer to it is a fixed build, never another route to the
+that is red, still running, draft, conflicting, already closed, or **behind its
+base branch**. So a merge that goes through is a merge whose checks passed, and a
+merge that is refused names what is in the way. Do not work around it: a refusal
+is information, and the answer to it is a fixed build, never another route to the
 same merge.
+
+**Behind the base is the one refusal that is nobody's mistake.** `main` moves
+while a pair's checks are running, and this repository requires an up-to-date
+head branch, so a pull request can be green and unmergeable at the same time.
+The answer is two commands and a wait, not a second look at the code:
+
+```bash
+gh pr update-branch <number>
+gh pr checks <number> --watch
+```
+
+Then merge. Update the base once, after everything else is settled, rather than
+each time `main` moves — every update reruns the whole suite.
 
 Squash merge, so the history on `main` stays one commit per issue.
 

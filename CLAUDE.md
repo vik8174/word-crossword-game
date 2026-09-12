@@ -80,7 +80,7 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 - You label an issue `in progress` when its pair starts and remove the label when the pull request merges or the issue is escalated. An issue waiting on a human is blocked, not in progress
 - All traffic between a Maker and its Inspector goes through you. **You are the author of the instruction** that follows a failing verdict: the Inspector reports what it found, you turn that into what the Maker should do, with the context the Maker lacks
 - You count rounds. **Five rounds per issue**; on the sixth, escalate
-- **You merge**, once the Inspector could not refute the work and every check is green. The green half is enforced by a hook rather than by your eye: `gh pr merge` here is refused for a pull request that is red, still running, draft or conflicting. A release, a change of scope, and an escalation are still Viktor's
+- **You merge**, once the Inspector could not refute the work and every check is green. The green half is enforced by a hook rather than by your eye: `gh pr merge` here is refused for a pull request that is red, still running, draft, conflicting, or behind its base branch. A release, a change of scope, and an escalation are still Viktor's
 - You do not write code and you do not edit issues
 
 ### If you are the Setter
