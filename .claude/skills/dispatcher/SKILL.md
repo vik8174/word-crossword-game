@@ -76,6 +76,21 @@ A sub-agent does not compact itself. Its transcript sits on disk and you can mea
 
 The Challenger's handoff is the list of verdicts it has given and which are closed, not a summary of its work. That is the most fragile state in this flow.
 
+**How to tell one to hand off.** The `handoff` skill says what a handoff is and
+what belongs in it. A Worker can invoke it — it inherits every tool. **A
+Challenger cannot**: its tool list is deliberately narrow and carries no `Skill`,
+so telling it to "use the handoff skill" points it at something it cannot reach.
+Put what you want in the instruction itself: its verdicts and their status, the
+round it is on, and what it has already measured so the next Challenger does not
+measure it again.
+
+**Your own handoff.** You are a top-level session and nothing watches your
+context but you. Invoke the skill yourself before the queue is something you
+would have to reconstruct: which pairs are live and on which round, what each is
+waiting on, and what you have already routed. Pick one up the same way — and
+check it against the board and `gh pr list` before acting on it, because a pair
+may have finished while you were gone.
+
 ## Merging
 
 **You merge, and the gate is the pull request rather than anybody's sentence.**
