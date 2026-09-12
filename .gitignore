@@ -16,3 +16,6 @@ handoffs/
 # Local agent session artifacts (worktrees, local settings)
 .claude/worktrees/
 .claude/settings.local.json
+# Dev-server configs for the in-app browser, written per issue with absolute
+# paths into that issue's worktree.
+.claude/launch.json
