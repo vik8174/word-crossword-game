@@ -65,26 +65,26 @@ determines its own role.
 
 | Role          | Holds                                                         | Model    |
 | ------------- | ------------------------------------------------------------- | -------- |
-| **Setter**    | the board: issues, dependencies, criteria that can be checked | Opus 5   |
+| **Architect** | the board: issues, dependencies, criteria that can be checked | Opus 5   |
 | **Foreman**   | the queue, the round count, and the merge                     | Opus 5   |
-| **Maker**     | one issue, from branch to open pull request                   | Sonnet 5 |
-| **Inspector** | the verdict on one Maker's pull request                       | Opus 5   |
+| **Worker**    | one issue, from branch to open pull request                   | Sonnet 5 |
+| **Inspector** | the verdict on one Worker's pull request                      | Opus 5   |
 
 Four things about it are worth knowing before reading anything else:
 
-- **A Maker never merges its own pull request**, and an Inspector never commits,
+- **A Worker never merges its own pull request**, and an Inspector never commits,
   pushes or merges at all. The Foreman merges, and only on a pull request GitHub
   itself reports as green.
-- **Nobody talks to anybody directly.** Every message between a Maker and its
-  Inspector goes through the Foreman; the Setter and the Foreman pass work
+- **Nobody talks to anybody directly.** Every message between a Worker and its
+  Inspector goes through the Foreman; the Architect and the Foreman pass work
   through the board — an issue, its labels, its comments — and never through a
   conversation.
 - **A pair is spawned per issue and stopped when it ends.** It is never carried
   into the next one.
 - **A failing verdict is a round, not a failure.** Five are allowed per issue;
-  the sixth, or a disagreement the Maker can argue, goes up.
+  the sixth, or a disagreement the Worker can argue, goes up.
 
-If a session was handed an issue or a handoff document, it is a Maker.
+If a session was handed an issue or a handoff document, it is a Worker.
 
 The roles were called Planner, Dispatcher, Worker and Challenger before the loop
 was named; `CLAUDE.md` carries the table, and the old names are left standing in

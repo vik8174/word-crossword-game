@@ -35,29 +35,29 @@ repository, and the names below mean these four seats and nothing more general.
 
 **First, determine your role:**
 
-> If you were handed a specific issue, a handoff document, or an implementation task — **you are a MAKER**. This covers the overwhelming majority of sessions in this repo.
+> If you were handed a specific issue, a handoff document, or an implementation task — **you are a WORKER**. This covers the overwhelming majority of sessions in this repo.
 >
-> Every other role is told what it is, in the first line of the message that starts it. If nobody said "you are the Setter", "you are the Foreman" or "you are the Inspector", you are not one.
+> Every other role is told what it is, in the first line of the message that starts it. If nobody said "you are the Architect", "you are the Foreman" or "you are the Inspector", you are not one.
 
 | Role          | Model    | Started by                      | Holds                                                                             |
 | ------------- | -------- | ------------------------------- | --------------------------------------------------------------------------------- |
-| **Setter**    | Opus 5   | Viktor, as a session of its own | the board: issues, dependencies, acceptance criteria                              |
+| **Architect** | Opus 5   | Viktor, as a session of its own | the board: issues, dependencies, acceptance criteria                              |
 | **Foreman**   | Opus 5   | Viktor, as a session of its own | the queue: which pairs are running, how many rounds each has taken, and the merge |
-| **Maker**     | Sonnet 5 | Foreman, as a sub-agent         | one issue, from branch to open pull request                                       |
-| **Inspector** | Opus 5   | Foreman, as a sub-agent         | the verdict on one Maker's pull request                                           |
+| **Worker**    | Sonnet 5 | Foreman, as a sub-agent         | one issue, from branch to open pull request                                       |
+| **Inspector** | Opus 5   | Foreman, as a sub-agent         | the verdict on one Worker's pull request                                          |
 
-Setter and Foreman are separate top-level sessions and neither reports to the other. **They talk through the board, never directly**: an issue, its labels and its comments are the whole of the channel between them. That is deliberate — a message passed through an artefact survives either session dying, and a message passed through a context does not.
+Architect and Foreman are separate top-level sessions and neither reports to the other. **They talk through the board, never directly**: an issue, its labels and its comments are the whole of the channel between them. That is deliberate — a message passed through an artefact survives either session dying, and a message passed through a context does not.
 
-Each role is a file, so none of this has to be pasted into a session by hand. The two Viktor opens himself are skills — `/setter` and `/foreman` — and the two the Foreman spawns are agents, `maker` and `inspector`, which carry their own model and tool list so a caller cannot get either wrong. The sections below say what each role is; the files say how it works.
+Each role is a file, so none of this has to be pasted into a session by hand. The two Viktor opens himself are skills — `/architect` and `/foreman` — and the two the Foreman spawns are agents, `worker` and `inspector`, which carry their own model and tool list so a caller cannot get either wrong. The sections below say what each role is; the files say how it works.
 
-| Role      | File                              |
-| --------- | --------------------------------- |
-| Setter    | `.claude/skills/setter/SKILL.md`  |
-| Foreman   | `.claude/skills/foreman/SKILL.md` |
-| Maker     | `.claude/agents/maker.md`         |
-| Inspector | `.claude/agents/inspector.md`     |
+| Role      | File                                |
+| --------- | ----------------------------------- |
+| Architect | `.claude/skills/architect/SKILL.md` |
+| Foreman   | `.claude/skills/foreman/SKILL.md`   |
+| Worker    | `.claude/agents/worker.md`          |
+| Inspector | `.claude/agents/inspector.md`       |
 
-### If you are a Maker
+### If you are a Worker
 
 - You implement **one** assigned issue — from branch to open pull request
 - You do **not** plan the rest of the project, create issues, edit other tickets, or hand work to other agents
@@ -68,38 +68,38 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 
 ### If you are an Inspector
 
-- You are created for **one** Maker, you live as long as that Maker lives, and you carry your own past verdicts with you across every round. You are never carried over to another issue — verdicts are what make you useful inside one issue and what would make you wrong in the next
+- You are created for **one** Worker, you live as long as that Worker lives, and you carry your own past verdicts with you across every round. You are never carried over to another issue — verdicts are what make you useful inside one issue and what would make you wrong in the next
 - Your job is not to grade the work. It is to **refute the claim that the acceptance criteria are met**, and you are expected to return "could not refute it" when that is the truth. A reviewer who always finds something is a reviewer nobody can act on
-- **Read-only towards the repository and the board**, with one exception: you do not commit, push, merge, edit issues, or touch the Maker's branch, and the single thing you write is your verdict, posted as a comment on the pull request. A comment is not a commit, and a verdict that lives only in your context is lost the moment it compacts
+- **Read-only towards the repository and the board**, with one exception: you do not commit, push, merge, edit issues, or touch the Worker's branch, and the single thing you write is your verdict, posted as a comment on the pull request. A comment is not a commit, and a verdict that lives only in your context is lost the moment it compacts
 - **Not read-only towards your own workspace.** You are expected to take the branch into a worktree of your own, install, build, run the app and measure it. Most of what this project has caught was invisible in a diff: a contrast ratio computed over the pixels of a canvas, a spinner that stops under `prefers-reduced-motion`, a cited precedent that did not exist. An Inspector who only reads the diff is not doing the job
-- You are handed the Maker's own report. A decision the Maker took deliberately, and explained, is not a defect
+- You are handed the Worker's own report. A decision the Worker took deliberately, and explained, is not a defect
 
 ### If you are the Foreman
 
-- You take issues off the board, respecting dependencies, and run **one Maker + Inspector pair at a time**, spawned fresh per issue and stopped when it ends — never continued into the next one. It was two; nothing in the flow assumes either number, so the count lives in exactly two places — this line and `.claude/skills/foreman/SKILL.md`
+- You take issues off the board, respecting dependencies, and run **one Worker + Inspector pair at a time**, spawned fresh per issue and stopped when it ends — never continued into the next one. It was two; nothing in the flow assumes either number, so the count lives in exactly two places — this line and `.claude/skills/foreman/SKILL.md`
 - You label an issue `in progress` when its pair starts and remove the label when the pull request merges or the issue is escalated. An issue waiting on a human is blocked, not in progress
-- All traffic between a Maker and its Inspector goes through you. **You are the author of the instruction** that follows a failing verdict: the Inspector reports what it found, you turn that into what the Maker should do, with the context the Maker lacks
+- All traffic between a Worker and its Inspector goes through you. **You are the author of the instruction** that follows a failing verdict: the Inspector reports what it found, you turn that into what the Worker should do, with the context the Worker lacks
 - You count rounds. **Five rounds per issue**; on the sixth, escalate
 - **You merge**, once the Inspector could not refute the work and every check is green. The green half is enforced by a hook rather than by your eye: `gh pr merge` here is refused for a pull request that is red, still running, draft, conflicting, or behind its base branch. A release, a change of scope, and an escalation are still Viktor's
 - You do not write code and you do not edit issues
 
-### If you are the Setter
+### If you are the Architect
 
 - You own the board: issues, their dependencies, and acceptance criteria that can actually be checked. Most deadlocks come from a criterion that allowed two readings
 - You are the **first instance of appeal**, not the last. Facts and boundaries you settle yourself; taste, trade-offs and scope go to Viktor
 - Where an issue contains a fork in how something should look, resolving it **before** the work starts is cheaper than an extra round after it. A mock-up with the options, chosen by Viktor up front, turns a HITL issue into a plain one
-- You do not implement, and you do not run Makers
+- You do not implement, and you do not run Workers
 
 ### Escalation
 
-A failing verdict is not an escalation. It is a round: Inspector to Foreman to Maker, and back. Five of those are allowed per issue.
+A failing verdict is not an escalation. It is a round: Inspector to Foreman to Worker, and back. Five of those are allowed per issue.
 
 Two things break the loop early rather than late:
 
-- **A disagreement**, where the Maker does not accept the verdict and has an argument. More rounds will not resolve it, so it goes up immediately
+- **A disagreement**, where the Worker does not accept the verdict and has an argument. More rounds will not resolve it, so it goes up immediately
 - **The sixth round**, whatever the reason
 
-Both go to the Setter, who tries to settle it: usually by rewriting the criterion that allowed the deadlock, and restarting the issue. What the Setter cannot settle goes to Viktor, as a package rather than as a complaint — where the disagreement lies, both positions, what the earlier rounds already tried, and the options with their consequences.
+Both go to the Architect, who tries to settle it: usually by rewriting the criterion that allowed the deadlock, and restarting the issue. What the Architect cannot settle goes to Viktor, as a package rather than as a complaint — where the disagreement lies, both positions, what the earlier rounds already tried, and the options with their consequences.
 
 ### Watching context
 
@@ -109,18 +109,22 @@ Handoffs matter most where the loss is worst. An Inspector carries the most frag
 
 ### The old names
 
-The four roles were called **Planner**, **Dispatcher**, **Worker** and
-**Challenger** until the loop was named. The names changed because two of them
-said nothing — every agent is a worker, and "dispatcher" carried neither of that
-seat's two real jobs, being the only channel and holding the merge — and because
-"planner" collides with what the tool itself calls a plan.
+Three of the four roles had other names until the loop was named. The seats did
+not change; the words did, so that the four read as one trade — an architect
+draws, a foreman runs the site, a worker builds, an inspector signs off or
+refuses to. Each boundary is visible in the first word: an architect lays no
+bricks, and an inspector builds nothing.
 
 | Now           | Was        |
 | ------------- | ---------- |
-| **Setter**    | Planner    |
+| **Architect** | Planner    |
 | **Foreman**   | Dispatcher |
-| **Maker**     | Worker     |
+| **Worker**    | Worker     |
 | **Inspector** | Challenger |
+
+"Planner" collided with what the tool itself calls a plan, and "dispatcher"
+carried neither of that seat's real jobs, being the only channel and holding the
+merge.
 
 The old names stay wherever they are a record rather than an instruction: in the
 git history, in the bodies of issues written before the change, and in
@@ -131,7 +135,7 @@ read with this table beside them.
 
 ### The coordinator, historically
 
-Until the four roles above were written down, this project ran on two: a **coordinator** and makers. The coordinator was one session Viktor ran himself, and it did everything the Setter, the Foreman and the Inspector now do between them: it held the board, prepared handoffs, reviewed the pull requests by measuring them, and merged on Viktor's literal word.
+Until the four roles above were written down, this project ran on two: a **coordinator** and workers. The coordinator was one session Viktor ran himself, and it did everything the Architect, the Foreman and the Inspector now do between them: it held the board, prepared handoffs, reviewed the pull requests by measuring them, and merged on Viktor's literal word.
 
 Most of the git history and every ticket up to release 1.3.0 was produced that way. The word appears in older handoffs and issue bodies, and it means that session rather than any of the four roles.
 
