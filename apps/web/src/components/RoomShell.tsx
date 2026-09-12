@@ -4,7 +4,13 @@ import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
 import { gapAt } from '../scale';
-import { BAND_SX, fullHeightBandSx, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
+import {
+  BAND_SX,
+  GATE_BAND_WIDTH,
+  ON_SCENE_SX,
+  fullHeightBandSx,
+  stepTitleSx,
+} from '../garden/scene-surface';
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES } from './room-layout';
 import { useShiftRole } from './screen-shift';
 
@@ -20,6 +26,17 @@ const FRAME_PADDING = gapAt(FRAME_PADDING_STEP);
 
 /** How wide a band is: the zone it holds, and the frame's padding either side of it. */
 const BAND_WIDTH = `calc(${SIDE_ZONE_WIDTH} + ${FRAME_PADDING} + ${FRAME_PADDING})`;
+
+/**
+ * How wide the gate's own middle column is: the gate's band
+ * (`garden/scene-surface.ts`'s `GATE_BAND_WIDTH`), less this frame's own
+ * padding either side of it — the same arithmetic `/create`'s column is
+ * measured by, run in this file instead (`pages/CreateRoomPage.tsx`).
+ *
+ * Used by {@link RoomMiddleColumn} alone: no room zone stands on the gate's
+ * band, and this is not that band's width, which stays `BAND_WIDTH` above.
+ */
+const GATE_COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${FRAME_PADDING} - ${FRAME_PADDING})`;
 
 /**
  * A heading that is there to be read aloud and not to be looked at.
@@ -90,25 +107,28 @@ const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
  * paragraph stretched the same way is a paragraph nobody finishes a line of, so
  * anything that is words rather than squares is capped and centred instead.
  *
- * It stands on the same band a list of words does, and for the same reason: a
- * form is text, and text has to be read off a forest. Where a zone has a column
- * the band is that column; here there is no column, so the band is a block of
- * the same material. No red line along the top of it: the name of the step is
- * directly above with a rule of its own, and two of them a step apart read as
- * one underline drawn twice.
+ * Its own width is the gate's rather than a room zone's: `join` is the only
+ * caller today, and it stands on the same full-height band `/create` does —
+ * painted behind it by {@link RoomShell} when that screen sets `gateBand`,
+ * not painted by this column itself. It used to carry its own translucent
+ * background sized to the form, which read as a card floating over the
+ * picture — the very thing issue #137 removes. No red line along the top of
+ * it either way: the name of the step is directly above with a rule of its
+ * own, and two of them a step apart read as one underline drawn twice.
  *
  * @param props.children - What this screen has to say or ask
  *
  * @example
- * <RoomShell><RoomMiddleColumn><JoinRoomForm ... /></RoomMiddleColumn></RoomShell>
+ * <RoomShell gateBand title="Join the game">
+ *   <RoomMiddleColumn><JoinRoomForm ... /></RoomMiddleColumn>
+ * </RoomShell>
  */
 export const RoomMiddleColumn = ({ children }: { readonly children: ReactNode }) => (
   <Box
     sx={{
-      maxWidth: '32rem',
+      maxWidth: GATE_COLUMN_WIDTH,
       mx: 'auto',
       p: 5,
-      ...BAND_SX,
       ...ON_SCENE_SX,
     }}
   >
@@ -145,6 +165,23 @@ interface RoomShellProps {
    * screen puts there is nothing.
    */
   readonly children?: ReactNode;
+  /**
+   * Whether this screen stands on the gate's own full-height band rather than
+   * in the room's ordinary middle zone.
+   *
+   * `join` is the one screen of a room that is still at the gate — the room it
+   * leads to does not exist for this visitor yet — so it alone reads the same
+   * band `/create` stands on (`garden/scene-surface.ts`'s `GATE_BAND_WIDTH`),
+   * drawn full height behind {@link RoomMiddleColumn}. Setting it also stretches
+   * this frame to at least the window's own height below the tablet breakpoint,
+   * where the frame is otherwise only as tall as its content — without that,
+   * the band would run from the top of a short page to its bottom rather than
+   * to the bottom of the window, which is a band floating short of the phone's
+   * own edge (issue #137). No other screen sets this, and none should: the
+   * lobby and the hall are the room's own middle zone, and this must not change
+   * how tall their frame stands.
+   */
+  readonly gateBand?: boolean;
 }
 
 /**
@@ -194,13 +231,22 @@ interface RoomShellProps {
  * @param props.left - The zone on the board's left; an empty one is left empty
  * @param props.right - The zone on its right
  * @param props.children - The middle zone: the board, or nothing at all
+ * @param props.gateBand - Whether this screen stands on the gate's own band; `join` alone
  *
  * @example
  * <RoomShell status={<Status />} left={<ToExplain />} right={<ToGuess />}>
  *   <RoomCrossword room={room} viewerId={viewerId} caption={caption} />
  * </RoomShell>
  */
-export const RoomShell = ({ title, status, action, left, right, children }: RoomShellProps) => {
+export const RoomShell = ({
+  title,
+  status,
+  action,
+  left,
+  right,
+  children,
+  gateBand,
+}: RoomShellProps) => {
   const isLeaving = useShiftRole() === 'leaving';
 
   return (
@@ -212,6 +258,11 @@ export const RoomShell = ({ title, status, action, left, right, children }: Room
         gap: 5,
         px: 4,
         py: 5,
+        // Only `join` sets `gateBand`, and only below the tablet breakpoint does
+        // this matter: from there up `[APP_SHELL]` already gives every screen a
+        // fixed `height: 100dvh`, which this cannot narrow since a `min-height`
+        // never exceeds an explicit `height` set beside it.
+        minHeight: gateBand ? '100dvh' : undefined,
         [APP_SHELL]: { height: '100dvh', gap: 4, py: 4, overflow: 'hidden' },
       }}
     >
@@ -232,6 +283,11 @@ export const RoomShell = ({ title, status, action, left, right, children }: Room
           />
         ),
       )}
+
+      {/* The gate's own band, full height at every width rather than only from
+        the tablet breakpoint up: `join` has no column of its own to stand a
+        band beside, only the one down the middle of the whole frame. */}
+      {gateBand === true && <Box aria-hidden sx={fullHeightBandSx('centre', GATE_BAND_WIDTH)} />}
 
       <Box
         component="header"

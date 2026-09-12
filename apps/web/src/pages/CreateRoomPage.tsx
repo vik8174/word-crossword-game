@@ -7,7 +7,12 @@ import { type CrosswordLayout, generateCrossword, validateWordList } from 'share
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm } from '../components/WordListForm';
 import { useGardenControls } from '../garden/garden-controls';
-import { fullHeightBandSx, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
+import {
+  GATE_BAND_WIDTH,
+  ON_SCENE_SX,
+  fullHeightBandSx,
+  stepTitleSx,
+} from '../garden/scene-surface';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
 import { roomPath } from '../rooms/room-link';
@@ -21,27 +26,12 @@ const PAGE_PADDING_STEP = 4;
 const PAGE_PADDING = gapAt(PAGE_PADDING_STEP);
 
 /**
- * The widest the band down the middle is allowed to be.
- *
- * Also the width at which it stops being narrower than the window, and so the
- * width at which its hairlines go — one number doing both jobs, which is the
- * only way the two can be kept from drifting apart (`garden/scene-surface.ts`).
- * On a phone the band is therefore the whole width of the window with no line
- * down either side, and that is the point rather than a fallback: a band with a
- * finger of forest left showing beside it is a card again.
- *
- * In `rem`, so that it grows with the size the reader has set their own text
- * in, and as one term rather than a sum, so that the threshold can be said in
- * the same units without arithmetic in a media query.
+ * How wide the column standing on the band is: the gate's band
+ * (`garden/scene-surface.ts`'s `GATE_BAND_WIDTH`), less the page's own padding
+ * either side of it — the same arithmetic a band in a room is measured by, run
+ * the other way (`components/RoomShell.tsx`).
  */
-const BAND_WIDTH = '34rem';
-
-/**
- * How wide the column standing on the band is: the band, less the page's own
- * padding either side of it — the same arithmetic a band in a room is measured
- * by, run the other way (`components/RoomShell.tsx`).
- */
-const COLUMN_WIDTH = `calc(${BAND_WIDTH} - ${PAGE_PADDING} - ${PAGE_PADDING})`;
+const COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${PAGE_PADDING} - ${PAGE_PADDING})`;
 
 /**
  * Shown when no two words share a letter. Different from words being dropped:
@@ -217,7 +207,7 @@ export const CreateRoomPage = () => {
         ...ON_SCENE_SX,
       }}
     >
-      <Box aria-hidden sx={fullHeightBandSx('centre', BAND_WIDTH)} />
+      <Box aria-hidden sx={fullHeightBandSx('centre', GATE_BAND_WIDTH)} />
 
       <Typography
         component="h1"
