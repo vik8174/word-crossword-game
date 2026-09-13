@@ -163,19 +163,21 @@ const SURFACES = [
  * running page — not one of {@link SURFACES}, which are synthetic worst
  * cases nobody's band actually stands on, but a real screenshot.
  *
- * Measured on `playing` (the hall), 834 x 1112, the RoomShell zone column
- * that holds the clue index: off real screenshots at the veil's thinnest
- * stop, text and the petal canvas hidden with `visibility: hidden`, no petal
- * behind the band, across five points of the 26 s Ken Burns push (0.1, 6, 13,
- * 20, 26 s) — the worst of every zone column on `lobby` and `playing`, at
- * 375, 834 and 1440 (`handoffs/verdicts/190/`, round 2). The worst 180 x 22
- * window, at rest after the push, read `rgb(80.28, 67.71, 46.21)` once
- * banded; this is that reading inverted back through {@link veiled} and
- * {@link banded} to the flat paint that reproduces it — the inversion is
- * clean here (it lands inside 0-255), which the strip under the board's own
- * readings below do not.
+ * Measured on `lobby` (the doors), 834 x 1112, the RoomShell zone column with
+ * the host alone (no invite panel showing): off real screenshots at the
+ * veil's thinnest stop, text and the petal canvas hidden with
+ * `visibility: hidden`, no petal behind the band, across nine points of the
+ * 26 s Ken Burns push — the worst of every zone column on `lobby` and
+ * `playing`, at 375, 834 and 1440 (`handoffs/verdicts/190/`, round 2
+ * corrected in round 3 after the Inspector found the round 2 figure, the
+ * hall at 834, was not in fact the worst). The worst 180 x 22 window, at the
+ * start of the push, read `rgb(79.6, 77.8, 58.7)` once banded; this is that
+ * reading inverted back through {@link veiled} and {@link banded} to the
+ * flat paint that reproduces it — the inversion is clean here (it lands
+ * inside 0-255, and recomposites to dim 5.104:1), which the strip under the
+ * board's own readings below do not.
  */
-const PAGE_WORST_SURFACE = '#B48457';
+const PAGE_WORST_SURFACE = '#B29C74';
 
 describe('what the garden writes on', () => {
   it('reads every sentence off the band, whatever the band is standing on', () => {

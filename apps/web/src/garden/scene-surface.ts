@@ -300,8 +300,9 @@ export const ON_SCENE_SX: CSSObject = {
  * doors and the hall exactly as it does under the gate — a band there measures
  * well clear of 4.5 at `.78` everywhere a player actually stands on one, off
  * real screenshots of every zone column on `lobby` and `playing`, at 375, 834
- * and 1440 (worst 5.66:1, the hall's own zone column at 834; round 2 of issue
- * #190, `handoffs/verdicts/190/`), so those screens keep the dimmer ink. The
+ * and 1440 (worst 5.10:1, the doors' own zone column at 834, host alone;
+ * issue #190, `handoffs/verdicts/190/`), so those screens keep the dimmer
+ * ink. The
  * only dim-cream figures under 4.5 anywhere in this file are `scene-palette.
  * test.ts`'s own synthetic worst case — the lit paper of the doors laid flat
  * under the veil with no real band around it, held below 4.5 on purpose as
