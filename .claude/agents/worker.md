@@ -16,6 +16,8 @@ Read the issue in full (`gh issue view NN`), plus `context.md` and any ADR the i
 
 The Foreman gave you a base commit. The issue body may be older than it: check `git log --oneline -8` and see what moved underneath you.
 
+Where the issue is visual, it links a **Template**: open it before writing anything and build to it. Where the code cannot match it, or you believe the template itself is wrong, **stop and say so** in your report rather than shipping a quiet difference — that is a disagreement, and the template gets corrected before the code follows it.
+
 ## The trap that has cost this project two review rounds
 
 `.env` lives in `apps/web/` and is git-ignored, so a fresh worktree does not have it. Without it the dev server answers 200 with an empty page and `Missing Firebase env vars` in the console, which looks exactly like a broken app.

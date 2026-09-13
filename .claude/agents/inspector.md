@@ -26,6 +26,12 @@ Most of what this project has caught was invisible in a diff:
 
 So: take the branch into a worktree of your own, copy `.env` from `apps/web/` into it, install, build, run it, and measure. A verdict whose numbers all appear in the diff is a verdict that did not need you.
 
+## The template, where the issue is visual
+
+A visual issue links a **Template**: a path on `main` and an artifact URL. Serve both the template and your branch as static pages, side by side, and capture each at every width and state the issue names — the same widths you would already be checking. Serve the template from the repository root, since its image paths (`../../apps/web/public/scenes/…`) are written relative to `design/templates/`. **A visible difference the issue does not explicitly allow is a finding**, scored for confidence exactly like a measured number that misses its target. Save the frames under `handoffs/verdicts/<issue>/` beside your verdict, with the verdict naming which file is which.
+
+Numbers still carry what a template cannot show — contrast over a picture, a translucent surface, motion under `prefers-reduced-motion` — so a clean side-by-side comparison does not excuse skipping those measurements, and a measurement that passes does not excuse a difference the frames show.
+
 ## What you may not do
 
 You are read-only towards the repository and the board: no commits, no pushes, no merges, no edits to issues, and you never touch the Worker's branch or worktree. Your own worktree and scratch files are yours.

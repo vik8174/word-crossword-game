@@ -67,6 +67,9 @@ It arrives empty and knows only what you hand it:
 - **boundaries by name**: which files are not this issue's to touch — a shared file the issue reaches through, and anything a merge has moved since the issue was written
 - what is already decided in this issue and is not to be reopened
 - **the round number**, and from round 2 on, the path of the verdict it is answering
+- **for a visual issue, its Template**: the path on `main` and the artifact URL, so it does not have to hunt for either
+
+A visual issue with no template merged to `main` is not started: ring the Architect (see "Asking the Architect") rather than dispatching a Worker to build against a drawing that does not exist yet.
 
 ## When a sub-agent speaks first
 
@@ -118,6 +121,7 @@ Worker cannot see, not what it can read for itself.
 - **the Worker's report in full**. Without it a deliberate, explained decision reads as a defect
 - its own port, not the Worker's
 - **the round number**, and the folder its earlier verdicts on this issue are recorded in
+- **for a visual issue, the same Template path and URL the Worker had**, so it can serve the template beside the branch rather than take the Worker's word for what it shows
 
 ## The instruction after a failing verdict
 

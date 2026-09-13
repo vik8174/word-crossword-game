@@ -40,9 +40,11 @@ So the body carries:
 - what is already decided and is not to be reopened
 - acceptance criteria as checkboxes, each one settled by a fact
 
+**Template**, when the issue is visual — what a player sees changes: layout, size, colour, type, surface, a state of a control, a screen. The issue names, in a section of its own: the path on `main` (`design/templates/<name>.html`), the artifact URL it was published from, and which states and widths of it this issue builds. A visual issue with no template merged to `main` is not ready, and the Foreman does not start it ([0035](../../../docs/decisions/0035-a-visual-issue-is-built-to-a-template.md)).
+
 ## Close forks before the work, not after
 
-Where an issue contains a choice about how something should look, a Worker will build the options in code, show them, and spend a whole round on it. A mock-up with the options, chosen up front, turns that into one build.
+A template is required for every visual issue, not only where there is a fork. But a fork is the sharpest case for why: where an issue contains a choice about how something should look, a Worker left to decide it will build the options in code, show them, and spend a whole round on it. Closing the fork inside the template, before the work starts, turns that into one build.
 
 A mock-up earns its place for layout and size. It is useless where the question is how something behaves **over the painting** — contrast above the canvas, translucent surfaces, motion under `prefers-reduced-motion`. HTML does not reproduce any of that.
 

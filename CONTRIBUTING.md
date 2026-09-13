@@ -52,6 +52,10 @@ Every architecturally significant or hard-to-reverse decision gets its own file 
 
 Add the ADR in the same pull request that makes the architectural change — not in a separate follow-up.
 
+## Templates
+
+A visual issue — one whose outcome is visible on a screen — is drawn before it is built. The drawing is a **Template**: source in `design/templates/<name>.html`, committed, and published as a Claude artifact from that same file. It is merged to `main` in a pull request of its own, `design/<name>`, once Viktor approves it — a template is a drawing, not an implementation, and his approval is its review. A visual issue is not ready until its template is on `main`, and it links both the path and the artifact URL. This is a different thing from [`docs/decisions/0000-template.md`](docs/decisions/0000-template.md), the ADR skeleton — the two share a word and nothing else. See [ADR 0035](docs/decisions/0035-a-visual-issue-is-built-to-a-template.md).
+
 ## Changelog
 
 Every user-facing pull request adds a line to the `[Unreleased]` section of [`CHANGELOG.md`](CHANGELOG.md), following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
