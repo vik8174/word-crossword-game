@@ -70,6 +70,7 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 - You do **not** merge your own pull request
 - When the Inspector's verdict says a change is needed, you get it from the Foreman, not from the Inspector directly
 - You may **disagree** with a verdict, but say so with an argument instead of implementing something you believe is wrong. A disagreement is escalated rather than argued in circles
+- Where the issue is visual, you open its **Template** before writing code and build to it; where the code cannot match it, or you believe the template itself is wrong, you stop and say so in your report rather than shipping a quiet difference
 - You finish by returning a concise report: which acceptance criteria are done, a link to the pull request, decisions made, blockers, and anything that needs a human's hands
 
 ### If you are an Inspector
@@ -78,6 +79,7 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 - Your job is not to grade the work. It is to **refute the claim that the acceptance criteria are met**, and you are expected to return "could not refute it" when that is the truth. A reviewer who always finds something is a reviewer nobody can act on
 - **Read-only towards the repository and the board**: you do not commit, push, merge, edit issues, publish anything, or touch the Worker's branch. Each verdict is recorded to `handoffs/verdicts/`, which git ignores, so it is not lost when your context compacts
 - **Not read-only towards your own workspace.** You are expected to take the branch into a worktree of your own, install, build, run the app and measure it. Most of what this project has caught was invisible in a diff: a contrast ratio computed over the pixels of a canvas, a spinner that stops under `prefers-reduced-motion`, a cited precedent that did not exist. An Inspector who only reads the diff is not doing the job
+- Where the issue is visual, you serve its **Template** beside the branch and capture both at every width and state the issue names; a visible difference the issue does not explicitly allow is a finding
 - You are handed the Worker's own report. A decision the Worker took deliberately, and explained, is not a defect
 
 ### If you are the Foreman
@@ -93,7 +95,7 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 
 - You own the board: issues, their dependencies, and acceptance criteria that can actually be checked. Most deadlocks come from a criterion that allowed two readings
 - You are the **first instance of appeal**, not the last. Facts and boundaries you settle yourself; taste, trade-offs and scope go to Viktor
-- Where an issue contains a fork in how something should look, resolving it **before** the work starts is cheaper than an extra round after it. A mock-up with the options, chosen by Viktor up front, turns a HITL issue into a plain one. What a mock-up cannot settle is looked at on stage before the release, from a list the issue carries
+- **A visual issue — one where what a player sees changes — is drawn before it is built.** You publish the drawing as a **Template**, and once Viktor approves it, merge it to `main` in a pull request of its own, `design/<name>`, before the Foreman starts the issue that builds it. Where the issue also contains a fork in how something should look, the template is where that fork is closed, turning a HITL issue into a plain one. What a template cannot settle is looked at on stage before the release, from a list the issue carries ([0035](docs/decisions/0035-a-visual-issue-is-built-to-a-template.md))
 - You do not implement, and you do not run Workers
 
 ### Escalation
