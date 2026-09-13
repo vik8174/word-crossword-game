@@ -167,12 +167,12 @@ export const SCENE_EDGE = 'rgba(243, 236, 217, 0.55)';
  *
  * Opaque now, and that is a correction rather than a preference. It used to be
  * translucent, on the reasoning that a forest going on behind it says the
- * control is standing in the picture rather than on it — but `scene-surface.ts`
- * paints every `.MuiButton-contained` with this fill over the veiled picture,
- * so a translucent value put the background under the label at a different
- * colour on every pixel of the pill, on every one of the three scenes it
- * stands on (issue #149). Opaque means one figure covers the gate, the doors
- * and the hall alike, and nothing here has to be re-measured per scene
+ * control is standing in the picture rather than on it — but the control is
+ * painted with this fill over the veiled picture wherever it stands, so a
+ * translucent value put the background under the label at a different colour
+ * on every pixel of the pill, on every one of the three scenes it stands on
+ * (issue #149). Opaque means one figure covers the gate, the doors and the
+ * hall alike, and nothing here has to be re-measured per scene
  * (`theme.test.ts`).
  *
  * The resting fill is the temple's own red, unchanged: at rest is the state a
@@ -182,6 +182,15 @@ export const SCENE_EDGE = 'rgba(243, 236, 217, 0.55)';
  * picked for margin rather than reused, since nothing already in the palette
  * cleared 3:1 under this label between `vermilion` and `vermilionLit` (issue
  * #149's PRD comment, #145).
+ *
+ * Extended by issue #184 for the template's full set of kinds and states —
+ * `components/Button.tsx` is the one place every value below is read. The
+ * primary figures above (`fill`, `litFill`, `ink`, `mark`, `edge`,
+ * `restingFill`, `restingInk`) are unchanged from issue #149; `lift` is
+ * corrected to the template's own inset (it was `rgba(255, 246, 230, 0.35)`,
+ * a figure this ticket found does not match `design/templates/state-tree.html`
+ * line 484 and no longer measures anything real now that the template has
+ * been redrawn since #149 shipped) and everything else here is new.
  */
 export const CONTROL = {
   /** The temple's own red, opaque: the same value as {@link SCENE.vermilion}. */
@@ -196,6 +205,8 @@ export const CONTROL = {
    * own rather than as another line of text.
    */
   mark: '#FFF6E6',
+  /** The ring round the primary dot, at rest and while loading alike. */
+  markRing: 'rgba(255, 246, 230, 0.18)',
   /**
    * The 1.5 px edge round the pill: gold, decorative, and never the same
    * colour as {@link SCENE.vermilionLit} — that stays the forest's own lit
@@ -209,7 +220,12 @@ export const CONTROL = {
    * 1:1 against the art over most of its perimeter, so this shadow is doing
    * the actual work of the boundary and is not decoration to be tidied away.
    */
-  lift: '0 10px 24px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 246, 230, 0.35)',
+  lift: '0 10px 24px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+  /** The lift under a finger: the same shadow with a gold bloom added. */
+  hoverLift:
+    '0 12px 28px -10px rgba(0, 0, 0, 0.7), 0 0 22px -4px rgba(201, 162, 39, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.16)',
+  /** The gold the keyboard-focus ring is drawn in — the template's `--gold`. */
+  focusOutline: '#C9A227',
   /** A control that cannot be pressed yet: the temple's shadowed side, opaque. */
   restingFill: SCENE.vermilionDeep,
   /**
@@ -220,4 +236,41 @@ export const CONTROL = {
    * (`theme.test.ts`).
    */
   restingInk: 'rgba(243, 236, 217, 0.78)',
+  /** The edge of a control that cannot be pressed yet — thinner than at rest. */
+  restingEdge: 'rgba(242, 118, 47, 0.3)',
+  /** The edge of a control that is loading — a different thinning again. */
+  loadingEdge: 'rgba(242, 118, 47, 0.5)',
+  /**
+   * The dot's own colour while loading, and while carrying a danger edge — the
+   * two states that read it off {@link SCENE.vermilionLit} rather than off the
+   * primary {@link mark}.
+   */
+  litDot: SCENE.vermilionLit,
+  /** The hollow ring a dot is drawn with once its control cannot be pressed. */
+  disabledDotRing: 'rgba(243, 236, 217, 0.42)',
+} as const;
+
+/**
+ * The control's `quiet` kind — a translucent surface standing directly on the
+ * picture, for an action that is not this scene's one loud thing (issue
+ * #184): copying a link, ending a game. Read off the same template lines as
+ * {@link CONTROL} (`design/templates/state-tree.html`, `.btn.quiet` and
+ * `.btn.danger`), and a sibling of it rather than a field on it, since nothing
+ * here is a further derivation of the primary kind's own figures — a quiet
+ * button never becomes a primary one by adding an opacity.
+ */
+export const QUIET_CONTROL = {
+  fill: 'rgba(14, 20, 16, 0.62)',
+  hoverFill: 'rgba(14, 20, 16, 0.74)',
+  edge: 'rgba(243, 236, 217, 0.46)',
+  /** The edge under a finger — the same cream the label and the dot are drawn in. */
+  hoverEdge: SCENE.cream,
+  ink: SCENE.cream,
+  mark: SCENE.cream,
+  markRing: 'rgba(243, 236, 217, 0.14)',
+  /** The `danger` modifier — `.btn.danger` over a `.btn.quiet` surface only. */
+  dangerEdge: 'rgba(218, 70, 32, 0.7)',
+  dangerInk: '#F6C9B6',
+  dangerHoverFill: 'rgba(147, 41, 15, 0.72)',
+  dangerHoverEdge: SCENE.vermilionLit,
 } as const;

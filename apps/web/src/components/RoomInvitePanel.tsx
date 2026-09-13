@@ -1,10 +1,10 @@
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 
 import { roomUrl } from '../rooms/room-link';
+import { PillButton } from './PillButton';
 
 interface RoomInvitePanelProps {
   /** Id of the room this screen is showing, as it stands in the address. */
@@ -74,9 +74,9 @@ export const RoomInvitePanel = ({ roomId, origin }: RoomInvitePanelProps) => {
       />
 
       <Stack direction="row" spacing={4} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
-        <Button variant="outlined" onClick={() => void handleCopy()}>
+        <PillButton kind="quiet" small onClick={() => void handleCopy()}>
           Copy link
-        </Button>
+        </PillButton>
 
         {copyState === 'copied' && (
           <Typography variant="body2" color="success.main" role="status">

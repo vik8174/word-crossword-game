@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import FormHelperText from '@mui/material/FormHelperText';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -13,6 +12,7 @@ import {
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
 import { Message } from './Message';
+import { PillButton } from './PillButton';
 
 /**
  * A failure that has nothing to do with the word list itself: no crossword
@@ -123,9 +123,9 @@ export const WordListForm = ({
           </Message>
         )}
 
-        <Button type="submit" variant="contained" size="large" disabled={!canSubmit || isCreating}>
+        <PillButton type="submit" loading={isCreating} disabled={!canSubmit}>
           {isCreating ? 'Creating the room...' : 'Create room'}
-        </Button>
+        </PillButton>
       </Stack>
     </Box>
   );

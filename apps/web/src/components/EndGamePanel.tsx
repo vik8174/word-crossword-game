@@ -8,6 +8,7 @@ import Stack from '@mui/material/Stack';
 import { useState } from 'react';
 
 import { Message } from './Message';
+import { PillButton } from './PillButton';
 
 /** The question the confirmation asks, and the accessible name of the dialog. */
 const CONFIRM_TITLE = 'End the game?';
@@ -83,16 +84,16 @@ export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProp
         </Message>
       )}
 
-      <Button
-        variant="outlined"
-        color="error"
+      <PillButton
+        kind="quiet"
+        danger
         onClick={() => {
           setIsConfirming(true);
         }}
-        disabled={isEnding}
+        loading={isEnding}
       >
         {isEnding ? 'Ending the game...' : 'End the game'}
-      </Button>
+      </PillButton>
 
       <Dialog open={isConfirming} onClose={stopConfirming} aria-labelledby="end-game-title">
         <DialogTitle id="end-game-title">{CONFIRM_TITLE}</DialogTitle>

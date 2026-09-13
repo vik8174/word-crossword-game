@@ -1,8 +1,8 @@
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { wordAssignmentRefusal } from 'shared';
 
 import { Message } from './Message';
+import { PillButton } from './PillButton';
 
 interface StartGamePanelProps {
   /** How many players are in the room right now. */
@@ -56,14 +56,9 @@ export const StartGamePanel = ({
         </Message>
       )}
 
-      <Button
-        variant="contained"
-        size="large"
-        onClick={onStart}
-        disabled={refusal !== null || isStarting}
-      >
+      <PillButton onClick={onStart} loading={isStarting} disabled={refusal !== null}>
         {isStarting ? 'Starting...' : 'Start the game'}
-      </Button>
+      </PillButton>
     </Stack>
   );
 };

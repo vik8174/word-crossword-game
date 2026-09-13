@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { ON_SCENE_SX, fullHeightBandSx } from './scene-surface';
-import { BAND, BAND_EDGE, CONTROL } from './scene-palette';
-
-/** The one button rule, read out as a plain object rather than rendered. */
-const BUTTON_SX = (ON_SCENE_SX['& .MuiButton-contained'] ?? {}) as Record<string, unknown>;
-
-/** Its `&.Mui-disabled` override, the same way. */
-const DISABLED_SX = (BUTTON_SX['&.Mui-disabled'] ?? {}) as Record<string, unknown>;
+import { fullHeightBandSx } from './scene-surface';
+import { BAND, BAND_EDGE } from './scene-palette';
 
 /**
  * What this file is for: a band is told from a panel by two things, and both of
@@ -103,55 +97,9 @@ describe('a band drawn out to the top and bottom of its frame', () => {
   });
 });
 
-describe('the one control, in every one of its states', () => {
-  it('carries the gold edge, the sun dot and the lift at rest', () => {
-    expect(BUTTON_SX.backgroundColor).toBe(CONTROL.fill);
-    expect(BUTTON_SX.border).toBe(`1.5px solid ${CONTROL.edge}`);
-    expect(BUTTON_SX.boxShadow).toBe(CONTROL.lift);
-
-    const dot = (BUTTON_SX['&::before'] ?? {}) as Record<string, unknown>;
-
-    expect(dot.backgroundColor).toBe(CONTROL.mark);
-    expect(dot.content).toBe('""');
-  });
-
-  it('keeps the edge and the lift once it cannot be pressed, and does not read its own edge', () => {
-    // `disableElevation` (`theme.ts`) gives MUI's own `.Mui-disabled` rule a
-    // `boxShadow: 'none'` of its own, still present in the sheet. The override
-    // below outranks it by one extra class in its compiled selector — the same
-    // reason `&&&`/`GATE_INK` wins in `HomePage.tsx` (issue #126) — but only
-    // once `boxShadow` is actually named here, which it was not before this
-    // ticket, and the lift silently vanished from every waiting control.
-    expect(DISABLED_SX.backgroundColor).toBe(CONTROL.restingFill);
-    expect(DISABLED_SX.color).toBe(CONTROL.restingInk);
-    expect(DISABLED_SX.boxShadow).toBe(CONTROL.lift);
-    // The edge is not restated here at all: it is the same gold in every
-    // state, so nothing in this override may touch `border` or `borderColor`.
-    expect(DISABLED_SX.border).toBeUndefined();
-    expect(DISABLED_SX.borderColor).toBeUndefined();
-  });
-
-  it('never lights the label off the fill under a finger, and never off its edge', () => {
-    const hover = (BUTTON_SX['&:hover'] ?? {}) as Record<string, unknown>;
-
-    expect(hover.backgroundColor).toBe(CONTROL.litFill);
-    expect(CONTROL.litFill).not.toBe(CONTROL.edge);
-  });
-
-  it('keeps the lift on a press and on a keyboard focus, not only at rest', () => {
-    // The same `disableElevation` gap as `.Mui-disabled` above, and it would
-    // have been easy to fix one and miss the rest: MUI's own styles zero
-    // `boxShadow` on `:hover`, `:active` and `.Mui-focusVisible` alike, and
-    // hover is the one state this ticket's own contrast figure is measured
-    // on — a shadow that vanished the moment a reader's pointer was actually
-    // over the label would have failed this ticket's own acceptance
-    // criterion silently.
-    const hover = (BUTTON_SX['&:hover'] ?? {}) as Record<string, unknown>;
-    const active = (BUTTON_SX['&:active'] ?? {}) as Record<string, unknown>;
-    const focusVisible = (BUTTON_SX['&.Mui-focusVisible'] ?? {}) as Record<string, unknown>;
-
-    expect(hover.boxShadow).toBe(CONTROL.lift);
-    expect(active.boxShadow).toBe(CONTROL.lift);
-    expect(focusVisible.boxShadow).toBe(CONTROL.lift);
-  });
-});
+// `ON_SCENE_SX` used to carry a fourth describe block here, pinning
+// `'& .MuiButton-contained'` and its states. Issue #184 removed that rule
+// once nothing standing on the picture rendered MUI's `Button` any more —
+// every button on a scene is `components/PillButton.tsx` now, which reads
+// none of `ON_SCENE_SX`. Its own look is pinned in `button-styles.test.ts`
+// instead, next to the styles it tests.

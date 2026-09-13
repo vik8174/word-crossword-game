@@ -1,9 +1,9 @@
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { useLayoutEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
+import { PillButton } from '../components/PillButton';
 import { useGardenControls } from '../garden/garden-controls';
 import { GATE_BAND_WIDTH, ON_SCENE_SX, fullHeightBandSx } from '../garden/scene-surface';
 import { gapAt } from '../scale';
@@ -82,9 +82,9 @@ export const NotFoundPage = () => {
           The link may be incomplete or mistyped. If you were invited to a game, ask for the link
           again — it looks like <code>/room/…</code>.
         </Typography>
-        <Button component={RouterLink} to="/" variant="contained" sx={{ mt: 6 }}>
+        <PillButton component={RouterLink} to="/" sx={{ mt: 6 }}>
           Go to the start
-        </Button>
+        </PillButton>
       </Box>
     </Box>
   );

@@ -5,7 +5,6 @@ import {
   BAND,
   BAND_EDGE,
   BAND_EDGE_WIDTH,
-  CONTROL,
   SCENE,
   SCENE_EDGE,
   SCENE_INK_DIM,
@@ -225,11 +224,22 @@ export const stepTitleSx = (theme: Theme, outdent: string): CSSObject => ({
  * off the paper, taken off the forest instead.
  *
  * Every rule here is one of two things — text the theme would have drawn in ink
- * on a surface that is no longer paper, or a control whose one action is the
- * temple's own red. Anything with a sheet of its own is left alone, and that is
+ * on a surface that is no longer paper, or a form control the theme would have
+ * drawn for paper. Anything with a sheet of its own is left alone, and that is
  * why the first rule says `inherit` rather than a colour: a heading inside an
  * alert inherits the alert, which is still a pale sheet with a warning on it
  * wherever that sheet happens to be standing.
+ *
+ * There used to be a fourth kind of rule here: `& .MuiButton-contained`,
+ * `-outlined` and `-text`, restyling MUI's own `Button` for the forest. Issue
+ * #184 removed them once nothing under this rule rendered one any more —
+ * every button standing on the picture is `components/Button.tsx` now, which
+ * carries its own look and reads none of `ON_SCENE_SX`. `garden/RewardCloth.tsx`
+ * and the two dialog buttons in `components/EndGamePanel.tsx` still render
+ * MUI's `Button` (issue #184 leaves them out on purpose), but neither stands
+ * inside a box this rule is spread onto — the cloth is a `position: fixed`
+ * layer of its own and the dialog is a portal — so nothing was left relying on
+ * the removed rules.
  */
 export const ON_SCENE_SX: CSSObject = {
   color: SCENE.cream,
@@ -275,60 +285,4 @@ export const ON_SCENE_SX: CSSObject = {
   '&& .MuiInputLabel-root.Mui-disabled': { color: SCENE_LINE },
   '&& .MuiFormHelperText-root': { color: SCENE_INK_DIM },
   '&& .MuiFormHelperText-root.Mui-error': { color: SCENE.cream },
-
-  // The one action, in the one colour that carries an action anywhere in this
-  // place. Opaque now rather than translucent (issue #149): the picture no
-  // longer shows through the fill, so the label reads the same figure on the
-  // gate, the doors and the hall. The edge and the sun dot stand in every
-  // state alike and none of the overrides below touches them; the lift does
-  // too, but only because each of them restates it (see below).
-  '& .MuiButton-contained': {
-    backgroundColor: CONTROL.fill,
-    color: CONTROL.ink,
-    border: `1.5px solid ${CONTROL.edge}`,
-    boxShadow: CONTROL.lift,
-    // The sun dot before the label. A pseudo-element rather than markup added
-    // at every call site, because the mark belongs to the control and not to
-    // whichever page happens to render one — the same reason the fill and the
-    // edge are declared here rather than passed as props.
-    '&::before': {
-      content: '""',
-      display: 'inline-block',
-      width: '6px',
-      height: '6px',
-      marginRight: '8px',
-      verticalAlign: 'middle',
-      borderRadius: '50%',
-      backgroundColor: CONTROL.mark,
-      boxShadow: '0 0 0 3px rgba(255, 246, 230, 0.28)',
-    },
-    // `boxShadow` is restated in every one of the four states below rather
-    // than left to inherit from the rule above. `disableElevation`
-    // (`theme.ts`) gives MUI's own button styles a `boxShadow: 'none'` on
-    // `:hover`, `:active`, `.Mui-focusVisible` and `.Mui-disabled` alike —
-    // still present in the sheet, not removed by this fix — and since none of
-    // the overrides below used to mention `boxShadow` at all, MUI's was the
-    // only rule saying anything about it: the lift silently disappeared on a
-    // press, on a tab-to-focus and while waiting, and on hover, the one state
-    // this ticket's own contrast figure is measured on. Each block below now
-    // wins the same way `&&&`/`GATE_INK` does in `HomePage.tsx` (issue #126):
-    // this rule sits inside `& .MuiButton-contained`, so its compiled selector
-    // carries one more class than MUI's own generated rule for the same
-    // pseudo-class or state, and the extra class is what decides it — not the
-    // absence of a competing declaration.
-    '&:hover': { backgroundColor: CONTROL.litFill, boxShadow: CONTROL.lift },
-    '&:active': { boxShadow: CONTROL.lift },
-    '&.Mui-focusVisible': { boxShadow: CONTROL.lift },
-    '&.Mui-disabled': {
-      backgroundColor: CONTROL.restingFill,
-      color: CONTROL.restingInk,
-      boxShadow: CONTROL.lift,
-    },
-  },
-  '& .MuiButton-outlined': {
-    color: SCENE.cream,
-    borderColor: SCENE_EDGE,
-    '&:hover': { borderColor: SCENE.cream, backgroundColor: 'rgba(243, 236, 217, 0.06)' },
-  },
-  '& .MuiButton-text': { color: SCENE.cream },
 };
