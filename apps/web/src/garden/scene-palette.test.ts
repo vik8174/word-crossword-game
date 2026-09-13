@@ -158,6 +158,25 @@ const SURFACES = [
   { name: 'the near canopy', paint: SCENE.night },
 ] as const;
 
+/**
+ * The flat paint behind the worst dim-ink window this issue found on the
+ * running page — not one of {@link SURFACES}, which are synthetic worst
+ * cases nobody's band actually stands on, but a real screenshot.
+ *
+ * Measured on `playing` (the hall), 834 x 1112, the RoomShell zone column
+ * that holds the clue index: off real screenshots at the veil's thinnest
+ * stop, text and the petal canvas hidden with `visibility: hidden`, no petal
+ * behind the band, across five points of the 26 s Ken Burns push (0.1, 6, 13,
+ * 20, 26 s) — the worst of every zone column on `lobby` and `playing`, at
+ * 375, 834 and 1440 (`handoffs/verdicts/190/`, round 2). The worst 180 x 22
+ * window, at rest after the push, read `rgb(80.28, 67.71, 46.21)` once
+ * banded; this is that reading inverted back through {@link veiled} and
+ * {@link banded} to the flat paint that reproduces it — the inversion is
+ * clean here (it lands inside 0-255), which the strip under the board's own
+ * readings below do not.
+ */
+const PAGE_WORST_SURFACE = '#B48457';
+
 describe('what the garden writes on', () => {
   it('reads every sentence off the band, whatever the band is standing on', () => {
     // The band is what a sentence stands on everywhere in this app, and this is
@@ -166,16 +185,78 @@ describe('what the garden writes on', () => {
     // the veil's thinnest stop, which is the worst case: a band can stand
     // anywhere down the window, and the middle of it is where the veil now
     // dims least (issue #190).
+    //
+    // Dim ink is checked once, below, against {@link PAGE_WORST_SURFACE}
+    // rather than inside this loop: {@link SURFACES}' own brightest entry
+    // reads worse than any band a player's screen actually paints (the next
+    // guard records that), so holding dim ink to it here would be testing a
+    // surface nobody stands on rather than the one this app draws.
     for (const surface of SURFACES) {
       const behind = banded(veiled(surface.paint));
 
       expect(contrast(asRgb(SCENE.cream), behind), `cream on ${surface.name}`).toBeGreaterThan(
         SMALL_TEXT,
       );
-      expect(contrast(dimOver(behind), behind), `dim ink on ${surface.name}`).toBeGreaterThan(
-        SMALL_TEXT,
-      );
     }
+
+    const worstPageWindow = banded(veiled(PAGE_WORST_SURFACE));
+
+    expect(
+      contrast(dimOver(worstPageWindow), worstPageWindow),
+      'dim ink at the worst zone-column window measured on the page',
+    ).toBeGreaterThan(SMALL_TEXT);
+  });
+
+  it('names the reason dim ink is not used on the bands at the gate', () => {
+    // SHOJI_PAPER[0], SURFACES' own brightest entry, is a worst case nobody's
+    // band stands on (the guard above measures the page instead) — but it is
+    // still the reason the gate's bands read full cream rather than .78: a
+    // future band that does stand this close to raw lit paper would fail
+    // here first, in a test, rather than in a player's eyes.
+    const behind = banded(veiled(SHOJI_PAPER[0]));
+
+    expect(contrast(dimOver(behind), behind), 'dim ink on the lit paper of the doors').toBeLessThan(
+      SMALL_TEXT,
+    );
+  });
+
+  it('records the strip under the board at 1440 as known below the small-text bar', () => {
+    // The strip under the board (`SENTENCE_BAND_SX`, `scene-surface.ts`) is
+    // not a zone column and is not what the guards above stand for: it only
+    // carries text once a game is running, and at 1440 it is 915px wide
+    // between the two zone columns, wide enough to reach the brightest,
+    // most central part of the hall's lit floor. Off real screenshots, the
+    // same method as PAGE_WORST_SURFACE above, both of its lines read below
+    // 4.5 there:
+    //
+    // - "The arrow keys move around the whole grid…" — 2.59-3.23:1 across the
+    //   push on this branch, and already 3.10-3.84:1 on `main` before this
+    //   issue's veil. No ink this app has clears it there: full cream only
+    //   reaches 3.25-4.22:1.
+    // - "Two of your words cross…" — 4.72-5.23:1 on `main`, falling to
+    //   4.23-4.54:1 on this branch from 13s into the push on. Full cream
+    //   holds it at 5.80-6.62:1.
+    //
+    // Recorded rather than fixed: the look of the strip under the board is
+    // Viktor's to choose (full cream, a darker surface under it, or left as
+    // it is) and goes into the template and the game-room issue (#139, item
+    // 14), not into #190. Both constants below are the worst reading's
+    // background already banded and veiled — not a flat paint run through
+    // {@link veiled}/{@link banded} like {@link PAGE_WORST_SURFACE}, because
+    // that inversion does not hold here: the real photograph behind this
+    // strip, at its brightest, reads lighter than any paint a .55 band could
+    // produce from (the arithmetic asks for a red channel above 255).
+    const arrowKeysWorst: Rgb = [176.14, 117.55, 56.81];
+    const twoWordsWorst: Rgb = [134.8, 75.61, 32.85];
+
+    expect(
+      contrast(dimOver(arrowKeysWorst), arrowKeysWorst),
+      'dim ink on the strip under the board, "The arrow keys" line, at 1440',
+    ).toBeLessThan(SMALL_TEXT);
+    expect(
+      contrast(dimOver(twoWordsWorst), twoWordsWorst),
+      'dim ink on the strip under the board, "Two of your words cross" line, at 1440',
+    ).toBeLessThan(SMALL_TEXT);
   });
 
   it('reads the name of a step off the picture itself, which has no band under it', () => {

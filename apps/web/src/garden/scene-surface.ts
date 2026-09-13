@@ -297,8 +297,18 @@ export const ON_SCENE_SX: CSSObject = {
  * A second constant rather than a new value inside `SCENE_INK_DIM` or the
  * three rules above (issue #190): `ON_SCENE_SX` is shared by every screen this
  * app stands on a picture, and the body of this ticket dims the veil under the
- * doors and the hall exactly as it does under the gate — a band there still
- * measures under 4.5 at `.78` in places, so those screens keep the dimmer ink.
+ * doors and the hall exactly as it does under the gate — a band there measures
+ * well clear of 4.5 at `.78` everywhere a player actually stands on one, off
+ * real screenshots of every zone column on `lobby` and `playing`, at 375, 834
+ * and 1440 (worst 5.66:1, the hall's own zone column at 834; round 2 of issue
+ * #190, `handoffs/verdicts/190/`), so those screens keep the dimmer ink. The
+ * only dim-cream figures under 4.5 anywhere in this file are `scene-palette.
+ * test.ts`'s own synthetic worst case — the lit paper of the doors laid flat
+ * under the veil with no real band around it, held below 4.5 on purpose as
+ * the reason dim ink stays out of the gate's own bands — and the strip under
+ * the board on `playing` at 1440 (`SENTENCE_BAND_SX`), a real reading off the
+ * page that this issue records rather than fixes: its look is Viktor's, and
+ * goes with the game-room issue (#139, item 14), not with this constant.
  * Only the gate's own band — `/create` and the room's `join` screen, both
  * drawn under the lighter middle of the new veil — reads full cream instead
  * (`design/templates/state-tree.html`'s help text, issue #183). A screen
