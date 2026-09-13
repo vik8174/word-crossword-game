@@ -15,8 +15,9 @@ import { PlayerList } from './PlayerList';
 import { RoomShell } from './RoomShell';
 import { StartGamePanel } from './StartGamePanel';
 
+/** The heading is `StartGamePanel`'s own — "Could not start the game", fixed. */
 const START_FAILED_MESSAGE =
-  'Could not start the game. Check your connection and try again — nothing has been dealt out yet.';
+  'Check your connection and try again — nothing has been dealt out yet.';
 
 interface RoomLobbyProps {
   /** Id of the room, for the deal this screen writes. */

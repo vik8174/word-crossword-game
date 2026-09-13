@@ -1,10 +1,8 @@
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import FormHelperText from '@mui/material/FormHelperText';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
 import {
   MAX_WORD_LENGTH,
   MAX_WORDS,
@@ -14,6 +12,23 @@ import {
 } from 'shared';
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
+import { Message } from './Message';
+
+/**
+ * A failure that has nothing to do with the word list itself: no crossword
+ * could be built from it, or the room it would have started could not be
+ * written.
+ *
+ * The two are not the same kind — the first is the owner's list to fix
+ * (warning), the second is the room's own write failing (error) — so the kind
+ * travels with the message rather than being assumed from where it is shown
+ * (issue #185).
+ */
+export interface WordListFormNotice {
+  readonly kind: 'warning' | 'error';
+  readonly heading: string;
+  readonly text: string;
+}
 
 interface WordListFormProps {
   readonly nickname: string;
@@ -23,7 +38,7 @@ interface WordListFormProps {
   /** Validation of `rawWords`, recomputed by the parent on every keystroke. */
   readonly validation: WordListValidation;
   /** Failure that has nothing to do with the words themselves, e.g. a rejected write. */
-  readonly errorMessage?: string;
+  readonly notice?: WordListFormNotice;
   /** `true` while the room is being written — the form is frozen but stays readable. */
   readonly isCreating: boolean;
   readonly onSubmit: () => void;
@@ -37,7 +52,7 @@ interface WordListFormProps {
  * submit button unlocks only for a list the game can actually be built from.
  *
  * @param props.validation - Result of `validateWordList` for the current text
- * @param props.errorMessage - Message about a failure outside the word list
+ * @param props.notice - Message about a failure outside the word list
  * @param props.onSubmit - Called only when nickname and word list are both valid
  */
 export const WordListForm = ({
@@ -46,7 +61,7 @@ export const WordListForm = ({
   rawWords,
   onWordsChange,
   validation,
-  errorMessage,
+  notice,
   isCreating,
   onSubmit,
 }: WordListFormProps) => {
@@ -93,22 +108,20 @@ export const WordListForm = ({
         </Box>
 
         {showsErrors && (
-          <Alert severity="warning">
-            <Stack component="ul" sx={{ m: 0, pl: 4 }} spacing={1}>
-              {validation.errors.map((error) => (
-                <Typography
-                  component="li"
-                  variant="body2"
-                  key={`${error.code}:${error.word ?? ''}`}
-                >
-                  {error.message}
-                </Typography>
-              ))}
-            </Stack>
-          </Alert>
+          <Message
+            kind="warning"
+            heading="The list needs a change"
+            items={validation.errors.map((error) => error.message)}
+          >
+            Fix these before the game can be built:
+          </Message>
         )}
 
-        {errorMessage !== undefined && <Alert severity="error">{errorMessage}</Alert>}
+        {notice !== undefined && (
+          <Message kind={notice.kind} heading={notice.heading}>
+            {notice.text}
+          </Message>
+        )}
 
         <Button type="submit" variant="contained" size="large" disabled={!canSubmit || isCreating}>
           {isCreating ? 'Creating the room...' : 'Create room'}

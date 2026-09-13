@@ -1,34 +1,54 @@
-import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { Link as RouterLink } from 'react-router-dom';
 
 import type { RoomUnavailableReason } from '../rooms/room-screen';
+import { Message } from './Message';
 
-const MESSAGES: Readonly<Record<RoomUnavailableReason, string>> = {
-  missing:
-    'There is no game at this link. It may have been mistyped, or the room may have been cleaned up — rooms are kept for 24 hours.',
-  expired:
-    'This room has expired. Rooms are kept for 24 hours after they are created, and this one is past that, so nobody can join it any more. Ask whoever invited you to start a new game.',
-  started:
-    'This game has already begun. The words were dealt out among the players who were in the room at the time, so it takes no new players — ask whoever invited you for a link to the next game.',
+interface UnavailableNotice {
+  readonly heading: string;
+  readonly text: string;
+}
+
+const MESSAGES: Readonly<Record<RoomUnavailableReason, UnavailableNotice>> = {
+  missing: {
+    heading: 'There is no game at this link',
+    text: 'It may have been mistyped, or the room may have been cleaned up — rooms are kept for 24 hours.',
+  },
+  expired: {
+    heading: 'This room has expired',
+    text: 'Rooms are kept for 24 hours after they are created, and this one is past that, so nobody can join it any more. Ask whoever invited you to start a new game.',
+  },
+  started: {
+    heading: 'This game has already begun',
+    text: 'The words were dealt out among the players who were in the room at the time, so it takes no new players — ask whoever invited you for a link to the next game.',
+  },
   // Says the room is closed rather than that its crossword was finished: the
   // status is a client's word and the security rules cannot check it against
   // the board, so this is the most that is certainly true (see
   // docs/decisions/0012-ending-a-game-from-the-received-state.md).
-  finished:
-    'This game is over — the room has been closed. Rooms are not replayed, so there is nothing left to join here; start a new game and send the others your own link.',
+  finished: {
+    heading: 'This game is over',
+    text: 'The room has been closed. Rooms are not replayed, so there is nothing left to join here; start a new game and send the others your own link.',
+  },
   // Says what the game is rather than what this room ran out of: a third
   // player is not late and not unlucky, they are one player more than the game
   // has ever taken, and the way on is a room of their own rather than a wait.
-  full: 'This game is played by exactly two people, and this room has both of them. Start a game of your own and send its link to whoever you want to play with.',
+  full: {
+    heading: 'The room is full',
+    text: 'This game is played by exactly two people, and this room has both of them. Start a game of your own and send its link to whoever you want to play with.',
+  },
   // Names no cause, because none is known: a refused write says only that it
   // was refused, and the room reports what it is a moment later through the
   // subscription that never stopped running (see `screenAfterRefusedJoin`).
-  refused:
-    'The room would not take you in. In the moment it took to pick a nickname, somebody else may have taken the last seat or the game may have started. Start a game of your own and send its link to whoever you want to play with.',
-  connection:
-    'Could not reach the game. Check your connection and reload the page — the room is still there.',
+  refused: {
+    heading: 'The room would not take you in',
+    text: 'In the moment it took to pick a nickname, somebody else may have taken the last seat or the game may have started. Start a game of your own and send its link to whoever you want to play with.',
+  },
+  connection: {
+    heading: 'Could not reach the game',
+    text: 'Check your connection and reload the page — the room is still there.',
+  },
 };
 
 interface RoomUnavailableNoticeProps {
@@ -48,9 +68,13 @@ interface RoomUnavailableNoticeProps {
  * <RoomUnavailableNotice reason="expired" />
  */
 export const RoomUnavailableNotice = ({ reason }: RoomUnavailableNoticeProps) => {
+  const notice = MESSAGES[reason];
+
   return (
     <Stack spacing={5} sx={{ alignItems: 'flex-start' }}>
-      <Alert severity={reason === 'connection' ? 'error' : 'info'}>{MESSAGES[reason]}</Alert>
+      <Message kind={reason === 'connection' ? 'error' : 'info'} heading={notice.heading}>
+        {notice.text}
+      </Message>
 
       <Button component={RouterLink} to="/" variant="contained">
         Start a new game

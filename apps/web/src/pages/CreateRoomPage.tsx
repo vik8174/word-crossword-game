@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword, validateWordList } from 'shared';
 
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
-import { WordListForm } from '../components/WordListForm';
+import { WordListForm, type WordListFormNotice } from '../components/WordListForm';
 import { useGardenControls } from '../garden/garden-controls';
 import {
   GATE_BAND_WIDTH,
@@ -36,13 +36,21 @@ const COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${PAGE_PADDING} - ${PAGE_PADDING
 /**
  * Shown when no two words share a letter. Different from words being dropped:
  * there is no grid at all, so there is no game to create — the owner has to
- * change the list (see `docs/decisions/0008`, last consequence).
+ * change the list (see `docs/decisions/0008`, last consequence). A warning
+ * rather than an error: this is the list's own problem, the same kind as the
+ * list's other validation failures, not a write that was refused.
  */
-const NO_GRID_MESSAGE =
-  'None of these words cross each other, so no crossword can be built. Add or change a few words — words that share letters can cross.';
+const NO_GRID_NOTICE: WordListFormNotice = {
+  kind: 'warning',
+  heading: 'No crossword can be built',
+  text: 'None of these words cross each other. Add or change a few words — words that share letters can cross.',
+};
 
-const CREATION_FAILED_MESSAGE =
-  'The room could not be created. Check your connection and try again.';
+const CREATION_FAILED_NOTICE: WordListFormNotice = {
+  kind: 'error',
+  heading: 'The room could not be created',
+  text: 'Check your connection and try again.',
+};
 
 /**
  * Where the owner is in the creation flow.
@@ -52,7 +60,7 @@ const CREATION_FAILED_MESSAGE =
  * a freshly generated, different one (layouts are not deterministic).
  */
 type CreationPhase =
-  | { readonly phase: 'editing'; readonly errorMessage?: string }
+  | { readonly phase: 'editing'; readonly notice?: WordListFormNotice }
   | { readonly phase: 'confirming'; readonly layout: CrosswordLayout }
   | { readonly phase: 'creating' };
 
@@ -125,7 +133,7 @@ export const CreateRoomPage = () => {
       // to a player, so the owner gets a plain one and the details go to the
       // console for whoever is debugging.
       console.error('Creating the room failed', error);
-      setCreation({ phase: 'editing', errorMessage: CREATION_FAILED_MESSAGE });
+      setCreation({ phase: 'editing', notice: CREATION_FAILED_NOTICE });
     }
   };
 
@@ -133,7 +141,7 @@ export const CreateRoomPage = () => {
     const layout = generateCrossword(validation.words);
 
     if (layout.placedWords.length === 0) {
-      setCreation({ phase: 'editing', errorMessage: NO_GRID_MESSAGE });
+      setCreation({ phase: 'editing', notice: NO_GRID_NOTICE });
       return;
     }
 
@@ -169,7 +177,7 @@ export const CreateRoomPage = () => {
         rawWords={rawWords}
         onWordsChange={handleWordsChange}
         validation={validation}
-        errorMessage={creation.phase === 'editing' ? creation.errorMessage : undefined}
+        notice={creation.phase === 'editing' ? creation.notice : undefined}
         isCreating={creation.phase === 'creating'}
         onSubmit={handleSubmit}
       />

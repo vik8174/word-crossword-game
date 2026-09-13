@@ -222,6 +222,12 @@ describe('CreateRoomPage', () => {
       expect(await screen.findByText(/could not be created/i)).toBeInTheDocument();
       expect(screen.queryByText(/you are in room/i)).not.toBeInTheDocument();
       expect(screen.getByLabelText(/words/i)).toHaveValue(TEN_WORDS);
+      // A write that failed is an error, not a warning — the template's own
+      // rule colour for it (`Message.tsx`'s `ACCENT.error`), told apart from
+      // the word list's own problems below (issue #185).
+      expect(await screen.findByRole('alert')).toHaveStyle({
+        borderLeftColor: 'rgb(218, 70, 32)',
+      });
     });
   });
 
@@ -340,6 +346,9 @@ describe('CreateRoomPage', () => {
 
       expect(screen.getByText(/none of these words cross each other/i)).toBeInTheDocument();
       expect(addDoc).not.toHaveBeenCalled();
+      // No crossword to build is the list's own problem — a warning, not the
+      // error a failed write gets (`Message.tsx`'s `ACCENT.warning`, issue #185).
+      expect(screen.getByRole('alert')).toHaveStyle({ borderLeftColor: 'rgb(201, 162, 39)' });
     });
 
     it('drops the complaint as soon as the owner edits the list', async () => {

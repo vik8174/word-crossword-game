@@ -1,4 +1,3 @@
-import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -7,6 +6,8 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Stack from '@mui/material/Stack';
 import { useState } from 'react';
+
+import { Message } from './Message';
 
 /** The question the confirmation asks, and the accessible name of the dialog. */
 const CONFIRM_TITLE = 'End the game?';
@@ -76,7 +77,11 @@ export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProp
 
   return (
     <Stack spacing={4} sx={{ alignItems: 'flex-start' }}>
-      {errorMessage !== undefined && <Alert severity="error">{errorMessage}</Alert>}
+      {errorMessage !== undefined && (
+        <Message kind="error" heading="The game could not be ended">
+          {errorMessage}
+        </Message>
+      )}
 
       <Button
         variant="outlined"

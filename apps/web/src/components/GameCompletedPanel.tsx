@@ -1,10 +1,9 @@
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
 import Chip from '@mui/material/Chip';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 import { finishedGameSummary } from '../rooms/game-summary';
+import { Message } from './Message';
 
 interface GameCompletedPanelProps {
   /** Every word of the crossword, now that none of them is a secret. */
@@ -30,10 +29,14 @@ interface GameCompletedPanelProps {
 export const GameCompletedPanel = ({ words, playerCount }: GameCompletedPanelProps) => {
   return (
     <section aria-labelledby="game-completed-heading">
-      <Alert severity="success" role="status">
-        <AlertTitle id="game-completed-heading">Every word is in</AlertTitle>
+      <Message
+        kind="success"
+        heading="Every word is in"
+        headingId="game-completed-heading"
+        role="status"
+      >
         {finishedGameSummary(words.length, playerCount)}
-      </Alert>
+      </Message>
 
       <Typography variant="body2" color="text.secondary" sx={{ mt: 4, mb: 2 }}>
         The words you were playing for:

@@ -1,4 +1,3 @@
-import Alert from '@mui/material/Alert';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { type ReactNode, useState } from 'react';
@@ -12,6 +11,7 @@ import { useRoomPresence } from '../rooms/use-room-presence';
 import { type WordLocation, wordViewFor } from '../rooms/word-visibility';
 import { logGameEvent } from '../telemetry/analytics';
 import { EndGamePanel } from './EndGamePanel';
+import { Message } from './Message';
 import { OwnPresenceNotice } from './OwnPresenceNotice';
 import { PlayerList } from './PlayerList';
 import { RoomCrossword } from './RoomCrossword';
@@ -28,18 +28,19 @@ const PLAYING_MESSAGE = 'The game is on.';
  * Every word would read as theirs to explain, so they are shown none of them.
  */
 const LEFT_OUT_MESSAGE =
-  'This game was dealt out just as you arrived, so it is running without you — none of its words are yours to explain or guess, and none of them are shown here. Ask the others for a link to the next game.';
+  'It was dealt out just as you arrived, so none of its words are yours to explain or guess, and none of them are shown here. Ask the others for a link to the next game.';
 
 // Firestore keeps retrying a write it merely could not send, so a rejection
 // here means the database refused it outright — most likely an expired room.
+// The heading is `RoomCrossword`'s own — "Your answer was not saved", fixed.
 const GUESS_FAILED_MESSAGE =
-  'Your answer was right, but the others could not be told about it. The room may have expired — reload the page to see where the game stands.';
+  'It was right, but the others could not be told about it. The room may have expired — reload the page to see where the game stands.';
 
 // The same kind of rejection, with one more cause worth naming: the rules
 // refuse to move a room that has already ended, so the other player finishing
 // the crossword in the same second arrives here too.
 const END_FAILED_MESSAGE =
-  'The game could not be ended. The room may have expired, or it may have ended already — reload the page to see where it stands.';
+  'The room may have expired, or it may have ended already — reload the page to see where it stands.';
 
 interface RoomGameProps {
   /** Id of the room, for the answers and the ending this screen writes. */
@@ -158,7 +159,11 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
         <WordsToExplainPanel words={wordView.toExplain} onSelectWord={setWordToReach} />
       )}
 
-      {wordView.kind === 'left-out' && <Alert severity="info">{LEFT_OUT_MESSAGE}</Alert>}
+      {wordView.kind === 'left-out' && (
+        <Message kind="info" heading="This game is running without you">
+          {LEFT_OUT_MESSAGE}
+        </Message>
+      )}
     </>
   );
 

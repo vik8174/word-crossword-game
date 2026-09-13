@@ -1,7 +1,8 @@
-import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { wordAssignmentRefusal } from 'shared';
+
+import { Message } from './Message';
 
 interface StartGamePanelProps {
   /** How many players are in the room right now. */
@@ -49,7 +50,11 @@ export const StartGamePanel = ({
 
   return (
     <Stack spacing={4}>
-      {errorMessage !== undefined && <Alert severity="error">{errorMessage}</Alert>}
+      {errorMessage !== undefined && (
+        <Message kind="error" heading="Could not start the game">
+          {errorMessage}
+        </Message>
+      )}
 
       <Button
         variant="contained"
