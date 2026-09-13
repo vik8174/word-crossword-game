@@ -56,7 +56,7 @@ Add the ADR in the same pull request that makes the architectural change — not
 
 Every user-facing pull request adds a line to the `[Unreleased]` section of [`CHANGELOG.md`](CHANGELOG.md), following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Working process: the Adversarial Review Loop
+## Working process: the Adversarial Review Loop (ARL)
 
 Work moves through four session roles, and one claim passes between them: _the
 acceptance criteria are met_. The loop exists to try to refute that claim. See

@@ -26,10 +26,10 @@ Why it is built this way — see [`docs/decisions/`](docs/decisions/), in partic
 
 The domain has its own vocabulary, and one word in it means two things in ordinary English: **Home** is the landing page, **Lobby** is the screen of a room before the words are dealt. Every term is defined once in [`context.md`](context.md) — read it before naming anything new.
 
-## How work happens here: the Adversarial Review Loop
+## How work happens here: the Adversarial Review Loop (ARL)
 
 The project runs on four session roles, and the thing they form has a name: the
-**Adversarial Review Loop**. One claim is passed between them — _the acceptance
+**Adversarial Review Loop**, or **ARL** for short. One claim is passed between them — _the acceptance
 criteria are met_ — and the review of it is adversarial: its job is to try to
 refute that claim, not to grade the work, and to return "could not refute it"
 when that is the truth. Adversarial rather than approving, because a reviewer who
