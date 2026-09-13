@@ -1,8 +1,9 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { GardenControlsContext } from '../garden/garden-controls';
 import { theme } from '../theme';
 import { NotFoundPage } from './NotFoundPage';
 
@@ -20,6 +21,29 @@ describe('NotFoundPage', () => {
     renderNotFoundPage();
 
     expect(screen.getByRole('link', { name: /go to the start/i })).toHaveAttribute('href', '/');
+  });
+
+  it('claims the gate as its own picture on mount, rather than trusting a default', () => {
+    // The scene `Garden` starts on is `null`, not a guess (issue #152's second
+    // finding): a screen that never says which picture it wants is left with
+    // none, which is a silent failure a green CI run would not otherwise
+    // catch — nothing here renders visibly differently either way.
+    // `GardenControlsContext`'s own default (`NO_GARDEN`) makes `showScene` a
+    // no-op, so a render that never wraps this page in a spied context would
+    // pass whether or not the page actually claims anything.
+    const showScene = vi.fn();
+
+    render(
+      <ThemeProvider theme={theme}>
+        <GardenControlsContext value={{ showAir: vi.fn(), showScene }}>
+          <MemoryRouter>
+            <NotFoundPage />
+          </MemoryRouter>
+        </GardenControlsContext>
+      </ThemeProvider>,
+    );
+
+    expect(showScene).toHaveBeenCalledWith('gate');
   });
 
   it('sets its heading in the text family at the bold weight', () => {

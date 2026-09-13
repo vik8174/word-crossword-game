@@ -2,8 +2,8 @@ import type { RoomScreen } from '../rooms/room-screen';
 import type { GardenAir } from './garden-controls';
 
 /**
- * Which of a room's seven screens the petals fall behind, and which one moment
- * the garden comes back for.
+ * Which of a room's seven screens the petals fall behind, and the one moment
+ * a game that just ended is greeted with the reward cloth.
  *
  * Both answers are here rather than in the screens themselves because they are
  * the same decision read twice, and because a screen is rebuilt on every
@@ -64,7 +64,7 @@ export const airFor = (kind: RoomScreen['kind']): GardenAir => {
  *
  * @param before - The screen that was, or `null` when this is the first of the session
  * @param after - The screen now
- * @returns Whether the garden should come back
+ * @returns Whether the game ended while this session was watching
  *
  * @example
  * isGreeting('playing', 'finished'); // true, once

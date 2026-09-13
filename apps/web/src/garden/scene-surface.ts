@@ -76,12 +76,13 @@ const BAND_PLACES: Record<BandPlace, CSSObject> = {
 /**
  * How wide the gate's own band is allowed to be.
  *
- * The gate has two screens that stand on this band — `/create` and `join` —
- * and both read the same sign, so the width is one constant rather than two
- * copies obliged to move together. `RoomShell.tsx` has its own `BAND_WIDTH`,
- * for a room zone's band; that is a different width for a different surface,
- * and the two must never be confused for one another, which is why this one
- * is named for what it measures rather than reused under that same name.
+ * The gate has three screens that stand on this band — `/create`, `join` and
+ * the catch-all — and all three read the same sign, so the width is one
+ * constant rather than three copies obliged to move together. `RoomShell.tsx`
+ * has its own `BAND_WIDTH`, for a room zone's band; that is a different width
+ * for a different surface, and the two must never be confused for one
+ * another, which is why this one is named for what it measures rather than
+ * reused under that same name.
  *
  * Also the width at which the band stops being narrower than the window, and
  * so the width its hairlines vanish at — one number doing both jobs, which is

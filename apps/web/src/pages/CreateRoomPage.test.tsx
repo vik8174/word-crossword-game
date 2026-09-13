@@ -119,9 +119,9 @@ describe('CreateRoomPage', () => {
     // finding): a screen that never says which picture it wants is left with
     // none, which is a silent failure a green CI run would not otherwise
     // catch — nothing here renders visibly differently either way. `/create`
-    // has to be the one screen of the four `Garden` wraps that claims `gate`
-    // for itself, since neither `/room/:id` (through `useRoomGarden`) nor the
-    // catch-all route ever will.
+    // claims `gate` for itself rather than trusting a shared default, the same
+    // way `HomePage` and the catch-all route do (issue #170) — each says its
+    // own picture because none of them may assume one without saying so.
     const showScene = vi.fn();
 
     render(
