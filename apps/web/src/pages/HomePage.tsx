@@ -6,7 +6,13 @@ import { Link as RouterLink } from 'react-router-dom';
 import { PillButton } from '../components/PillButton';
 import { useGardenControls } from '../garden/garden-controls';
 import { ON_SCENE_SX } from '../garden/scene-surface';
-import { GATE_ACTION_SX, GATE_INK, GATE_NAME_SX, GATE_TAGLINE_SX } from '../scenes/gate-chrome';
+import {
+  GATE_ACTION_SX,
+  GATE_INK,
+  GATE_LOCKUP_SX,
+  GATE_LOCKUP_TEXT_SIZE,
+  GATE_RULE_SX,
+} from '../scenes/gate-chrome';
 import {
   LOGOTYPE_FONT_FAMILY,
   LOGOTYPE_FONT_WEIGHT,
@@ -32,25 +38,27 @@ import { useScreenReached } from '../telemetry/use-screen-reached';
  * exactly the pictureless frame this ticket exists to close, reappearing at
  * the other end of the journey. A layout effect claims the scene, and the
  * render it causes, before that paint happens.
- * The name hangs in the clear sky above the torii and the button stands in
- * its opening, both placed against percentages of the picture measured for
- * legibility against the real pixels of `gate.jpg` rather than computed from
- * a painted world (`scenes/gate-chrome.ts`). Those percentages are read
- * against this component's own root below, `position: fixed; inset: 0`, which
- * is unchanged by where the picture itself is drawn.
+ * The name, a rule and the tagline hang in the clear sky above the torii as
+ * one block, and the button stands on the stairs below it, both placed
+ * against percentages of the picture (issue #191, `scenes/gate-chrome.ts`).
+ * Those percentages are read against this component's own root below,
+ * `position: fixed; inset: 0`, which is unchanged by where the picture
+ * itself is drawn.
  *
  * The name is lettered rather than written, in the logotype — Dela Gothic
  * One, the one weight it has, sumi with a cream offset behind it — sized off
- * a `vw`-driven `clamp()` so the rendered line stays inside `GATE_NAME_BAND`
+ * a `vw`-driven `clamp()` so the rendered line stays inside the block
  * continuously rather than at a handful of sampled widths (issue #148, the
- * same technique the name's own sizing already used for its previous string,
- * before this one). `GATE_NAME_SIZE`, one step above `title` in `scale.ts`,
- * was sized for the previous, unconstrained `max-content` box this text no
- * longer sits in — left there for a later ticket, not read from here. The
- * tagline underneath is set in the interface's own text face instead: it
- * needs six letters — C, P, T, I, V, S — the logotype's subset does not
- * carry, cutting a wider subset being issue #147's call and not this page's
- * to reopen.
+ * same technique the name's own sizing already used for its previous
+ * string, before this one). `GATE_NAME_SIZE`, one step above `title` in
+ * `scale.ts`, was sized for an earlier, unconstrained `max-content` box this
+ * text no longer sits in — left there for a later ticket, not read from
+ * here. The rule between the name and the tagline is decoration
+ * (`GATE_RULE_SX`): `aria-hidden`, and a `div` rather than an `<hr>`, so
+ * nothing is read out between the two. The tagline underneath is set in the
+ * interface's own text face instead: it needs six letters — C, P, T, I, V,
+ * S — the logotype's subset does not carry, cutting a wider subset being
+ * issue #147's call and not this page's to reopen.
  *
  * Joining an existing game does not start here: players arrive straight at
  * their room link (issue #5), so the only action this page offers is creating
@@ -79,28 +87,21 @@ export const HomePage = () => {
 
   return (
     <Box component="main" sx={{ ...ON_SCENE_SX, position: 'fixed', inset: 0 }}>
-      <Box sx={GATE_NAME_SX}>
+      <Box sx={GATE_LOCKUP_SX}>
         <Typography
           component="h1"
           sx={{
+            margin: 0,
             fontFamily: LOGOTYPE_FONT_FAMILY,
             fontWeight: LOGOTYPE_FONT_WEIGHT,
             // A continuous formula off the viewport's width rather than a
-            // handful of steps pinned to MUI's breakpoints — the same
-            // technique the previous string on this line was sized with, and
-            // for the same reason: a value sampled at a few widths passes at
-            // those widths and nowhere it wasn't checked. `3.7vw` is a hair
-            // under the exact ratio the band's own width and this string's
-            // measured one imply (0.53 / (409.4 / 31) ≈ 4.01vw at the
-            // ceiling), so "WORD GARDEN" clears one line inside
-            // `GATE_NAME_BAND` at every width rather than at three sampled
-            // points, clamped to the floor and ceiling of `scale.ts`'s own
-            // ladder (`aside` 13px, `title` 31px).
-            fontSize: 'clamp(13px, 3.7vw, 31px)',
-            // Tight on purpose: the clear band of sky this sits in is a
-            // twentieth of the picture's own height, and a line height with
-            // room in it moves the rendered line outside a box measured down
-            // to a tenth of a percent (`handoffs/scenes/README.md`).
+            // handful of steps pinned to MUI's breakpoints, the same size the
+            // rule below also uses so its own `margin-top` scales with this
+            // line (issue #191, `GATE_LOCKUP_TEXT_SIZE`).
+            fontSize: GATE_LOCKUP_TEXT_SIZE,
+            // Tight on purpose: a line height with room in it moves the
+            // rendered line outside the block measured down to a tenth of a
+            // percent (`handoffs/scenes/README.md`).
             lineHeight: 1,
             textTransform: 'uppercase',
             letterSpacing: LOGOTYPE_TRACKING,
@@ -108,15 +109,7 @@ export const HomePage = () => {
             // a centred line counts it as part of its own width and the
             // letters land half a tracking short of the middle. Taking the
             // whole space off the right corrects it, the same way the button
-            // below does for its own tracking — safe to do here, unlike the
-            // previous string on this line, because it is the flex item's
-            // own box that is centred (`justifyContent: 'center'` in
-            // `GATE_NAME_SX`) and a negative margin on that same box shrinks
-            // it by exactly the width it removes, rather than a margin meant
-            // for a `transform: translate(-50%)` box shifting a second,
-            // unrelated box's centring math (the trap the previous string
-            // hit, `getBoundingClientRect` at 1440, 834 and 375 catching the
-            // rendered name clearing the band's 77% right edge).
+            // below does for its own tracking.
             marginRight: `-${LOGOTYPE_TRACKING}`,
             // `&&&` rather than a plain `color`: `ON_SCENE_SX` on this page's
             // own `<main>` carries `'& .MuiTypography-root': { color:
@@ -157,29 +150,27 @@ export const HomePage = () => {
         >
           WORD GARDEN
         </Typography>
-      </Box>
 
-      <Box sx={GATE_TAGLINE_SX}>
+        <Box aria-hidden sx={GATE_RULE_SX} />
+
         <Typography
           sx={{
+            margin: '0.55em 0 0',
             fontFamily: TEXT_FONT_FAMILY,
             fontWeight: 400,
-            // A tenth the size of the name's own ladder step — the tagline is
-            // read, not lettered, and the band under the name is about half
-            // its height, so the same `vw`-driven `clamp()` technique is used
-            // at a smaller floor and ceiling rather than at a fixed size that
-            // would only fit one width.
-            fontSize: 'clamp(9px, 1.8vw, 13px)',
-            lineHeight: 1,
+            // Fixed rather than clamped, unlike the name above: the template
+            // holds the tagline at one size, 10.5px, at every width (issue
+            // #191).
+            fontSize: '10.5px',
+            lineHeight: 1.3,
             textTransform: 'uppercase',
             letterSpacing: '0.3em',
             // No trailing-tracking margin here, unlike the name above: the
-            // PRD's own reference lockup (the logotype comment artifact on
-            // #145) sets this line's `.tag` with the same `0.3em` tracking
-            // and no `margin-right` correction, only the name's `.name` gets
-            // one. Its own inked centre sits a couple of pixels off the
-            // name's as a result — measured and left rather than corrected,
-            // since the reference the criteria point at renders the same way.
+            // template's own `.tag` sets this line's `0.3em` tracking with no
+            // `margin-right` correction, only the name's `.name` gets one.
+            // Its own inked centre sits a couple of pixels off the name's as
+            // a result — measured and left rather than corrected, since the
+            // template renders the same way.
             '&&&': { color: GATE_INK },
           }}
         >

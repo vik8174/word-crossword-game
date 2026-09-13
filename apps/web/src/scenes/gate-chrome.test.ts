@@ -3,27 +3,46 @@ import { describe, expect, it } from 'vitest';
 import {
   GATE_ACTION_SX,
   GATE_INK,
-  GATE_LOCKUP_X,
-  GATE_NAME_BAND,
-  GATE_NAME_SX,
-  GATE_TAGLINE_BAND,
-  GATE_TAGLINE_SX,
+  GATE_LOCKUP_SX,
+  GATE_LOCKUP_TEXT_SIZE,
+  GATE_RULE_SX,
 } from './gate-chrome';
 
 /**
- * What this file is for: the bands below are a place on `gate.jpg`, measured
- * against its real pixels rather than computed from anything (issue #151,
- * `handoffs/scenes/README.md`). There is no formula here to exercise the way
- * a geometry module's arithmetic once was — what there is to hold still is
- * that the numbers do not quietly drift, and that the box built from them is
- * positioned as a percentage of the stage rather than of the window in some
- * other unit that would stop meaning the same thing on a phone.
+ * What this file is for: the block's position is a place on `gate.jpg`,
+ * measured against its real pixels rather than computed from anything (issue
+ * #151, `handoffs/scenes/README.md`), and its width follows the template's
+ * own formula rather than a number measured here (issue #191,
+ * `design/templates/state-tree.html`). There is no formula to exercise the
+ * way a geometry module's arithmetic once was — what there is to hold still
+ * is that the numbers do not quietly drift, and that the box built from them
+ * is positioned as a percentage of the stage rather than of the window in
+ * some other unit that would stop meaning the same thing on a phone.
  */
-describe('the measured bands', () => {
-  it('has not drifted from what was measured against the real picture', () => {
-    expect(GATE_NAME_BAND).toEqual({ top: 5.0, bottom: 10.1 });
-    expect(GATE_TAGLINE_BAND).toEqual({ top: 12.5, bottom: 15.1 });
-    expect(GATE_LOCKUP_X).toEqual({ left: 24, right: 77 });
+describe('GATE_LOCKUP_SX', () => {
+  it('is a box against the stage, not the window', () => {
+    // Percentages on `top`/`left` for an absolutely positioned box resolve
+    // against its containing block — the stage `HomePage.tsx` sizes to the
+    // full viewport — which is what lets a `getBoundingClientRect` reading
+    // be checked against these same numbers directly, on any window size at
+    // all.
+    expect(GATE_LOCKUP_SX.position).toBe('absolute');
+    expect(GATE_LOCKUP_SX.left).toBe('50%');
+    expect(GATE_LOCKUP_SX.top).toBe('5.0%');
+    expect(GATE_LOCKUP_SX.transform).toBe('translateX(-50%)');
+    expect(GATE_LOCKUP_SX.textAlign).toBe('center');
+  });
+
+  it('is 52% of the window when the window is at least as wide as 16:9', () => {
+    expect(GATE_LOCKUP_SX.width).toBe('52%');
+  });
+
+  it('follows the picture instead on a window narrower than 16:9', () => {
+    const narrow = GATE_LOCKUP_SX['@media (max-aspect-ratio: 16/9)'] as {
+      width: string;
+    };
+
+    expect(narrow.width).toBe('min(92%, calc(100vh * 16 / 9 * 0.52))');
   });
 
   it('is sumi, not the cream the painted garden writes on its own canopy', () => {
@@ -31,42 +50,33 @@ describe('the measured bands', () => {
   });
 });
 
-describe('GATE_NAME_SX and GATE_TAGLINE_SX', () => {
-  it('is a box against the stage, not the window', () => {
-    // Percentages on `top`/`height`/`left`/`width` for an absolutely
-    // positioned box resolve against its containing block — the stage
-    // `HomePage.tsx` sizes to the full viewport — which is what lets a
-    // `getBoundingClientRect` reading be checked against these same numbers
-    // directly, on any window size at all.
-    expect(GATE_NAME_SX.position).toBe('absolute');
-    expect(GATE_NAME_SX.top).toBe('5.0%');
-    expect(GATE_NAME_SX.height).toBe('5.1%');
-    expect(GATE_NAME_SX.left).toBe('24.0%');
-    expect(GATE_NAME_SX.width).toBe('53.0%');
+describe('GATE_LOCKUP_TEXT_SIZE', () => {
+  it('is the same clamp the name and the rule both size off', () => {
+    expect(GATE_LOCKUP_TEXT_SIZE).toBe('clamp(15px, 2.35vw, 31px)');
+  });
+});
+
+describe('GATE_RULE_SX', () => {
+  it('is a 2px sumi bar, capped at 220px and centred under the name', () => {
+    expect(GATE_RULE_SX.height).toBe('2px');
+    expect(GATE_RULE_SX.width).toBe('min(220px, 46%)');
+    expect(GATE_RULE_SX.margin).toBe('0.28em auto 0');
+    expect(GATE_RULE_SX.background).toBe(GATE_INK);
   });
 
-  it('reserves the tagline band a step below the name, same width', () => {
-    expect(GATE_TAGLINE_SX.top).toBe('12.5%');
-    expect(GATE_TAGLINE_SX.height).toBe('2.6%');
-    expect(GATE_TAGLINE_SX.left).toBe(GATE_NAME_SX.left);
-    expect(GATE_TAGLINE_SX.width).toBe(GATE_NAME_SX.width);
-  });
-
-  it('centres whatever stands in it, both ways', () => {
-    for (const sx of [GATE_NAME_SX, GATE_TAGLINE_SX]) {
-      expect(sx.display).toBe('flex');
-      expect(sx.alignItems).toBe('center');
-      expect(sx.justifyContent).toBe('center');
-      expect(sx.textAlign).toBe('center');
-    }
+  it("shares the name's size so its margin scales with it", () => {
+    expect(GATE_RULE_SX.fontSize).toBe(GATE_LOCKUP_TEXT_SIZE);
   });
 });
 
 describe('GATE_ACTION_SX', () => {
-  it('stands at the middle of the stage, not a corner of the window', () => {
+  it('stands on the stairs, its top edge at 68% of the stage', () => {
     expect(GATE_ACTION_SX.position).toBe('absolute');
     expect(GATE_ACTION_SX.left).toBe('50%');
-    expect(GATE_ACTION_SX.transform).toBe('translate(-50%, -50%)');
+    expect(GATE_ACTION_SX.top).toBe('68%');
+    // Centred across only, no vertical translate any more (issue #191): the
+    // button's own top edge is the 68%, not a centre recentred onto it.
+    expect(GATE_ACTION_SX.transform).toBe('translateX(-50%)');
   });
 
   it('shrinks to its label rather than the room the stage happens to offer', () => {
