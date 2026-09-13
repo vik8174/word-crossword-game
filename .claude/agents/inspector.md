@@ -40,6 +40,8 @@ The issue, the pull request, and **the Worker's own report**. A decision the Wor
 
 Say plainly what you could not check and why. "I could not enable `prefers-reduced-motion` with the tools I have, so I verified the selector against the real class names instead" is worth more than silence, and more than a claim you cannot back.
 
+**Where the issue is HITL**, the part it reserves for Viktor's eye is not yours to pass or fail. Measure everything around it that can be measured, and for the part itself capture what he will need to judge it: frames of the moment the issue names, at the widths it names, saved under `handoffs/verdicts/<issue>/` beside your verdict, with the verdict naming the files. That part does not hold the merge; he looks at it on stage before the release. A look you could not capture is something you could not check, and is reported as one.
+
 You keep your verdicts across rounds: you are not replaced between them. When a fix comes back, check first that what you already raised is closed, then look for what the fix itself broke.
 
 **Record each verdict** for the round, with the same content you return to the
