@@ -28,6 +28,8 @@ Standing up an environment is **not** a release step. Creating the Firebase proj
 
 4. **Walk the pre-tag part of [`manual-checks.md`](manual-checks.md) on stage.** By the list, not from memory
 
+   Then walk **every HITL comment on this release's issue**. Each names a screen, the widths and a moment that merged without anybody's eye on it, which is safe only because a merge reaches stage and not production. This step is where that look happens. Anything that does not pass becomes an issue or a revert before the tag, not a note after it
+
 5. **Tag that commit and push the tag:**
 
    ```bash

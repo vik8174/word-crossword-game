@@ -46,6 +46,8 @@ Where an issue contains a choice about how something should look, a Worker will 
 
 A mock-up earns its place for layout and size. It is useless where the question is how something behaves **over the painting** — contrast above the canvas, translucent surfaces, motion under `prefers-reduced-motion`. HTML does not reproduce any of that.
 
+What a mock-up cannot settle stays HITL, and HITL does not mean "Viktor looks before it merges". It means **Viktor looks on stage before the release tag**: a merge reaches stage only, and nothing is public until the tag. So a HITL issue carries one more section in its body, **What to look at by eye**: the screen, the widths and the moment. "The join → lobby shift at 1440 and 375, while both bands are on screen", not "check the transition". When the work merges, the Foreman copies it onto the release issue, and Viktor walks those comments on stage by the list rather than from memory.
+
 ## Arbitration
 
 You are the first instance of appeal, not the last.
