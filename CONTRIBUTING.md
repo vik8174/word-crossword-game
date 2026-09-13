@@ -19,6 +19,10 @@ Everything technical is written in **English**, without exception: everything co
 4. If the change touches `firestore.rules`, run `pnpm test:rules` locally as well — CI runs it too, but the emulator is slower to fail than you are
 5. Whatever needed a pair of eyes rather than an assertion, check by hand — and before a release check by hand from [`docs/manual-checks.md`](docs/manual-checks.md) rather than from memory, which is how the same check kept being reinvented, differently, in every ticket
 
+## Storybook
+
+Run `pnpm --filter web storybook` to see a component or a page on its own, outside a running room. `pnpm --filter web build-storybook` is what the **Build** job in CI runs; it is not a check of its own.
+
 ## CI (GitHub Actions)
 
 Opening or updating a pull request against `main` automatically runs:

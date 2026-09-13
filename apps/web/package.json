@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && node scripts/assert-no-source-maps.mjs",
+    "build": "tsc --noEmit && vite build && node scripts/assert-no-source-maps.mjs && storybook build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -23,6 +25,7 @@
   },
   "devDependencies": {
     "@sentry/vite-plugin": "5.4.0",
+    "@storybook/react-vite": "10.6.0",
     "@testing-library/jest-dom": "7.0.1",
     "@testing-library/react": "16.3.2",
     "@types/node": "26.2.0",
@@ -31,6 +34,7 @@
     "@vitejs/plugin-react": "6.0.5",
     "@vitest/coverage-v8": "4.1.10",
     "jsdom": "30.0.1",
+    "storybook": "10.6.0",
     "vite": "8.2.1",
     "vitest": "4.1.10"
   }

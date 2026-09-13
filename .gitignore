@@ -5,6 +5,7 @@ dist/
 .DS_Store
 coverage/
 *.tsbuildinfo
+storybook-static/
 
 # Firebase emulator artifacts
 *-debug.log
