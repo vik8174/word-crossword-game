@@ -1,25 +1,19 @@
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import { useLayoutEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
+import { PillButton } from '../components/PillButton';
 import { useGardenControls } from '../garden/garden-controls';
 import { ON_SCENE_SX } from '../garden/scene-surface';
 import { GATE_ACTION_SX, GATE_INK, GATE_NAME_SX, GATE_TAGLINE_SX } from '../scenes/gate-chrome';
 import {
-  inRem,
   LOGOTYPE_FONT_FAMILY,
   LOGOTYPE_FONT_WEIGHT,
   LOGOTYPE_TRACKING,
-  SIGN_TRACKING,
   TEXT_FONT_FAMILY,
-  TEXT_LEVELS,
 } from '../scale';
 import { useScreenReached } from '../telemetry/use-screen-reached';
-
-/** How wide the button that stands in the gate is padded, as steps of the row. */
-const BUTTON_PADDING = { across: 6, down: 4 } as const;
 
 /**
  * Landing page — the gate, and the one thing there is to do at it.
@@ -194,40 +188,9 @@ export const HomePage = () => {
       </Box>
 
       <Box sx={GATE_ACTION_SX}>
-        <Button
-          component={RouterLink}
-          to="/create"
-          variant="contained"
-          size="large"
-          sx={(theme) => ({
-            // Lettered rather than written, off the sign face
-            // (`theme.typography.signage`) — not the same face the name over
-            // the gate is set in any more (issue #148 moved the name onto the
-            // logotype, Dela Gothic One, a face this button's label cannot
-            // borrow: it is subset to the eight letters of `WORD GARDEN` and
-            // has none of "Create a game"'s own). The button keeps the sign
-            // face instead, the same lettering `garden/` draws its own labels
-            // in (issue #115).
-            ...theme.typography.signage,
-            fontSize: inRem(TEXT_LEVELS.body),
-            px: BUTTON_PADDING.across,
-            py: BUTTON_PADDING.down,
-            // This is a link and not a `button`, and the browser's own
-            // `text-align: center` is on the latter alone — so without this the
-            // label inherits `start` from the body and a wrapped one stacks to
-            // the left. Said here rather than left to the tag.
-            textAlign: 'center',
-            // The tracking is put after the last letter as well as between, and
-            // a centred line counts that trailing space as part of its own
-            // width: the letters land half a space left of the middle, by the
-            // same amount on every line however many there are. Taking the
-            // whole space off the right of the box puts them back on the middle
-            // of the button, in one line and in two.
-            paddingRight: `calc(${theme.spacing(BUTTON_PADDING.across)} - ${SIGN_TRACKING})`,
-          })}
-        >
+        <PillButton component={RouterLink} to="/create">
           Create a game
-        </Button>
+        </PillButton>
       </Box>
     </Box>
   );

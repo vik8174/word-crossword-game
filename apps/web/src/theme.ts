@@ -1,6 +1,7 @@
 import { alpha, createTheme, darken, type PaletteColor } from '@mui/material/styles';
+import { LOADING_DOT_CLASS } from './components/button-styles';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
-import { inRem, SPACING_STEPS, TEXT_LEVELS } from './scale';
+import { SPACING_STEPS } from './scale';
 import { TYPOGRAPHY } from './typography';
 
 /**
@@ -243,14 +244,16 @@ export const theme = createTheme({
   components: {
     // A raised button casts a shadow onto the paper, and nothing in this design
     // is above the page.
+    //
+    // `styleOverrides.sizeLarge` used to set the large button's font size here
+    // — removed by issue #184, which moved every button in the app onto
+    // `components/PillButton.tsx`, a component of its own rather than MUI's
+    // `Button`. `disableElevation` stays: `garden/RewardCloth.tsx` and the two
+    // dialog buttons in `components/EndGamePanel.tsx` are still MUI's own
+    // `Button` (issue #184 leaves them out on purpose) and rely on it for
+    // their flat, shadowless look.
     MuiButton: {
       defaultProps: { disableElevation: true },
-      styleOverrides: {
-        // A large button is larger in what surrounds its label, not in the
-        // label: MUI sets fifteen pixels here, which is a fifth size and half a
-        // step off the one above it.
-        sizeLarge: { fontSize: inRem(TEXT_LEVELS.body) },
-      },
     },
 
     MuiFormHelperText: {
@@ -291,10 +294,18 @@ export const theme = createTheme({
     // as broken rather than calm — a promise of "something is happening" that
     // stops being true. So it keeps spinning under reduced motion; nothing
     // else does.
+    //
+    // `Button`'s own loading dot (`components/button-styles.ts`,
+    // `LOADING_DOT_CLASS`) is named out for the identical reason (issue #184):
+    // `design/templates/state-tree.html` line 738 keeps it beating on purpose,
+    // and a loading mark that freezes reads as a stalled screen the same way a
+    // stopped spinner would. The button's own hover and press transitions are
+    // not exempted — only the dot's `animation` is — so the control itself
+    // still stops moving.
     MuiCssBaseline: {
       styleOverrides: {
         [REDUCED_MOTION_MEDIA]: {
-          '*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle), *::before, *::after':
+          [`*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle):not(.${LOADING_DOT_CLASS}), *::before, *::after`]:
             {
               animationDuration: '0.01ms !important',
               animationIterationCount: '1 !important',

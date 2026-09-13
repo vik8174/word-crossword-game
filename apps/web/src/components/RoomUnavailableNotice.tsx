@@ -1,9 +1,9 @@
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { Link as RouterLink } from 'react-router-dom';
 
 import type { RoomUnavailableReason } from '../rooms/room-screen';
 import { Message } from './Message';
+import { PillButton } from './PillButton';
 
 interface UnavailableNotice {
   readonly heading: string;
@@ -76,9 +76,9 @@ export const RoomUnavailableNotice = ({ reason }: RoomUnavailableNoticeProps) =>
         {notice.text}
       </Message>
 
-      <Button component={RouterLink} to="/" variant="contained">
+      <PillButton component={RouterLink} to="/">
         Start a new game
-      </Button>
+      </PillButton>
     </Stack>
   );
 };

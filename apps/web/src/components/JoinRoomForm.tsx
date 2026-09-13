@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -8,6 +7,7 @@ import { useState } from 'react';
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
 import { readRememberedNickname } from '../rooms/nickname-store';
 import { Message } from './Message';
+import { PillButton } from './PillButton';
 
 interface JoinRoomFormProps {
   /** Called with the raw nickname once it is worth submitting. */
@@ -73,14 +73,9 @@ export const JoinRoomForm = ({ onJoin, isJoining, errorMessage }: JoinRoomFormPr
           </Message>
         )}
 
-        <Button
-          type="submit"
-          variant="contained"
-          size="large"
-          disabled={!isValidNickname(nickname) || isJoining}
-        >
+        <PillButton type="submit" loading={isJoining} disabled={!isValidNickname(nickname)}>
           {isJoining ? 'Joining...' : 'Join the game'}
-        </Button>
+        </PillButton>
       </Stack>
     </Box>
   );

@@ -1,8 +1,8 @@
-import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import type { CrosswordLayout } from 'shared';
 
 import { Message } from './Message';
+import { PillButton } from './PillButton';
 
 interface UnplacedWordsNoticeProps {
   /** Layout the room would be created from, holding both the kept and the dropped words. */
@@ -35,12 +35,10 @@ export const UnplacedWordsNotice = ({ layout, onConfirm, onBack }: UnplacedWords
       </Message>
 
       <Stack direction="row" spacing={4}>
-        <Button variant="contained" onClick={onConfirm}>
-          Create room anyway
-        </Button>
-        <Button variant="outlined" onClick={onBack}>
+        <PillButton onClick={onConfirm}>Create room anyway</PillButton>
+        <PillButton kind="quiet" onClick={onBack}>
           Edit the word list
-        </Button>
+        </PillButton>
       </Stack>
     </Stack>
   );
