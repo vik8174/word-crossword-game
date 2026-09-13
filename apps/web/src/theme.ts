@@ -256,14 +256,15 @@ export const theme = createTheme({
       defaultProps: { disableElevation: true },
     },
 
-    MuiFormHelperText: {
-      styleOverrides: {
-        // The hint under a field, which MUI puts three pixels below it — close
-        // enough to read as part of the box rather than as a line about it, and
-        // the one gap on this form that was not on the row.
-        root: ({ theme }) => ({ marginTop: theme.spacing(2) }),
-      },
-    },
+    // `MuiFormHelperText` used to be styled here — the hint under a field,
+    // moved three pixels closer than MUI's own default. Issue #193 moved
+    // every field that rendered one, `WordListForm`'s nickname and words,
+    // onto `components/Field.tsx`, which draws its own help line
+    // (`components/field-styles.ts`'s `fieldHelpSx`) rather than MUI's
+    // component. `components/RoomInvitePanel.tsx` is the one `TextField`
+    // left in the app and it never sets `helperText`, so nothing renders a
+    // `FormHelperText` any more and the override is gone rather than kept
+    // for a component nothing instantiates.
 
     // `prefers-reduced-motion` is answered here rather than inside each
     // component, so that nothing drawn by MUI can opt back into motion with an

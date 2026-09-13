@@ -5,6 +5,7 @@ import { INK, TONES } from './petals';
 import {
   BAND,
   CONTROL,
+  FIELD,
   SCENE,
   SCENE_EDGE,
   SCENE_INK_DIM,
@@ -336,43 +337,44 @@ describe('what the garden writes on', () => {
     expect(CONTROL.edge).not.toBe(SCENE.vermilionLit);
   });
 
-  it('shows the edge of a field, which is the whole of what says there is one', () => {
-    // A box around a field is a boundary rather than decoration, so it is owed
-    // three to one and not nothing. The first screen a guest ever sees is a
-    // nickname field on this band, and it arrives already focused.
-    //
-    // The lit paper of the doors — `SURFACES[0]`, the brightest of them — is
-    // left out of this loop rather than made to fail it: the guard below
-    // records that one separately, at the figure it actually reads.
-    for (const surface of SURFACES.slice(1)) {
+  it('shows the edge of a field, which is now the washi fill itself', () => {
+    // Issue #193 replaces the translucent `SCENE_EDGE` outline with the
+    // template's own opaque field fill everywhere on the gate — the boundary
+    // a player now sees is the pill of washi against the band, not a line
+    // round it. So the claim this guard holds moved with it: the fill has to
+    // read off every surface a band can stand on at 3:1 or more, the lit
+    // paper of the doors included, since an opaque fill needs nothing held
+    // back the way a translucent outline did (the guard below this one is
+    // what still holds that surface back, for the one field that still
+    // draws a line rather than a fill).
+    for (const surface of SURFACES) {
       const behind = banded(veiled(surface.paint));
 
       expect(
-        contrast(laidOver(asRgba(SCENE_EDGE), behind), behind),
-        `the edge of a field on ${surface.name}`,
+        contrast(asRgb(FIELD.fill), behind),
+        `the washi fill of a field on ${surface.name}`,
       ).toBeGreaterThan(COMPONENT_EDGE);
     }
   });
 
-  it('says plainly that a field edge falls under three on the lit paper of the doors', () => {
+  it('says plainly that the invite link, the one field still outlined, falls under three on the lit paper of the doors', () => {
     // Recorded rather than left to be rediscovered, the same way the guard
-    // below this one is: `SCENE_EDGE` at .55 already falls under 3:1 on a
+    // above this one is: `SCENE_EDGE` at .55 already falls under 3:1 on a
     // band standing over the lit paper of the doors, under the template's
-    // veil (issue #190) — 2.64:1, not 3. Two things keep this from being a
-    // silent regression rather than a recorded one:
+    // veil (issue #190) — 2.64:1, not 3.
     //
-    // #193, already written, replaces this outline with the template's own
-    // opaque field fill everywhere on the gate, so the figure below stops
-    // describing anything a player sees there the day it merges. The one
-    // place this outline survives #193 is the invite link in the lobby,
-    // which stands on this same band and keeps `SCENE_EDGE` until the lobby
-    // issue gives it its own field styling.
+    // Issue #193 moved every other field on the gate onto the opaque washi
+    // fill the guard above measures, so `SCENE_EDGE` is no longer a figure a
+    // player reads there at all. The one place it survives is
+    // `components/RoomInvitePanel.tsx`'s invite link, in the lobby, which
+    // stands on this same band and keeps `SCENE_EDGE` until the lobby issue
+    // gives it the template's own `.field.readonly` styling.
     const surface = SURFACES[0];
     const behind = banded(veiled(surface.paint));
 
     expect(
       contrast(laidOver(asRgba(SCENE_EDGE), behind), behind),
-      `the edge of a field on ${surface.name}`,
+      `the invite link's edge on ${surface.name}`,
     ).toBeLessThan(COMPONENT_EDGE);
   });
 

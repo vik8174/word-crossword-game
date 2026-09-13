@@ -1,7 +1,5 @@
 import Box from '@mui/material/Box';
-import FormHelperText from '@mui/material/FormHelperText';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import {
   MAX_WORD_LENGTH,
   MAX_WORDS,
@@ -11,8 +9,16 @@ import {
 } from 'shared';
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
+import { Field, FieldHelp, FieldSet } from './Field';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
+
+/**
+ * `id` of the nickname's own help line — wired to the nickname field's
+ * `aria-describedby` by hand (issue #193's second trap: a `helperText` prop
+ * used to wire this through MUI, and nothing does that without it).
+ */
+const NICKNAME_HELP_ID = 'nickname-help';
 
 /**
  * A failure that has nothing to do with the word list itself: no crossword
@@ -79,33 +85,37 @@ export const WordListForm = ({
       noValidate
     >
       <Stack spacing={5}>
-        <TextField
-          label="Your nickname"
-          value={nickname}
-          onChange={(event) => onNicknameChange(event.target.value)}
-          disabled={isCreating}
-          slotProps={{ htmlInput: { maxLength: MAX_NICKNAME_LENGTH } }}
-          helperText="Other players see you by this name. You play in your own room too."
-          fullWidth
-        />
+        <FieldSet>
+          <Field
+            id="nickname"
+            label="Your nickname"
+            value={nickname}
+            onChange={onNicknameChange}
+            disabled={isCreating}
+            maxLength={MAX_NICKNAME_LENGTH}
+            describedBy={NICKNAME_HELP_ID}
+          />
+          <FieldHelp id={NICKNAME_HELP_ID}>
+            Other players see you by this name. You play in your own room too.
+          </FieldHelp>
+        </FieldSet>
 
-        <Box>
-          <TextField
+        <FieldSet>
+          <Field
+            id="words"
             label="Words"
             value={rawWords}
-            onChange={(event) => onWordsChange(event.target.value)}
+            onChange={onWordsChange}
             disabled={isCreating}
-            error={showsErrors}
+            invalid={showsErrors}
             multiline
-            minRows={6}
-            fullWidth
             placeholder={'apple, bread, cheese\ndinner, engine, flower'}
           />
-          <FormHelperText>
+          <FieldHelp>
             {`${MIN_WORDS}-${MAX_WORDS} English words, ${MIN_WORD_LENGTH}-${MAX_WORD_LENGTH} letters each, no repeats. Separate them with commas, spaces or new lines.`}
-          </FormHelperText>
-          <FormHelperText>{`${validation.words.length} words entered`}</FormHelperText>
-        </Box>
+          </FieldHelp>
+          <FieldHelp>{`${validation.words.length} words entered`}</FieldHelp>
+        </FieldSet>
 
         {showsErrors && (
           <Message

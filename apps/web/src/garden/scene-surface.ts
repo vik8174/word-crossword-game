@@ -259,13 +259,20 @@ export const ON_SCENE_SX: CSSObject = {
   '& .MuiChip-root': { color: SCENE.cream, borderColor: SCENE_EDGE },
   '& .MuiChip-filled': { backgroundColor: 'rgba(243, 236, 217, 0.12)' },
 
-  // A field somebody types into: the letters, the box round them, and the two
-  // lines that explain it — in every state, because a field has four and the
-  // theme draws three of them in colours meant for paper. The doubled `&&` is
-  // what gets past MUI's own state rules, which are more specific than a plain
-  // descendant: the first screen a guest ever sees carries a field that is
-  // focused the moment it appears, and it was being outlined in the pink of the
-  // interface on a forest.
+  // A field somebody types into: the letters, the box round them, and its
+  // label — in every state MUI has one for, in colours meant for paper. The
+  // doubled `&&` is what gets past MUI's own state rules, which are more
+  // specific than a plain descendant: the first screen a guest ever saw
+  // carried a field that was focused the moment it appeared, and it was
+  // being outlined in the pink of the interface on a forest.
+  //
+  // `RoomInvitePanel.tsx` is the one place left that still renders this
+  // element family (issue #193's Boundaries: its zone is the lobby issue's,
+  // not this file's) — its own `MuiFormHelperText` used to be reached here
+  // too, but that element renders only when a `TextField` is given
+  // `helperText`, which nothing on the picture does any more once issue #193
+  // moved every other field onto `components/Field.tsx`. Those two rules are
+  // gone rather than left for a component that will never render one.
   '&& .MuiInputBase-input': { color: SCENE.cream },
   '&& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: SCENE_INK_DIM },
   '&& .MuiOutlinedInput-notchedOutline': { borderColor: SCENE_EDGE },
@@ -286,8 +293,6 @@ export const ON_SCENE_SX: CSSObject = {
   '&& .MuiInputLabel-root.Mui-focused': { color: SCENE.cream },
   '&& .MuiInputLabel-root.Mui-error': { color: SCENE.cream },
   '&& .MuiInputLabel-root.Mui-disabled': { color: SCENE_LINE },
-  '&& .MuiFormHelperText-root': { color: SCENE_INK_DIM },
-  '&& .MuiFormHelperText-root.Mui-error': { color: SCENE.cream },
 };
 
 /**
@@ -313,16 +318,25 @@ export const ON_SCENE_SX: CSSObject = {
  * Only the gate's own band — `/create` and the room's `join` screen, both
  * drawn under the lighter middle of the new veil — reads full cream instead
  * (`design/templates/state-tree.html`'s help text, issue #183). A screen
- * spreads this rather than `ON_SCENE_SX` only where every body2 line, field
- * label and helper text it draws is known to stand on that band: `/create`'s
- * whole page is the band, and so is `RoomMiddleColumn`, the one place `join`
- * draws its form (`components/RoomShell.tsx`) — neither has anything written
- * off the gate's band in the dimmer ink, so nothing here needs scoping any
- * narrower than the page that uses it.
+ * spreads this rather than `ON_SCENE_SX` only where every body2 line it draws
+ * is known to stand on that band: `/create`'s whole page is the band, and so
+ * is `RoomMiddleColumn`, the one place `join` draws its form
+ * (`components/RoomShell.tsx`) — neither has anything written off the gate's
+ * band in the dimmer ink, so nothing here needs scoping any narrower than the
+ * page that uses it.
+ *
+ * Used to carry two more rules, `&& .MuiInputLabel-root` and
+ * `&& .MuiFormHelperText-root`, both set to full cream for the same reason
+ * `.field-help` is now (issue #193's first trap: a rule that matches nothing
+ * still passes its own unit test, so keeping it would have proved nothing).
+ * Issue #193 moved both fields on the gate onto `components/Field.tsx`,
+ * which renders neither MUI class — the full cream for a field's own help
+ * line is `field-styles.ts`'s `fieldHelpSx` now, read straight off `SCENE.
+ * cream` rather than through this descendant selector, and proved on the
+ * running page rather than inferred from a rule that no longer matches
+ * anything on this scene.
  */
 export const GATE_ON_SCENE_SX: CSSObject = {
   ...ON_SCENE_SX,
   '& .MuiTypography-body2': { color: SCENE.cream },
-  '&& .MuiInputLabel-root': { color: SCENE.cream },
-  '&& .MuiFormHelperText-root': { color: SCENE.cream },
 };
