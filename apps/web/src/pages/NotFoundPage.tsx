@@ -1,12 +1,27 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import { useLayoutEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { useGardenControls } from '../garden/garden-controls';
 import { GATE_BAND_WIDTH, ON_SCENE_SX, fullHeightBandSx } from '../garden/scene-surface';
+import { gapAt } from '../scale';
+
+/** The step of the row this page keeps between its column and the band's own edge. */
+const PAGE_PADDING_STEP = 4;
+const PAGE_PADDING = gapAt(PAGE_PADDING_STEP);
+
+/**
+ * How wide the column standing on the band is: the gate's band
+ * (`garden/scene-surface.ts`'s `GATE_BAND_WIDTH`), less this page's own
+ * padding either side of it — the same arithmetic `/create` runs for its own
+ * column (`pages/CreateRoomPage.tsx`'s `COLUMN_WIDTH`). Kept as this page's
+ * own copy rather than a shared export: the two pages read the same sign for
+ * a different reason each (one a form, one an apology), and nothing here
+ * requires them to move together.
+ */
+const COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${PAGE_PADDING} - ${PAGE_PADDING})`;
 
 /**
  * Catch-all for addresses the app knows nothing about.
@@ -28,7 +43,9 @@ import { GATE_BAND_WIDTH, ON_SCENE_SX, fullHeightBandSx } from '../garden/scene-
  * Stands on the same centre band `/create` and `join` do
  * (`garden/scene-surface.ts`'s `fullHeightBandSx`), since it now claims a
  * picture the same way they do: cream ink directly on the photograph would
- * not be readable otherwise.
+ * not be readable otherwise. Its own column is sized to what the band leaves
+ * inside its hairlines (`COLUMN_WIDTH`, below) rather than to a fixed
+ * breakpoint, so the text never reaches past the band onto the picture.
  *
  * @example
  * <Route path="*" element={<NotFoundPage />} />
@@ -41,10 +58,23 @@ export const NotFoundPage = () => {
   }, [showScene]);
 
   return (
-    <Box component="main" sx={{ position: 'relative', minHeight: '100dvh', ...ON_SCENE_SX }}>
+    <Box
+      component="main"
+      sx={{
+        position: 'relative',
+        minHeight: '100dvh',
+        px: PAGE_PADDING_STEP,
+        py: 7,
+        ...ON_SCENE_SX,
+      }}
+    >
       <Box aria-hidden sx={fullHeightBandSx('centre', GATE_BAND_WIDTH)} />
 
-      <Container maxWidth="sm" sx={{ position: 'relative', py: 7 }}>
+      {/* Sized to what the band leaves inside its own hairlines, the way
+        `CreateRoomPage.tsx`'s own column is: an unrestricted column stays as
+        wide as the page, so past about 600px it started 17.5px outside the
+        band's inner edge on cream text drawn straight over the photograph. */}
+      <Box sx={{ position: 'relative', width: '100%', maxWidth: COLUMN_WIDTH, mx: 'auto' }}>
         <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
           This page does not exist
         </Typography>
@@ -55,7 +85,7 @@ export const NotFoundPage = () => {
         <Button component={RouterLink} to="/" variant="contained" sx={{ mt: 6 }}>
           Go to the start
         </Button>
-      </Container>
+      </Box>
     </Box>
   );
 };
