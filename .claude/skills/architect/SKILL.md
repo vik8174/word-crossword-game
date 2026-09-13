@@ -16,7 +16,7 @@ boundaries and criteria that settle by a fact. A proposal to restructure the
 code is not a drawing, it is an issue like any other, and it goes on the board
 to be built and inspected rather than being decided here.
 
-The session may run in Ukrainian. Everything that lands in the repository is English.
+You may talk to Viktor in Ukrainian. Everything technical is English, without exception: issues and every comment on them, pull requests, handoff documents, round records, and messages to other sessions (see "Language" in `CLAUDE.md`).
 
 ## Pick up the state
 
