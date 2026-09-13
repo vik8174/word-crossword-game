@@ -233,13 +233,16 @@ export const stepTitleSx = (theme: Theme, outdent: string): CSSObject => ({
  * There used to be a fourth kind of rule here: `& .MuiButton-contained`,
  * `-outlined` and `-text`, restyling MUI's own `Button` for the forest. Issue
  * #184 removed them once nothing under this rule rendered one any more —
- * every button standing on the picture is `components/Button.tsx` now, which
- * carries its own look and reads none of `ON_SCENE_SX`. `garden/RewardCloth.tsx`
+ * every button standing on the picture is `components/PillButton.tsx` now,
+ * which carries its own look and reads none of `ON_SCENE_SX`. `garden/RewardCloth.tsx`
  * and the two dialog buttons in `components/EndGamePanel.tsx` still render
- * MUI's `Button` (issue #184 leaves them out on purpose), but neither stands
- * inside a box this rule is spread onto — the cloth is a `position: fixed`
- * layer of its own and the dialog is a portal — so nothing was left relying on
- * the removed rules.
+ * MUI's `Button` (issue #184 leaves them out on purpose), but a descendant
+ * selector matches on DOM position, not on CSS position, and neither stands
+ * inside a box this rule is spread onto: the dialog is a portal, and
+ * `RewardCloth` is rendered as a sibling of the `Box` that wraps the room
+ * screen (`RoomPage.tsx:305`, beside the `Box` at `:289`), never nested
+ * inside the box that carries `ON_SCENE_SX` further down that tree. So
+ * nothing was left relying on the removed rules.
  */
 export const ON_SCENE_SX: CSSObject = {
   color: SCENE.cream,

@@ -22,9 +22,10 @@ export interface ButtonStyleState {
 /**
  * How long the loading dot's own pulse takes, and how many times it repeats.
  *
- * Read by `Button.tsx` as well as here, so the reduced-motion exemption in
- * `theme.ts` and the animation itself are held to the same number rather than
- * two copies of `1400`.
+ * Read here and by `button-styles.test.ts` only — `theme.ts` does not read
+ * this number. Its own reduced-motion exemption names the dot out by class
+ * (`LOADING_DOT_CLASS` below), not by duration, so the two are held together
+ * by which element the freeze skips rather than by a shared constant.
  */
 export const SUN_BEAT_MS = 1400;
 
@@ -93,9 +94,23 @@ const surfaceOf = (state: ButtonStyleState) => {
 
 /**
  * The fill and edge a resting control turns into under a finger — omitted
- * from the returned style entirely while disabled or loading, the same way
- * the template's own `.btn[disabled]:hover` and the absence of a
- * `.btn.loading:hover` rule leave both states unmoved by hovering.
+ * from the returned style entirely while disabled or loading, so a disabled
+ * or loading control stays put under a pointer rather than reacting to one.
+ *
+ * This matches the template for `disabled`: `.btn[disabled]:hover` restates
+ * the same resting colours rather than lighting up. It does not match the
+ * template for `loading`. The template has no `.btn.loading:hover` rule of
+ * its own, but that does not mean hovering a loading control leaves it
+ * unmoved — `.btn:hover`'s `background`/`box-shadow` are not overridden by
+ * `.loading`, so they still apply on a real hover: `create/creating` gains
+ * the gold bloom, and `playing/ending` turns `rgba(147, 41, 15, 0.72)` with
+ * edge `#F2762F`, measured live on the served template. This control leaves
+ * a loading control's colours unmoved on hover instead, which is a known,
+ * deliberate difference from the template rather than an oversight — no
+ * acceptance criterion names hover-while-loading as a state, and whether the
+ * template's own hover-while-loading is itself intended or a cascade
+ * accident is an open question for the Architect (issue #184, round 2).
+ * Change this only once that question is settled.
  */
 const hoverOf = (
   state: ButtonStyleState,
@@ -158,10 +173,14 @@ export const buttonSx = (state: ButtonStyleState): SxProps<Theme> => {
     // instances render as `<a>` for real navigation (`HomePage.tsx`,
     // `RoomUnavailableNotice.tsx`, `NotFoundPage.tsx`), and an anchor has no
     // such reset — it inherits the body's 1.5 like any other element, which
-    // measured 0.25px taller than the template's control before this line was
+    // measured taller than the template's control before this line was
     // added. Stated here rather than left to each tag's own UA default, so
-    // the height is the same 42px a `<button>` and an `<a>` alike, matching
-    // the template regardless of which element a given call site needs.
+    // the height is the same 40px a `<button>` and an `<a>` alike, matching
+    // the template regardless of which element a given call site needs — 40,
+    // not the 42 an earlier measurement of this file once said: that reading
+    // was taken before Zen Kaku Gothic New Bold had finished loading, against
+    // the fallback face's own metrics, and 40px is what both sides render at
+    // once the real one has.
     lineHeight: 'normal',
     cursor: state.loading ? 'progress' : state.disabled ? 'not-allowed' : 'pointer',
     boxShadow: state.disabled ? 'none' : CONTROL.lift,
@@ -179,7 +198,7 @@ export const buttonSx = (state: ButtonStyleState): SxProps<Theme> => {
 };
 
 /**
- * The sun dot before the label — a real element (`components/Button.tsx`
+ * The sun dot before the label — a real element (`components/PillButton.tsx`
  * renders a `<span>`, not the pseudo-element `garden/scene-surface.ts` used to
  * draw), which is what lets `theme.ts`'s reduced-motion freeze name it out by
  * class: a `*::before` selector cannot be, since the freeze's `:not()` list

@@ -184,7 +184,7 @@ export const SCENE_EDGE = 'rgba(243, 236, 217, 0.55)';
  * #149's PRD comment, #145).
  *
  * Extended by issue #184 for the template's full set of kinds and states —
- * `components/Button.tsx` is the one place every value below is read. The
+ * `components/button-styles.ts` is the one place every value below is read. The
  * primary figures above (`fill`, `litFill`, `ink`, `mark`, `edge`,
  * `restingFill`, `restingInk`) are unchanged from issue #149; `lift` is
  * corrected to the template's own inset (it was `rgba(255, 246, 230, 0.35)`,

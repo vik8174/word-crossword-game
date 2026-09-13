@@ -247,7 +247,7 @@ export const theme = createTheme({
     //
     // `styleOverrides.sizeLarge` used to set the large button's font size here
     // — removed by issue #184, which moved every button in the app onto
-    // `components/Button.tsx`, a component of its own rather than MUI's
+    // `components/PillButton.tsx`, a component of its own rather than MUI's
     // `Button`. `disableElevation` stays: `garden/RewardCloth.tsx` and the two
     // dialog buttons in `components/EndGamePanel.tsx` are still MUI's own
     // `Button` (issue #184 leaves them out on purpose) and rely on it for

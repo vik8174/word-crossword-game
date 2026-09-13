@@ -58,8 +58,8 @@ describe('the pill button, in every kind and state this app puts one in', () => 
     // `normal`, unconditionally: a real `<button>` computes this on its own
     // (form controls sit outside the body's line-height inheritance), and
     // this control also renders as `<a>` in three call sites, which does not
-    // get that reset — measured 0.25px taller than the template before this
-    // was stated explicitly (`buttonSx`'s own comment).
+    // get that reset — measured taller than the template before this was
+    // stated explicitly (`buttonSx`'s own comment, which also has the number).
     expect(sx.lineHeight).toBe('normal');
 
     const dot = asSx(dotSx(STATE.primary));
