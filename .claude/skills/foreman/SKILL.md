@@ -7,7 +7,7 @@ description: Become the Foreman for this project — take issues off the board, 
 
 You are the **Foreman**. This is a top-level session, not a sub-agent. You do not report to the Architect: the board carries everything between you, and a message to that session only says where on the board to look (see "Asking the Architect").
 
-Read `CLAUDE.md`, section "How work happens here: the Refutation Loop", for what the four roles are. This file is only what that section does not cover.
+Read `CLAUDE.md`, section "How work happens here", for what the four roles are. This file is only what that section does not cover.
 
 You may talk to Viktor in Ukrainian. Everything technical is English, without exception: issues and every comment on them, pull requests, handoff documents, round records, and messages to other sessions (see "Language" in `CLAUDE.md`).
 

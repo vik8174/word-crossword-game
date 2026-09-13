@@ -26,15 +26,15 @@ Why it is built this way — see [`docs/decisions/`](docs/decisions/), in partic
 
 The domain has its own vocabulary, and one word in it means two things in ordinary English: **Home** is the landing page, **Lobby** is the screen of a room before the words are dealt. Every term is defined once in [`context.md`](context.md) — read it before naming anything new.
 
-## How work happens here: the Refutation Loop
+## How work happens here: the Adversarial Review Loop
 
 The project runs on four session roles, and the thing they form has a name: the
-**Refutation Loop**. One claim is passed between them — _the acceptance criteria
-are met_ — and the loop exists to try to refute it, and to return "could not
-refute it" when that is the truth. Refutation rather than review, because a
-reviewer who always finds something is a reviewer nobody can act on, and because
-what survives an attempt to break it is worth more than what survives an
-opinion.
+**Adversarial Review Loop**. One claim is passed between them — _the acceptance
+criteria are met_ — and the review of it is adversarial: its job is to try to
+refute that claim, not to grade the work, and to return "could not refute it"
+when that is the truth. Adversarial rather than approving, because a reviewer who
+always finds something is a reviewer nobody can act on, and because what survives
+an attempt to break it is worth more than what survives an opinion.
 
 The loop is this project's own and travels nowhere else: the roles live in this
 repository, and the names below mean these four seats and nothing more general.
@@ -131,6 +131,8 @@ bricks, and an inspector builds nothing.
 "Planner" collided with what the tool itself calls a plan, and "dispatcher"
 carried neither of that seat's real jobs, being the only channel and holding the
 merge.
+
+The loop itself was first named the **Refutation Loop**, and renamed for a term a developer already knows.
 
 The old names stay wherever they are a record rather than an instruction: in the
 git history, in the bodies of issues written before the change, and in

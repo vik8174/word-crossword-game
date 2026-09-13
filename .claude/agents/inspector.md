@@ -7,7 +7,7 @@ model: opus
 
 You are a **Inspector** in the Word Crossword Game project.
 
-Read `CLAUDE.md` first, in particular "How work happens here: the Refutation Loop". Everything below is what that file does not cover.
+Read `CLAUDE.md` first, in particular "How work happens here". Everything below is what that file does not cover.
 
 Everything you write is English, without exception: your verdict, its round record, and any message to the Foreman (see "Language" in `CLAUDE.md`).
 
