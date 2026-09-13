@@ -1,9 +1,8 @@
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import type { CrosswordLayout } from 'shared';
+
+import { Message } from './Message';
 
 interface UnplacedWordsNoticeProps {
   /** Layout the room would be created from, holding both the kept and the dropped words. */
@@ -27,18 +26,13 @@ interface UnplacedWordsNoticeProps {
 export const UnplacedWordsNotice = ({ layout, onConfirm, onBack }: UnplacedWordsNoticeProps) => {
   return (
     <Stack spacing={5}>
-      <Alert severity="warning">
-        <AlertTitle>Some words did not fit into the crossword</AlertTitle>
-        <Typography variant="body2">
-          These words cross none of the others and will be left out:
-        </Typography>
-        <Typography variant="body2" sx={{ fontWeight: 'medium', mt: 2 }}>
-          {layout.unplacedWords.join(', ')}
-        </Typography>
-        <Typography variant="body2" sx={{ mt: 2 }}>
-          {`The room will be created with the remaining ${layout.placedWords.length} words.`}
-        </Typography>
-      </Alert>
+      <Message
+        kind="warning"
+        heading="Some words did not fit into the crossword"
+        items={layout.unplacedWords}
+      >
+        {`These words cross none of the others and will be left out. The room will be created with the remaining ${layout.placedWords.length} words.`}
+      </Message>
 
       <Stack direction="row" spacing={4}>
         <Button variant="contained" onClick={onConfirm}>

@@ -1,4 +1,3 @@
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import { useMemo } from 'react';
 
@@ -7,6 +6,7 @@ import type { RoomDocument } from '../rooms/room-document';
 import { gridViewFor, type WordLocation } from '../rooms/word-visibility';
 import { CrosswordGrid } from './CrosswordGrid';
 import { CROSSWORD_HEADING_ID, CrosswordHeading } from './CrosswordHeading';
+import { Message } from './Message';
 
 /**
  * Stands in for a board that takes no answers.
@@ -82,7 +82,11 @@ export const RoomCrossword = ({
         wordToReach={wordToReach}
       />
 
-      {errorMessage !== undefined && <Alert severity="error">{errorMessage}</Alert>}
+      {errorMessage !== undefined && (
+        <Message kind="error" heading="Your answer was not saved">
+          {errorMessage}
+        </Message>
+      )}
     </section>
   );
 };

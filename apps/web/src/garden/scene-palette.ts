@@ -118,6 +118,17 @@ export const VEIL = 'rgba(6, 17, 26, 0.26)';
  */
 export const BAND = 'rgba(6, 20, 16, 0.55)';
 
+/**
+ * The same shadow, deepened further: the surface a message stands on.
+ *
+ * Darker than {@link BAND} because a message is read against whatever the band
+ * itself is standing on — the picture, or another band already over it — and a
+ * warning is not owed the same translucency as a list of words. Taken from the
+ * template unchanged (`design/templates/state-tree.html`'s `--band-solid`; see
+ * `components/Message.tsx`).
+ */
+export const BAND_SOLID = 'rgba(6, 20, 16, 0.82)';
+
 /** The line down a band's inner edge: the temple's own red, a hair wide. */
 export const BAND_EDGE = SCENE.vermilion;
 

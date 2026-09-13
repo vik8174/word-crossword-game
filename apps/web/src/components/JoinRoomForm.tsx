@@ -1,4 +1,3 @@
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -8,6 +7,7 @@ import { useState } from 'react';
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
 import { readRememberedNickname } from '../rooms/nickname-store';
+import { Message } from './Message';
 
 interface JoinRoomFormProps {
   /** Called with the raw nickname once it is worth submitting. */
@@ -67,7 +67,11 @@ export const JoinRoomForm = ({ onJoin, isJoining, errorMessage }: JoinRoomFormPr
           fullWidth
         />
 
-        {errorMessage !== undefined && <Alert severity="error">{errorMessage}</Alert>}
+        {errorMessage !== undefined && (
+          <Message kind="error" heading="Could not join the game">
+            {errorMessage}
+          </Message>
+        )}
 
         <Button
           type="submit"

@@ -9,8 +9,8 @@ import { logGameEvent } from '../telemetry/analytics';
 import { JoinRoomForm } from './JoinRoomForm';
 import { RoomMiddleColumn, RoomShell } from './RoomShell';
 
-const JOIN_FAILED_MESSAGE =
-  'Could not join the game. Check your connection and try again — the room is still there.';
+/** The heading is `JoinRoomForm`'s own — "Could not join the game", fixed. */
+const JOIN_FAILED_MESSAGE = 'Check your connection and try again — the room is still there.';
 
 interface RoomJoinProps {
   /** Id of the room being entered. */
