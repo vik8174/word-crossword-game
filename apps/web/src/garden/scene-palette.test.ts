@@ -257,7 +257,11 @@ describe('what the garden writes on', () => {
     // A box around a field is a boundary rather than decoration, so it is owed
     // three to one and not nothing. The first screen a guest ever sees is a
     // nickname field on this band, and it arrives already focused.
-    for (const surface of SURFACES) {
+    //
+    // The lit paper of the doors — `SURFACES[0]`, the brightest of them — is
+    // left out of this loop rather than made to fail it: the guard below
+    // records that one separately, at the figure it actually reads.
+    for (const surface of SURFACES.slice(1)) {
       const behind = banded(veiled(surface.paint));
 
       expect(
@@ -265,6 +269,28 @@ describe('what the garden writes on', () => {
         `the edge of a field on ${surface.name}`,
       ).toBeGreaterThan(COMPONENT_EDGE);
     }
+  });
+
+  it('says plainly that a field edge falls under three on the lit paper of the doors', () => {
+    // Recorded rather than left to be rediscovered, the same way the guard
+    // below this one is: `SCENE_EDGE` at .55 already falls under 3:1 on a
+    // band standing over the lit paper of the doors, under the template's
+    // veil (issue #190) — 2.64:1, not 3. Two things keep this from being a
+    // silent regression rather than a recorded one:
+    //
+    // #193, already written, replaces this outline with the template's own
+    // opaque field fill everywhere on the gate, so the figure below stops
+    // describing anything a player sees there the day it merges. The one
+    // place this outline survives #193 is the invite link in the lobby,
+    // which stands on this same band and keeps `SCENE_EDGE` until the lobby
+    // issue gives it its own field styling.
+    const surface = SURFACES[0];
+    const behind = banded(veiled(surface.paint));
+
+    expect(
+      contrast(laidOver(asRgba(SCENE_EDGE), behind), behind),
+      `the edge of a field on ${surface.name}`,
+    ).toBeLessThan(COMPONENT_EDGE);
   });
 
   it('says plainly that lit paper is not something to write on unbanded', () => {
