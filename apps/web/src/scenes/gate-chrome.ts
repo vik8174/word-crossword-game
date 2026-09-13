@@ -1,44 +1,64 @@
 import type { CSSObject } from '@mui/material/styles';
 
 /**
- * Where the gate's own lockup and its one action sit on the picture.
+ * Where the gate's lockup — the name, a rule and the tagline as one block —
+ * and its one action sit on the picture.
  *
  * The gate stopped being painted geometry the moment it became `gate.avif`
- * (issue #151). The previous version of this file computed the name's position
- * from the procedurally-drawn world — `lintel.y / 2`, halfway between the top
- * of the window and the beam of a torii `paint-scene.ts` was drawing. On a
- * photograph there is no beam to be halfway above: `LANDMARKS.gate` and
- * `frameFor` describe a world this route no longer paints, so a formula built
- * on them would be arithmetic over numbers that mean nothing here.
+ * (issue #151). There is no beam or lintel to compute a position from on a
+ * photograph: the block's vertical position, `top: 5%`, is a place on *this*
+ * picture, measured against the real pixels of `gate.jpg` (issue #151,
+ * `handoffs/scenes/README.md`) rather than derived from anything, the same
+ * way `GATE_NAME_BAND` and `GATE_TAGLINE_BAND` were before issue #191 folded
+ * them into one block.
  *
- * What replaces it is not a formula at all. The bands below are a place on
- * *this* picture, measured against the real pixels of `gate.jpg` (issue #151,
- * `handoffs/scenes/README.md`) rather than derived from anything: sumi text
- * clears 4.5:1 in the clear sky between roughly a twentieth and a tenth of the
- * frame down, and nowhere close to that once the torii's beam or its shadowed
- * uprights get involved. A different picture would need different numbers, not
- * a different formula.
+ * The block's own width, and how it changes on a window narrower than 16:9,
+ * is not measured against the pixels here — it is the template's own formula
+ * (`design/templates/state-tree.html`, `.lockup.sumi`), which #183 drew and
+ * Viktor merged, followed rather than re-derived: `object-fit: cover` fills a
+ * narrow window by the picture's height, so the clear sky band the lockup
+ * has to stay inside is wider than the window itself, and the block is free
+ * to grow with it rather than staying pinned to a share of the window's own
+ * width. Where the template writes `cqw` and `cqh`, this writes `vw` and
+ * `vh`: the container the template measures against is the full window, and
+ * so is `HomePage.tsx`'s own root, `position: fixed; inset: 0`.
  *
- * Everything here is a percentage of the stage — the fixed, full-viewport box
- * `HomePage.tsx` draws the picture in — because that is what stays true
- * whatever the window's own aspect ratio crops off the sides of the source
- * image: the stage is exactly the viewport, `object-fit: cover` never leaves a
- * gap in it, and a percentage of it is a percentage a
- * `getBoundingClientRect` reading can be checked against directly.
+ * Everything here is a percentage of the stage — that fixed, full-viewport
+ * box — because that is what stays true whatever the window's own aspect
+ * ratio crops off the sides of the source image: the stage is exactly the
+ * viewport, `object-fit: cover` never leaves a gap in it, and a percentage of
+ * it is a percentage a `getBoundingClientRect` reading can be checked against
+ * directly.
  */
 
-/** The vertical band the name may occupy, as a percentage of the stage's height. */
-export const GATE_NAME_BAND = { top: 5.0, bottom: 10.1 } as const;
+/** The block's top edge, as a percentage of the stage's height, at every window. */
+const LOCKUP_TOP = 5;
 
 /**
- * The vertical band the tagline may occupy, once #148 gives the gate one to
- * show. Measured on the same picture and already reserved so that a second
- * line does not have to be fitted in later.
+ * The block's width when the window is at least as wide as 16:9: a flat
+ * share of the stage, the same at every window in that range.
  */
-export const GATE_TAGLINE_BAND = { top: 12.5, bottom: 15.1 } as const;
+const LOCKUP_WIDE_WIDTH = '52%';
 
-/** How far in from each side of the stage the lockup may reach, either line. */
-export const GATE_LOCKUP_X = { left: 24, right: 77 } as const;
+/**
+ * The block's width on a window narrower than 16:9, where `object-fit:
+ * cover` fills the frame by height rather than by width and the picture's
+ * clear sky band — a fixed share of the picture itself — ends up wider than
+ * the window. `100vh * 16 / 9` is the picture's own width once it has been
+ * scaled to fill the window's height, and 0.52 of that is the same share of
+ * the sky band `LOCKUP_WIDE_WIDTH` reads off the window directly at 16:9 and
+ * wider. Capped at 92% of the window so the block never touches the edges of
+ * a very narrow one.
+ */
+const LOCKUP_NARROW_WIDTH = 'min(92%, calc(100vh * 16 / 9 * 0.52))';
+
+/**
+ * The name's and the rule's shared size, both driving off the same `clamp`
+ * so the rule's `margin-top: .28em` scales with the name it sits under. The
+ * template's `cqw` written as `vw`, for the reason `LOCKUP_NARROW_WIDTH`'s
+ * own comment gives.
+ */
+export const GATE_LOCKUP_TEXT_SIZE = 'clamp(15px, 2.35vw, 31px)';
 
 /**
  * The ink the lockup is set in: sumi, not the cream the scene's own palette
@@ -59,55 +79,78 @@ export const GATE_INK = '#1C1A1A';
 /**
  * A share of the stage, to one decimal place.
  *
- * The bands are measured to a tenth of a per cent, and plain floating-point
- * subtraction does not stay there — `15.1 - 12.5` is `2.5999999999999996` in
- * IEEE 754, which would write a CSS value nobody chose and a test nobody could
- * write a round number against. Fixed to one decimal rather than left exact,
- * because one decimal is the precision the measurement itself was made to.
+ * The block's position is measured to a tenth of a per cent, and plain
+ * floating-point arithmetic does not always stay there, which would write a
+ * CSS value nobody chose and a test nobody could write a round number
+ * against. Fixed to one decimal rather than left exact, because one decimal
+ * is the precision the measurement itself was made to.
  *
  * @param value - The number of percentage points
  * @returns It as a CSS percentage
  */
 const pct = (value: number): string => `${value.toFixed(1)}%`;
 
-/** One band, as the absolutely-positioned box that holds whatever stands in it. */
-const bandSx = (band: { readonly top: number; readonly bottom: number }): CSSObject => ({
+/**
+ * Where the block — the name, the rule and the tagline together — stands
+ * against the stage: centred, its top edge 5% down, its width the
+ * template's own formula.
+ *
+ * `pointerEvents: 'none'` because nothing under a decorative block of
+ * lettering and a rule needs to catch a click or a hover the way the button
+ * below it does.
+ */
+export const GATE_LOCKUP_SX: CSSObject = {
   position: 'absolute',
-  top: pct(band.top),
-  height: pct(band.bottom - band.top),
-  left: pct(GATE_LOCKUP_X.left),
-  width: pct(GATE_LOCKUP_X.right - GATE_LOCKUP_X.left),
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
+  left: '50%',
+  top: pct(LOCKUP_TOP),
+  transform: 'translateX(-50%)',
+  width: LOCKUP_WIDE_WIDTH,
   textAlign: 'center',
   pointerEvents: 'none',
-});
-
-/** Where the name goes, against the stage. */
-export const GATE_NAME_SX: CSSObject = bandSx(GATE_NAME_BAND);
-
-/** Where the tagline goes, against the stage. */
-export const GATE_TAGLINE_SX: CSSObject = bandSx(GATE_TAGLINE_BAND);
+  '@media (max-aspect-ratio: 16/9)': {
+    width: LOCKUP_NARROW_WIDTH,
+  },
+};
 
 /**
- * Where the one button stands, in the opening of the gate.
+ * The rule between the name and the tagline: decoration, not a heading
+ * separator — `aria-hidden` where it is used, and a `div` rather than an
+ * `<hr>`, because nothing is read out between the name and the tagline
+ * (issue #191, "the rule is decoration").
  *
- * Read off the picture rather than off a formula, the same way the lockup is:
- * the torii's posts sit at roughly two fifths and three fifths of the frame's
- * width in the source artwork the shipped images are cut from, and stay there
- * under `object-fit: cover`, because a
- * point at the horizontal middle of a centred cover crop is at the horizontal
- * middle of the viewport whatever the window's own aspect ratio does to the
- * sides. Held a little above the temple's stairs rather than the middle of the
- * opening, which is where a button reads as standing in the gate rather than
- * floating over the roofline behind it.
+ * `fontSize: GATE_LOCKUP_TEXT_SIZE` carries no visible text of its own — it
+ * is what lets `margin-top: .28em` scale with the name's own size instead of
+ * standing still while the name around it grows and shrinks with the window.
+ */
+export const GATE_RULE_SX: CSSObject = {
+  fontSize: GATE_LOCKUP_TEXT_SIZE,
+  height: '2px',
+  width: 'min(220px, 46%)',
+  margin: '0.28em auto 0',
+  background: GATE_INK,
+};
+
+/**
+ * Where the one button stands, on the stairs of the gate.
+ *
+ * Read off the picture rather than off a formula, the same way the lockup
+ * is: the torii's posts sit at roughly two fifths and three fifths of the
+ * frame's width in the source artwork the shipped images are cut from, and
+ * stay there under `object-fit: cover`, because a point at the horizontal
+ * middle of a centred cover crop is at the horizontal middle of the viewport
+ * whatever the window's own aspect ratio does to the sides.
+ *
+ * `top: '68%'` is the button's own top edge, not its centre (issue #191):
+ * held low enough to stand on the stairs of the gate rather than floating in
+ * its opening, where `top: '48%'` with a vertical recentring transform stood
+ * it before. Centred across with `translateX(-50%)` only — no vertical
+ * translate any more.
  */
 export const GATE_ACTION_SX: CSSObject = {
   position: 'absolute',
   left: '50%',
-  top: '48%',
-  transform: 'translate(-50%, -50%)',
+  top: '68%',
+  transform: 'translateX(-50%)',
   // Shrink-to-fit rather than the room between `left` and the edge of the
   // stage — a fixed box given `left` and no `right` is otherwise offered that
   // whole width to wrap its label inside before the transform ever recentres
