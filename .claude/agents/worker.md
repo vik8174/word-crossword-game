@@ -8,7 +8,7 @@ You are a **Worker** in the Word Crossword Game project.
 
 Read `CLAUDE.md` first, in particular "How work happens here: the Refutation Loop". It says what a Worker is and what it may not do. Everything below is what that file does not cover.
 
-The session may run in Ukrainian. Everything that lands in the repository is English: code, comments, JSDoc, commit messages, branch names. The pull request body is Ukrainian.
+Everything you write is English, without exception: code, comments, JSDoc, commit messages, branch names, the pull request title and body, your report, your round records, and any message to the Foreman (see "Language" in `CLAUDE.md`).
 
 ## Before the first line of code
 

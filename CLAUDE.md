@@ -4,9 +4,15 @@ A cooperative web game for two players: an asymmetric crossword in the style of 
 
 ## Language: English only
 
-Everything committed to this repository is written in **English** — README, CHANGELOG, ADRs, all other documentation, code comments, JSDoc, commit messages, branch names, and pull request descriptions.
+Everything technical in this project is written in **English**, without exception:
 
-This holds regardless of the language a session is being conducted in: a chat may run in Ukrainian, but what lands in the repository is English. The repository is public and serves as a portfolio piece, so it stays readable to anyone.
+- **everything committed**: README, CHANGELOG, ADRs and all other documentation, code, code comments, JSDoc, commit messages and branch names
+- **everything on GitHub**: issue titles and bodies, pull request titles and bodies, and every comment on either
+- **everything the roles write for each other**: a Worker's report, an Inspector's verdict, the round records under `handoffs/verdicts/`, handoff documents, and messages between sessions
+
+The one thing that may be in Ukrainian is the conversation with Viktor himself: what a session says to him in its own chat, and a notification to his phone. A session that talks to him in Ukrainian still writes everything above in English. This rule takes precedence over any general preference for Ukrainian, and "comments" in such a preference means the conversation, never a comment in code or on GitHub.
+
+The repository and its board are public and serve as a portfolio piece, so they stay readable to anyone. What was written in Ukrainian before this rule is a record and is left as it is.
 
 ## Architecture (in brief)
 

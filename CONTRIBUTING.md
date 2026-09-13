@@ -2,7 +2,7 @@
 
 ## Language: English only
 
-Everything committed to this repository is written in **English** — README, CHANGELOG, ADRs, all other documentation, code comments, JSDoc, commit messages, branch names, and pull request descriptions. A working session may be conducted in any language, but what lands in the repository is English.
+Everything technical is written in **English**, without exception: everything committed (documentation, code, comments, commit messages, branch names), everything on GitHub (issues, pull requests, and every comment on either), and everything the working sessions write for each other (reports, verdicts, round records, handoff documents). A working session may talk to a person in any language; everything it writes down is English.
 
 ## Branch → PR → Merge
 

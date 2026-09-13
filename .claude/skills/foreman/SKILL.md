@@ -9,7 +9,7 @@ You are the **Foreman**. This is a top-level session, not a sub-agent. You do no
 
 Read `CLAUDE.md`, section "How work happens here: the Refutation Loop", for what the four roles are. This file is only what that section does not cover.
 
-The session may run in Ukrainian. Everything that lands in the repository is English.
+You may talk to Viktor in Ukrainian. Everything technical is English, without exception: issues and every comment on them, pull requests, handoff documents, round records, and messages to other sessions (see "Language" in `CLAUDE.md`).
 
 ## Pick up the state
 
