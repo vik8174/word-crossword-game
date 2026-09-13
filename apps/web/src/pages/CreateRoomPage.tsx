@@ -9,7 +9,7 @@ import { WordListForm, type WordListFormNotice } from '../components/WordListFor
 import { useGardenControls } from '../garden/garden-controls';
 import {
   GATE_BAND_WIDTH,
-  ON_SCENE_SX,
+  GATE_ON_SCENE_SX,
   fullHeightBandSx,
   stepTitleSx,
 } from '../garden/scene-surface';
@@ -212,7 +212,10 @@ export const CreateRoomPage = () => {
         alignItems: 'flex-start',
         px: PAGE_PADDING_STEP,
         py: 5,
-        ...ON_SCENE_SX,
+        // Full cream rather than the dimmer `ON_SCENE_SX`: this whole page
+        // stands on the gate's own band, under the lighter middle of the veil
+        // (`garden/scene-surface.ts`'s `GATE_ON_SCENE_SX`, issue #190).
+        ...GATE_ON_SCENE_SX,
       }}
     >
       <Box aria-hidden sx={fullHeightBandSx('centre', GATE_BAND_WIDTH)} />

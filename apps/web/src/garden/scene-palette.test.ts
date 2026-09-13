@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { theme } from '../theme';
 import { CLOTH } from './cloth';
-import { INK } from './petals';
+import { INK, TONES } from './petals';
 import {
   BAND,
   CONTROL,
@@ -10,7 +9,7 @@ import {
   SCENE_EDGE,
   SCENE_INK_DIM,
   SHOJI_PAPER,
-  VEIL,
+  VEIL_STOPS,
 } from './scene-palette';
 
 /**
@@ -87,46 +86,58 @@ const contrast = (one: Rgb, other: Rgb): number => {
   return (brighter ?? 1) / (darker ?? 1);
 };
 
-/**
- * The most ink a petal carries, and what colour it carries it in.
- *
- * Both read from where the app reads them rather than written down again. A
- * guard holding its own copy of a ceiling goes on passing after somebody raises
- * the real one, and this is the guard that ceiling exists for
- * ({@link PetalLayer}, `petals.ts`).
- */
-const PETAL = { colour: theme.palette.sakura.light, ink: INK.most } as const;
-
-/** Every surface the name of a step can land on, which has no band under it. */
-const UNBANDED = [SCENE.bark, SCENE.barkDeep, SCENE.night, SCENE.deep] as const;
-
-/** A surface with a petal on it, which is what the weather does to any of them. */
-const petalled = (paint: string): string => {
-  const mixed = over(asRgb(PETAL.colour), PETAL.ink, asRgb(paint));
-
-  return `#${mixed.map((channel) => Math.round(channel).toString(16).padStart(2, '0')).join('')}`;
-};
-
-/** A surface as the reader sees it: the paint, with the veil over it. */
-const veiled = (paint: string): Rgb => {
-  const veil = asRgba(VEIL);
-
-  return over(veil.rgb, veil.alpha, asRgb(paint));
-};
-
-/** The same surface with a band over it, which is what text stands on. */
-const banded = (paint: string): Rgb => {
-  const band = asRgba(BAND);
-
-  return over(band.rgb, band.alpha, veiled(paint));
-};
-
 /** A colour that may be translucent, laid over what is behind it. */
 const laidOver = (paint: { readonly rgb: Rgb; readonly alpha: number }, behind: Rgb): Rgb =>
   over(paint.rgb, paint.alpha, behind);
 
+/**
+ * A surface as the reader sees it: the paint, with one stop of the veil's
+ * gradient over it.
+ *
+ * `VEIL` is a gradient now (issue #190) and has no single alpha a test could
+ * pull back out of its CSS string, so this reads the three named stops
+ * ({@link VEIL_STOPS}) directly instead of parsing it. Every claim below takes
+ * whichever stop is worst for it: `'thin'`, the lightest, for anything that
+ * cannot be shown to stand within the top 28% of the window — which is
+ * everything a band or a petal falls across — and `'top'` only for a step
+ * title, which always does (`stepTitleSx`, `scene-surface.ts`).
+ *
+ * @param paint - The picture underneath
+ * @param stop - Which of the veil's three stops is over it; `'thin'` unless said otherwise
+ */
+const veiled = (paint: string, stop: keyof typeof VEIL_STOPS = 'thin'): Rgb =>
+  laidOver(asRgba(VEIL_STOPS[stop]), asRgb(paint));
+
+/** The same surface with a band over it, which is what text stands on. */
+const banded = (behind: Rgb): Rgb => laidOver(asRgba(BAND), behind);
+
 /** Cream at the weight a secondary line is written in, over what it lands on. */
 const dimOver = (surface: Rgb): Rgb => laidOver(asRgba(SCENE_INK_DIM), surface);
+
+/**
+ * The brightest petal, at its fullest ink — the worst case for what a petal
+ * leaves behind it, over whatever is already standing there.
+ *
+ * Read from where the app reads them ({@link INK}, {@link TONES}) rather than
+ * written down again: a guard holding its own copy of a ceiling goes on
+ * passing after somebody raises the real one, and this is the guard that
+ * ceiling exists for. `TONES[0]`, `#F7D3B8`, is confirmed the lightest of the
+ * three by its own WCAG luminance, which is also why it leaves the least
+ * contrast behind it.
+ */
+const PETAL = { tone: TONES[0], ink: INK.most } as const;
+
+/**
+ * A petal laid over whatever is behind it — above the veil and below a band,
+ * exactly where the picture stands it (`canvas-layer.ts`'s `LAYERS`).
+ *
+ * @param behind - The surface the petal falls across, veil already applied
+ */
+const petalledOver = (behind: Rgb): Rgb =>
+  laidOver({ rgb: asRgb(PETAL.tone), alpha: PETAL.ink }, behind);
+
+/** Every surface the name of a step can land on, which has no band under it. */
+const UNBANDED = [SCENE.bark, SCENE.barkDeep, SCENE.night, SCENE.deep] as const;
 
 /**
  * Every surface a sentence can land on, brightest first.
@@ -147,45 +158,143 @@ const SURFACES = [
   { name: 'the near canopy', paint: SCENE.night },
 ] as const;
 
+/**
+ * The flat paint behind the worst dim-ink window this issue found on the
+ * running page — not one of {@link SURFACES}, which are synthetic worst
+ * cases nobody's band actually stands on, but a real screenshot.
+ *
+ * Measured on `lobby` (the doors), 834 x 1112, the RoomShell zone column with
+ * the host alone (no invite panel showing): off real screenshots at the
+ * veil's thinnest stop, text and the petal canvas hidden with
+ * `visibility: hidden`, no petal behind the band, across nine points of the
+ * 26 s Ken Burns push — the worst of every zone column on `lobby` and
+ * `playing`, at 375, 834 and 1440 (`handoffs/verdicts/190/`, round 2
+ * corrected in round 3 after the Inspector found the round 2 figure, the
+ * hall at 834, was not in fact the worst). The worst 180 x 22 window, at the
+ * start of the push, read `rgb(79.6, 77.8, 58.7)` once banded; this is that
+ * reading inverted back through {@link veiled} and {@link banded} to the
+ * flat paint that reproduces it — the inversion is clean here (it lands
+ * inside 0-255, and recomposites to dim 5.104:1), which the strip under the
+ * board's own readings below do not.
+ */
+const PAGE_WORST_SURFACE = '#B29C74';
+
 describe('what the garden writes on', () => {
   it('reads every sentence off the band, whatever the band is standing on', () => {
     // The band is what a sentence stands on everywhere in this app, and this is
     // why: over the brightest surface in the picture it is still dark enough to
-    // read cream off, and the picture goes on showing through it.
+    // read cream off, and the picture goes on showing through it. Measured at
+    // the veil's thinnest stop, which is the worst case: a band can stand
+    // anywhere down the window, and the middle of it is where the veil now
+    // dims least (issue #190).
+    //
+    // Dim ink is checked once, below, against {@link PAGE_WORST_SURFACE}
+    // rather than inside this loop: {@link SURFACES}' own brightest entry
+    // reads worse than any band a player's screen actually paints (the next
+    // guard records that), so holding dim ink to it here would be testing a
+    // surface nobody stands on rather than the one this app draws.
     for (const surface of SURFACES) {
-      const behind = banded(surface.paint);
+      const behind = banded(veiled(surface.paint));
 
       expect(contrast(asRgb(SCENE.cream), behind), `cream on ${surface.name}`).toBeGreaterThan(
         SMALL_TEXT,
       );
-      expect(contrast(dimOver(behind), behind), `dim ink on ${surface.name}`).toBeGreaterThan(
-        SMALL_TEXT,
-      );
     }
+
+    const worstPageWindow = banded(veiled(PAGE_WORST_SURFACE));
+
+    expect(
+      contrast(dimOver(worstPageWindow), worstPageWindow),
+      'dim ink at the worst zone-column window measured on the page',
+    ).toBeGreaterThan(SMALL_TEXT);
+  });
+
+  it('names the reason dim ink is not used on the bands at the gate', () => {
+    // SHOJI_PAPER[0], SURFACES' own brightest entry, is a worst case nobody's
+    // band stands on (the guard above measures the page instead) — but it is
+    // still the reason the gate's bands read full cream rather than .78: a
+    // future band that does stand this close to raw lit paper would fail
+    // here first, in a test, rather than in a player's eyes.
+    const behind = banded(veiled(SHOJI_PAPER[0]));
+
+    expect(contrast(dimOver(behind), behind), 'dim ink on the lit paper of the doors').toBeLessThan(
+      SMALL_TEXT,
+    );
+  });
+
+  it('records the strip under the board at 1440 as known below the small-text bar', () => {
+    // The strip under the board (`SENTENCE_BAND_SX`, `scene-surface.ts`) is
+    // not a zone column and is not what the guards above stand for: it only
+    // carries text once a game is running, and at 1440 it is 915px wide
+    // between the two zone columns, wide enough to reach the brightest,
+    // most central part of the hall's lit floor. Off real screenshots, the
+    // same method as PAGE_WORST_SURFACE above, both of its lines read below
+    // 4.5 there:
+    //
+    // - "The arrow keys move around the whole grid…" — 2.59-3.23:1 across the
+    //   push on this branch, and already 3.10-3.84:1 on `main` before this
+    //   issue's veil. No ink this app has clears it there: full cream only
+    //   reaches 3.25-4.22:1.
+    // - "Two of your words cross…" — 4.72-5.23:1 on `main`, falling to
+    //   4.23-4.54:1 on this branch from 13s into the push on. Full cream
+    //   holds it at 5.80-6.62:1.
+    //
+    // Recorded rather than fixed: the look of the strip under the board is
+    // Viktor's to choose (full cream, a darker surface under it, or left as
+    // it is) and goes into the template and the game-room issue (#139, item
+    // 14), not into #190. Both constants below are the worst reading's
+    // background already banded and veiled — not a flat paint run through
+    // {@link veiled}/{@link banded} like {@link PAGE_WORST_SURFACE}, because
+    // that inversion does not hold here: the real photograph behind this
+    // strip, at its brightest, reads lighter than any paint a .55 band could
+    // produce from (the arithmetic asks for a red channel above 255).
+    const arrowKeysWorst: Rgb = [176.14, 117.55, 56.81];
+    const twoWordsWorst: Rgb = [134.8, 75.61, 32.85];
+
+    expect(
+      contrast(dimOver(arrowKeysWorst), arrowKeysWorst),
+      'dim ink on the strip under the board, "The arrow keys" line, at 1440',
+    ).toBeLessThan(SMALL_TEXT);
+    expect(
+      contrast(dimOver(twoWordsWorst), twoWordsWorst),
+      'dim ink on the strip under the board, "Two of your words cross" line, at 1440',
+    ).toBeLessThan(SMALL_TEXT);
   });
 
   it('reads the name of a step off the picture itself, which has no band under it', () => {
     // The ticket allows no band behind a step title (issue #115), so the scene
     // has to be dark wherever one is put — which is what the walls of the hall
-    // and the leaves hanging into the corners of every frame are for.
+    // and the leaves hanging into the corners of every frame are for. Measured
+    // at the veil's top stop rather than its thinnest: `stepTitleSx` always
+    // places a title within the top 28% of the window, so this is the stop
+    // that is actually over it rather than a worst case borrowed from
+    // somewhere else on the page.
     for (const paint of UNBANDED) {
-      expect(contrast(asRgb(SCENE.cream), veiled(paint)), paint).toBeGreaterThan(SMALL_TEXT);
+      expect(contrast(asRgb(SCENE.cream), veiled(paint, 'top')), paint).toBeGreaterThan(SMALL_TEXT);
     }
   });
 
-  it('goes on reading it with a petal in front of it', () => {
-    // Petals are lighter than the forest now and there are twice as many of
-    // them (issue #120), so one of them landing on a step title lifts what that
-    // title is standing on. This is the measurement the ceiling on a petal's
-    // ink was set from, and the reason it is a number rather than a taste: at
-    // 0.52 the darkest surfaces still carry cream at better than four and a
-    // half to one, and at 0.56 they do not.
-    for (const paint of UNBANDED) {
-      const behind = veiled(petalled(paint));
+  it('reads a band with the brightest petal crossing behind it, over the brightest surface behind that', () => {
+    // Viktor's decision (2026-09-13, issue #190): the template's petals are
+    // shown everywhere they fall, including over an unbanded step title, where
+    // one now falls to 1.4-3.0:1 rather than clearing 4.5 as the app's own
+    // dimmer petals did. That case is accepted rather than held here — see the
+    // comment beside `INK` in `petals.ts`, which is where the ceiling on a
+    // petal's ink is explained now.
+    //
+    // What still has to hold is the band every other sentence in this app
+    // actually stands on: a petal is drawn above the veil and below every band
+    // (`canvas-layer.ts`'s `LAYERS`), so a band's own translucency lets a
+    // petal crossing behind it tint what the band is read against. Checked at
+    // the brightest tone and the fullest ink over every surface a band can
+    // stand on, which is the combination that leaves the least contrast —
+    // cream still clears 4.5 there, at 4.55 on the worst of them.
+    for (const surface of SURFACES) {
+      const behind = banded(petalledOver(veiled(surface.paint)));
 
       expect(
         contrast(asRgb(SCENE.cream), behind),
-        `cream under a petal on ${paint}`,
+        `cream on ${surface.name} with a petal behind the band`,
       ).toBeGreaterThan(SMALL_TEXT);
     }
   });
@@ -231,14 +340,40 @@ describe('what the garden writes on', () => {
     // A box around a field is a boundary rather than decoration, so it is owed
     // three to one and not nothing. The first screen a guest ever sees is a
     // nickname field on this band, and it arrives already focused.
-    for (const surface of SURFACES) {
-      const behind = banded(surface.paint);
+    //
+    // The lit paper of the doors — `SURFACES[0]`, the brightest of them — is
+    // left out of this loop rather than made to fail it: the guard below
+    // records that one separately, at the figure it actually reads.
+    for (const surface of SURFACES.slice(1)) {
+      const behind = banded(veiled(surface.paint));
 
       expect(
         contrast(laidOver(asRgba(SCENE_EDGE), behind), behind),
         `the edge of a field on ${surface.name}`,
       ).toBeGreaterThan(COMPONENT_EDGE);
     }
+  });
+
+  it('says plainly that a field edge falls under three on the lit paper of the doors', () => {
+    // Recorded rather than left to be rediscovered, the same way the guard
+    // below this one is: `SCENE_EDGE` at .55 already falls under 3:1 on a
+    // band standing over the lit paper of the doors, under the template's
+    // veil (issue #190) — 2.64:1, not 3. Two things keep this from being a
+    // silent regression rather than a recorded one:
+    //
+    // #193, already written, replaces this outline with the template's own
+    // opaque field fill everywhere on the gate, so the figure below stops
+    // describing anything a player sees there the day it merges. The one
+    // place this outline survives #193 is the invite link in the lobby,
+    // which stands on this same band and keeps `SCENE_EDGE` until the lobby
+    // issue gives it its own field styling.
+    const surface = SURFACES[0];
+    const behind = banded(veiled(surface.paint));
+
+    expect(
+      contrast(laidOver(asRgba(SCENE_EDGE), behind), behind),
+      `the edge of a field on ${surface.name}`,
+    ).toBeLessThan(COMPONENT_EDGE);
   });
 
   it('says plainly that lit paper is not something to write on unbanded', () => {

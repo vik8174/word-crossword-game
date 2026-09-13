@@ -92,8 +92,11 @@ export const Garden = ({ children }: { readonly children: ReactNode }) => {
         picture rather than a plate behind every sentence: a plate a line would
         cut the place into pieces, and this leaves it a place. Painted here
         alone, and unconditionally: two dimmings over one picture would read
-        darker than either, and `/` gets no less of it than any other route. */}
-      <Box aria-hidden sx={{ ...layerSx(LAYERS.veil), backgroundColor: VEIL }} />
+        darker than either, and `/` gets no less of it than any other route.
+        A gradient rather than a flat colour (issue #190), so it is given as
+        `backgroundImage` and not `backgroundColor` — the property a gradient
+        is actually painted through. */}
+      <Box aria-hidden sx={{ ...layerSx(LAYERS.veil), backgroundImage: VEIL }} />
 
       {children}
     </GardenControlsContext>

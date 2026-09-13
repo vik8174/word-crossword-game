@@ -33,9 +33,15 @@ export interface PetalBrush {
   fillStyle: string | CanvasGradient | CanvasPattern;
 }
 
-/** How wide a petal is against its length, and where its widest point sits. */
-const PETAL_WIDTH = 0.85;
-const PETAL_WAIST = -0.15;
+/**
+ * How wide a petal is against its length, and where its widest point sits.
+ *
+ * The template's own shape (issue #190): wider across and waisted closer to
+ * its centre than the app drew before, which is what turns the mark into
+ * something that reads as a petal rather than as a plain leaf-shaped speck.
+ */
+const PETAL_WIDTH = 1.05;
+const PETAL_WAIST = -0.02;
 
 /** How nearly edge-on a petal is allowed to turn before it stops being drawn at all. */
 const THINNEST_TURN = 0.25;
@@ -49,6 +55,10 @@ const THINNEST_TURN = 0.25;
  * the reader on the way — that is the whole difference between petals falling
  * and discs falling, and it costs one multiplication.
  *
+ * Drawn in its own {@link Petal.tone} rather than in one colour handed to the
+ * whole sky (issue #190): three tones at random per petal, from the template,
+ * read as petals falling through the picture rather than as one repeated mark.
+ *
  * @param brush - What is being drawn through
  * @param petal - The petal
  */
@@ -58,6 +68,7 @@ const paintPetal = (brush: PetalBrush, petal: Petal): void => {
   brush.rotate(petal.angle);
   brush.scale(Math.max(Math.abs(Math.cos(petal.phase)), THINNEST_TURN), 1);
   brush.globalAlpha = petal.ink;
+  brush.fillStyle = petal.tone;
   brush.beginPath();
   brush.moveTo(0, -petal.size);
   brush.quadraticCurveTo(petal.size * PETAL_WIDTH, petal.size * PETAL_WAIST, 0, petal.size);
@@ -72,24 +83,19 @@ const paintPetal = (brush: PetalBrush, petal: Petal): void => {
  * The frame is cleared rather than drawn over with a colour: this canvas is
  * between the picture and the app, so painting a background here would put a
  * sheet over the garden and any difference between the two would be a rectangle
- * nobody asked for.
+ * nobody asked for. No colour is handed in any more (issue #190): each petal
+ * carries its own {@link Petal.tone}, so there is nothing left for one call to
+ * set before the loop.
  *
  * @param brush - What is being drawn through
  * @param petals - The sky as it stands
  * @param sky - The area being cleared and drawn into
- * @param colour - The one colour every petal is drawn in, from the theme
  *
  * @example
- * paintPetals(context, petals, sky, theme.palette.sakura.main);
+ * paintPetals(context, petals, sky);
  */
-export const paintPetals = (
-  brush: PetalBrush,
-  petals: readonly Petal[],
-  sky: Sky,
-  colour: string,
-): void => {
+export const paintPetals = (brush: PetalBrush, petals: readonly Petal[], sky: Sky): void => {
   brush.clearRect(0, 0, sky.width, sky.height);
-  brush.fillStyle = colour;
 
   for (const petal of petals) {
     paintPetal(brush, petal);

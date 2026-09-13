@@ -92,21 +92,45 @@ export type SceneColour = (typeof SCENE)[keyof typeof SCENE];
 export const SHOJI_PAPER = ['#E4D8B6', '#D6C9A3', '#C3B48D'] as const;
 
 /**
+ * The three depths the veil is painted at, top to bottom of the window.
+ *
+ * A flat dimming read as a plate laid over the whole picture; this is the
+ * template's own answer instead (`design/templates/state-tree.html`'s
+ * `.veil`, line 226) — darkest at the top, nearly clear through the middle,
+ * and darkest again at the very bottom, so the sky and the water show
+ * through where nothing stands on them and the picture still goes dark
+ * wherever a band or a step title does. `scene-palette.test.ts` reads these
+ * three directly rather than parsing {@link VEIL}'s gradient string, because
+ * a gradient has no single alpha a test could pull back out of it.
+ */
+export const VEIL_STOPS = {
+  /** The band from the top edge to 28% down: where a header stands. */
+  top: 'rgba(8, 14, 10, 0.34)',
+  /** From 28% to 62% down: the middle of the window, left nearly bare. */
+  thin: 'rgba(8, 14, 10, 0.05)',
+  /** From 62% to the bottom edge: where a footer, if this app had one, would stand. */
+  bottom: 'rgba(8, 14, 10, 0.46)',
+} as const;
+
+/**
  * How much the picture is put down by, everywhere the interface stands on it.
  *
- * This is the general answer to legibility, and it is one answer rather than a
- * backing behind every sentence: a plate under each line of text would cut the
- * scene into pieces, while a single dimming leaves it a picture and takes the
- * fight out of it. Twenty-six per cent was measured against the busiest part of
- * the scene — the near canopy — and it is the point at which cream text is read
- * without the greens going grey.
+ * A gradient rather than a flat colour (issue #190), ported from the template
+ * unchanged: darkest at the top and the bottom, nearly clear through the
+ * middle, so the picture goes on reading as a picture rather than sitting
+ * under one uniform sheet. It used to be a single `rgba(6, 17, 26, 0.26)`,
+ * measured against the near canopy so cream stayed readable without the
+ * greens going grey — that measurement is gone now that no part of the
+ * picture is dimmed by that much on its own; {@link BAND} is what carries
+ * legibility through the middle instead, and `scene-palette.test.ts` holds
+ * it to a number against the {@link VEIL_STOPS} that apply there.
  *
- * It is not the whole answer, because it cannot be: the veil dims the picture
- * and the picture has a sheet of lit paper in it, which stays lighter than any
- * ink this place writes in. What text stands on there is {@link BAND}, and
- * `scene-palette.test.ts` is what holds both of them to a number.
+ * It is still not the whole answer, because it cannot be: the picture has a
+ * sheet of lit paper in it, which stays lighter than any ink this place
+ * writes in even under the darkest stop. What text stands on there is
+ * {@link BAND}.
  */
-export const VEIL = 'rgba(6, 17, 26, 0.26)';
+export const VEIL = `linear-gradient(to bottom, ${VEIL_STOPS.top} 0%, ${VEIL_STOPS.thin} 28%, ${VEIL_STOPS.thin} 62%, ${VEIL_STOPS.bottom} 100%)`;
 
 /**
  * The band a list of words is held by: the shadow under the canopy, deepened.
@@ -143,6 +167,12 @@ export const BAND_EDGE_WIDTH = 1.5;
  * temple's doors: at 0.72 a thirteen-pixel line reads there at 4.28 to one,
  * which is under the 4.5 small text is owed, and at 0.78 it reads at 4.71.
  * Everywhere else in the scene it is between seven and nine to one.
+ *
+ * That was measured against the flat veil this app used to paint. The veil is
+ * a gradient now (issue #190), dimming far less through its own middle, and
+ * this figure has not been re-measured against it — see
+ * `scene-palette.test.ts` and the question open on issue #190 about where
+ * `.78` still holds.
  */
 export const SCENE_INK_DIM = 'rgba(243, 236, 217, 0.78)';
 

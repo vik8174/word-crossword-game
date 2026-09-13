@@ -30,11 +30,14 @@ export interface Rect {
 /**
  * How long the weather takes to go, and to come back.
  *
- * Long enough that the board arrives on a background already settling rather
- * than one that snapped off behind it, and short enough to be over before
- * anybody has read the first clue.
+ * The template's own number for this fade (issue #190; `.petals`,
+ * `design/templates/state-tree.html` line 237) rather than the app's shorter
+ * one: sixteen hundred milliseconds is long enough that the change of air
+ * reads as weather settling rather than a layer switching off, and it is no
+ * longer shared with anything the crossfade between pictures needs — that is
+ * `SCENE_FADE_MS`, its own number in `scene-transition.ts`.
  */
-export const FADE_MS = 700;
+export const FADE_MS = 1600;
 
 /**
  * Where the three layers of the garden sit relative to the page.
@@ -43,9 +46,11 @@ export const FADE_MS = 700;
  * printed on: a negative layer is painted after the root's own background and
  * before anything in the flow above it. They are three numbers rather than one
  * because the order between them is the picture — the place furthest back, the
- * weather in front of it, and the dimming over both.
+ * dimming over it, and the weather in front of both (issue #190; the weather
+ * used to sit behind the dimming, which is why petals barely showed against a
+ * picture already put down by it).
  */
-export const LAYERS = { scene: -3, petals: -2, veil: -1 } as const;
+export const LAYERS = { scene: -3, veil: -2, petals: -1 } as const;
 
 /**
  * What every layer of the garden has in common: fixed to the window, and not
@@ -72,6 +77,11 @@ export const layerSx = (zIndex: number) =>
  * drawn once and then blown up. Everything above this line works in CSS pixels
  * and the transform is what keeps it able to.
  *
+ * Capped at two dots a pixel (issue #190; the template's own cap,
+ * `design/templates/state-tree.html` line 1661) rather than left to follow
+ * the screen without limit: past two, more dots stop reading as a sharper
+ * petal and only cost a phone frames it does not get back.
+ *
  * @param element - The canvas
  * @param brush - Its drawing context
  * @returns The window, in CSS pixels
@@ -84,7 +94,7 @@ export const fitToWindow = (
   brush: CanvasRenderingContext2D,
 ): Viewport => {
   const viewport: Viewport = { width: element.clientWidth, height: element.clientHeight };
-  const dots = window.devicePixelRatio > 0 ? window.devicePixelRatio : 1;
+  const dots = Math.min(2, window.devicePixelRatio > 0 ? window.devicePixelRatio : 1);
   const width = Math.round(viewport.width * dots);
   const height = Math.round(viewport.height * dots);
 

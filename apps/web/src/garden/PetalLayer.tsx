@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box';
-import { useTheme } from '@mui/material/styles';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useEffect, useRef, useState } from 'react';
 
@@ -13,11 +12,13 @@ import { useDocumentVisible } from './use-document-visible';
 /**
  * The most a single frame is allowed to be worth, in seconds.
  *
- * A frame that took a quarter of a second — a route being fetched, a phone
- * deciding to do something else — would otherwise move every petal a quarter of
- * a second's worth at once, which reads as the sky jumping.
+ * A frame that took a fifth of a second — a route being fetched, a phone
+ * deciding to do something else — would otherwise move every petal a fifth of
+ * a second's worth at once, which reads as the sky jumping. The template's own
+ * number (issue #190; `design/templates/state-tree.html` line 1674), tighter
+ * than the app's own fifteenth of a second.
  */
-const LONGEST_FRAME_SECONDS = 1 / 15;
+export const LONGEST_FRAME_SECONDS = 0.05;
 
 /**
  * The weather: one canvas of petals over the place, and the loop that draws it.
@@ -46,7 +47,6 @@ const LONGEST_FRAME_SECONDS = 1 / 15;
  * @param props.air - Whether petals are falling behind this screen
  */
 export const PetalLayer = ({ air }: { readonly air: GardenAir }) => {
-  const theme = useTheme();
   const isStill = useMediaQuery(REDUCED_MOTION_QUERY);
   const isAwake = useDocumentVisible();
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -60,14 +60,6 @@ export const PetalLayer = ({ air }: { readonly air: GardenAir }) => {
   // canvas fades between the two; this says whether there is any point drawing,
   // and it outlasts the air by the length of the fade.
   const [isDrawing, setIsDrawing] = useState(air === 'petals');
-
-  // The light sakura rather than the deep one, and the reason is what is now
-  // behind it. `sakura.main` is a plum that was picked when this app was a
-  // sheet of washi: over a forest at the end of an afternoon it is darker than
-  // everything it falls across, so a petal was a speck of shadow. `sakura.light`
-  // is lighter than the canopy at every point of the picture, which is what a
-  // petal in front of a wood actually is (issue #120).
-  const colour = theme.palette.sakura.light;
 
   // Petals are wanted again, so there is something to draw again — said here
   // rather than from an effect, because the loop should be running by the time
@@ -118,14 +110,14 @@ export const PetalLayer = ({ air }: { readonly air: GardenAir }) => {
           ? fillSky(sky, Math.random)
           : driftPetals(petals.current, seconds, sky, wanted, Math.random);
 
-      paintPetals(brush, petals.current, sky, colour);
+      paintPetals(brush, petals.current, sky);
       frame = window.requestAnimationFrame(step);
     };
 
     frame = window.requestAnimationFrame(step);
 
     return () => window.cancelAnimationFrame(frame);
-  }, [colour, isAwake, isDrawing, isStill]);
+  }, [isAwake, isDrawing, isStill]);
 
   if (isStill) {
     return null;
@@ -139,7 +131,7 @@ export const PetalLayer = ({ air }: { readonly air: GardenAir }) => {
       sx={{
         ...layerSx(LAYERS.petals),
         opacity: air === 'petals' ? 1 : 0,
-        transition: `opacity ${FADE_MS}ms ease-out`,
+        transition: `opacity ${FADE_MS}ms ease`,
       }}
     />
   );

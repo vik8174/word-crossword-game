@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import { driftPetals, fillSky, type Petal, petalsWanted, seedPetal, type Sky } from './petals';
+import {
+  driftPetals,
+  fillSky,
+  INK,
+  type Petal,
+  petalsWanted,
+  seedPetal,
+  SIZE,
+  type Sky,
+  TONES,
+} from './petals';
 
 const SKY: Sky = { width: 1440, height: 900 };
 
@@ -23,6 +33,7 @@ const petalAt = (petal: Partial<Petal>): Petal => ({
   angle: 0,
   size: 6,
   ink: 0.3,
+  tone: TONES[0],
   ...petal,
 });
 
@@ -66,6 +77,24 @@ describe('fillSky', () => {
 describe('seedPetal', () => {
   it('drops a petal in from over the top edge when that is what was asked for', () => {
     expect(seedPetal(always(0.5), SKY, 'above').y).toBeLessThan(0);
+  });
+
+  it('draws it at the template size and weight, in one of the template tones', () => {
+    // Pinned to the numbers the template draws petals at (issue #190):
+    // half-length 5-12 px, ink 0.55-0.92, and one of three tones at random.
+    for (const draw of [0, 0.25, 0.5, 0.75, 0.999]) {
+      const petal = seedPetal(always(draw), SKY, 'sky');
+
+      expect(petal.size).toBeGreaterThanOrEqual(SIZE.least);
+      expect(petal.size).toBeLessThanOrEqual(SIZE.most);
+      expect(petal.ink).toBeGreaterThanOrEqual(INK.least);
+      expect(petal.ink).toBeLessThanOrEqual(INK.most);
+      expect(TONES).toContain(petal.tone);
+    }
+  });
+
+  it('holds exactly the three tones the template draws petals in', () => {
+    expect(TONES).toEqual(['#F7D3B8', '#EEC4A8', '#EE9A8C']);
   });
 });
 
