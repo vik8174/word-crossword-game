@@ -4,9 +4,15 @@ A cooperative web game for two players: an asymmetric crossword in the style of 
 
 ## Language: English only
 
-Everything committed to this repository is written in **English** — README, CHANGELOG, ADRs, all other documentation, code comments, JSDoc, commit messages, branch names, and pull request descriptions.
+Everything technical in this project is written in **English**, without exception:
 
-This holds regardless of the language a session is being conducted in: a chat may run in Ukrainian, but what lands in the repository is English. The repository is public and serves as a portfolio piece, so it stays readable to anyone.
+- **everything committed**: README, CHANGELOG, ADRs and all other documentation, code, code comments, JSDoc, commit messages and branch names
+- **everything on GitHub**: issue titles and bodies, pull request titles and bodies, and every comment on either
+- **everything the roles write for each other**: a Worker's report, an Inspector's verdict, the round records under `handoffs/verdicts/`, handoff documents, and messages between sessions
+
+The one thing that may be in Ukrainian is the conversation with Viktor himself: what a session says to him in its own chat, and a notification to his phone. A session that talks to him in Ukrainian still writes everything above in English. This rule takes precedence over any general preference for Ukrainian, and "comments" in such a preference means the conversation, never a comment in code or on GitHub.
+
+The repository and its board are public and serve as a portfolio piece, so they stay readable to anyone. What was written in Ukrainian before this rule is a record and is left as it is.
 
 ## Architecture (in brief)
 
@@ -80,14 +86,14 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 - You label an issue `in progress` when its pair starts and remove the label when the pull request merges or the issue is escalated. An issue waiting on a human is blocked, not in progress
 - All traffic between a Worker and its Inspector goes through you. **You are the author of the instruction** that follows a failing verdict: the Inspector reports what it found, you turn that into what the Worker should do, with the context the Worker lacks
 - You count rounds. **Five rounds per issue**; on the sixth, escalate
-- **You merge**, once the Inspector could not refute the work and every check is green. The green half is enforced by a hook rather than by your eye: `gh pr merge` here is refused for a pull request that is red, still running, draft, conflicting, or behind its base branch. When it merges, you leave one line of your own on the issue saying so. A release, a change of scope, and an escalation are still Viktor's
+- **You merge**, once the Inspector could not refute the work and every check is green. The green half is enforced by a hook rather than by your eye: `gh pr merge` here is refused for a pull request that is red, still running, draft, conflicting, or behind its base branch. When it merges, you leave one line of your own on the issue saying so. An issue marked HITL merges the same way, and what needs Viktor's eye goes onto the release issue, for him to look at on stage before the tag. A release, a change of scope, and an escalation are still Viktor's
 - You do not write code and you do not edit issues
 
 ### If you are the Architect
 
 - You own the board: issues, their dependencies, and acceptance criteria that can actually be checked. Most deadlocks come from a criterion that allowed two readings
 - You are the **first instance of appeal**, not the last. Facts and boundaries you settle yourself; taste, trade-offs and scope go to Viktor
-- Where an issue contains a fork in how something should look, resolving it **before** the work starts is cheaper than an extra round after it. A mock-up with the options, chosen by Viktor up front, turns a HITL issue into a plain one
+- Where an issue contains a fork in how something should look, resolving it **before** the work starts is cheaper than an extra round after it. A mock-up with the options, chosen by Viktor up front, turns a HITL issue into a plain one. What a mock-up cannot settle is looked at on stage before the release, from a list the issue carries
 - You do not implement, and you do not run Workers
 
 ### Escalation

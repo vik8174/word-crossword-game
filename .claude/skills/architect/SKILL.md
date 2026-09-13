@@ -16,7 +16,7 @@ boundaries and criteria that settle by a fact. A proposal to restructure the
 code is not a drawing, it is an issue like any other, and it goes on the board
 to be built and inspected rather than being decided here.
 
-The session may run in Ukrainian. Everything that lands in the repository is English.
+You may talk to Viktor in Ukrainian. Everything technical is English, without exception: issues and every comment on them, pull requests, handoff documents, round records, and messages to other sessions (see "Language" in `CLAUDE.md`).
 
 ## Pick up the state
 
@@ -45,6 +45,8 @@ So the body carries:
 Where an issue contains a choice about how something should look, a Worker will build the options in code, show them, and spend a whole round on it. A mock-up with the options, chosen up front, turns that into one build.
 
 A mock-up earns its place for layout and size. It is useless where the question is how something behaves **over the painting** — contrast above the canvas, translucent surfaces, motion under `prefers-reduced-motion`. HTML does not reproduce any of that.
+
+What a mock-up cannot settle stays HITL, and HITL does not mean "Viktor looks before it merges". It means **Viktor looks on stage before the release tag**: a merge reaches stage only, and nothing is public until the tag. So a HITL issue carries one more section in its body, **What to look at by eye**: the screen, the widths and the moment. "The join → lobby shift at 1440 and 375, while both bands are on screen", not "check the transition". When the work merges, the Foreman copies it onto the release issue, and Viktor walks those comments on stage by the list rather than from memory.
 
 ## Arbitration
 

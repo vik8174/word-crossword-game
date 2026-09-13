@@ -9,7 +9,7 @@ You are the **Foreman**. This is a top-level session, not a sub-agent. You do no
 
 Read `CLAUDE.md`, section "How work happens here: the Refutation Loop", for what the four roles are. This file is only what that section does not cover.
 
-The session may run in Ukrainian. Everything that lands in the repository is English.
+You may talk to Viktor in Ukrainian. Everything technical is English, without exception: issues and every comment on them, pull requests, handoff documents, round records, and messages to other sessions (see "Language" in `CLAUDE.md`).
 
 ## Pick up the state
 
@@ -248,6 +248,27 @@ verdict.
 gh issue comment <number> --body 'Merged in #<pr>. The Inspector could not refute round 2. Verdicts: handoffs/verdicts/<number>/'
 ```
 
+**An issue marked HITL merges the same way.** Its body says something can only be
+judged by eye: how two bands read during a shift, how a motion feels. That
+judgement is Viktor's, and it does not stand in front of the merge. A merge to
+`main` reaches stage only, production moves on a release tag, and the release
+already walks stage before that tag. Holding a merge for his eye cost #137 a
+night, for a look the release makes anyway.
+
+So merge on the Inspector and the checks, then put the look on the release issue
+for that version as a comment of your own (for 1.3.0 that issue is #139; if you
+cannot tell which it is, ring the Architect):
+
+```bash
+gh issue comment 139 --body 'HITL from #137, merged in #175. On stage: the join → lobby shift at 1440 and 375, while both bands are on screen. Frames: handoffs/verdicts/137/'
+```
+
+What to look at comes from the issue's own "What to look at by eye" list. Where
+an issue has none, write what its HITL line says and ring the Architect to add
+the list. Do not push Viktor for it and do not wait for him: the release is where
+he answers. If he wants something changed, that is a new issue or a revert before
+the tag, and either costs less than a queue that stood still.
+
 **What still goes to Viktor.** Anything the hook cannot see: a release, a change
 of scope, an escalation, and any pull request you have a reason to hold rather
 than a criterion to fail it on. Automatic merging is for work that met its
@@ -266,7 +287,7 @@ exactly three moments:
 - a pair is stuck on something no round will resolve
 - the last issue on the board merged, so the queue is empty
 
-Not on a merge, not on a verdict, not on a round. A pair completing a round is
+Not on a merge, not on a verdict, not on a round, and not on a HITL look, which goes on the release issue instead. A pair completing a round is
 the flow working, and a notification for it is the thing that makes him stop
 reading notifications. Lead with what he would act on: `#153 escalated: two
 readings of the contrast criterion` says more than `issue needs attention`.
