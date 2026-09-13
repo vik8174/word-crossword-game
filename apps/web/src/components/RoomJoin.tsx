@@ -89,8 +89,10 @@ export const RoomJoin = ({ roomId, playerId, seatToRelease, onRefused }: RoomJoi
     // Both zones empty, and the form where the board will be: this visitor is
     // not in the room yet, so there is nothing of the game to put either side of
     // them. It is the same frame all the same, so walking in moves the contents
-    // of a screen rather than replacing one.
-    <RoomShell title="Join the game">
+    // of a screen rather than replacing one. `gateBand` is set because this
+    // visitor's room does not exist for them yet either — they are still at the
+    // gate, standing on the same band `/create` does (issue #137).
+    <RoomShell title="Join the game" gateBand>
       <RoomMiddleColumn>
         <JoinRoomForm
           onJoin={(nickname) => void submitJoin(nickname)}

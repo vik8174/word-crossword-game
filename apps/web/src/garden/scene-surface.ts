@@ -74,6 +74,30 @@ const BAND_PLACES: Record<BandPlace, CSSObject> = {
 };
 
 /**
+ * How wide the gate's own band is allowed to be.
+ *
+ * The gate has two screens that stand on this band — `/create` and `join` —
+ * and both read the same sign, so the width is one constant rather than two
+ * copies obliged to move together. `RoomShell.tsx` has its own `BAND_WIDTH`,
+ * for a room zone's band; that is a different width for a different surface,
+ * and the two must never be confused for one another, which is why this one
+ * is named for what it measures rather than reused under that same name.
+ *
+ * Also the width at which the band stops being narrower than the window, and
+ * so the width its hairlines vanish at — one number doing both jobs, which is
+ * the only way the two can be kept from drifting apart (see
+ * {@link fullHeightBandSx}). On a phone the band is therefore the whole width
+ * of the window with no line down either side, and that is the point rather
+ * than a fallback: a band with a finger of forest left showing beside it is a
+ * card again.
+ *
+ * In `rem`, so that it grows with the size the reader has set their own text
+ * in, and as one term rather than a sum, so that the threshold can be said in
+ * the same units without arithmetic in a media query.
+ */
+export const GATE_BAND_WIDTH = '34rem';
+
+/**
  * The band drawn out to the top and the bottom of its frame, where it stands
  * in it.
  *
