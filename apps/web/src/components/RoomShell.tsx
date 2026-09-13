@@ -7,6 +7,7 @@ import { gapAt } from '../scale';
 import {
   BAND_SX,
   GATE_BAND_WIDTH,
+  GATE_ON_SCENE_SX,
   ON_SCENE_SX,
   fullHeightBandSx,
   stepTitleSx,
@@ -129,7 +130,10 @@ export const RoomMiddleColumn = ({ children }: { readonly children: ReactNode })
       maxWidth: GATE_COLUMN_WIDTH,
       mx: 'auto',
       p: 5,
-      ...ON_SCENE_SX,
+      // `join` is the only caller, and it stands on the gate's own band, so
+      // this reads full cream rather than the dimmer `ON_SCENE_SX`
+      // (`garden/scene-surface.ts`'s `GATE_ON_SCENE_SX`, issue #190).
+      ...GATE_ON_SCENE_SX,
     }}
   >
     {children}

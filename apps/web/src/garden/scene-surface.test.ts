@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { fullHeightBandSx } from './scene-surface';
-import { BAND, BAND_EDGE } from './scene-palette';
+import { GATE_ON_SCENE_SX, ON_SCENE_SX, fullHeightBandSx } from './scene-surface';
+import { BAND, BAND_EDGE, SCENE } from './scene-palette';
 
 /**
  * What this file is for: a band is told from a panel by two things, and both of
@@ -103,3 +103,29 @@ describe('a band drawn out to the top and bottom of its frame', () => {
 // every button on a scene is `components/PillButton.tsx` now, which reads
 // none of `ON_SCENE_SX`. Its own look is pinned in `button-styles.test.ts`
 // instead, next to the styles it tests.
+
+describe('the gate reading its own body text, labels and help at full cream', () => {
+  it('lifts exactly the three lines the gate band changes, and nothing else', () => {
+    // `/create` and the room's `join` screen stand on the gate's own band,
+    // under the lighter middle of the new veil, so their help text and field
+    // labels read full cream instead of the dimmer ink every other screen on
+    // a picture still uses (issue #190). Everything else `ON_SCENE_SX` sets is
+    // unchanged — this is `ON_SCENE_SX` with three rules overridden, not a
+    // palette of its own.
+    const overridden: (keyof typeof ON_SCENE_SX)[] = [
+      '& .MuiTypography-body2',
+      '&& .MuiInputLabel-root',
+      '&& .MuiFormHelperText-root',
+    ];
+
+    for (const key of overridden) {
+      expect(GATE_ON_SCENE_SX[key]).toEqual({ color: SCENE.cream });
+    }
+
+    for (const [key, value] of Object.entries(ON_SCENE_SX)) {
+      if (!(overridden as string[]).includes(key)) {
+        expect(GATE_ON_SCENE_SX[key as keyof typeof ON_SCENE_SX]).toEqual(value);
+      }
+    }
+  });
+});

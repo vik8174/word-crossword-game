@@ -289,3 +289,29 @@ export const ON_SCENE_SX: CSSObject = {
   '&& .MuiFormHelperText-root': { color: SCENE_INK_DIM },
   '&& .MuiFormHelperText-root.Mui-error': { color: SCENE.cream },
 };
+
+/**
+ * {@link ON_SCENE_SX}, with every `.78` line read off the gate's own band at
+ * full cream instead.
+ *
+ * A second constant rather than a new value inside `SCENE_INK_DIM` or the
+ * three rules above (issue #190): `ON_SCENE_SX` is shared by every screen this
+ * app stands on a picture, and the body of this ticket dims the veil under the
+ * doors and the hall exactly as it does under the gate — a band there still
+ * measures under 4.5 at `.78` in places, so those screens keep the dimmer ink.
+ * Only the gate's own band — `/create` and the room's `join` screen, both
+ * drawn under the lighter middle of the new veil — reads full cream instead
+ * (`design/templates/state-tree.html`'s help text, issue #183). A screen
+ * spreads this rather than `ON_SCENE_SX` only where every body2 line, field
+ * label and helper text it draws is known to stand on that band: `/create`'s
+ * whole page is the band, and so is `RoomMiddleColumn`, the one place `join`
+ * draws its form (`components/RoomShell.tsx`) — neither has anything written
+ * off the gate's band in the dimmer ink, so nothing here needs scoping any
+ * narrower than the page that uses it.
+ */
+export const GATE_ON_SCENE_SX: CSSObject = {
+  ...ON_SCENE_SX,
+  '& .MuiTypography-body2': { color: SCENE.cream },
+  '&& .MuiInputLabel-root': { color: SCENE.cream },
+  '&& .MuiFormHelperText-root': { color: SCENE.cream },
+};

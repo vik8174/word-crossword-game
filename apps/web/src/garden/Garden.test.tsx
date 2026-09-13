@@ -311,7 +311,18 @@ describe('Garden', () => {
     // `GateScene` and `Garden` each used to paint `VEIL`, correct only because
     // the two never coexisted (issue #166 put every route, `/` included,
     // behind this one component). Counting elements at the veil's exact
-    // colour is what would have caught two of them standing on one picture.
+    // gradient is what would have caught two of them standing on one picture.
+    //
+    // `VEIL` is a gradient, painted as `background-image` rather than
+    // `background-color` (issue #190) — the property a gradient is actually
+    // read from — so nothing else may set a `background-color` of its own
+    // either, or two dimmings would be standing on the picture unseen by this
+    // count.
+    //
+    // `to bottom` is `linear-gradient`'s own default direction, so both jsdom
+    // and a real browser drop it from the computed value — the comparison
+    // strips it from `VEIL` too rather than expect a literal echo of the
+    // source string.
     const { container } = render(
       <ThemeProvider theme={theme}>
         <Garden>
@@ -320,10 +331,21 @@ describe('Garden', () => {
       </ThemeProvider>,
     );
 
+    const computedVeil = VEIL.replace('to bottom, ', '');
     const veils = Array.from(container.querySelectorAll('*')).filter(
-      (element) => getComputedStyle(element).backgroundColor === VEIL,
+      (element) => getComputedStyle(element).backgroundImage === computedVeil,
     );
 
     expect(veils).toHaveLength(1);
+
+    const [veil] = veils;
+
+    if (veil === undefined) {
+      throw new Error('the veil was expected to be found and was not');
+    }
+
+    expect(['', 'rgba(0, 0, 0, 0)', 'transparent']).toContain(
+      getComputedStyle(veil).backgroundColor,
+    );
   });
 });

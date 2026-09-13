@@ -39,6 +39,8 @@ export interface Petal {
   readonly size: number;
   /** How much ink it carries, 0 to 1. */
   readonly ink: number;
+  /** Which of {@link TONES} it is drawn in. */
+  readonly tone: string;
 }
 
 /**
@@ -84,22 +86,39 @@ const THICKEST_SKY = 1.8;
 const SEED_BAND = 0.15;
 
 /**
+ * The three colours a petal may be drawn in, picked at random per petal.
+ *
+ * From the scene prototype Viktor accepted, ported unchanged from the
+ * template (`design/templates/state-tree.html`'s `TONES`, line 1615). Used to
+ * be one colour for the whole layer — `sakura.light`, picked when this app was
+ * a sheet of washi (issue #120) — but a single tone over a forest at the end
+ * of an afternoon reads as one repeated mark rather than as petals falling
+ * through it.
+ */
+export const TONES = ['#F7D3B8', '#EEC4A8', '#EE9A8C'] as const;
+
+/**
  * The ranges a petal is drawn from, each one inclusive of its floor.
  *
  * The size and the ink are the two that were measured against a forest rather
- * than against paper, and the ceiling on the ink is measured rather than
- * chosen. A petal is lighter than everything it falls across now, so a petal in
- * front of a sentence lifts what that sentence is standing on — and the name of
- * a step stands on the picture with no band under it. Fifty-two hundredths is
- * the most a petal may carry and still leave cream at 4.63 to one over the
- * darkest surfaces this app writes on; at fifty-six it is 4.31, which is under
- * what small text is owed (`scene-palette.test.ts`).
+ * than against paper, and both are the template's own numbers now (issue
+ * #190), the app's own dimmer measurement retired along with the flat veil it
+ * was measured against. A petal is lighter than everything it falls across,
+ * so a petal in front of a sentence lifts what that sentence is standing
+ * on — and the name of a step stands on the picture with no band under it, so
+ * a petal crossing behind one is no longer held to four and a half to one
+ * there: at these numbers it falls as low as 1.4 to one, and Viktor accepted
+ * that rather than dimming the petals back down to protect it (2026-09-13,
+ * issue #190). What still holds is the band every other sentence in this app
+ * actually stands on — cream reads at 4.55 or better there even with the
+ * brightest petal, at its fullest ink, crossing behind it over the brightest
+ * surface the picture has (`scene-palette.test.ts`).
  */
 const FALL = { least: 22, most: 62 };
 const SWAY = { least: 7, most: 26 };
 const SPIN = { least: -1.1, most: 1.1 };
-const SIZE = { least: 7, most: 19 };
-export const INK = { least: 0.26, most: 0.52 };
+export const SIZE = { least: 5, most: 12 };
+export const INK = { least: 0.55, most: 0.92 };
 
 /** How fast a petal travels through its sideways wander, in radians a second. */
 const SWAY_RATE = 0.9;
@@ -162,6 +181,7 @@ export const seedPetal = (random: () => number, sky: Sky, from: 'sky' | 'above')
   angle: random() * Math.PI * 2,
   size: between(random, SIZE),
   ink: between(random, INK),
+  tone: TONES[Math.floor(random() * TONES.length)] ?? TONES[0],
 });
 
 /**
