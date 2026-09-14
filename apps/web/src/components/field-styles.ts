@@ -51,6 +51,14 @@ export const fieldSx = (state: FieldStyleState): SxProps<Theme> => {
       : FIELD.ink;
 
   return {
+    // Positioned, not static, so the field paints above the gate's band:
+    // `RoomShell` draws that band as an absolutely positioned sibling earlier
+    // in the same parent (`RoomMiddleColumn`, itself unpositioned), and a
+    // static element there paints underneath it. MUI's own field was
+    // `position: relative` for the same reason; without this the field on
+    // join reads the band's dimmed colour instead of the washi fill
+    // (issue #193 round 1, refuted on every join state).
+    position: 'relative',
     display: 'flex',
     alignItems: state.multiline ? 'flex-start' : 'center',
     gap: '10px',
