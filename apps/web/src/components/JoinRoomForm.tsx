@@ -1,11 +1,11 @@
 import Box from '@mui/material/Box';
 import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
 import { readRememberedNickname } from '../rooms/nickname-store';
+import { Field } from './Field';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
 
@@ -57,14 +57,14 @@ export const JoinRoomForm = ({ onJoin, isJoining, errorMessage }: JoinRoomFormPr
           You have been invited to a game. Pick a name the other players will know you by.
         </Typography>
 
-        <TextField
+        <Field
+          id="nickname"
           label="Your nickname"
           value={nickname}
-          onChange={(event) => setNickname(event.target.value)}
+          onChange={setNickname}
           disabled={isJoining}
-          slotProps={{ htmlInput: { maxLength: MAX_NICKNAME_LENGTH } }}
+          maxLength={MAX_NICKNAME_LENGTH}
           autoFocus
-          fullWidth
         />
 
         {errorMessage !== undefined && (

@@ -304,3 +304,56 @@ export const QUIET_CONTROL = {
   dangerHoverFill: 'rgba(147, 41, 15, 0.72)',
   dangerHoverEdge: SCENE.vermilionLit,
 } as const;
+
+/**
+ * The field: an opaque scrap of washi laid on the band for a player to type
+ * into — `design/templates/state-tree.html`'s `.field`, lines 532-566
+ * (issue #193, `components/Field.tsx`).
+ *
+ * A third palette beside {@link CONTROL} and {@link QUIET_CONTROL} rather
+ * than a corner of either, because it is a third material: the control is
+ * the temple's own red, this is paper. Its ink, `#2B2620`, happens to equal
+ * the figure `theme.ts` calls `sumi` — both were read off the same idea of
+ * "dark ink on warm paper" — but it is written here rather than imported
+ * from the theme, the same way {@link CONTROL}'s fill happens to equal
+ * {@link SCENE.vermilion} without reaching into `scene-palette.ts`'s own
+ * `SCENE` by reference for every figure that happens to coincide: a scene
+ * constant reaching into the theme module would blur the seam
+ * `scene-surface.ts`'s own doc describes, for a match that is circumstantial
+ * rather than a rule.
+ */
+export const FIELD = {
+  /** The pill's own fill — not `theme.ts`'s own `washi`, a different value entirely. */
+  fill: '#F2E7D0',
+  /** The dark ink the edge and the text are drawn in, at rest. */
+  ink: '#2B2620',
+  /**
+   * The placeholder this app actually draws — Viktor's correction over the
+   * template's own `.44` (2026-09-13, issue #193's "one allowed
+   * difference"): `.44` over washi reads 2.5:1, and the words field's
+   * placeholder is the only example an owner sees of how to separate a list
+   * of words, so it is raised to `.7` — the lowest fourth-of-a-cent step
+   * above the `.66` floor that clears 4.5:1, which reads 5.07:1 and keeps a
+   * margin over how a browser actually rounds it.
+   */
+  placeholder: 'rgba(43, 38, 32, 0.7)',
+  /** The lead dot at rest: ink, thinned to a bit over a quarter. */
+  dot: 'rgba(43, 38, 32, 0.28)',
+  /** The fill a fault turns the field: the same ink family, barely tinted. */
+  invalidFill: '#F6E6DA',
+  /** A locked field's own fill: washi, mostly hidden under the band it sits on. */
+  lockedFill: 'rgba(242, 231, 208, 0.42)',
+  /** A locked field's edge: ink, thinned. */
+  lockedEdge: 'rgba(43, 38, 32, 0.4)',
+  /** A locked field's own text: ink, dimmed to just over half. */
+  lockedInk: 'rgba(43, 38, 32, 0.55)',
+  /** The shadow every field but a locked one casts off the band it stands on. */
+  lift: '0 8px 22px -12px rgba(0, 0, 0, 0.75)',
+  /**
+   * The ring a focused field is drawn with, {@link lift} included — the
+   * template repeats the lift as the third layer of the same declaration
+   * rather than letting the two compose, so this does too
+   * (`design/templates/state-tree.html` line 539).
+   */
+  focusRing: `0 0 0 3px rgba(218, 70, 32, 0.28), 0 0 18px -2px rgba(242, 118, 47, 0.55), 0 8px 22px -12px rgba(0, 0, 0, 0.75)`,
+} as const;

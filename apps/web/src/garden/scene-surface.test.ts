@@ -104,19 +104,21 @@ describe('a band drawn out to the top and bottom of its frame', () => {
 // none of `ON_SCENE_SX`. Its own look is pinned in `button-styles.test.ts`
 // instead, next to the styles it tests.
 
-describe('the gate reading its own body text, labels and help at full cream', () => {
-  it('lifts exactly the three lines the gate band changes, and nothing else', () => {
+describe('the gate reading its own body text at full cream', () => {
+  it('lifts exactly the one line the gate band still changes, and nothing else', () => {
     // `/create` and the room's `join` screen stand on the gate's own band,
-    // under the lighter middle of the new veil, so their help text and field
-    // labels read full cream instead of the dimmer ink every other screen on
-    // a picture still uses (issue #190). Everything else `ON_SCENE_SX` sets is
-    // unchanged — this is `ON_SCENE_SX` with three rules overridden, not a
+    // under the lighter middle of the new veil, so their body text reads
+    // full cream instead of the dimmer ink every other screen on a picture
+    // still uses (issue #190). Everything else `ON_SCENE_SX` sets is
+    // unchanged — this is `ON_SCENE_SX` with one rule overridden, not a
     // palette of its own.
-    const overridden: (keyof typeof ON_SCENE_SX)[] = [
-      '& .MuiTypography-body2',
-      '&& .MuiInputLabel-root',
-      '&& .MuiFormHelperText-root',
-    ];
+    //
+    // Two more lines used to be lifted here, `&& .MuiInputLabel-root` and
+    // `&& .MuiFormHelperText-root`: issue #193 moved every field the gate
+    // renders onto `components/Field.tsx`, which draws neither MUI class, so
+    // a rule lifting them would now match nothing on this scene — the trap
+    // this file's own comment above warned about.
+    const overridden: (keyof typeof ON_SCENE_SX)[] = ['& .MuiTypography-body2'];
 
     for (const key of overridden) {
       expect(GATE_ON_SCENE_SX[key]).toEqual({ color: SCENE.cream });
@@ -127,5 +129,14 @@ describe('the gate reading its own body text, labels and help at full cream', ()
         expect(GATE_ON_SCENE_SX[key as keyof typeof ON_SCENE_SX]).toEqual(value);
       }
     }
+  });
+
+  it('carries no rule for an element nothing on a scene renders any more', () => {
+    // `RoomInvitePanel.tsx` is the one `TextField` left in the app and never
+    // sets `helperText`, so `FormHelperText` renders nowhere on a scene —
+    // the rule that used to colour it is gone from `ON_SCENE_SX` itself,
+    // not only from `GATE_ON_SCENE_SX`'s own override of it.
+    expect(ON_SCENE_SX['&& .MuiFormHelperText-root']).toBeUndefined();
+    expect(ON_SCENE_SX['&& .MuiFormHelperText-root.Mui-error']).toBeUndefined();
   });
 });
