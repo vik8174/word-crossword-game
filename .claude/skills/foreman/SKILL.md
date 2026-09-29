@@ -273,10 +273,49 @@ the list. Do not push Viktor for it and do not wait for him: the release is wher
 he answers. If he wants something changed, that is a new issue or a revert before
 the tag, and either costs less than a queue that stood still.
 
+**An issue that leaves its screen half built merges the same way, and says so on
+the release issue.** Where its body has a **What stays wrong until** section,
+copy that line onto the release issue as a comment of your own when it merges.
+That is how a closer that does not exist becomes visible the day the first half
+lands, instead of when someone looks at stage. It is a comment and never an edit
+of the release issue's "Screens, and what each still needs" table: you do not
+edit issues, and the Architect folds the comment into the table.
+
+```bash
+gh issue comment 139 --body 'Screen line from #193, merged in #195. Stays wrong until #197: the create panel. /create still stands on the full-height band. Verdicts: handoffs/verdicts/193/'
+```
+
+If the section names a closing issue you cannot find on the board, that is the failure this
+rule exists for. Say so in the comment, ring the Architect, and do not treat the
+merge as finishing the screen.
+
 **What still goes to Viktor.** Anything the hook cannot see: a release, a change
 of scope, an escalation, and any pull request you have a reason to hold rather
 than a criterion to fail it on. Automatic merging is for work that met its
 acceptance criteria, and for nothing else.
+
+## When the queue is empty
+
+**An empty queue is written on the board, and the notification is only for the
+phone.** Whenever nothing on the board is takeable, whether the last issue just
+merged, everything left waits on a template or on a dependency, or you have just
+started and found it so, comment once on the release issue (for 1.3.0, #139) in
+one line:
+
+- what merged last
+- that nothing is takeable
+- which seat the board is waiting on: the Architect for an issue that is not
+  written or not ready, Viktor for a template or a release, or nobody, if the
+  release is simply ready to tag
+
+```bash
+gh issue comment 139 --body 'Last merged: #195 (the field). Nothing is takeable. Waiting on the Architect: the create panel is not written as an issue.'
+```
+
+A notification is a moment and this is the record. Fifteen days of a stopped loop
+on stage went unseen because only the moment existed ([0036](../../../docs/decisions/0036-a-screen-is-finished-on-the-release-issue.md)).
+Do not comment again for the same standstill; comment again when the reason
+changes. If you cannot tell which issue is the release issue, ring the Architect.
 
 ## Running from a phone
 
@@ -289,7 +328,7 @@ exactly three moments:
 
 - a question reached Viktor's side of the table: the Architect said it is his, or no Architect is running and nothing else on the board can move
 - a pair is stuck on something no round will resolve
-- the last issue on the board merged, so the queue is empty
+- the last issue on the board merged, so the queue is empty (the comment on the release issue above is written whether or not you are on a phone)
 
 Not on a merge, not on a verdict, not on a round, and not on a HITL look, which goes on the release issue instead. A pair completing a round is
 the flow working, and a notification for it is the thing that makes him stop
