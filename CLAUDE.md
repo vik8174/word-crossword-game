@@ -153,6 +153,131 @@ Most of the git history and every ticket up to release 1.3.0 was produced that w
 
 Handoff documents live in `handoffs/` (git-ignored). The project's durable memory is git history, GitHub issues/PRs, and `docs/decisions/`; no separate cross-session memory is needed.
 
+## The project contract
+
+Every seat of the loop reads this section, and every acceptance criterion cites
+it. **Each number below was measured on `92f7797`, on 2026-09-29**, by running
+the command beside it. Nothing here is copied from a README. If you find a figure
+that no longer holds, that is a finding about this section, and correcting it is
+the Architect's hand.
+
+### Toolchain
+
+`pnpm@10.33.0` (the `packageManager` field pins it), Node 22 (what CI uses), a
+pnpm workspace over `apps/*` and `packages/*`.
+
+### Commands, and how long each takes
+
+| what       | command                                            | measured                               |
+| ---------- | -------------------------------------------------- | -------------------------------------- |
+| install    | `pnpm install --frozen-lockfile`                   | 5 s with a warm store, minutes without |
+| dev server | `pnpm dev` (Vite, `--port` to move it)             | —                                      |
+| workshop   | `pnpm --filter web storybook`                      | port 6006 unless moved                 |
+| lint       | `pnpm lint` (`eslint .` then `prettier --check .`) | 9 s                                    |
+| tests      | `pnpm test`                                        | 20 s, 943 tests in 84 files            |
+| coverage   | `pnpm test:coverage`                               | 27 s, 99.55 % of statements            |
+| build      | `pnpm build`                                       | 14 s                                   |
+| rules      | `pnpm test:rules`                                  | 8 s                                    |
+
+`pnpm build` is four things in a row: `tsc --noEmit`, `vite build`,
+`assert-no-source-maps.mjs`, and a Storybook build. A type error fails the build
+rather than a separate typecheck step, so there is no `pnpm typecheck`.
+
+`pnpm test:rules` starts a Firestore emulator, which needs a JDK. It passes on
+Java 17 today and **warns that firebase-tools 15 will require Java 21**; when
+that lands, this is the check that breaks first.
+
+### The checks that must be green before a merge
+
+Five, and these are the names CI gives them: **Lint, Test, Coverage, Build,
+Rules**. All five passed on `92f7797` from a clean worktree.
+
+The merge is gated by a hook rather than by anyone's eye: `gh pr merge` here is
+refused for a pull request that is red, still running, draft, conflicting, or
+**behind its base branch**. A refusal is information, not an obstacle:
+`gh pr update-branch <n>`, wait for the checks, merge. There is never another
+route to the same merge.
+
+### Ports
+
+They must not collide, because a crew and its Inspector run at the same time.
+
+| seat               | dev server                   | workshop | served template |
+| ------------------ | ---------------------------- | -------- | --------------- |
+| Worker             | 5174                         | 6006     | 8174            |
+| Inspector          | 5175 (and 5176 for a second) | 6007     | 8175            |
+| an issue inspector | 5178                         | —        | 8176            |
+
+Vite's own default is 5173; leave it free for whoever is working by hand.
+
+### What a worktree needs that git does not carry
+
+**`apps/web/.env`, which lives in `apps/web/` and not at the repository root.**
+Carry it with:
+
+```bash
+scripts/copy-env-to-worktree.sh <path-to-worktree>
+```
+
+A dev server without it answers 200 with an empty page and `Missing Firebase env
+vars` in the console, which looks exactly like a broken app. That trap has cost
+this project two review rounds. The script exists rather than a hand-written `cp`
+because a permission rule matches a command by its prefix: one name is one rule.
+
+### Budgets an issue may cite
+
+| ceiling                            | where it is enforced                                        | measured on `92f7797`                             |
+| ---------------------------------- | ----------------------------------------------------------- | ------------------------------------------------- |
+| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **192.2 KiB**                                     |
+| one scene image, **180.0 KiB**     | `apps/web/build/scene-weight.ts`                            | doors.avif 121.9, gate.avif 160.5, hall.avif 98.4 |
+
+**CI weighs a lighter bundle than the one that reaches a player**, by roughly
+1.5 KiB: a production build carries a Sentry token that a CI build does not. The
+difference is in the artefact, not in the moment of measuring, so a pull request
+sitting 1 KiB under the ceiling in CI is not under it in production. Say which
+build produced any figure quoted in an issue.
+
+### Templates
+
+`design/templates/`, one file per drawing; the state tree is
+`design/templates/state-tree.html`. A visual issue is drawn before it is built,
+approved by Viktor, and merged to `main` on a `design/<name>` branch before the
+issue that builds it starts (ADR 0035). The Worker builds to it and the Inspector
+serves it beside the branch.
+
+### Recording a round
+
+```bash
+scripts/record-round.sh <issue> <round> report|verdict     # handoffs/verdicts/<issue>/
+```
+
+**The copy in this repository does not yet take `issue-verdict`, and it silently
+overwrites a record that already exists.** Both are #205; until it merges, an
+issue inspector writes its verdict to `handoffs/issue-reviews/<issue>/` by hand.
+`handoffs/` is git-ignored, which is the point: a verdict that lives only in a
+sub-agent's context dies with it.
+
+### What a person must look at before a release
+
+**#139**, the release issue. It carries the Screens table, and each merged issue
+adds its own "what to look at by eye" list to it. The Architect keeps that table;
+its input is what lands on the release issue when an issue merges, not the merge
+line on the issue itself.
+
+### Measuring traps this project has already paid for
+
+- **Narrow viewports need device emulation.** A plain window resize clips at
+  500 px here, so 375 is unreachable that way.
+- **Browser screenshots must land inside a workspace root.** Put them under
+  `handoffs/`.
+- **A contrast measurement hides the ink with `visibility: hidden`**, never
+  `color: transparent`, which leaves the text shadow in the plate. And the best
+  of several samples is not the median: say which you took.
+- **An app-side figure in an issue is often derived from source rather than
+  measured in a running app.** An issue must say which, of every number. A live
+  measurement that disagrees with a derived one is a finding about the issue, to
+  be raised rather than built around.
+
 ## Development process
 
 Branches, code review, CI, ADRs, changelog — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
