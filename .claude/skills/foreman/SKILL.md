@@ -285,7 +285,7 @@ edit issues, and the Architect folds the comment into the table.
 gh issue comment 139 --body 'Screen line from #193, merged in #195. Stays wrong until #197: the create panel. /create still stands on the full-height band. Verdicts: handoffs/verdicts/193/'
 ```
 
-If the body names an #N you cannot find on the board, that is the failure this
+If the section names a closing issue you cannot find on the board, that is the failure this
 rule exists for. Say so in the comment, ring the Architect, and do not treat the
 merge as finishing the screen.
 
