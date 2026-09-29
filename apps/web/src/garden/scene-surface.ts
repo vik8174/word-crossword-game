@@ -329,16 +329,17 @@ export const ON_SCENE_SX: CSSObject = {
  * the board on `playing` at 1440 (`SENTENCE_BAND_SX`), a real reading off the
  * page that this issue records rather than fixes: its look is Viktor's, and
  * goes with the game-room issue (#139, item 14), not with this constant.
- * Only the gate's own surfaces — `/create`'s panel and the room's `join`
- * band, both drawn under the lighter middle of the new veil — read full cream instead
+ * Only the gate's own surface — `/create`'s panel, drawn under the lighter
+ * middle of the new veil — reads full cream instead
  * (`design/templates/state-tree.html`'s help text, issue #183). A screen
  * spreads this rather than `ON_SCENE_SX` only where every body2 line it draws
  * is known to stand on the gate's own surface: everything `/create` writes is
- * inside its panel, which is the band's own colour, and so is
- * `RoomMiddleColumn`, the one place `join` draws its form
- * (`components/RoomShell.tsx`) — neither has anything written off that
- * surface in the dimmer ink, so nothing here needs scoping any narrower than
- * the page that uses it.
+ * inside its panel, which is the band's own colour, so it has nothing written
+ * off that surface in the dimmer ink and nothing here needs scoping any
+ * narrower than the page that uses it. `join` used to be the second such
+ * screen, through `RoomMiddleColumn`; it stands on the doors now (issue #198)
+ * and reads `ON_SCENE_SX`, which measures the same because nothing on it
+ * renders a `body2`.
  *
  * Used to carry two more rules, `&& .MuiInputLabel-root` and
  * `&& .MuiFormHelperText-root`, both set to full cream for the same reason

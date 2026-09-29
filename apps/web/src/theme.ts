@@ -1,5 +1,6 @@
 import { alpha, createTheme, darken, type PaletteColor } from '@mui/material/styles';
 import { LOADING_DOT_CLASS } from './components/button-styles';
+import { WAIT_RING_CLASS } from './components/waiting-mark-styles';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
 import { SPACING_STEPS } from './scale';
 import { TYPOGRAPHY } from './typography';
@@ -288,9 +289,8 @@ export const theme = createTheme({
     // `CircularProgress` is named out of it on purpose. ADR 0030 turns off
     // movement that disorients — petals, a screen sliding, a scene once had a
     // camera flying through it — and a spinner is not that: it is the one way
-    // this app says "wait", and
-    // on the `connecting` screen (`RoomPage.tsx`'s `Waiting`) it is the only
-    // thing on the page since issue #132 took the room's frame off it. Frozen
+    // this app says "wait" while a route's chunk arrives (`PageLoading.tsx`),
+    // where it is the only thing on the page. Frozen
     // by `animation-iteration-count: 1`, it turns once and stops, which reads
     // as broken rather than calm — a promise of "something is happening" that
     // stops being true. So it keeps spinning under reduced motion; nothing
@@ -303,10 +303,17 @@ export const theme = createTheme({
     // stopped spinner would. The button's own hover and press transitions are
     // not exempted — only the dot's `animation` is — so the control itself
     // still stops moving.
+    //
+    // The waiting mark's three rings (`components/waiting-mark-styles.ts`,
+    // `WAIT_RING_CLASS`) are named out for the same reason (issue #198): they
+    // replaced the spinner on `connecting`, the one screen where "wait" is the
+    // whole of what the page says. They keep their own 1900ms rather than the
+    // 1400ms the template's reduced-motion rule writes for them, the dot's
+    // duration written into a second selector.
     MuiCssBaseline: {
       styleOverrides: {
         [REDUCED_MOTION_MEDIA]: {
-          [`*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle):not(.${LOADING_DOT_CLASS}), *::before, *::after`]:
+          [`*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle):not(.${LOADING_DOT_CLASS}):not(.${WAIT_RING_CLASS}), *::before, *::after`]:
             {
               animationDuration: '0.01ms !important',
               animationIterationCount: '1 !important',

@@ -1,11 +1,10 @@
 import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
 import { readRememberedNickname } from '../rooms/nickname-store';
 import { Field } from './Field';
+import { gateStackSx, middleLedeSx } from './gate-panel-styles';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
 
@@ -28,6 +27,13 @@ interface JoinRoomFormProps {
  * Somebody who has played here before is asked with their last name already in
  * the field: offered, not imposed, since the field is theirs to rewrite and
  * what they leave in it is what gets remembered next (issue #75).
+ *
+ * The sentence and the blocks under it are the template's `.middle-column`
+ * contents (`p.lede` and `.stack`): the lede 16px above the field, and the field,
+ * the message and the button 14px apart, the button as wide as the panel. While
+ * the join is written the button says so in the template's words, without the
+ * three full stops it used to (issue #198, after #184 deferred that wording to
+ * this screen).
  *
  * @param props.onJoin - Receives the nickname when the player submits a valid one
  * @param props.errorMessage - Message about a join that was refused
@@ -52,11 +58,11 @@ export const JoinRoomForm = ({ onJoin, isJoining, errorMessage }: JoinRoomFormPr
       }}
       noValidate
     >
-      <Stack spacing={5}>
-        <Typography variant="body1">
-          You have been invited to a game. Pick a name the other players will know you by.
-        </Typography>
+      <Box component="p" sx={middleLedeSx}>
+        You have been invited to a game. Pick a name the other players will know you by.
+      </Box>
 
+      <Box sx={gateStackSx}>
         <Field
           id="nickname"
           label="Your nickname"
@@ -74,9 +80,9 @@ export const JoinRoomForm = ({ onJoin, isJoining, errorMessage }: JoinRoomFormPr
         )}
 
         <PillButton type="submit" loading={isJoining} disabled={!isValidNickname(nickname)}>
-          {isJoining ? 'Joining...' : 'Join the game'}
+          {isJoining ? 'Joining the game' : 'Join the game'}
         </PillButton>
-      </Stack>
+      </Box>
     </Box>
   );
 };
