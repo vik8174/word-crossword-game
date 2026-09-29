@@ -1,6 +1,7 @@
-import Stack from '@mui/material/Stack';
+import Box from '@mui/material/Box';
 import type { CrosswordLayout } from 'shared';
 
+import { gateButtonRowSx, gateStackSx } from './gate-panel-styles';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
 
@@ -19,13 +20,20 @@ interface UnplacedWordsNoticeProps {
  * the owner decides: create the room anyway, or go back and change the list
  * (user story 17).
  *
+ * The two answers stand in a row, right-aligned, the quiet one first and the
+ * primary one last, the way the template draws the fork (`create/unplaced`).
+ * They are called "Back" and "Build it anyway" there, and short enough for one
+ * row of the create panel's 416px: the earlier "Edit the word list" and
+ * "Create room anyway" do not fit beside each other in it, and squeezed to fit
+ * they wrap to two lines each (issue #197).
+ *
  * @param props.layout - The generated layout, including `unplacedWords`
  * @param props.onConfirm - Create the room from the words that did fit
  * @param props.onBack - Return to the form with the word list intact
  */
 export const UnplacedWordsNotice = ({ layout, onConfirm, onBack }: UnplacedWordsNoticeProps) => {
   return (
-    <Stack spacing={5}>
+    <Box sx={gateStackSx}>
       <Message
         kind="warning"
         heading="Some words did not fit into the crossword"
@@ -34,12 +42,12 @@ export const UnplacedWordsNotice = ({ layout, onConfirm, onBack }: UnplacedWords
         {`These words cross none of the others and will be left out. The room will be created with the remaining ${layout.placedWords.length} words.`}
       </Message>
 
-      <Stack direction="row" spacing={4}>
-        <PillButton onClick={onConfirm}>Create room anyway</PillButton>
+      <Box sx={gateButtonRowSx}>
         <PillButton kind="quiet" onClick={onBack}>
-          Edit the word list
+          Back
         </PillButton>
-      </Stack>
-    </Stack>
+        <PillButton onClick={onConfirm}>Build it anyway</PillButton>
+      </Box>
+    </Box>
   );
 };

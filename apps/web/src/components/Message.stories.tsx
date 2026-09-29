@@ -7,15 +7,17 @@ import { gapAt } from '../scale';
 import { Message } from './Message';
 import { SIDE_ZONE_WIDTH } from './room-layout';
 
-/** How far the gate's own column keeps from the edge of the band (`pages/CreateRoomPage.tsx`). */
+/** How far the gate's own column keeps from the edge of the band (`components/RoomShell.tsx`). */
 const GATE_PADDING = gapAt(4);
 const GATE_COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${GATE_PADDING} - ${GATE_PADDING})`;
 
 /**
- * The gate's own band, standing exactly as `CreateRoomPage` stands its form on
- * it — the surface `WordListForm`'s warning and `JoinRoomForm`'s error both
- * really stand on, since `join` claims the same band `/create` does
- * (`garden/use-room-garden.ts`'s `sceneFor`).
+ * The gate's own band, standing as `join` stands its form on it
+ * (`components/RoomShell.tsx`'s `RoomMiddleColumn`). `WordListForm`'s warning
+ * now stands on `/create`'s panel instead (`components/gate-panel-styles.ts`),
+ * which is the same colour, so the band is still the one place a message's
+ * contrast is read off; it is kept here rather than redrawn as the panel
+ * because `JoinRoomForm`'s error stands on it as it is (issue #197).
  */
 const GateSurface = ({ children }: { readonly children: ReactNode }) => (
   <Box sx={{ position: 'relative', minHeight: '100dvh', ...ON_SCENE_SX }}>

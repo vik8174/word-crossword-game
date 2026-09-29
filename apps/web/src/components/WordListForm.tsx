@@ -1,5 +1,4 @@
 import Box from '@mui/material/Box';
-import Stack from '@mui/material/Stack';
 import {
   MAX_WORD_LENGTH,
   MAX_WORDS,
@@ -10,6 +9,7 @@ import {
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
 import { Field, FieldHelp, FieldSet } from './Field';
+import { gateStackSx } from './gate-panel-styles';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
 
@@ -51,6 +51,35 @@ interface WordListFormProps {
 }
 
 /**
+ * The one line under the words field: the rules while there is nothing to
+ * complain about, and how many things are wrong once there is — both followed
+ * by how many words are entered.
+ *
+ * One sentence in either case, not the rules on one line and the count on
+ * another (issue #197). The two numbers in the second are not the same number:
+ * `validation.errors.length` is how many faults there are, `validation.words.length`
+ * is how many words were read, and a list of twelve words with a repeat and a
+ * word too short is "2 problems with this list. 12 words entered." The faults
+ * themselves are listed once, in the message beneath, so this line only counts
+ * them and does not repeat what that one says.
+ *
+ * @param validation - Result of `validateWordList` for the current text
+ * @param showsErrors - Whether the faults are to be shown yet, which they are not for an empty box
+ */
+const wordsHelp = (validation: WordListValidation, showsErrors: boolean): string => {
+  const count = validation.words.length;
+  const entered = `${count} ${count === 1 ? 'word' : 'words'} entered.`;
+
+  if (!showsErrors) {
+    return `${MIN_WORDS}–${MAX_WORDS} English words, ${MIN_WORD_LENGTH}–${MAX_WORD_LENGTH} letters each, no repeats. ${entered}`;
+  }
+
+  const faults = validation.errors.length;
+
+  return `${faults} ${faults === 1 ? 'problem' : 'problems'} with this list. ${entered}`;
+};
+
+/**
  * The room-creation form — a nickname and the list of words to play with.
  *
  * Validation runs while the owner types, but stays quiet until there is
@@ -83,60 +112,56 @@ export const WordListForm = ({
         onSubmit();
       }}
       noValidate
+      sx={gateStackSx}
     >
-      <Stack spacing={5}>
-        <FieldSet>
-          <Field
-            id="nickname"
-            label="Your nickname"
-            value={nickname}
-            onChange={onNicknameChange}
-            disabled={isCreating}
-            maxLength={MAX_NICKNAME_LENGTH}
-            describedBy={NICKNAME_HELP_ID}
-          />
-          <FieldHelp id={NICKNAME_HELP_ID}>
-            Other players see you by this name. You play in your own room too.
-          </FieldHelp>
-        </FieldSet>
+      <FieldSet>
+        <Field
+          id="nickname"
+          label="Your nickname"
+          value={nickname}
+          onChange={onNicknameChange}
+          disabled={isCreating}
+          maxLength={MAX_NICKNAME_LENGTH}
+          describedBy={NICKNAME_HELP_ID}
+        />
+        <FieldHelp id={NICKNAME_HELP_ID}>
+          Other players see you by this name. You play in your own room too.
+        </FieldHelp>
+      </FieldSet>
 
-        <FieldSet>
-          <Field
-            id="words"
-            label="Words"
-            value={rawWords}
-            onChange={onWordsChange}
-            disabled={isCreating}
-            invalid={showsErrors}
-            multiline
-            placeholder={'apple, bread, cheese\ndinner, engine, flower'}
-          />
-          <FieldHelp>
-            {`${MIN_WORDS}-${MAX_WORDS} English words, ${MIN_WORD_LENGTH}-${MAX_WORD_LENGTH} letters each, no repeats. Separate them with commas, spaces or new lines.`}
-          </FieldHelp>
-          <FieldHelp>{`${validation.words.length} words entered`}</FieldHelp>
-        </FieldSet>
+      <FieldSet>
+        <Field
+          id="words"
+          label="Words"
+          value={rawWords}
+          onChange={onWordsChange}
+          disabled={isCreating}
+          invalid={showsErrors}
+          multiline
+          placeholder={'apple, bread, cheese\ndinner, engine, flower'}
+        />
+        <FieldHelp>{wordsHelp(validation, showsErrors)}</FieldHelp>
+      </FieldSet>
 
-        {showsErrors && (
-          <Message
-            kind="warning"
-            heading="The list needs a change"
-            items={validation.errors.map((error) => error.message)}
-          >
-            Fix these before the game can be built:
-          </Message>
-        )}
+      {showsErrors && (
+        <Message
+          kind="warning"
+          heading="The list needs a change"
+          items={validation.errors.map((error) => error.message)}
+        >
+          Fix these before the game can be built:
+        </Message>
+      )}
 
-        {notice !== undefined && (
-          <Message kind={notice.kind} heading={notice.heading}>
-            {notice.text}
-          </Message>
-        )}
+      {notice !== undefined && (
+        <Message kind={notice.kind} heading={notice.heading}>
+          {notice.text}
+        </Message>
+      )}
 
-        <PillButton type="submit" loading={isCreating} disabled={!canSubmit}>
-          {isCreating ? 'Creating the room...' : 'Create room'}
-        </PillButton>
-      </Stack>
+      <PillButton type="submit" loading={isCreating} disabled={!canSubmit}>
+        {isCreating ? 'Creating the room...' : 'Create room'}
+      </PillButton>
     </Box>
   );
 };

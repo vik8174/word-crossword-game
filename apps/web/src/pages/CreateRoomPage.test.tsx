@@ -3,7 +3,14 @@ import { logEvent } from 'firebase/analytics';
 import { signInAnonymously } from 'firebase/auth';
 import { addDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
-import { type CrosswordLayout, generateCrossword } from 'shared';
+import {
+  type CrosswordLayout,
+  generateCrossword,
+  MAX_WORD_LENGTH,
+  MAX_WORDS,
+  MIN_WORD_LENGTH,
+  MIN_WORDS,
+} from 'shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { GardenControlsContext } from '../garden/garden-controls';
@@ -137,6 +144,16 @@ describe('CreateRoomPage', () => {
     expect(showScene).toHaveBeenCalledWith('gate');
   });
 
+  it('names the step in its only h1, inside the panel the form stands on', () => {
+    renderPage();
+
+    // `getByRole` throws unless there is exactly one match.
+    const heading = screen.getByRole('heading', { level: 1 });
+
+    expect(heading).toHaveTextContent('New game');
+    expect(heading.parentElement).toContainElement(screen.getByLabelText(/nickname/i));
+  });
+
   describe('the word list', () => {
     it('keeps the room locked until the list and the nickname are both usable', () => {
       renderPage();
@@ -158,6 +175,42 @@ describe('CreateRoomPage', () => {
       expect(screen.getByText(/at least 10 words/i)).toBeInTheDocument();
       expect(screen.getByText(/"ox" is shorter than 3 letters/i)).toBeInTheDocument();
       expect(screen.getByText(/"apple" is listed more than once/i)).toBeInTheDocument();
+    });
+
+    it('gives the rules and the count on the one help line while nothing is wrong', () => {
+      renderPage();
+
+      fillIn(/words/i, TEN_WORDS);
+
+      // One line, not the rules and the count on two (issue #197). The numbers
+      // are the validator's own rather than ones typed here.
+      const help = screen.getByText(/words entered/i);
+      expect(help).toHaveTextContent(
+        `${MIN_WORDS}\u2013${MAX_WORDS} English words, ${MIN_WORD_LENGTH}\u2013${MAX_WORD_LENGTH} letters each, no repeats. 10 words entered.`,
+      );
+      expect(screen.getAllByText(/words entered/i)).toHaveLength(1);
+    });
+
+    it('counts the faults and the words on the one help line, and they are not the same number', () => {
+      renderPage();
+
+      // Twelve words, of which one repeats and one is too short: two faults.
+      fillIn(/words/i, `${TEN_WORDS}, apple, ox`);
+
+      expect(screen.getAllByText(/words entered/i)).toHaveLength(1);
+      expect(screen.getByText(/words entered/i)).toHaveTextContent(
+        '2 problems with this list. 12 words entered.',
+      );
+    });
+
+    it('says "1 problem" for a list with a single fault', () => {
+      renderPage();
+
+      fillIn(/words/i, `${TEN_WORDS}, ox`);
+
+      expect(screen.getByText(/words entered/i)).toHaveTextContent(
+        '1 problem with this list. 11 words entered.',
+      );
     });
 
     it('says nothing about a form nobody has typed into yet', () => {
@@ -318,7 +371,7 @@ describe('CreateRoomPage', () => {
       fillInValidGame(WORDS_WITH_ONE_THAT_CANNOT_FIT);
       fireEvent.click(createButton());
 
-      fireEvent.click(screen.getByRole('button', { name: /create room anyway/i }));
+      fireEvent.click(screen.getByRole('button', { name: /build it anyway/i }));
 
       await insideRoom();
       expect(addDoc).toHaveBeenCalledOnce();
@@ -329,7 +382,7 @@ describe('CreateRoomPage', () => {
       fillInValidGame(WORDS_WITH_ONE_THAT_CANNOT_FIT);
       fireEvent.click(createButton());
 
-      fireEvent.click(screen.getByRole('button', { name: /edit the word list/i }));
+      fireEvent.click(screen.getByRole('button', { name: /^back$/i }));
 
       expect(screen.getByLabelText(/words/i)).toHaveValue(WORDS_WITH_ONE_THAT_CANNOT_FIT);
       expect(addDoc).not.toHaveBeenCalled();
