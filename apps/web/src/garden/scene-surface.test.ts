@@ -106,9 +106,8 @@ describe('a band drawn out to the top and bottom of its frame', () => {
 
 describe('the gate reading its own body text at full cream', () => {
   it('lifts exactly the one line the gate band still changes, and nothing else', () => {
-    // `/create` and the room's `join` screen stand on the gate's own band,
-    // under the lighter middle of the new veil, so their body text reads
-    // full cream instead of the dimmer ink every other screen on a picture
+    // `/create` stands on the gate's own panel, under the lighter middle of
+    // the new veil, so its body text reads full cream instead of the dimmer ink every other screen on a picture
     // still uses (issue #190). Everything else `ON_SCENE_SX` sets is
     // unchanged — this is `ON_SCENE_SX` with one rule overridden, not a
     // palette of its own.

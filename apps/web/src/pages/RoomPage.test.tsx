@@ -7,7 +7,7 @@ import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { BAND } from '../garden/scene-palette';
+import { BAND_SOLID } from '../garden/scene-palette';
 import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from '../rooms/presence';
 import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
 import { theme } from '../theme';
@@ -406,17 +406,17 @@ describe('RoomPage', () => {
     });
 
     // Cream read straight off the scene falls short of the small-text
-    // threshold (issue #136, measured against the gate before issue #152
-    // moved this screen onto the doors), because this line has no zone of its
-    // own to stand in. It stands on the same band every other sentence
-    // without one stands on instead.
-    it('stands the connecting line on the same band every other bandless sentence stands on', async () => {
+    // threshold (issue #136), because this line has no zone of its own to stand
+    // in. It stands on the doors' panel, the one `join` and every `unavailable`
+    // stand on too, rather than on the strip of band it stood on before issue
+    // #198 drew all three from the template's one `.middle-column`.
+    it('stands the connecting line on the panel every screen at the doors stands on', async () => {
       renderRoomPage();
 
       await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
 
       expect(screen.getByRole('status').parentElement).toHaveStyle({
-        backgroundColor: BAND,
+        backgroundColor: BAND_SOLID,
       });
     });
 

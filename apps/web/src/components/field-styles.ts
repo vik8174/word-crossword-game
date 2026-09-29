@@ -51,13 +51,13 @@ export const fieldSx = (state: FieldStyleState): SxProps<Theme> => {
       : FIELD.ink;
 
   return {
-    // Positioned, not static, so the field paints above the gate's band:
-    // `RoomShell` draws that band as an absolutely positioned sibling earlier
-    // in the same parent (`RoomMiddleColumn`, itself unpositioned), and a
-    // static element there paints underneath it. MUI's own field was
-    // `position: relative` for the same reason; without this the field on
-    // join reads the band's dimmed colour instead of the washi fill
-    // (issue #193 round 1, refuted on every join state).
+    // Positioned, not static, so the field paints above any absolutely
+    // positioned band drawn earlier in the same parent: a static element there
+    // paints underneath it. `join` was the screen that showed it, standing on
+    // the gate's band, where without this the field read the band's dimmed
+    // colour instead of the washi fill (issue #193 round 1). `join` stands on a
+    // panel of its own now (issue #198, `MiddlePanel`), and the rule stays
+    // because it costs nothing and MUI's own field carried it too.
     position: 'relative',
     display: 'flex',
     alignItems: state.multiline ? 'flex-start' : 'center',
@@ -148,7 +148,7 @@ export const fieldSetSx: SxProps<Theme> = {
  * (`design/templates/state-tree.html` line 556) — always in full cream
  * rather than switching to `.field-help.bad`'s `#FFC7AE` for a fault.
  *
- * Every field this issue builds stands on the gate's own band, where help is
+ * Every field this issue builds stands on the gate's own surface, where help is
  * full cream regardless of severity — a decision #190 already made and this
  * issue only carries forward (issue #193, "Decided, not to reopen"; the
  * template's own comment at line 558-564 explains why `#FFC7AE` fails the

@@ -1,20 +1,20 @@
 import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
-import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { type ReactElement, type ReactNode, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { gateScreenSx } from '../components/gate-panel-styles';
+import { MiddlePanel } from '../components/MiddlePanel';
 import { RoomClosedEarly } from '../components/RoomClosedEarly';
 import { RoomFinished } from '../components/RoomFinished';
 import { RoomGame } from '../components/RoomGame';
 import { RoomInvitePanel } from '../components/RoomInvitePanel';
 import { RoomJoin } from '../components/RoomJoin';
 import { RoomLobby } from '../components/RoomLobby';
-import { ScreenShift } from '../components/ScreenShift';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
+import { ScreenShift } from '../components/ScreenShift';
+import { WaitingMark } from '../components/WaitingMark';
 import { RewardCloth } from '../garden/RewardCloth';
-import { ON_SCENE_SX, SENTENCE_BAND_SX } from '../garden/scene-surface';
 import { useRoomGarden } from '../garden/use-room-garden';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
@@ -30,31 +30,6 @@ import { useRoomConnection } from '../rooms/use-room-connection';
 import { finishedWordsOf } from '../rooms/word-visibility';
 import { funnelScreenFor } from '../telemetry/funnel';
 import { useScreenReached } from '../telemetry/use-screen-reached';
-
-/**
- * Shown while the visitor is being signed in and the first snapshot is on its
- * way.
- *
- * Stands on the same band every other sentence in this room stands on
- * ({@link SENTENCE_BAND_SX}): unlike {@link Waiting}, which this sits inside
- * of, it has no sheet of its own between it and the scene, and cream read
- * straight off a scene this busy falls short of 4.5 (issue #136, measured
- * against the gate before issue #152 moved this screen onto the doors — the
- * band's own contrast was not remeasured against the new picture, only the
- * scene it stands on changed). `RoomUnavailableNotice`, `Waiting`'s other
- * tenant, already stands on an `Alert`'s own opaque paper, so the band is
- * given here and not in `Waiting` itself — a second sheet under a sheet that
- * already has one would be a darker rectangle behind the notice rather than a
- * fix.
- */
-const Connecting = () => (
-  <Stack direction="row" spacing={4} sx={{ alignItems: 'center', ...SENTENCE_BAND_SX }}>
-    <CircularProgress size={24} />
-    <Typography variant="body1" role="status">
-      Connecting to the game...
-    </Typography>
-  </Stack>
-);
 
 /** What the page is, said once for every phase of a room — including the two `Waiting` stands in for. */
 const ROOM_HEADING = 'Game room';
@@ -95,32 +70,29 @@ const UNSEEN_HEADING = {
  * Centred over the doors, which is the picture both `connecting` and
  * `unavailable` stand in front of (see `sceneFor` in
  * `garden/use-room-garden.ts`) — a visitor waiting to learn whether a room
- * will let them in, standing at its threshold rather than at the gate.
- * Named the same page a real room screen is, unseen for the
- * same reason `RoomShell` says it unseen on the screen a game is played
- * on — a reader moving by headings still finds one, even for a wait that
- * `unavailable` can leave them sitting through indefinitely — and capped to
- * the width `RoomMiddleColumn` reads a notice at, so a long one still breaks
- * into lines somebody finishes reading.
+ * will let them in, standing at its threshold rather than at the gate. What
+ * stands there is the same panel `join` stands on ({@link MiddlePanel}), and
+ * this is only the centring: the screen the gate's own panel is centred in,
+ * with the template's 22px of air round it (`gateScreenSx`).
+ *
+ * Named the same page a real room screen is, unseen for the same reason
+ * `RoomShell` says it unseen on the screen a game is played on — a reader
+ * moving by headings still finds one, even for a wait that `unavailable` can
+ * leave them sitting through indefinitely.
  */
-const Waiting = ({ children }: { readonly children: ReactNode }) => (
-  <Box
-    sx={{
-      minHeight: '100dvh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      p: 5,
-      ...ON_SCENE_SX,
-    }}
-  >
-    <Box sx={{ maxWidth: '32rem' }}>
-      <Typography component="h1" variant="h1" sx={UNSEEN_HEADING}>
-        {ROOM_HEADING}
-      </Typography>
+const Waiting = ({
+  isCentred = false,
+  children,
+}: {
+  readonly isCentred?: boolean;
+  readonly children: ReactNode;
+}) => (
+  <Box sx={gateScreenSx}>
+    <Typography component="h1" variant="h1" sx={UNSEEN_HEADING}>
+      {ROOM_HEADING}
+    </Typography>
 
-      {children}
-    </Box>
+    <MiddlePanel centred={isCentred}>{children}</MiddlePanel>
   </Box>
 );
 
@@ -146,8 +118,8 @@ const RoomScreenView = ({
   switch (screen.kind) {
     case 'connecting':
       return (
-        <Waiting>
-          <Connecting />
+        <Waiting isCentred>
+          <WaitingMark>Connecting to the game…</WaitingMark>
         </Waiting>
       );
     case 'unavailable':

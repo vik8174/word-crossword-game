@@ -14,10 +14,12 @@ import { airFor, isGreeting } from './room-air';
  * garden already was", because there is no travelling between the pictures
  * for one to stand still in the middle of.
  *
- * `connecting` and `unavailable` go to `doors` rather than to `gate`: both are
- * what a visitor sees while the room decides whether to let them in, which is
- * the temple's threshold rather than the way in from outside
- * (`handoffs/scenes/README.md`).
+ * `connecting`, `join` and `unavailable` go to `doors` rather than to `gate`:
+ * all three are what a visitor sees while the room decides whether to let them
+ * in, which is the temple's threshold rather than the way in from outside
+ * (`handoffs/scenes/README.md`). `join` stood at the gate until issue #198,
+ * where it was the one screen of a room on the gate's picture; it is inside the
+ * room's frame, so it stands on the room's picture now.
  *
  * @param kind - Which screen the room is showing
  * @returns The picture it stands in front of
@@ -29,11 +31,10 @@ import { airFor, isGreeting } from './room-air';
 const sceneFor = (kind: RoomScreen['kind']): SceneId => {
   switch (kind) {
     case 'connecting':
+    case 'join':
     case 'unavailable':
     case 'lobby':
       return 'doors';
-    case 'join':
-      return 'gate';
     case 'playing':
     case 'finished':
     case 'closed-early':

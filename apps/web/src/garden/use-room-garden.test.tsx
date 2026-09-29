@@ -112,8 +112,12 @@ describe('useRoomGarden', () => {
     expect(openRoomOn('unavailable').showScene).toHaveBeenLastCalledWith('doors');
   });
 
-  it('stands the nickname form at the gate, the same picture home and create share', () => {
-    expect(openRoomOn('join').showScene).toHaveBeenLastCalledWith('gate');
+  it('stands the nickname form at the doors, inside the room the visitor is about to enter', () => {
+    // Not at the gate, where `home` and `create` stand: `join` is a screen of
+    // the room and draws the room's frame, so it stands on the room's picture
+    // and walking in from it to the lobby changes nothing behind it (issue
+    // #198, superseding issues #137 and #175).
+    expect(openRoomOn('join').showScene).toHaveBeenLastCalledWith('doors');
   });
 
   it('moves the window to the doors for a lobby and into the hall for a game', () => {
