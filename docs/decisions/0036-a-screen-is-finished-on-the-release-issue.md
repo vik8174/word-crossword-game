@@ -43,8 +43,7 @@ Alternatives considered:
 
 - **Widen each Inspector to compare the whole screen.** Rejected. It turns a
   finding about someone else's issue into this issue's defect, which is the
-  deadlock the boundaries exist to prevent (see 0035 on criteria that allow two
-  readings).
+  deadlock the boundaries between issues exist to prevent.
 - **Have the Architect write every closing issue up front and trust that they
   exist.** This is what failed: the list lived in one session's context and a
   comment.
