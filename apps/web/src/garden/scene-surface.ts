@@ -1,6 +1,6 @@
-import type { CSSObject, Theme } from '@mui/material/styles';
+import type { CSSObject } from '@mui/material/styles';
 
-import { gapAt, inRem, SIGN_TRACKING, TEXT_LEVELS } from '../scale';
+import { gapAt, inRem, STEP_TITLE_SIZE } from '../scale';
 import {
   BAND,
   BAND_EDGE,
@@ -75,9 +75,11 @@ const BAND_PLACES: Record<BandPlace, CSSObject> = {
 /**
  * How wide the gate's own band is allowed to be.
  *
- * The gate has three screens that stand on this band — `/create`, `join` and
- * the catch-all — and all three read the same sign, so the width is one
- * constant rather than three copies obliged to move together. `RoomShell.tsx`
+ * The gate has two screens that stand on this band — `join` and the catch-all,
+ * which read the same sign — so the width is one constant rather than two
+ * copies obliged to move together. `/create` stood on it as well until issue
+ * #197 gave that screen a panel of its own (`components/gate-panel-styles.ts`),
+ * as tall as what stands on it rather than as tall as the page. `RoomShell.tsx`
  * has its own `BAND_WIDTH`, for a room zone's band; that is a different width
  * for a different surface, and the two must never be confused for one
  * another, which is why this one is named for what it measures rather than
@@ -178,43 +180,55 @@ export const SENTENCE_BAND_SX: CSSObject = {
 };
 
 /**
- * The name of a step, top left, with the temple's red run under it.
+ * The name of a step, with the temple's red run under it — `.step-title` in
+ * `design/templates/state-tree.html` (lines 284-293), the one drawing every
+ * screen that names its step is given: `/create` inside its panel, and join,
+ * the lobby, `finished` ("Finished") and `closed-early` ("Game ended") at the
+ * top of their frame. The game room itself has no step title: `RoomGame` gives
+ * `RoomShell` none, so it takes the unseen heading instead.
  *
- * The rule starts off the left edge of the window rather than under the first
- * letter, which is what anchors the title to the screen instead of leaving it
- * floating in from one. Its `left` is the negative of whatever padding the
- * frame around it has, so the caller says how far out to reach.
+ * The rule is the whole width of the title's own block, 7px under the letters.
+ * It used to start off the left edge of the window and stop at the last letter
+ * (issue #197 changed that when the create screen's name moved inside a panel),
+ * so the argument that said how far out to reach has gone with it: a caller
+ * puts the title in a box, and the rule is as wide as that box. The block is
+ * the width the caller gives it, which is why the `h1` is `display: block`
+ * where it used to be `inline-block`.
  *
- * Nothing about the lettering itself is here: the element is a `signage`
- * `Typography`, so the face, the capitals and the tracking are the theme's. All
- * this adds is where it sits, what colour it is on a forest, and the rule.
+ * Nothing about the face is here beyond the size: the element is a `signage`
+ * `Typography`, so the family, the capitals and the tracking are the theme's,
+ * and the weight — 300, the sign face's own — is its too. All this adds is the
+ * size, where it sits, what colour it is on a forest, and the rule.
  *
- * @param theme - The theme the gap under it comes out of
- * @param outdent - How far left of the text the rule begins, as a CSS length
+ * The size is 19px, the template's own, and not one of `scale.ts`'s four text
+ * levels: a sign, the same way {@link GATE_NAME_SIZE} is. Its line is the page's
+ * 1.6 rather than the sign variant's 1.25, which is what makes the block 39.4px
+ * tall with the rule in it (30.4px of line, 7px, 2px). The template also writes
+ * a negative right margin for the tracking and, one declaration later,
+ * `margin: 0 0 6px` over it, so the block runs to the full width and the rule
+ * with it; the margin is not carried over because it never applied.
+ *
  * @returns The title's own styles, rule included
  *
  * @example
- * sx={(theme) => stepTitleSx(theme, '-16px')}
+ * <Typography component="h1" variant="signage" sx={stepTitleSx()}>New game</Typography>
  */
-export const stepTitleSx = (theme: Theme, outdent: string): CSSObject => ({
-  position: 'relative',
-  display: 'inline-block',
-  fontSize: inRem(TEXT_LEVELS.body),
-  paddingBottom: theme.spacing(3),
+export const stepTitleSx = (): CSSObject => ({
+  display: 'block',
+  fontSize: inRem(STEP_TITLE_SIZE),
+  lineHeight: 1.6,
+  margin: `0 0 ${inRem(6)}`,
   color: SCENE.cream,
-  // No band across the picture, so the letters carry their own darkness with
-  // them and stay readable over a lit roof as well as over a shadow.
-  textShadow: '0 1px 14px rgba(6, 20, 16, 0.9)',
+  // No band under the letters on every screen that has one, so they carry
+  // their own darkness with them and stay readable over a lit roof as well as
+  // over a shadow.
+  textShadow: '0 1px 8px rgba(6, 12, 10, 0.9)',
   '&::after': {
     content: '""',
-    position: 'absolute',
-    left: outdent,
-    // Stops where the last letter does rather than where its box does: the
-    // tracking is put after it as well as between, and a rule that ran to the
-    // edge of the box would overshoot the word by half a letter.
-    right: SIGN_TRACKING,
-    bottom: 0,
+    display: 'block',
+    width: '100%',
     height: '2px',
+    marginTop: inRem(7),
     backgroundColor: SCENE.vermilion,
   },
 });
@@ -315,15 +329,16 @@ export const ON_SCENE_SX: CSSObject = {
  * the board on `playing` at 1440 (`SENTENCE_BAND_SX`), a real reading off the
  * page that this issue records rather than fixes: its look is Viktor's, and
  * goes with the game-room issue (#139, item 14), not with this constant.
- * Only the gate's own band — `/create` and the room's `join` screen, both
- * drawn under the lighter middle of the new veil — reads full cream instead
+ * Only the gate's own surfaces — `/create`'s panel and the room's `join`
+ * band, both drawn under the lighter middle of the new veil — read full cream instead
  * (`design/templates/state-tree.html`'s help text, issue #183). A screen
  * spreads this rather than `ON_SCENE_SX` only where every body2 line it draws
- * is known to stand on that band: `/create`'s whole page is the band, and so
- * is `RoomMiddleColumn`, the one place `join` draws its form
- * (`components/RoomShell.tsx`) — neither has anything written off the gate's
- * band in the dimmer ink, so nothing here needs scoping any narrower than the
- * page that uses it.
+ * is known to stand on the gate's own surface: everything `/create` writes is
+ * inside its panel, which is the band's own colour, and so is
+ * `RoomMiddleColumn`, the one place `join` draws its form
+ * (`components/RoomShell.tsx`) — neither has anything written off that
+ * surface in the dimmer ink, so nothing here needs scoping any narrower than
+ * the page that uses it.
  *
  * Used to carry two more rules, `&& .MuiInputLabel-root` and
  * `&& .MuiFormHelperText-root`, both set to full cream for the same reason

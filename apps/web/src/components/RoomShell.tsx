@@ -109,7 +109,7 @@ const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
  * anything that is words rather than squares is capped and centred instead.
  *
  * Its own width is the gate's rather than a room zone's: `join` is the only
- * caller today, and it stands on the same full-height band `/create` does —
+ * caller today, and it stands on the gate's full-height band —
  * painted behind it by {@link RoomShell} when that screen sets `gateBand`,
  * not painted by this column itself. It used to carry its own translucent
  * background sized to the form, which read as a card floating over the
@@ -175,7 +175,7 @@ interface RoomShellProps {
    *
    * `join` is the one screen of a room that is still at the gate — the room it
    * leads to does not exist for this visitor yet — so it alone reads the same
-   * band `/create` stands on (`garden/scene-surface.ts`'s `GATE_BAND_WIDTH`),
+   * band the catch-all stands on (`garden/scene-surface.ts`'s `GATE_BAND_WIDTH`),
    * drawn full height behind {@link RoomMiddleColumn}. Setting it also stretches
    * this frame to at least the window's own height below the tablet breakpoint,
    * where the frame is otherwise only as tall as its content — without that,
@@ -311,18 +311,12 @@ export const RoomShell = ({
             {ROOM_HEADING}
           </Typography>
         ) : (
-          // A row of its own, and the title inside it only as wide as its own
-          // letters: the rule under it runs from the edge of the window to the
-          // end of the word and no further, and the line about what the room is
-          // doing wraps to three of them on a phone — beside which a title
-          // aligned to anything is a title hanging in the middle of somebody
-          // else's text.
+          // A row of its own, so that what the room is doing wraps beside or
+          // under it rather than into it, and the rule under it runs the whole
+          // width of that row: the template's `.step-title` is `flex-basis:
+          // 100%` with a rule as wide as its own block (`stepTitleSx`).
           <Box sx={{ flexBasis: '100%' }}>
-            <Typography
-              component="h1"
-              variant="signage"
-              sx={(theme) => stepTitleSx(theme, `-${FRAME_PADDING}`)}
-            >
+            <Typography component="h1" variant="signage" sx={stepTitleSx()}>
               {title}
             </Typography>
           </Box>

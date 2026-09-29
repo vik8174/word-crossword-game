@@ -92,6 +92,18 @@ export const TEXT_LEVELS = {
 export const GATE_NAME_SIZE = levelAt(4);
 
 /**
+ * How big the name of a step stands, in pixels — 19, the template's own
+ * (`design/templates/state-tree.html`'s `.step-title`).
+ *
+ * Not a fifth text level, for the same reason {@link GATE_NAME_SIZE} is not: it
+ * is a sign, set on the sign face, and the name of the step on the create panel
+ * and at the top of every room. It lies between `body` (17) and `heading` (23),
+ * and is a number written down rather than a step of the ratio because the
+ * template chose it on a real render (issue #197). `stepTitleSx` reads it.
+ */
+export const STEP_TITLE_SIZE = 19;
+
+/**
  * A level as a share of the reader's own text size rather than as pixels.
  *
  * Somebody who has made text larger in their browser has said something, and a

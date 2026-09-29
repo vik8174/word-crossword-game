@@ -91,7 +91,7 @@ export const RoomJoin = ({ roomId, playerId, seatToRelease, onRefused }: RoomJoi
     // them. It is the same frame all the same, so walking in moves the contents
     // of a screen rather than replacing one. `gateBand` is set because this
     // visitor's room does not exist for them yet either — they are still at the
-    // gate, standing on the same band `/create` does (issue #137).
+    // gate, standing on the gate's own full-height band (issue #137).
     <RoomShell title="Join the game" gateBand>
       <RoomMiddleColumn>
         <JoinRoomForm

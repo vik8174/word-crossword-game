@@ -6,15 +6,17 @@ import { fullHeightBandSx, GATE_BAND_WIDTH, ON_SCENE_SX } from '../garden/scene-
 import { gapAt } from '../scale';
 import { Field, FieldHelp, FieldSet } from './Field';
 
-/** How far the gate's own column keeps from the edge of the band (`pages/CreateRoomPage.tsx`). */
+/** How far the gate's own column keeps from the edge of the band (`components/RoomShell.tsx`). */
 const GATE_PADDING = gapAt(4);
 const GATE_COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${GATE_PADDING} - ${GATE_PADDING})`;
 
 /**
- * The gate's own band, standing exactly as `CreateRoomPage` stands its form
- * on it — `Message.stories.tsx`'s own `GateSurface`, reused here rather than
- * exported from it: every field this issue builds stands on this one
- * surface, the same one `WordListForm` and `JoinRoomForm` render onto.
+ * The gate's own band, standing as `join` stands its form on it —
+ * `Message.stories.tsx`'s own `GateSurface`, reused here rather than exported
+ * from it. `/create` stands its fields on a panel of its own now
+ * (`components/gate-panel-styles.ts`, issue #197), the same colour as this
+ * band; the band stays the backdrop here because `JoinRoomForm` still renders
+ * its fields onto it as it is.
  */
 const GateSurface = ({ children }: { readonly children: React.ReactNode }) => (
   <Box sx={{ position: 'relative', minHeight: '100dvh', ...ON_SCENE_SX }}>
