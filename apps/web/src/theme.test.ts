@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { CONTROL } from './garden/scene-palette';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
+import { WAIT_RING_CLASS } from './components/waiting-mark-styles';
 import { theme } from './theme';
 
 /** A colour as the three channels a screen draws it with, and how solid it is. */
@@ -335,9 +336,9 @@ describe('theme', () => {
   });
 
   it('leaves the page spinner turning under prefers-reduced-motion, so "wait" stays true', () => {
-    // A frozen `CircularProgress` reads as broken rather than calm, and on the
-    // `connecting` screen it is the only thing on the page (issue #132 took
-    // the room's frame off it) — so it is named out of the freeze above.
+    // A frozen `CircularProgress` reads as broken rather than calm, and while a
+    // route's chunk arrives (`PageLoading`) it is the only thing on the page —
+    // so it is named out of the freeze above.
     const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
       Record<string, unknown> | undefined;
     const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as
@@ -346,5 +347,20 @@ describe('theme', () => {
 
     expect(selector).toContain(':not(.MuiCircularProgress-root)');
     expect(selector).toContain(':not(.MuiCircularProgress-circle)');
+  });
+
+  it("leaves the waiting mark's three rings turning too, at their own pace (issue #198)", () => {
+    // `connecting` draws the template's `.sun-wait` and not a spinner now, and
+    // a mark that stopped would read as a stalled screen for the same reason.
+    // They are named out by class rather than by duration, so the freeze does
+    // not change how long a ring takes: the template's own rule would give
+    // them 1400ms, the dot's number, and the issue keeps their 1900.
+    const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
+      Record<string, unknown> | undefined;
+    const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as
+      Record<string, unknown> | undefined;
+    const selector = Object.keys(media ?? {}).find((key) => key.includes('*::before'));
+
+    expect(selector).toContain(`:not(.${WAIT_RING_CLASS})`);
   });
 });

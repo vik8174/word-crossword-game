@@ -3,15 +3,8 @@ import { type SxProps, type Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
-import { gapAt } from '../scale';
-import {
-  BAND_SX,
-  GATE_BAND_WIDTH,
-  GATE_ON_SCENE_SX,
-  ON_SCENE_SX,
-  fullHeightBandSx,
-  stepTitleSx,
-} from '../garden/scene-surface';
+import { gapAt, inRem } from '../scale';
+import { BAND_SX, ON_SCENE_SX, fullHeightBandSx, stepTitleSx } from '../garden/scene-surface';
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES } from './room-layout';
 import { useShiftRole } from './screen-shift';
 
@@ -19,25 +12,37 @@ import { useShiftRole } from './screen-shift';
 const ROOM_HEADING = 'Game room';
 
 /**
- * How much air the frame keeps between itself and the edge of the window, as a
- * step of the row and as the length two `calc()`s need it in.
+ * How much air a zone keeps between its own edge and what is written in it, as
+ * a step of the row and as the length two `calc()`s need it in.
+ *
+ * It used to be the frame's own padding as well, and stopped being that when
+ * the frame took the template's (issue #198): a zone's padding is its own
+ * surface, which the lobby and the game room own.
  */
-const FRAME_PADDING_STEP = 4;
-const FRAME_PADDING = gapAt(FRAME_PADDING_STEP);
-
-/** How wide a band is: the zone it holds, and the frame's padding either side of it. */
-const BAND_WIDTH = `calc(${SIDE_ZONE_WIDTH} + ${FRAME_PADDING} + ${FRAME_PADDING})`;
+const ZONE_PADDING = gapAt(4);
 
 /**
- * How wide the gate's own middle column is: the gate's band
- * (`garden/scene-surface.ts`'s `GATE_BAND_WIDTH`), less this frame's own
- * padding either side of it — the same arithmetic `/create`'s column is
- * measured by, run in this file instead (`pages/CreateRoomPage.tsx`).
- *
- * Used by {@link RoomMiddleColumn} alone: no room zone stands on the gate's
- * band, and this is not that band's width, which stays `BAND_WIDTH` above.
+ * How far the frame stands from the edge of the window, in the template's own
+ * pixels (`design/templates/state-tree.html`'s `.room`, lines 280 and 319 and
+ * 335): 20 above and 24 below on a phone with 16 either side, 16 and 22 from the
+ * app shell, 20 and 22 from the three zones. They are not steps of the spacing
+ * row, the same way `gate-panel-styles.ts`'s panel padding is not. Lengths are
+ * in `rem` so that a reader who has made their text larger gets a frame that
+ * grows with it.
  */
-const GATE_COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${FRAME_PADDING} - ${FRAME_PADDING})`;
+const FRAME_PADDING = {
+  document: `${inRem(20)} ${inRem(16)} ${inRem(24)}`,
+  application: `${inRem(16)} ${inRem(22)}`,
+  threeZones: `${inRem(20)} ${inRem(22)}`,
+} as const;
+
+/**
+ * How wide the band behind a side zone is: the zone it holds, and the padding
+ * either side of it. A band exists only where the room is three zones, so the
+ * padding it is measured against is the three-zone frame's own: 22px, not the
+ * 16 it was before the frame took the template's.
+ */
+const BAND_WIDTH = `calc(${SIDE_ZONE_WIDTH} + ${inRem(22)} + ${inRem(22)})`;
 
 /**
  * A heading that is there to be read aloud and not to be looked at.
@@ -86,7 +91,7 @@ const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
         // instead and runs the whole height of the window, so this one gets out
         // of its way rather than doubling its darkness.
         ...BAND_SX,
-        padding: FRAME_PADDING,
+        padding: ZONE_PADDING,
       }),
   [APP_SHELL]: {
     display: 'block',
@@ -101,46 +106,29 @@ const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
 });
 
 /**
- * The middle of the screen when there is no board to put there: a sentence, or
- * a form, at a width somebody can read.
+ * What the room's `main` is laid out as when one thing stands alone in it: a
+ * grid of one column that centres its only child across, and down.
  *
- * The board is given the whole middle zone because it uses every pixel of it. A
- * paragraph stretched the same way is a paragraph nobody finishes a line of, so
- * anything that is words rather than squares is capped and centred instead.
- *
- * Its own width is the gate's rather than a room zone's: `join` is the only
- * caller today, and it stands on the gate's full-height band —
- * painted behind it by {@link RoomShell} when that screen sets `gateBand`,
- * not painted by this column itself. It used to carry its own translucent
- * background sized to the form, which read as a card floating over the
- * picture — the very thing issue #137 removes. No red line along the top of
- * it either way: the name of the step is directly above with a rule of its
- * own, and two of them a step apart read as one underline drawn twice.
- *
- * @param props.children - What this screen has to say or ask
- *
- * @example
- * <RoomShell gateBand title="Join the game">
- *   <RoomMiddleColumn><JoinRoomForm ... /></RoomMiddleColumn>
- * </RoomShell>
+ * `.zones.solo` in the template, and the layout of `join`, which stands in the
+ * room's frame with nobody else in the room to put in the zones either side of
+ * it (issue #198). On a phone the zone is as tall as its child and the page
+ * scrolls, so it takes no share of the window's height (`flex: none`); from the
+ * app shell up the frame is one window tall and the zone takes what the header
+ * leaves, stretching its one row so that the child is centred in all of it and
+ * not stood under the header. The three-zone `main` keeps `alignContent:
+ * 'start'` and has no way to do that, which is why this is a layout of its own
+ * and not a modifier of that one.
  */
-export const RoomMiddleColumn = ({ children }: { readonly children: ReactNode }) => (
-  <Box
-    sx={{
-      maxWidth: GATE_COLUMN_WIDTH,
-      mx: 'auto',
-      p: 5,
-      // `join` is the only caller, and it stands on the gate's own band, so
-      // this reads full cream rather than the dimmer `ON_SCENE_SX`
-      // (`garden/scene-surface.ts`'s `GATE_ON_SCENE_SX`, issue #190).
-      ...GATE_ON_SCENE_SX,
-    }}
-  >
-    {children}
-  </Box>
-);
+const SOLO_SX = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  placeItems: 'center',
+  alignContent: 'center',
+  flex: 'none',
+  [APP_SHELL]: { flex: 1, minHeight: 0, alignContent: 'stretch' },
+} as const;
 
-interface RoomShellProps {
+interface RoomShellBaseProps {
   /**
    * The name of this step of the room, shown top left with the temple's red
    * run under it.
@@ -154,10 +142,6 @@ interface RoomShellProps {
   readonly status?: ReactNode;
   /** The one thing this screen offers to do, if it offers anything. */
   readonly action?: ReactNode;
-  /** What this player gives the other one — nothing until the words are dealt. */
-  readonly left?: ReactNode;
-  /** What they get back from them, and who is in the room. */
-  readonly right?: ReactNode;
   /**
    * The middle of the screen, which is the board on every screen that has one.
    *
@@ -167,26 +151,34 @@ interface RoomShellProps {
    * #115; a camera used to travel through it when the game began, a mechanism
    * issue #152 removed without changing what stands in the middle). What that
    * screen puts there is nothing.
+   *
+   * On a `solo` screen it is the one thing that stands alone.
    */
   readonly children?: ReactNode;
-  /**
-   * Whether this screen stands on the gate's own full-height band rather than
-   * in the room's ordinary middle zone.
-   *
-   * `join` is the one screen of a room that is still at the gate — the room it
-   * leads to does not exist for this visitor yet — so it alone reads the same
-   * band the catch-all stands on (`garden/scene-surface.ts`'s `GATE_BAND_WIDTH`),
-   * drawn full height behind {@link RoomMiddleColumn}. Setting it also stretches
-   * this frame to at least the window's own height below the tablet breakpoint,
-   * where the frame is otherwise only as tall as its content — without that,
-   * the band would run from the top of a short page to its bottom rather than
-   * to the bottom of the window, which is a band floating short of the phone's
-   * own edge (issue #137). No other screen sets this, and none should: the
-   * lobby and the hall are the room's own middle zone, and this must not change
-   * how tall their frame stands.
-   */
-  readonly gateBand?: boolean;
 }
+
+/** A room with three zones: what this player gives, the board, and what they get back. */
+interface RoomZonesProps extends RoomShellBaseProps {
+  readonly solo?: false;
+  /** What this player gives the other one — nothing until the words are dealt. */
+  readonly left?: ReactNode;
+  /** What they get back from them, and who is in the room. */
+  readonly right?: ReactNode;
+}
+
+/**
+ * A room with one thing in it and no zones: `join`, whose visitor is not in the
+ * room yet, so there is nothing of the game to put either side of them. It is
+ * the same frame all the same, so walking in moves the contents of a screen
+ * rather than replacing one.
+ */
+interface RoomSoloProps extends RoomShellBaseProps {
+  readonly solo: true;
+  readonly left?: never;
+  readonly right?: never;
+}
+
+type RoomShellProps = RoomZonesProps | RoomSoloProps;
 
 /**
  * The frame every screen of a room is drawn in: a header, and three zones with
@@ -235,7 +227,7 @@ interface RoomShellProps {
  * @param props.left - The zone on the board's left; an empty one is left empty
  * @param props.right - The zone on its right
  * @param props.children - The middle zone: the board, or nothing at all
- * @param props.gateBand - Whether this screen stands on the gate's own band; `join` alone
+ * @param props.solo - Whether one thing stands alone in the middle of the frame, with no zones; `join` alone
  *
  * @example
  * <RoomShell status={<Status />} left={<ToExplain />} right={<ToGuess />}>
@@ -249,7 +241,7 @@ export const RoomShell = ({
   left,
   right,
   children,
-  gateBand,
+  solo = false,
 }: RoomShellProps) => {
   const isLeaving = useShiftRole() === 'leaving';
 
@@ -259,15 +251,22 @@ export const RoomShell = ({
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        gap: 5,
-        px: 4,
-        py: 5,
-        // Only `join` sets `gateBand`, and only below the tablet breakpoint does
-        // this matter: from there up `[APP_SHELL]` already gives every screen a
-        // fixed `height: 100dvh`, which this cannot narrow since a `min-height`
-        // never exceeds an explicit `height` set beside it.
-        minHeight: gateBand ? '100dvh' : undefined,
-        [APP_SHELL]: { height: '100dvh', gap: 4, py: 4, overflow: 'hidden' },
+        gap: inRem(16),
+        padding: FRAME_PADDING.document,
+        // At least a window tall on a phone, on every screen: the frame is one
+        // drawing, and what stands in it is centred in the height it has (issue
+        // #198). It is a floor and not a cap, so a screen taller than the window
+        // still scrolls. From the app shell up `height` fixes it to one window,
+        // which a `min-height` set beside it cannot narrow.
+        minHeight: '100dvh',
+        [APP_SHELL]: {
+          height: '100dvh',
+          minHeight: 0,
+          gap: inRem(14),
+          padding: FRAME_PADDING.application,
+          overflow: 'hidden',
+        },
+        [THREE_ZONES]: { padding: FRAME_PADDING.threeZones },
       }}
     >
       {/* The bands, where the window is wide enough for a zone to be a column.
@@ -287,11 +286,6 @@ export const RoomShell = ({
           />
         ),
       )}
-
-      {/* The gate's own band, full height at every width rather than only from
-        the tablet breakpoint up: `join` has no column of its own to stand a
-        band beside, only the one down the middle of the whole frame. */}
-      {gateBand === true && <Box aria-hidden sx={fullHeightBandSx('centre', GATE_BAND_WIDTH)} />}
 
       <Box
         component="header"
@@ -333,35 +327,41 @@ export const RoomShell = ({
         {action !== undefined && <Box sx={{ [APP_SHELL]: { ml: 'auto' } }}>{action}</Box>}
       </Box>
 
-      <Box
-        component="main"
-        sx={{
-          display: 'grid',
-          gap: 5,
-          alignContent: 'start',
-          [APP_SHELL]: {
-            flex: 1,
-            minHeight: 0,
-            gap: 4,
-            gridTemplateColumns: '1fr 1fr',
-            gridTemplateRows: 'auto minmax(0, 1fr)',
-            gridTemplateAreas: '"board board" "left right"',
-          },
-          [THREE_ZONES]: {
-            gridTemplateColumns: `${SIDE_ZONE_WIDTH} minmax(0, 1fr) ${SIDE_ZONE_WIDTH}`,
-            gridTemplateRows: 'minmax(0, 1fr)',
-            gridTemplateAreas: '"left board right"',
-          },
-        }}
-      >
-        <Box sx={zoneSx('left', left === undefined)}>{left}</Box>
-
-        <Box sx={{ [APP_SHELL]: { gridArea: 'board', minHeight: 0, overflowY: 'auto' } }}>
+      {solo ? (
+        <Box component="main" sx={SOLO_SX}>
           {children}
         </Box>
+      ) : (
+        <Box
+          component="main"
+          sx={{
+            display: 'grid',
+            gap: 5,
+            alignContent: 'start',
+            [APP_SHELL]: {
+              flex: 1,
+              minHeight: 0,
+              gap: 4,
+              gridTemplateColumns: '1fr 1fr',
+              gridTemplateRows: 'auto minmax(0, 1fr)',
+              gridTemplateAreas: '"board board" "left right"',
+            },
+            [THREE_ZONES]: {
+              gridTemplateColumns: `${SIDE_ZONE_WIDTH} minmax(0, 1fr) ${SIDE_ZONE_WIDTH}`,
+              gridTemplateRows: 'minmax(0, 1fr)',
+              gridTemplateAreas: '"left board right"',
+            },
+          }}
+        >
+          <Box sx={zoneSx('left', left === undefined)}>{left}</Box>
 
-        <Box sx={zoneSx('right', right === undefined)}>{right}</Box>
-      </Box>
+          <Box sx={{ [APP_SHELL]: { gridArea: 'board', minHeight: 0, overflowY: 'auto' } }}>
+            {children}
+          </Box>
+
+          <Box sx={zoneSx('right', right === undefined)}>{right}</Box>
+        </Box>
+      )}
     </Box>
   );
 };

@@ -40,9 +40,9 @@ const COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${PAGE_PADDING} - ${PAGE_PADDING
  * gets the same picture behind it `/` and `/create` do instead of standing on
  * nothing for the first frames of the session.
  *
- * Stands on the same centre band `join` does
- * (`garden/scene-surface.ts`'s `fullHeightBandSx`), since it now claims a
- * picture the same way it does: cream ink directly on the photograph would
+ * Stands on the gate's centre band (`garden/scene-surface.ts`'s
+ * `fullHeightBandSx`; `join` stood on it too until issue #198), since it now
+ * claims a picture the way `/create` does: cream ink directly on the photograph would
  * not be readable otherwise. Its own column is sized to what the band leaves
  * inside its hairlines (`COLUMN_WIDTH`, below) rather than to a fixed
  * breakpoint, so the text never reaches past the band onto the picture.

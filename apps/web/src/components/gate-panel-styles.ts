@@ -1,12 +1,13 @@
 import type { CSSObject } from '@mui/material/styles';
 
-import { BAND } from '../garden/scene-palette';
+import { BAND, BAND_SOLID, SCENE } from '../garden/scene-palette';
 import { inRem } from '../scale';
 
 /**
- * The create screen's own surface, drawn the way the template draws it
- * (`design/templates/state-tree.html`'s `.gate-screen`, `.create-band` and
- * `.stack`, lines 413, 460-466 and 398).
+ * The surfaces the gate's panels and the doors' panel are drawn on, the way the
+ * template draws them (`design/templates/state-tree.html`'s `.gate-screen`,
+ * `.create-band`, `.middle-column` and `.stack`, lines 413, 460-466, 402-410
+ * and 398).
  *
  * None of the numbers here is a step of `scale.ts`'s spacing row or one of its
  * four text levels, the same way `field-styles.ts`'s 13.5px and
@@ -19,7 +20,9 @@ import { inRem } from '../scale';
  */
 
 /**
- * The screen the panel stands in: the whole window, the panel centred in it.
+ * The screen a panel stands in: the whole window, the panel centred in it.
+ * `/create` stands in it, and so do `connecting` and every `unavailable` at the
+ * doors (`pages/RoomPage.tsx`'s `Waiting`, issue #198).
  *
  * Exactly a window tall rather than at least one, because the panel scrolls
  * inside itself ({@link createPanelSx}) instead of the page growing — a screen
@@ -28,7 +31,7 @@ import { inRem } from '../scale';
  * the same, as the template has it, for a window so short the panel's own
  * padding cannot fit.
  */
-export const createScreenSx: CSSObject = {
+export const gateScreenSx: CSSObject = {
   position: 'relative',
   height: '100dvh',
   display: 'grid',
@@ -82,4 +85,46 @@ export const gateButtonRowSx: CSSObject = {
   justifyContent: 'flex-end',
   alignItems: 'center',
   gap: inRem(10),
+};
+
+/**
+ * The doors' panel: `.middle-column`, the one surface `connecting`, `join` and
+ * every `unavailable` stand on (issue #198).
+ *
+ * Opaque where the create panel is translucent (`BAND_SOLID`, not `BAND`),
+ * which is the template's own difference between the two. It is as wide as the
+ * template's 430px or 92% of what it stands in, whichever is less, and as tall
+ * as what is on it, so it needs no `max-height` of its own: the frame or screen
+ * it stands in scrolls instead. Lengths are in `rem` for the reason the create
+ * panel's are.
+ *
+ * `line-height: 1.6` is the template's page-wide value, which its panel
+ * inherits and this app's body (1.5) does not: `Message`'s heading and list set
+ * none of their own and come out short without it, exactly as they did on the
+ * create panel.
+ */
+export const middlePanelSx: CSSObject = {
+  width: `min(${inRem(430)}, 92%)`,
+  backgroundColor: BAND_SOLID,
+  backdropFilter: 'blur(2px)',
+  WebkitBackdropFilter: 'blur(2px)',
+  padding: `${inRem(24)} ${inRem(24)} ${inRem(26)}`,
+  borderRadius: '2px',
+  boxShadow: '0 18px 44px -26px rgba(0, 0, 0, 0.8)',
+  lineHeight: 1.6,
+};
+
+/**
+ * `p.lede`: the sentence above a form on the doors' panel.
+ *
+ * Full cream and not `SCENE_INK_DIM`, which the template's own rule writes as
+ * `--scene-ink`. A `p` of its own rather than a `Typography`: the template
+ * draws 13px here and no variant of this app's four text levels is that size
+ * under this name.
+ */
+export const middleLedeSx: CSSObject = {
+  margin: `0 0 ${inRem(16)}`,
+  fontSize: inRem(13),
+  lineHeight: 1.6,
+  color: SCENE.cream,
 };

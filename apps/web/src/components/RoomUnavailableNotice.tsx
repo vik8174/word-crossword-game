@@ -1,7 +1,8 @@
-import Stack from '@mui/material/Stack';
+import Box from '@mui/material/Box';
 import { Link as RouterLink } from 'react-router-dom';
 
 import type { RoomUnavailableReason } from '../rooms/room-screen';
+import { gateStackSx } from './gate-panel-styles';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
 
@@ -71,7 +72,7 @@ export const RoomUnavailableNotice = ({ reason }: RoomUnavailableNoticeProps) =>
   const notice = MESSAGES[reason];
 
   return (
-    <Stack spacing={5} sx={{ alignItems: 'flex-start' }}>
+    <Box sx={gateStackSx}>
       <Message kind={reason === 'connection' ? 'error' : 'info'} heading={notice.heading}>
         {notice.text}
       </Message>
@@ -79,6 +80,6 @@ export const RoomUnavailableNotice = ({ reason }: RoomUnavailableNoticeProps) =>
       <PillButton component={RouterLink} to="/">
         Start a new game
       </PillButton>
-    </Stack>
+    </Box>
   );
 };

@@ -7,7 +7,8 @@ import { rememberNickname } from '../rooms/nickname-store';
 import { joinRoom } from '../rooms/room-service';
 import { logGameEvent } from '../telemetry/analytics';
 import { JoinRoomForm } from './JoinRoomForm';
-import { RoomMiddleColumn, RoomShell } from './RoomShell';
+import { MiddlePanel } from './MiddlePanel';
+import { RoomShell } from './RoomShell';
 
 /** The heading is `JoinRoomForm`'s own — "Could not join the game", fixed. */
 const JOIN_FAILED_MESSAGE = 'Check your connection and try again — the room is still there.';
@@ -86,20 +87,20 @@ export const RoomJoin = ({ roomId, playerId, seatToRelease, onRefused }: RoomJoi
   };
 
   return (
-    // Both zones empty, and the form where the board will be: this visitor is
-    // not in the room yet, so there is nothing of the game to put either side of
-    // them. It is the same frame all the same, so walking in moves the contents
-    // of a screen rather than replacing one. `gateBand` is set because this
-    // visitor's room does not exist for them yet either — they are still at the
-    // gate, standing on the gate's own full-height band (issue #137).
-    <RoomShell title="Join the game" gateBand>
-      <RoomMiddleColumn>
+    // Standing alone in the frame, on the doors: this visitor is not in the room
+    // yet, so there is nothing of the game to put either side of them. It is the
+    // same frame all the same, so walking in moves the contents of a screen
+    // rather than replacing one. Not the gate, where it stood on a full-height
+    // band (issues #137 and #175): the room's own picture is the doors, and the
+    // panel is the one `connecting` and `unavailable` stand on too (issue #198).
+    <RoomShell title="Join the game" solo>
+      <MiddlePanel>
         <JoinRoomForm
           onJoin={(nickname) => void submitJoin(nickname)}
           isJoining={join.phase === 'submitting'}
           errorMessage={failureOf(join)}
         />
-      </RoomMiddleColumn>
+      </MiddlePanel>
     </RoomShell>
   );
 };

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword, validateWordList } from 'shared';
 
-import { createPanelSx, createScreenSx } from '../components/gate-panel-styles';
+import { createPanelSx, gateScreenSx } from '../components/gate-panel-styles';
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm, type WordListFormNotice } from '../components/WordListForm';
 import { useGardenControls } from '../garden/garden-controls';
@@ -185,7 +185,7 @@ export const CreateRoomPage = () => {
         // stands on the gate's own picture, under the lighter middle of the
         // veil (`garden/scene-surface.ts`'s `GATE_ON_SCENE_SX`, issue #190).
         ...GATE_ON_SCENE_SX,
-        ...createScreenSx,
+        ...gateScreenSx,
       }}
     >
       <Box sx={createPanelSx}>
