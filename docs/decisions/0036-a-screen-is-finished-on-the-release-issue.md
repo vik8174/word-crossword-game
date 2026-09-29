@@ -52,10 +52,10 @@ Alternatives considered:
 
 ## Decision
 
-**A screen is finished when every issue in its row of the release issue's "Screens,
-and what each still needs" table has merged.** That table, on the release issue for
-the version being built (#139 for 1.3.0), is the only place that says when a screen
-is done. Its rows are screens, and its columns say what has merged into each, what
+**A screen is finished when every issue in its row of the release issue's
+"Screens, and what each still needs" table has merged.** That table, on the release
+issue for the version being built (#139 for 1.3.0), is the only place that says
+when a screen is done. Its rows are screens, and its columns say what has merged into each, what
 is still needed, and what the screen looks like today.
 
 **The release is not tagged while any row names an issue that does not exist.**
