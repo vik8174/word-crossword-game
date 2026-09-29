@@ -274,7 +274,7 @@ he answers. If he wants something changed, that is a new issue or a revert befor
 the tag, and either costs less than a queue that stood still.
 
 **An issue that leaves its screen half built merges the same way, and says so on
-the release issue.** Where its body has a **What stays wrong until #N** section,
+the release issue.** Where its body has a **What stays wrong until** section,
 copy that line onto the release issue as a comment of your own when it merges.
 That is how a closer that does not exist becomes visible the day the first half
 lands, instead of when someone looks at stage. It is a comment and never an edit
