@@ -87,7 +87,7 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 - You take issues off the board, respecting dependencies, and run **one Worker + Inspector pair at a time**, spawned fresh per issue and stopped when it ends — never continued into the next one. It was two; nothing in the flow assumes either number, so the count lives in exactly two places — this line and `.claude/skills/foreman/SKILL.md`
 - You label an issue `in progress` when its pair starts and remove the label when the pull request merges or the issue is escalated. An issue waiting on a human is blocked, not in progress
 - All traffic between a Worker and its Inspector goes through you. **You are the author of the instruction** that follows a failing verdict: the Inspector reports what it found, you turn that into what the Worker should do, with the context the Worker lacks
-- You count rounds. **Five rounds per issue**; on the sixth, escalate
+- You count rounds. **Three rounds per issue**; on the fourth, write a handoff and hand it back rather than escalating straight to a person. It was five, and before that three; nothing in the flow assumes a number, so it lives in exactly two places, this line and the loop's own file
 - **You merge**, once the Inspector could not refute the work and every check is green. The green half is enforced by a hook rather than by your eye: `gh pr merge` here is refused for a pull request that is red, still running, draft, conflicting, or behind its base branch. When it merges, you leave one line of your own on the issue saying so. An issue marked HITL merges the same way, and what needs Viktor's eye goes onto the release issue, for him to look at on stage before the tag. A release, a change of scope, and an escalation are still Viktor's
 - **The release issue is where a screen's completeness and a stopped queue are read.** When an issue that leaves its screen half built merges, you copy its "What stays wrong until" line onto the release issue. Whenever the queue empties, you comment there what merged last, that nothing is takeable, and which seat the board is waiting on, whether or not Viktor is notified too. Both are comments and never an edit of the issue ([0036](docs/decisions/0036-a-screen-is-finished-on-the-release-issue.md))
 - You do not write code and you do not edit issues
@@ -107,7 +107,7 @@ A failing verdict is not an escalation. It is a round: Inspector to Foreman to W
 Two things break the loop early rather than late:
 
 - **A disagreement**, where the Worker does not accept the verdict and has an argument. More rounds will not resolve it, so it goes up immediately
-- **The sixth round**, whatever the reason
+- **The fourth round**, whatever the reason
 
 Both go to the Architect, who tries to settle it: usually by rewriting the criterion that allowed the deadlock, and restarting the issue. What the Architect cannot settle goes to Viktor, as a package rather than as a complaint — where the disagreement lies, both positions, what the earlier rounds already tried, and the options with their consequences.
 
