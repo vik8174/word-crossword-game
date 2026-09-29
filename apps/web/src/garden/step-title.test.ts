@@ -5,10 +5,11 @@ import { SCENE } from './scene-palette';
 import { stepTitleSx } from './scene-surface';
 
 /**
- * The name of a step is one drawing shared by `/create` and every room screen
- * (`design/templates/state-tree.html`'s `.step-title`, issue #197), so what is
- * pinned here is what that drawing says: the size, and a rule that runs the
- * full width of the title's own block rather than off the edge of the window.
+ * The name of a step is one drawing shared by `/create`, join, the lobby,
+ * `finished` and `closed-early` (`design/templates/state-tree.html`'s
+ * `.step-title`, issue #197), so what is pinned here is what that drawing
+ * says: the size, and a rule that runs the full width of the title's own block
+ * rather than off the edge of the window.
  */
 describe('the name of a step', () => {
   const title = stepTitleSx();

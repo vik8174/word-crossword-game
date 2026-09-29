@@ -183,7 +183,9 @@ export const SENTENCE_BAND_SX: CSSObject = {
  * The name of a step, with the temple's red run under it — `.step-title` in
  * `design/templates/state-tree.html` (lines 284-293), the one drawing every
  * screen that names its step is given: `/create` inside its panel, and join,
- * the lobby and the game room at the top of their frame.
+ * the lobby, `finished` ("Finished") and `closed-early` ("Game ended") at the
+ * top of their frame. The game room itself has no step title: `RoomGame` gives
+ * `RoomShell` none, so it takes the unseen heading instead.
  *
  * The rule is the whole width of the title's own block, 7px under the letters.
  * It used to start off the left edge of the window and stop at the last letter
