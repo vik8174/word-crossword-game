@@ -99,11 +99,23 @@ const statusLine = (): string => screen.getAllByRole('status')[0]?.textContent ?
 const startButton = () => screen.queryByRole('button', { name: /start the game/i });
 
 describe('RoomLobby', () => {
-  it('tells the owner of a room that cannot start yet what is missing', () => {
+  it('tells the owner of a room that cannot start yet what is missing, and offers no start', () => {
     renderLobby(OWNER_ID, lobbyRoom({ playerCount: 1 }));
 
     expect(statusLine()).toMatch(/needs 1 more\b/);
     expect(statusLine()).toMatch(/share the room link/i);
+    // Changed on Viktor's ruling of 2026-09-30 (issue #199): this asserted a
+    // start button that was there and disabled. The drawing gives a room one
+    // action at a time, copying the link while it waits and starting the game
+    // once somebody is in, so a room short of players renders no start at all.
+    expect(startButton()).toBeNull();
+  });
+
+  it('keeps a start that cannot be pressed when the room has the players and lacks the words', () => {
+    // No arrival fixes this one, so it is drawn as the template draws it
+    // (`lobby/crowded`) and the status line says which number is wrong.
+    renderLobby(OWNER_ID, lobbyRoom({ playerCount: 2, wordCount: 1 }));
+
     expect(startButton()).toBeDisabled();
   });
 
@@ -220,7 +232,7 @@ describe('RoomLobby', () => {
     render(
       <RoomLobby
         roomId="room-1"
-        room={lobbyRoom({ playerCount: 1 })}
+        room={lobbyRoom({ playerCount: 2 })}
         viewerId={OWNER_ID}
         invitation={<h2>The link into this room</h2>}
       />,

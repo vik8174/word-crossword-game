@@ -25,7 +25,8 @@ interface StartGamePanelProps {
  * has arrived. Starting deals the words out, so it cannot be taken back — and
  * the button is live only when the deal would actually work, asking
  * `wordAssignmentRefusal` the same question `assignWords` asks itself, so the
- * owner cannot press into a failure.
+ * owner cannot press into a failure. While the room is short of players it
+ * renders nothing at all rather than a button that cannot be pressed.
  *
  * What is missing while it is not live is not said here: the room's status line
  * says it already, and says it to everybody in the room rather than to the
@@ -48,6 +49,17 @@ export const StartGamePanel = ({
   errorMessage,
 }: StartGamePanelProps) => {
   const refusal = wordAssignmentRefusal({ wordCount, playerCount });
+
+  // One action per state: alone in the room, the owner's action is copying the
+  // link, and once somebody is there it is starting the game, which is why the
+  // drawing never shows both. A room that is short of players has no start to
+  // offer, disabled or otherwise (Viktor's ruling on issue #199, 2026-09-30).
+  // A room that is short of *words* is a different thing and keeps its disabled
+  // button: no arrival fixes it, so it is drawn (`lobby/crowded`) and the status
+  // line says which number is wrong.
+  if (refusal === 'too-few-players') {
+    return null;
+  }
 
   return (
     // 9px, the template's `.stack-tight` (issue #199): the message and the

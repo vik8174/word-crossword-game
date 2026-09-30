@@ -10,10 +10,10 @@ import { zoneHeadingSx, zoneHintSx } from './zone-styles';
  * it; at the doors of the temple there is no board yet — the middle of that
  * screen is the doorway, visible in the picture itself, so nothing of the
  * interface may stand in it — and this is all there is of the crossword, in the
- * band at the side (issue #115).
+ * zone at the side (issue #115).
  *
  * It carries no surface of its own, which is the difference between the two
- * places. In the band at the side there is already one and a second would
+ * places. In the zone at the side there is already one and a second would
  * simply be the same darkness twice; in the middle of the window there is none,
  * so the screen that puts it there gives it one (see {@link RoomCrossword}).
  *
