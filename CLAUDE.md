@@ -226,9 +226,28 @@ anchors what it measured.** In three parts, each of which has earned its place:
 2. **Calibrated before it is trusted**, against a reading known to be good — the
    pane at 1440 will do — and agreeing to the decimal before any figure taken
    through it is quoted.
-3. **The artefact anchored by hash.** A template is a file that another branch
-   can change under a running cycle. Record the blob id and the sha256 of the
-   file as served, and re-check it before and after measuring. That turns "the
+3. **The artefact anchored by hash, and it is the served bytes that count.**
+   A template is a file another branch can change under a running cycle. Hash
+   **three** things, not one, and re-check before measuring, after measuring,
+   and either side of a `gh pr update-branch`:
+
+   | what                              | why                                           | a change means                     |
+   | --------------------------------- | --------------------------------------------- | ---------------------------------- |
+   | the file in the baseline worktree | the drawing you meant                         | **fault**: stop                    |
+   | **the bytes actually served**     | what the measurement was really taken against | **fault**: stop                    |
+   | the branch worktree's own copy    | it moves when the base moves                  | **normal**: report it, do not stop |
+
+   Hashing the file on disk alone is not the guarantee. A server can serve
+   something other than the file you believe it is serving — a wrong root, a
+   cache, a stale process holding the old bytes — and **a measurement is taken
+   against what was served**. And the third row is what makes the anchor usable
+   rather than merely strict: after an update onto a base carrying a new
+   drawing, the branch's copy moving is expected and costs nothing, because the
+   drawing is never served from there. Without that distinction the two look
+   identical, and a seat stops for no reason at the moment it is busiest.
+
+   Make it a script that exits non-zero, not a thing to remember. **The verdict
+   carries the check's output, not a claim about it.** That turns "the
    instrument moved under me" from something a seat has to notice into something
    that fails loudly.
 
