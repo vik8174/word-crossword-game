@@ -226,9 +226,9 @@ because a permission rule matches a command by its prefix: one name is one rule.
 
 ### Budgets an issue may cite
 
-| ceiling                            | where it is enforced                                        | measured on `92f7797`                             |
+| ceiling                            | where it is enforced                                        | measured on `bc02ded`                             |
 | ---------------------------------- | ----------------------------------------------------------- | ------------------------------------------------- |
-| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **192.2 KiB**                                     |
+| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **190.7 KiB** without a token, ~192.4 with one    |
 | one scene image, **180.0 KiB**     | `apps/web/build/scene-weight.ts`                            | doors.avif 121.9, gate.avif 160.5, hall.avif 98.4 |
 
 **CI weighs a lighter bundle than the one that reaches a player**, by roughly
@@ -236,6 +236,19 @@ because a permission rule matches a command by its prefix: one name is one rule.
 difference is in the artefact, not in the moment of measuring, so a pull request
 sitting 1 KiB under the ceiling in CI is not under it in production. Say which
 build produced any figure quoted in an issue.
+
+**So the first-visit row is two numbers, not one, and neither is "the" weight.**
+The 190.7 was measured on `bc02ded` in a clean worktree with no `apps/web/.env`,
+by `SENTRY_AUTH_TOKEN= pnpm exec vite build` in `apps/web`; the ~192.4 is what
+PR #208 reports for the same code built with `.env` in place, and is **not** a
+figure this section measured. Quote the command and the commit with any weight,
+never the row alone.
+
+**This row goes stale faster than anything else here.** It said 192.2 on
+`c71439c` until PR #208 landed, and that stale figure was quoted into two issues
+before an inspector caught it by building the branch rather than by reading it.
+A weight is a measurement of one commit by one command: if the commit you are on
+is not the commit in the heading, **run the command** rather than cite the row.
 
 ### Templates
 
