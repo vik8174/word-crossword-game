@@ -228,23 +228,33 @@ anchors what it measured.** In three parts, each of which has earned its place:
    through it is quoted.
 3. **The artefact anchored by hash, and it is the served bytes that count.**
    A template is a file another branch can change under a running cycle. Hash
-   **three** things, not one, and re-check before measuring, after measuring,
+   **four** things, not one, and re-check before measuring, after measuring,
    and either side of a `gh pr update-branch`:
 
-   | what                              | why                                           | a change means                     |
-   | --------------------------------- | --------------------------------------------- | ---------------------------------- |
-   | the file in the baseline worktree | the drawing you meant                         | **fault**: stop                    |
-   | **the bytes actually served**     | what the measurement was really taken against | **fault**: stop                    |
-   | the branch worktree's own copy    | it moves when the base moves                  | **normal**: report it, do not stop |
+   | what                                    | why                                           | a change means                                                                        |
+   | --------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------- |
+   | the file in the baseline worktree       | the drawing you meant                         | **fault**: stop                                                                       |
+   | **the bytes actually served**           | what the measurement was really taken against | **fault**: stop                                                                       |
+   | **the base's own copy** (`origin/main`) | what a branch update will bring in            | it is the reference the row below is read against                                     |
+   | the branch worktree's copy              | it moves when the base moves                  | **depends on the row above**: expected if the base moved too, **fault** if it did not |
 
    Hashing the file on disk alone is not the guarantee. A server can serve
    something other than the file you believe it is serving — a wrong root, a
    cache, a stale process holding the old bytes — and **a measurement is taken
-   against what was served**. And the third row is what makes the anchor usable
-   rather than merely strict: after an update onto a base carrying a new
-   drawing, the branch's copy moving is expected and costs nothing, because the
-   drawing is never served from there. Without that distinction the two look
-   identical, and a seat stops for no reason at the moment it is busiest.
+   against what was served**.
+
+   The last two rows go together, and the third is the one that does the
+   reasoning. **"Expected" is never a property of the update; it is a property
+   of what landed in the base.** A branch copy that differs while the base is
+   unchanged means something moved the file that no commit accounts for — a
+   fault. The same difference after the base has moved is ordinary and costs
+   nothing, because the drawing is never served from the branch tree. **A check
+   that cannot see the base cannot tell those apart**, however carefully it is
+   read, and it fails silently in one direction: a seat stops for no reason at
+   its busiest moment, or it labels a real fault as expected.
+
+   Both corrections are the same lesson: **hash the thing the conclusion
+   actually depends on**, not the thing nearest to hand.
 
    Make it a script that exits non-zero, not a thing to remember. **The verdict
    carries the check's output, not a claim about it.** That turns "the
