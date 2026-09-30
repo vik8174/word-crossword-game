@@ -1,10 +1,11 @@
-import Stack from '@mui/material/Stack';
-import TextField from '@mui/material/TextField';
-import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 import { useState } from 'react';
 
+import { inRem } from '../scale';
 import { roomUrl } from '../rooms/room-link';
+import { ReadOnlyField } from './Field';
 import { PillButton } from './PillButton';
+import { zoneHeadingSx, zoneHintSx } from './zone-styles';
 
 interface RoomInvitePanelProps {
   /** Id of the room this screen is showing, as it stands in the address. */
@@ -12,6 +13,19 @@ interface RoomInvitePanelProps {
   /** Origin the app is served from; injected so the panel stays testable. */
   readonly origin: string;
 }
+
+/** What the block is named by. */
+const INVITE_HEADING_ID = 'invite-heading';
+
+/**
+ * The line beside the copy button that says how the copy went
+ * (`.inline-status`, `design/templates/state-tree.html` lines 392-394): 11px,
+ * and no surface of its own, so it is read off the zone. Green when it worked,
+ * and a pale red when the browser refused, the template's own two.
+ */
+const INLINE_STATUS_SX = { fontSize: inRem(11), lineHeight: 1.5 } as const;
+const COPIED_INK = '#A9D147';
+const REFUSED_INK = '#FFC7AE';
 
 /** Outcome of the last copy attempt — nothing tried yet, copied, or the browser refused. */
 type CopyState = 'idle' | 'copied' | 'failed';
@@ -56,39 +70,45 @@ export const RoomInvitePanel = ({ roomId, origin }: RoomInvitePanelProps) => {
   };
 
   return (
-    <Stack spacing={4}>
-      <Typography variant="body1">
+    <section aria-labelledby={INVITE_HEADING_ID}>
+      <Box component="h2" id={INVITE_HEADING_ID} sx={zoneHeadingSx}>
+        The link into this room
+      </Box>
+      <Box component="p" sx={zoneHintSx}>
         Send this link to the other players — they join with a nickname, no sign-up.
-      </Typography>
+      </Box>
 
       {/* Wrapped rather than scrolled sideways inside its own box: the panel
-          now stands in a zone beside the board rather than across the page
-          (issue #101), and a link shown as its first thirty characters is not
-          the link shown in full that the paragraph above promises. */}
-      <TextField
-        label="Room link"
-        value={url}
-        multiline
-        slotProps={{ htmlInput: { readOnly: true } }}
-        fullWidth
-      />
+          stands in a zone beside the board rather than across the page (issue
+          #101), and a link shown as its first thirty characters is not the link
+          shown in full that the sentence above promises. */}
+      <ReadOnlyField label="Room link" value={url} />
 
-      <Stack direction="row" spacing={4} sx={{ alignItems: 'center', flexWrap: 'wrap' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '10px',
+          width: '100%',
+          marginTop: inRem(9),
+        }}
+      >
         <PillButton kind="quiet" small onClick={() => void handleCopy()}>
-          Copy link
+          Copy the link
         </PillButton>
 
         {copyState === 'copied' && (
-          <Typography variant="body2" color="success.main" role="status">
+          <Box component="span" role="status" sx={{ ...INLINE_STATUS_SX, color: COPIED_INK }}>
             Link copied
-          </Typography>
+          </Box>
         )}
         {copyState === 'failed' && (
-          <Typography variant="body2" color="error.main" role="status">
+          <Box component="span" role="status" sx={{ ...INLINE_STATUS_SX, color: REFUSED_INK }}>
             Could not copy automatically — select the link and copy it by hand.
-          </Typography>
+          </Box>
         )}
-      </Stack>
-    </Stack>
+      </Box>
+    </section>
   );
 };
