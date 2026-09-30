@@ -210,6 +210,33 @@ They must not collide, because a crew and its Inspector run at the same time.
 
 Vite's own default is 5173; leave it free for whoever is working by hand.
 
+**The ports separate the servers. They do not separate the instrument.** There
+is one Browser pane with one tab, and every seat drives it. A tab can navigate
+itself out from under a measurement between a `navigate` and an `evaluate`, and
+neither seat can tell that it happened: this has already cost one sweep, when an
+Inspector's template on `:8175` became the Worker's workshop on `:6006`
+mid-script. So:
+
+**A seat that measures anything drives its own instrument, calibrates it, and
+anchors what it measured.** In three parts, each of which has earned its place:
+
+1. **Its own browser**, not the shared pane. A private headless Chromium over
+   CDP works, with `Emulation.setDeviceMetricsOverride` set **before**
+   `Page.navigate` so the narrow-viewport trap cannot bite.
+2. **Calibrated before it is trusted**, against a reading known to be good — the
+   pane at 1440 will do — and agreeing to the decimal before any figure taken
+   through it is quoted.
+3. **The artefact anchored by hash.** A template is a file that another branch
+   can change under a running cycle. Record the blob id and the sha256 of the
+   file as served, and re-check it before and after measuring. That turns "the
+   instrument moved under me" from something a seat has to notice into something
+   that fails loudly.
+
+A verdict states that baseline and branch came from **the same browser, the same
+device-scale factor and the same script**, and names the revision of any drawing
+it measured. Without that line, a rect difference between two revisions of a
+drawing is indistinguishable from a defect in the build.
+
 ### What a worktree needs that git does not carry
 
 **`apps/web/.env`, which lives in `apps/web/` and not at the repository root.**
