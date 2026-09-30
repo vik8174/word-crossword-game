@@ -210,6 +210,52 @@ They must not collide, because a crew and its Inspector run at the same time.
 
 Vite's own default is 5173; leave it free for whoever is working by hand.
 
+**The ports separate the servers. They do not separate the instrument.** There
+is one Browser pane with one tab, and every seat drives it. A tab can navigate
+itself out from under a measurement between a `navigate` and an `evaluate`, and
+neither seat can tell that it happened: this has already cost one sweep, when an
+Inspector's template on `:8175` became the Worker's workshop on `:6006`
+mid-script. So:
+
+**A seat that measures anything drives its own instrument, calibrates it, and
+anchors what it measured.** In three parts, each of which has earned its place:
+
+1. **Its own browser**, not the shared pane. A private headless Chromium over
+   CDP works, with `Emulation.setDeviceMetricsOverride` set **before**
+   `Page.navigate` so the narrow-viewport trap cannot bite.
+2. **Calibrated before it is trusted**, against a reading known to be good — the
+   pane at 1440 will do — and agreeing to the decimal before any figure taken
+   through it is quoted.
+3. **The artefact anchored by hash, and it is the served bytes that count.**
+   A template is a file another branch can change under a running cycle. Hash
+   **three** things, not one, and re-check before measuring, after measuring,
+   and either side of a `gh pr update-branch`:
+
+   | what                              | why                                           | a change means                     |
+   | --------------------------------- | --------------------------------------------- | ---------------------------------- |
+   | the file in the baseline worktree | the drawing you meant                         | **fault**: stop                    |
+   | **the bytes actually served**     | what the measurement was really taken against | **fault**: stop                    |
+   | the branch worktree's own copy    | it moves when the base moves                  | **normal**: report it, do not stop |
+
+   Hashing the file on disk alone is not the guarantee. A server can serve
+   something other than the file you believe it is serving — a wrong root, a
+   cache, a stale process holding the old bytes — and **a measurement is taken
+   against what was served**. And the third row is what makes the anchor usable
+   rather than merely strict: after an update onto a base carrying a new
+   drawing, the branch's copy moving is expected and costs nothing, because the
+   drawing is never served from there. Without that distinction the two look
+   identical, and a seat stops for no reason at the moment it is busiest.
+
+   Make it a script that exits non-zero, not a thing to remember. **The verdict
+   carries the check's output, not a claim about it.** That turns "the
+   instrument moved under me" from something a seat has to notice into something
+   that fails loudly.
+
+A verdict states that baseline and branch came from **the same browser, the same
+device-scale factor and the same script**, and names the revision of any drawing
+it measured. Without that line, a rect difference between two revisions of a
+drawing is indistinguishable from a defect in the build.
+
 ### What a worktree needs that git does not carry
 
 **`apps/web/.env`, which lives in `apps/web/` and not at the repository root.**
