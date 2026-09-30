@@ -28,9 +28,9 @@ interface WordEntryListProps {
  * show.
  *
  * The dimming is inherited rather than new here, and so is its one gap: on
- * the band a room stands its zones on, `scene-surface.ts`'s
+ * the surface a room's zone stands on, `scene-surface.ts`'s
  * `.MuiTypography-body2` rule is more specific than this `sx` and wins, so a
- * done row on that band is struck through without being dimmed. Pre-existing
+ * done row on that surface is struck through without being dimmed. Pre-existing
  * and out of scope for issue #150, which is why the third signal below is the
  * one this ticket can actually promise everywhere.
  *

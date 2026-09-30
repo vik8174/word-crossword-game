@@ -1,3 +1,5 @@
+import { inRem } from '../scale';
+
 /**
  * Where the room puts its three zones, and from which window on.
  *
@@ -51,11 +53,27 @@ export const APP_SHELL = `@media (min-width: ${APP_SHELL_MIN_WIDTH}px) and (min-
 export const THREE_ZONES = `@media (min-width: ${THREE_ZONE_MIN_WIDTH}px) and (min-height: ${APP_SHELL_MIN_HEIGHT}px)`;
 
 /**
- * How wide a zone beside the board is.
+ * How wide a zone beside the board is, in the template's own pixels
+ * (`design/templates/state-tree.html` line 337: `250px minmax(0, 1fr) 250px`).
  *
- * It follows the window rather than standing still, because what it holds is a
- * list of short lines: at the floor an entry such as `12 down — bridge` takes
- * two lines, and past the ceiling it would be a column of white space next to
- * the one thing on the screen that wants more room.
+ * It stopped following the window when the lobby took the template's zone
+ * (issue #199). It was `clamp(10rem, 16vw, 15rem)`, which is 230.4px at 1440
+ * and never more than 240, because the zone was a column of short lines that
+ * had to fit a narrow window. The zone is a surface with a heading, a list and
+ * a form in it now, and the drawing gives it one width from 1200 up, which is
+ * also the width that leaves the board 868px at 1440 with the gap below. In
+ * `rem`, so a reader who has made their text larger gets a zone that grows
+ * with it.
  */
-export const SIDE_ZONE_WIDTH = 'clamp(10rem, 16vw, 15rem)';
+export const SIDE_ZONE_WIDTH = inRem(250);
+
+/**
+ * How far apart the zones are, from a tablet up: 14px, the template's own
+ * (`.zones` in `design/templates/state-tree.html`, line 322).
+ *
+ * Not a step of the spacing row, which has 12 and 16 and nothing between them,
+ * the same way the frame's padding is not. It is the zones' own number, and 868
+ * is unreachable without it: the frame's content box at 1440 is 1396, and two
+ * zones of 250 with a gap of 16 would leave the board 864 (issue #199).
+ */
+export const ZONES_GAP = inRem(14);
