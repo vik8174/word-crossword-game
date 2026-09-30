@@ -226,13 +226,14 @@ because a permission rule matches a command by its prefix: one name is one rule.
 
 ### Budgets an issue may cite
 
-| ceiling                            | where it is enforced                                        | measured on `bc02ded`                             |
-| ---------------------------------- | ----------------------------------------------------------- | ------------------------------------------------- |
-| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **190.7 KiB** without a token, ~192.4 with one    |
-| one scene image, **180.0 KiB**     | `apps/web/build/scene-weight.ts`                            | doors.avif 121.9, gate.avif 160.5, hall.avif 98.4 |
+| ceiling                            | where it is enforced                                        | measured on `bc02ded`                          |
+| ---------------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
+| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **190.7 KiB** without a token, ~192.4 with one |
+| one scene image, **180.0 KiB**     | `apps/web/build/scene-weight.ts`                            | six files, not three — see below               |
 
 **CI weighs a lighter bundle than the one that reaches a player**, by roughly
-1.5 KiB: a production build carries a Sentry token that a CI build does not. The
+1.7 KiB — 190.7 against PR #208's 192.4: a production build carries a Sentry
+token that a CI build does not. The
 difference is in the artefact, not in the moment of measuring, so a pull request
 sitting 1 KiB under the ceiling in CI is not under it in production. Say which
 build produced any figure quoted in an issue.
@@ -243,6 +244,21 @@ by `SENTRY_AUTH_TOKEN= pnpm exec vite build` in `apps/web`; the ~192.4 is what
 PR #208 reports for the same code built with `.env` in place, and is **not** a
 figure this section measured. Quote the command and the commit with any weight,
 never the row alone.
+
+**The scene ceiling is checked against six files, not three.** Every `.avif`
+has a `.jpg` fallback and the build weighs both against the same 180.0 KiB.
+Measured on `bc02ded` in the same build as the weight above:
+
+| file       | KiB   | file         | KiB       |
+| ---------- | ----- | ------------ | --------- |
+| doors.avif | 121.9 | doors.jpg    | 154.1     |
+| gate.avif  | 160.5 | **gate.jpg** | **157.4** |
+| hall.avif  | 98.4  | hall.jpg     | 120.1     |
+
+**The two nearest the ceiling are gate.avif at 160.5 and gate.jpg at 157.4**,
+with 19.5 and 22.6 KiB of room. An issue that touches the gate's picture is
+the one that runs out first, and it runs out in a file the earlier version of
+this row did not mention at all.
 
 **This row goes stale faster than anything else here.** It said 192.2 on
 `c71439c` until PR #208 landed, and that stale figure was quoted into two issues
