@@ -262,10 +262,10 @@ export const theme = createTheme({
     // every field that rendered one, `WordListForm`'s nickname and words,
     // onto `components/Field.tsx`, which draws its own help line
     // (`components/field-styles.ts`'s `fieldHelpSx`) rather than MUI's
-    // component. `components/RoomInvitePanel.tsx` is the one `TextField`
-    // left in the app and it never sets `helperText`, so nothing renders a
-    // `FormHelperText` any more and the override is gone rather than kept
-    // for a component nothing instantiates.
+    // component. `components/RoomInvitePanel.tsx` was the one `TextField`
+    // left in the app until issue #199 moved it onto `Field.tsx` too, so
+    // nothing renders a `FormHelperText` any more and the override is gone
+    // rather than kept for a component nothing instantiates.
 
     // `prefers-reduced-motion` is answered here rather than inside each
     // component, so that nothing drawn by MUI can opt back into motion with an

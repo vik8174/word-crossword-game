@@ -3,23 +3,15 @@ import { type SxProps, type Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
-import { gapAt, inRem } from '../scale';
-import { BAND_SX, ON_SCENE_SX, fullHeightBandSx, stepTitleSx } from '../garden/scene-surface';
-import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES } from './room-layout';
+import { inRem } from '../scale';
+import { BAND_EDGE, BAND_EDGE_WIDTH } from '../garden/scene-palette';
+import { BAND_SX, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
+import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES, ZONES_GAP } from './room-layout';
 import { useShiftRole } from './screen-shift';
+import { ZONE_PADDING } from './zone-styles';
 
 /** What the page is, said once for every phase the room goes through. */
 const ROOM_HEADING = 'Game room';
-
-/**
- * How much air a zone keeps between its own edge and what is written in it, as
- * a step of the row and as the length two `calc()`s need it in.
- *
- * It used to be the frame's own padding as well, and stopped being that when
- * the frame took the template's (issue #198): a zone's padding is its own
- * surface, which the lobby and the game room own.
- */
-const ZONE_PADDING = gapAt(4);
 
 /**
  * How far the frame stands from the edge of the window, in the template's own
@@ -37,12 +29,44 @@ const FRAME_PADDING = {
 } as const;
 
 /**
- * How wide the band behind a side zone is: the zone it holds, and the padding
- * either side of it. A band exists only where the room is three zones, so the
- * padding it is measured against is the three-zone frame's own: 22px, not the
- * 16 it was before the frame took the template's.
+ * The size of the room's status line, in the template's own pixels
+ * (`.room-status`, `design/templates/state-tree.html` line 296): 12.5, with its
+ * line 1.5 and a shadow that lets it be read off a lit roof as well as off a
+ * shadow.
+ *
+ * Twelve and a half is not one of the four levels `context.md`'s **Level**
+ * entry closes (31, 23, 17, 13). The status line is granted the exception here,
+ * explicitly and for this one slot (issue #199): the drawing sets it at 12.5 on
+ * every room screen that has a status line, and two do, the lobby and
+ * `playing`. It is not a fifth level, and `scale.ts` has none added. It is set
+ * on the slot rather than on the sentence in it, so the two screens that fill
+ * it move together and a third that does never has to remember to.
  */
-const BAND_WIDTH = `calc(${SIDE_ZONE_WIDTH} + ${inRem(22)} + ${inRem(22)})`;
+const STATUS_SX = {
+  textShadow: '0 1px 7px rgba(6, 12, 10, 0.92)',
+  '& .MuiTypography-root': { fontSize: inRem(12.5), lineHeight: 1.5 },
+} as const;
+
+/**
+ * The surface a zone is: the band, blurred a little, with the temple's red run
+ * along its top edge. `.zone` in the template (line 306), and the whole of what
+ * a zone looks like. There is no box drawn behind it and running to the edge of
+ * the window, so nothing stacks over it and the zone stops where the frame does.
+ */
+const ZONE_SURFACE = {
+  ...BAND_SX,
+  backdropFilter: 'blur(2px)',
+  WebkitBackdropFilter: 'blur(2px)',
+  borderTop: `${BAND_EDGE_WIDTH}px solid ${BAND_EDGE}`,
+} as const;
+
+/** A zone with the surface switched off: what a side with nothing on it is from a tablet up. */
+const NO_ZONE_SURFACE = {
+  backgroundColor: 'transparent',
+  backdropFilter: 'none',
+  WebkitBackdropFilter: 'none',
+  borderTop: 0,
+} as const;
 
 /**
  * A heading that is there to be read aloud and not to be looked at.
@@ -73,36 +97,32 @@ const UNSEEN_HEADING = {
 /**
  * The zone a side of the room is given, and what it does when it is empty.
  *
+ * A zone with anything in it is a surface of its own ({@link ZONE_SURFACE}),
+ * at every width, and everything inside it is written in the forest's cream.
+ *
  * An empty zone is a column with nothing in it while the room is an
  * application — that is what keeps the board in the middle of the screen when
  * only one side has anything to say. In a document it is nothing at all, since
- * a stack would otherwise put a gap where a lobby has no words yet.
+ * a stack would otherwise put a gap where a lobby has no words yet. What an
+ * empty column looks like changes with the window, on purpose and as drawn: bare
+ * picture on a tablet, where the two zones share a row and an empty one is a
+ * hole in it, and the surface it was drawn with from three zones up
+ * (`state-tree.html` lines 329 and 342), where it is one of the columns either
+ * side of the doorway and the frame would look lopsided without it.
  *
  * @param area - Which of the named areas of the shell's grid it fills
  * @param isEmpty - Whether this screen handed the zone anything
  */
 const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
-  ...(isEmpty
-    ? { display: 'none' }
-    : {
-        ...ON_SCENE_SX,
-        // The band, as tall as what stands on it. Where the window is wide
-        // enough to give the list a column of its own, the band is drawn behind
-        // instead and runs the whole height of the window, so this one gets out
-        // of its way rather than doubling its darkness.
-        ...BAND_SX,
-        padding: ZONE_PADDING,
-      }),
+  ...(isEmpty ? { display: 'none' } : { ...ON_SCENE_SX, ...ZONE_SURFACE, padding: ZONE_PADDING }),
   [APP_SHELL]: {
     display: 'block',
     gridArea: area,
     minHeight: 0,
     overflowY: 'auto',
+    ...(isEmpty ? NO_ZONE_SURFACE : {}),
   },
-  // An empty zone is still a column while the room is an application — that is
-  // what keeps the board in the middle when only one side has anything to say —
-  // but it is an empty column and not a band with nothing on it.
-  [THREE_ZONES]: isEmpty ? {} : { backgroundColor: 'transparent', padding: 0 },
+  [THREE_ZONES]: isEmpty ? ZONE_SURFACE : {},
 });
 
 /**
@@ -216,10 +236,12 @@ type RoomShellProps = RoomZonesProps | RoomSoloProps;
  *
  * The interface stands on the picture the whole app is drawn in front of, so
  * two things about it are settled here rather than screen by screen. A zone
- * with anything in it stands on a band — a column of the shadow under the
- * canopy, run out to the edge of the window wherever the zone has a column of
- * its own — and everything inside a zone or the header is written in the
- * forest's own cream instead of in ink meant for paper (see `scene-surface.ts`).
+ * with anything in it is a surface of its own, the shadow under the canopy with
+ * the temple's red along its top edge, and it stops where the frame does
+ * rather than running out to the edge of the window (issue #199; it was a
+ * separate box behind the zone, with the red down its inner side). And
+ * everything inside a zone or the header is written in the forest's own cream
+ * instead of in ink meant for paper (see `scene-surface.ts`).
  *
  * @param props.title - The name of this step, or nothing on the screen a game is played on
  * @param props.status - The room's own line about what it is doing
@@ -269,24 +291,6 @@ export const RoomShell = ({
         [THREE_ZONES]: { padding: FRAME_PADDING.threeZones },
       }}
     >
-      {/* The bands, where the window is wide enough for a zone to be a column.
-        They are behind the zones rather than around them, so what a reader
-        moves through is a list of words and not a decoration first. */}
-      {(
-        [
-          ['left', left],
-          ['right', right],
-        ] as const
-      ).map(([side, zone]) =>
-        zone === undefined ? null : (
-          <Box
-            key={side}
-            aria-hidden
-            sx={{ display: 'none', [THREE_ZONES]: fullHeightBandSx(side, BAND_WIDTH) }}
-          />
-        ),
-      )}
-
       <Box
         component="header"
         sx={{
@@ -319,7 +323,7 @@ export const RoomShell = ({
         {/* Wide enough to sit beside the heading on a screen that has the room
           for it, and told to take a line of its own rather than be squeezed
           into a column of single words when it does not. */}
-        <Box sx={{ flex: '1 1 16rem', minWidth: 0 }}>{status}</Box>
+        <Box sx={{ flex: '1 1 16rem', minWidth: 0, ...STATUS_SX }}>{status}</Box>
 
         {/* Pushed to the far end of the header where there is a header to push it
           along, and left where it falls in a document, which is a page a player
@@ -341,7 +345,10 @@ export const RoomShell = ({
             [APP_SHELL]: {
               flex: 1,
               minHeight: 0,
-              gap: 4,
+              // The zones' own 14px and not a step of the spacing row, which has
+              // none between 12 and 16 (`ZONES_GAP`, issue #199). From a tablet up
+              // because the template's `.zones` says 14 from 768.
+              gap: ZONES_GAP,
               gridTemplateColumns: '1fr 1fr',
               gridTemplateRows: 'auto minmax(0, 1fr)',
               gridTemplateAreas: '"board board" "left right"',
@@ -355,7 +362,22 @@ export const RoomShell = ({
         >
           <Box sx={zoneSx('left', left === undefined)}>{left}</Box>
 
-          <Box sx={{ [APP_SHELL]: { gridArea: 'board', minHeight: 0, overflowY: 'auto' } }}>
+          {/* Nothing in a document when a screen puts nothing there, as the
+            template's `.zone-middle.empty` is: the lobby's middle is the
+            doorway, and a grid gap left standing beside an empty box would be
+            24px of page under the zone. From a tablet up it is still the row
+            the board would stand in. */}
+          <Box
+            sx={{
+              ...(children === undefined && { display: 'none' }),
+              [APP_SHELL]: {
+                display: 'block',
+                gridArea: 'board',
+                minHeight: 0,
+                overflowY: 'auto',
+              },
+            }}
+          >
             {children}
           </Box>
 

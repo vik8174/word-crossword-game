@@ -138,6 +138,11 @@ export const Message = ({
         sx={{
           display: 'block',
           fontSize: '9.5px',
+          // The page's 1.6, which the template's `.msg .head` inherits and this
+          // app's body does not (1.5): a heading of one line came out 0.95px
+          // short of the drawing, and one that wraps in a narrow zone twice
+          // that (issue #199, the presence notice in the lobby's zone).
+          lineHeight: 1.6,
           fontWeight: 700,
           letterSpacing: '0.2em',
           textTransform: 'uppercase',

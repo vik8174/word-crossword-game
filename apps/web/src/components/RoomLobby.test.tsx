@@ -1,9 +1,12 @@
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { updateDoc } from 'firebase/firestore';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AWAY_AFTER_MS, PRESENCE_TICK_MS } from '../rooms/presence';
 import type { RoomDocument } from '../rooms/room-document';
 import { RoomLobby } from './RoomLobby';
+
+const ORDER = Node.DOCUMENT_POSITION_FOLLOWING;
 
 // Firebase is the system boundary. This screen owns the write that starts a
 // game, so the SDK is mocked away; nothing below asks it to write anything.
@@ -96,11 +99,23 @@ const statusLine = (): string => screen.getAllByRole('status')[0]?.textContent ?
 const startButton = () => screen.queryByRole('button', { name: /start the game/i });
 
 describe('RoomLobby', () => {
-  it('tells the owner of a room that cannot start yet what is missing', () => {
+  it('tells the owner of a room that cannot start yet what is missing, and offers no start', () => {
     renderLobby(OWNER_ID, lobbyRoom({ playerCount: 1 }));
 
     expect(statusLine()).toMatch(/needs 1 more\b/);
     expect(statusLine()).toMatch(/share the room link/i);
+    // Changed on Viktor's ruling of 2026-09-30 (issue #199): this asserted a
+    // start button that was there and disabled. The drawing gives a room one
+    // action at a time, copying the link while it waits and starting the game
+    // once somebody is in, so a room short of players renders no start at all.
+    expect(startButton()).toBeNull();
+  });
+
+  it('keeps a start that cannot be pressed when the room has the players and lacks the words', () => {
+    // No arrival fixes this one, so it is drawn as the template draws it
+    // (`lobby/crowded`) and the status line says which number is wrong.
+    renderLobby(OWNER_ID, lobbyRoom({ playerCount: 2, wordCount: 1 }));
+
     expect(startButton()).toBeDisabled();
   });
 
@@ -191,7 +206,8 @@ describe('RoomLobby', () => {
       // looks alive to the one person nobody can hear.
       renderLobby(OWNER_ID, lobbyRoom({ playerCount: 2, silentFor: { [OWNER_ID]: 125_000 } }));
 
-      expect(screen.getByText(/the room has not heard from you for 2 min/i)).toBeInTheDocument();
+      expect(screen.getByText('The room has not heard from you')).toBeInTheDocument();
+      expect(screen.getByText(/^not for 2 min\./i)).toBeInTheDocument();
     });
 
     it('says nothing to a reader the room is still hearing from', () => {
@@ -207,8 +223,48 @@ describe('RoomLobby', () => {
   it('states the size a game is played at, not a ceiling to work towards', () => {
     renderLobby(GUEST_ID, lobbyRoom({ playerCount: 2 }));
 
-    expect(screen.getByRole('heading', { name: /players/i })).toHaveTextContent('Players (2)');
+    expect(screen.getByRole('heading', { name: 'In the room' })).toBeInTheDocument();
     expect(screen.getByText(/played by exactly 2 people/i)).toBeInTheDocument();
     expect(screen.queryByText(/up to|of 4/i)).not.toBeInTheDocument();
+  });
+
+  it("lays the zone out in the template's order: who is in, the link, the start, the crossword", () => {
+    render(
+      <RoomLobby
+        roomId="room-1"
+        room={lobbyRoom({ playerCount: 2 })}
+        viewerId={OWNER_ID}
+        invitation={<h2>The link into this room</h2>}
+      />,
+    );
+
+    const players = screen.getByRole('heading', { name: 'In the room' });
+    const link = screen.getByRole('heading', { name: 'The link into this room' });
+    const start = screen.getByRole('button', { name: /start the game/i });
+    const crossword = screen.getByRole('heading', { name: 'The crossword' });
+
+    expect(players.compareDocumentPosition(link) & ORDER).toBeTruthy();
+    expect(link.compareDocumentPosition(start) & ORDER).toBeTruthy();
+    expect(start.compareDocumentPosition(crossword) & ORDER).toBeTruthy();
+  });
+
+  it('puts the notice about the reader first in the zone, above who is in', () => {
+    renderLobby(OWNER_ID, lobbyRoom({ playerCount: 2, silentFor: { [OWNER_ID]: 125_000 } }));
+
+    const notice = screen.getByText('The room has not heard from you');
+    const players = screen.getByRole('heading', { name: 'In the room' });
+
+    expect(notice.closest('[role="status"]')).not.toBeNull();
+    expect(notice.compareDocumentPosition(players) & ORDER).toBeTruthy();
+  });
+
+  it("says the deal is being written on the button, in the template's words", () => {
+    // The write never settles, so the screen stays where pressing left it.
+    vi.mocked(updateDoc).mockReturnValueOnce(new Promise(() => undefined));
+    renderLobby(OWNER_ID, lobbyRoom({ playerCount: 2 }));
+
+    fireEvent.click(startButton()!);
+
+    expect(screen.getByRole('button', { name: 'Starting the game' })).toBeDisabled();
   });
 });

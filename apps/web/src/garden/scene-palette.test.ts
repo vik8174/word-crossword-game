@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { READONLY_FILL } from '../components/field-styles';
 import { CLOTH } from './cloth';
 import { INK, TONES } from './petals';
 import {
@@ -357,24 +358,36 @@ describe('what the garden writes on', () => {
     }
   });
 
-  it('says plainly that the invite link, the one field still outlined, falls under three on the lit paper of the doors', () => {
-    // Recorded rather than left to be rediscovered, the same way the guard
-    // above this one is: `SCENE_EDGE` at .55 already falls under 3:1 on a
-    // band standing over the lit paper of the doors, under the template's
-    // veil (issue #190) — 2.64:1, not 3.
-    //
-    // Issue #193 moved every other field on the gate onto the opaque washi
-    // fill the guard above measures, so `SCENE_EDGE` is no longer a figure a
-    // player reads there at all. The one place it survives is
-    // `components/RoomInvitePanel.tsx`'s invite link, in the lobby, which
-    // stands on this same band and keeps `SCENE_EDGE` until the lobby issue
-    // gives it the template's own `.field.readonly` styling.
+  it('shows the edge of the read-only field, which is its fill laid over the band', () => {
+    // The invite link is the last field, and it took the template's
+    // `.field.readonly` (issue #199): the washi at .9 rather than a line round
+    // it, so the boundary a player sees is the pill itself. It is translucent,
+    // unlike the opaque fill above, so what is behind it shows a little
+    // through; the claim is the same one, that the pill reads off every
+    // surface a band can stand on at 3:1 or more.
+    for (const surface of SURFACES) {
+      const behind = banded(veiled(surface.paint));
+
+      expect(
+        contrast(laidOver(asRgba(READONLY_FILL), behind), behind),
+        `the invite link's fill on ${surface.name}`,
+      ).toBeGreaterThan(COMPONENT_EDGE);
+    }
+  });
+
+  it('says plainly that the faint outline falls under three on the lit paper of the doors', () => {
+    // Recorded rather than left to be rediscovered, the same way the guards
+    // above are: `SCENE_EDGE` at .55 falls under 3:1 on a band standing over
+    // the lit paper of the doors, under the template's veil (issue #190) —
+    // 2.64:1, not 3. Nothing draws a field with it any more (issue #193 moved
+    // the gate's fields onto the opaque washi, and issue #199 the invite
+    // link); it survives as the answered mark's ring, which is decoration.
     const surface = SURFACES[0];
     const behind = banded(veiled(surface.paint));
 
     expect(
       contrast(laidOver(asRgba(SCENE_EDGE), behind), behind),
-      `the invite link's edge on ${surface.name}`,
+      `the faint outline on ${surface.name}`,
     ).toBeLessThan(COMPONENT_EDGE);
   });
 

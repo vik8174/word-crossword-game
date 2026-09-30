@@ -131,11 +131,14 @@ describe('the gate reading its own body text at full cream', () => {
   });
 
   it('carries no rule for an element nothing on a scene renders any more', () => {
-    // `RoomInvitePanel.tsx` is the one `TextField` left in the app and never
-    // sets `helperText`, so `FormHelperText` renders nowhere on a scene —
-    // the rule that used to colour it is gone from `ON_SCENE_SX` itself,
-    // not only from `GATE_ON_SCENE_SX`'s own override of it.
-    expect(ON_SCENE_SX['&& .MuiFormHelperText-root']).toBeUndefined();
-    expect(ON_SCENE_SX['&& .MuiFormHelperText-root.Mui-error']).toBeUndefined();
+    // Issue #199 moved the last `TextField` in the app, the invite link, onto
+    // `components/Field.tsx`. Nothing renders MUI's field on a scene, so
+    // the rules that coloured its input, outline and label are gone from
+    // `ON_SCENE_SX` itself, as its help text's were before them (issue #193).
+    const keys = Object.keys(ON_SCENE_SX);
+
+    expect(
+      keys.filter((key) => /Mui(Input|OutlinedInput|InputLabel|FormHelperText)/.test(key)),
+    ).toEqual([]);
   });
 });
