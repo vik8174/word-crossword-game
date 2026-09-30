@@ -1324,14 +1324,14 @@
       overlay = '<div class="modal-veil"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="endTitle">' +
         '<h3 id="endTitle">End the game?</h3><div class="rule"></div>' +
         '<p>The room closes for both of you and the words nobody guessed stay unguessed. This cannot be undone, and the game cannot be restarted from here.</p>' +
-        '<div class="actions">' + go("Keep playing", "playing", "on-paper quiet") + go("End it", "playing/ending", "on-paper") + '</div>' +
+        '<div class="actions">' + go("Keep playing", "playing", "on-paper") + go("End it", "playing/ending", "on-paper quiet") + '</div>' +
         '</div></div>';
     }
     if (variant === "endfail") {
       overlay = '<div class="modal-veil"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="endTitle2">' +
         '<h3 id="endTitle2">End the game?</h3><div class="rule"></div>' +
         '<p style="margin-bottom:14px">The game could not be ended. The room may have expired, or it may have ended already — reload the page to see where it stands.</p>' +
-        '<div class="actions">' + go("Keep playing", "playing", "on-paper quiet") + go("Try again", "closed-early", "on-paper") + '</div>' +
+        '<div class="actions">' + go("Keep playing", "playing", "on-paper") + go("Try again", "closed-early", "on-paper quiet") + '</div>' +
         '</div></div>';
     }
 
