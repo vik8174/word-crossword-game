@@ -1,4 +1,4 @@
-import Alert from '@mui/material/Alert';
+import { Message } from './Message';
 
 interface OwnPresenceNoticeProps {
   /**
@@ -24,6 +24,10 @@ interface OwnPresenceNoticeProps {
  * and nothing taken from `navigator.onLine`, which reports a network rather
  * than a database.
  *
+ * It is the message component's warning kind, and the last thing in the app
+ * that was MUI's `Alert` (issue #199): a heading that says what happened and a
+ * sentence that says how long, where it was one sentence that did both.
+ *
  * @param props.awayDuration - How long the room has not heard from them; the
  * notice is nothing at all while it is `undefined`
  *
@@ -36,8 +40,8 @@ export const OwnPresenceNotice = ({ awayDuration }: OwnPresenceNoticeProps) => {
   }
 
   return (
-    <Alert severity="warning" role="status">
-      {`The room has not heard from you for ${awayDuration}. What is on this screen is what your browser last received, and nothing you do here is reaching anybody else — check your connection. This notice goes the moment the room hears from you again.`}
-    </Alert>
+    <Message kind="warning" heading="The room has not heard from you" role="status">
+      {`Not for ${awayDuration}. What is on this screen is what your browser last received, and nothing you do here is reaching anybody else — check your connection. This notice goes the moment the room hears from you again.`}
+    </Message>
   );
 };

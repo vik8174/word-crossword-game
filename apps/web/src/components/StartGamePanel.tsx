@@ -1,6 +1,7 @@
-import Stack from '@mui/material/Stack';
+import Box from '@mui/material/Box';
 import { wordAssignmentRefusal } from 'shared';
 
+import { inRem } from '../scale';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
 
@@ -49,7 +50,10 @@ export const StartGamePanel = ({
   const refusal = wordAssignmentRefusal({ wordCount, playerCount });
 
   return (
-    <Stack spacing={4}>
+    // 9px, the template's `.stack-tight` (issue #199): the message and the
+    // button it is about stand closer than the blocks of the zone do, and 9 is
+    // not a step of the spacing row.
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: inRem(9) }}>
       {errorMessage !== undefined && (
         <Message kind="error" heading="Could not start the game">
           {errorMessage}
@@ -57,8 +61,8 @@ export const StartGamePanel = ({
       )}
 
       <PillButton onClick={onStart} loading={isStarting} disabled={refusal !== null}>
-        {isStarting ? 'Starting...' : 'Start the game'}
+        {isStarting ? 'Starting the game' : 'Start the game'}
       </PillButton>
-    </Stack>
+    </Box>
   );
 };
