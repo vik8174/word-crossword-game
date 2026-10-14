@@ -61,7 +61,7 @@ pnpm workspace over `apps/*` and `packages/*`.
 | tests      | `pnpm test`                                        | 16 s, 967 tests in 87 files            |
 | coverage   | `pnpm test:coverage`                               | 22 s, 99.56 % of statements (web)      |
 | build      | `pnpm build`                                       | 14 s                                   |
-| rules      | `pnpm test:rules`                                  | 8 s                                    |
+| rules      | `pnpm test:rules`                                  | 7 s                                    |
 
 The test count is the sum of two packages: 877 tests in 78 files in `apps/web` and 90 in 9 in `packages/shared`. Coverage is that of `apps/web` (1597 of 1604 statements); `packages/shared` is at 100 %.
 
