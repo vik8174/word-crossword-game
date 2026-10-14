@@ -1,7 +1,14 @@
 import Box from '@mui/material/Box';
 import type { ChangeEvent, ReactNode } from 'react';
 
-import { FIELD_LEAD_CLASS, fieldHelpSx, fieldLeadSx, fieldSetSx, fieldSx } from './field-styles';
+import {
+  FIELD_LEAD_CLASS,
+  fieldGrowSx,
+  fieldHelpSx,
+  fieldLeadSx,
+  fieldSetSx,
+  fieldSx,
+} from './field-styles';
 
 export interface FieldProps {
   /**
@@ -38,9 +45,8 @@ export interface FieldProps {
 /**
  * The template's one field — `.field` in `design/templates/state-tree.html`,
  * replacing MUI's own field component in `components/WordListForm.tsx` and
- * `components/JoinRoomForm.tsx` (issue #193). `components/RoomInvitePanel.tsx`
- * keeps MUI's — its readonly zone is a fork the template does not close, and
- * it goes with the lobby issue (#193, "Where it goes" / "Boundaries").
+ * `components/JoinRoomForm.tsx` (issue #193). The read-only kind, the invite
+ * link's, is {@link ReadOnlyField}, and it came with the lobby (issue #199).
  *
  * Rendered as a real `<label>` wrapping the control, exactly as the template
  * does: clicking anywhere in the pill focuses the input, and the control's
@@ -150,3 +156,42 @@ export const FieldHelp = ({
     {children}
   </Box>
 );
+
+/**
+ * The read-only kind — `.field.readonly` — that shows the invite link.
+ *
+ * The same pill of paper as {@link Field} in its multi-line shape (14px corners,
+ * `12px 16px` padding, the lead dot at the top), with two differences the lobby
+ * needs. It takes nothing, so it has no `onChange`, and its fill and edge are
+ * the template's read-only pair. And it grows: a link is shown in full and
+ * wraps to as many lines as it needs, where the template draws one line and
+ * clips it at every width (issue #199, the one allowed difference).
+ *
+ * The control is a real `<textarea readOnly>`, so the link is selectable and a
+ * browser that refuses the clipboard still leaves it to be copied by hand
+ * (issue #101).
+ *
+ * @param props.label - The accessible name — never shown as text
+ * @param props.value - What is shown
+ *
+ * @example
+ * <ReadOnlyField label="Room link" value={roomUrl(roomId, origin)} />
+ */
+export const ReadOnlyField = ({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string;
+}) => {
+  const state = { multiline: true, invalid: false, disabled: false, readOnly: true };
+
+  return (
+    <Box component="label" sx={fieldSx(state)}>
+      <Box aria-hidden className={FIELD_LEAD_CLASS} sx={fieldLeadSx(state)} />
+      <Box sx={fieldGrowSx} data-value={value}>
+        <Box component="textarea" rows={1} value={value} readOnly aria-label={label} />
+      </Box>
+    </Box>
+  );
+};

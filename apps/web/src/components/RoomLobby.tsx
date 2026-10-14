@@ -1,4 +1,4 @@
-import Stack from '@mui/material/Stack';
+import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { type ReactNode, useState } from 'react';
 
@@ -14,6 +14,7 @@ import { OwnPresenceNotice } from './OwnPresenceNotice';
 import { PlayerList } from './PlayerList';
 import { RoomShell } from './RoomShell';
 import { StartGamePanel } from './StartGamePanel';
+import { ZONE_BLOCK_GAP } from './zone-styles';
 
 /** The heading is `StartGamePanel`'s own — "Could not start the game", fixed. */
 const START_FAILED_MESSAGE =
@@ -48,9 +49,10 @@ interface RoomLobbyProps {
  * answering words reaches here, because in a lobby there is nothing to answer:
  * the board below is drawn empty and takes no letters.
  *
- * Everything this screen has stands in the zone on the left — who is in the
- * room, the link that brings the other one, what the crossword is, and the one
- * control that starts it. The middle is left empty, and that is the whole of
+ * Everything this screen has stands in the zone on the left — a notice if the
+ * room has stopped hearing from the reader, who is in the room, the link that
+ * brings the other one, the one control that starts it, and what the crossword
+ * is. The middle is left empty, and that is the whole of
  * the arrangement: this screen stands at the doors of the temple, and the
  * doorway is what fills the middle of it — the hall behind it is visible
  * through that same opening in the picture itself (issue #115; the doorway
@@ -66,7 +68,7 @@ interface RoomLobbyProps {
  * the wrong one now that the screens are places: the crossword is in the hall,
  * this is the doors, and a board seen through a doorway you have not walked
  * through yet is the room arriving before the player does. What the lobby says
- * about the crossword it says in words, in the band, and the count it gives is
+ * about the crossword it says in words, in the zone, and the count it gives is
  * the words that are in the grid rather than the words that were typed in.
  *
  * @param props.roomId - Id of the room this lobby belongs to
@@ -106,10 +108,8 @@ export const RoomLobby = ({ roomId, room, viewerId, invitation }: RoomLobbyProps
         </Typography>
       }
       left={
-        <Stack spacing={4}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: ZONE_BLOCK_GAP }}>
           <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
-
-          {invitation}
 
           <PlayerList
             players={players}
@@ -118,18 +118,14 @@ export const RoomLobby = ({ roomId, room, viewerId, invitation }: RoomLobbyProps
             awayDurations={awayDurations}
           />
 
-          {/* The crossword said rather than shown. The count is the words that
-            are in the grid and not the words that were typed in — three of them
-            may have failed to fit, and an unplaced word is drawn nowhere, so
-            this line is the only place anybody is told. */}
-          <section aria-labelledby={CROSSWORD_HEADING_ID}>
-            <CrosswordHeading caption={openGridCaption(wordCount)} />
-          </section>
+          {invitation}
 
-          {/* The one control, in the band with everything else this screen has:
+          {/* The one control, in the zone with everything else this screen has:
             the middle of the window is the doorway, and a control let through
             the picture cannot be read off the roof of a temple anyway
-            (`garden/scene-palette.ts`). */}
+            (`garden/scene-palette.ts`). It stands above the line about the
+            crossword, where the template puts the block that is the screen's
+            one action (issue #199). */}
           {isOwner && (
             <StartGamePanel
               playerCount={players.length}
@@ -139,7 +135,15 @@ export const RoomLobby = ({ roomId, room, viewerId, invitation }: RoomLobbyProps
               errorMessage={failureOf(start)}
             />
           )}
-        </Stack>
+
+          {/* The crossword said rather than shown. The count is the words that
+            are in the grid and not the words that were typed in — three of them
+            may have failed to fit, and an unplaced word is drawn nowhere, so
+            this line is the only place anybody is told. */}
+          <section aria-labelledby={CROSSWORD_HEADING_ID}>
+            <CrosswordHeading caption={openGridCaption(wordCount)} />
+          </section>
+        </Box>
       }
     />
   );

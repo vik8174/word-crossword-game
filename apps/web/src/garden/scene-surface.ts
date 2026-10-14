@@ -31,10 +31,11 @@ import {
  * A band: the surface a list of words is held by.
  *
  * Given as a background rather than as a component, because it is not a panel.
- * Where the window is wide enough for the list to be a column of its own, the
- * band is that column and runs from the top of the window to the bottom (see
- * {@link fullHeightBandSx}); where it is not, the band is as tall as what
- * stands on it.
+ * A room's zone carries it as the zone's own surface, as tall as what stands on
+ * it or as tall as its column, with the temple's red along its top edge
+ * (`components/RoomShell.tsx`, issue #199); it used to be a separate box behind
+ * the zone that ran to the edge of the window. The gate's is still that box, a
+ * column down the middle of the window (see {@link fullHeightBandSx}).
  */
 export const BAND_SX: CSSObject = { backgroundColor: BAND };
 
@@ -52,7 +53,10 @@ const BAND_HAIRLINE = `${BAND_EDGE_WIDTH}px solid ${BAND_EDGE}`;
  * the picture and one that never does. A band down the middle has the picture
  * on both sides of it, so it has two. That is the whole of the difference
  * between the three, and it is why the hairline is not a property of a band but
- * of an edge (see {@link fullHeightBandSx}).
+ * of an edge (see {@link fullHeightBandSx}). Only the middle one is drawn by
+ * anything in the app since issue #199 gave a room's zones a surface of their
+ * own; the two side places stay because they are the same rule said for the
+ * other two cases, and `scene-surface.test.ts` holds them.
  *
  * The middle one is held by its own margins between both edges of the frame
  * rather than by a `transform`. A transform makes a containing block of its
@@ -80,10 +84,10 @@ const BAND_PLACES: Record<BandPlace, CSSObject> = {
  * copies obliged to move together. `/create` stood on it as well until issue
  * #197 gave that screen a panel of its own (`components/gate-panel-styles.ts`),
  * as tall as what stands on it rather than as tall as the page. `RoomShell.tsx`
- * has its own `BAND_WIDTH`, for a room zone's band; that is a different width
- * for a different surface, and the two must never be confused for one
- * another, which is why this one is named for what it measures rather than
- * reused under that same name.
+ * had a `BAND_WIDTH` of its own, for a room zone's band, until issue #199 gave
+ * the zone the surface itself and the box behind it went. This one is still
+ * named for what it measures, which is the gate's band and nobody else's, so
+ * that a width for some other surface is never confused with it.
  *
  * Also the width at which the band stops being narrower than the window, and
  * so the width its hairlines vanish at — one number doing both jobs, which is
@@ -119,9 +123,10 @@ export const GATE_BAND_WIDTH = '34rem';
  * width is read off the frame, which is the same length in both places this is
  * used — each frame is a box the full width of the page.
  *
- * The middle is the third place and not a fourth kind of thing. A room puts its
- * words in a column at the side and the board between them; the gate has one
- * column and nothing beside it, and it stands in the opening of the gate
+ * The middle is the third place and not a fourth kind of thing. A room used to
+ * put its words on a band down the side with the board between them (its zones
+ * carry a surface of their own since issue #199, so the room no longer calls
+ * this); the gate has one column and nothing beside it, and it stands in the opening of the gate
  * because that is where somebody walking in walks (issue #123, which reverses
  * what issue #118 said about keeping the middle of the picture clear).
  *
@@ -237,9 +242,11 @@ export const stepTitleSx = (): CSSObject => ({
  * What is written on the picture: every colour the theme would otherwise take
  * off the paper, taken off the forest instead.
  *
- * Every rule here is one of two things — text the theme would have drawn in ink
- * on a surface that is no longer paper, or a form control the theme would have
- * drawn for paper. Anything with a sheet of its own is left alone, and that is
+ * Every rule here is text the theme would have drawn in ink on a surface that is
+ * no longer paper. There used to be a second kind, the outline, the letters and
+ * the label of MUI's `TextField`; issue #199 removed the last one in the app
+ * (the invite link, now `components/Field.tsx`'s read-only kind), and the rules
+ * went with it. Anything with a sheet of its own is left alone, and that is
  * why the first rule says `inherit` rather than a colour: a heading inside an
  * alert inherits the alert, which is still a pale sheet with a warning on it
  * wherever that sheet happens to be standing.
@@ -272,41 +279,6 @@ export const ON_SCENE_SX: CSSObject = {
   // an outline rather than in a colour the forest does not have.
   '& .MuiChip-root': { color: SCENE.cream, borderColor: SCENE_EDGE },
   '& .MuiChip-filled': { backgroundColor: 'rgba(243, 236, 217, 0.12)' },
-
-  // A field somebody types into: the letters, the box round them, and its
-  // label — in every state MUI has one for, in colours meant for paper. The
-  // doubled `&&` is what gets past MUI's own state rules, which are more
-  // specific than a plain descendant: the first screen a guest ever saw
-  // carried a field that was focused the moment it appeared, and it was
-  // being outlined in the pink of the interface on a forest.
-  //
-  // `RoomInvitePanel.tsx` is the one place left that still renders this
-  // element family (issue #193's Boundaries: its zone is the lobby issue's,
-  // not this file's) — its own `MuiFormHelperText` used to be reached here
-  // too, but that element renders only when a `TextField` is given
-  // `helperText`, which nothing on the picture does any more once issue #193
-  // moved every other field onto `components/Field.tsx`. Those two rules are
-  // gone rather than left for a component that will never render one.
-  '&& .MuiInputBase-input': { color: SCENE.cream },
-  '&& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: SCENE_INK_DIM },
-  '&& .MuiOutlinedInput-notchedOutline': { borderColor: SCENE_EDGE },
-  '&& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': {
-    borderColor: SCENE.cream,
-  },
-  '&& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': {
-    borderColor: SCENE.cream,
-  },
-  // Something the room would not take: the box says so in the temple's red and
-  // the words stay cream, exactly as the line about a refused answer does. Red
-  // letters are a middling lightness and are read off neither a lit sheet nor a
-  // dark wall.
-  '&& .MuiOutlinedInput-root.Mui-error .MuiOutlinedInput-notchedOutline': {
-    borderColor: SCENE.vermilionLit,
-  },
-  '&& .MuiInputLabel-root': { color: SCENE_INK_DIM },
-  '&& .MuiInputLabel-root.Mui-focused': { color: SCENE.cream },
-  '&& .MuiInputLabel-root.Mui-error': { color: SCENE.cream },
-  '&& .MuiInputLabel-root.Mui-disabled': { color: SCENE_LINE },
 };
 
 /**

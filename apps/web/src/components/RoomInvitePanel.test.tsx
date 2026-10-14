@@ -32,7 +32,7 @@ describe('RoomInvitePanel', () => {
     stubClipboard(writeText);
     renderPanel();
 
-    fireEvent.click(screen.getByRole('button', { name: /copy link/i }));
+    fireEvent.click(screen.getByRole('button', { name: /copy the link/i }));
 
     expect(await screen.findByText(/link copied/i)).toBeInTheDocument();
     expect(writeText).toHaveBeenCalledWith(ROOM_URL);
@@ -42,8 +42,25 @@ describe('RoomInvitePanel', () => {
     stubClipboard(vi.fn().mockRejectedValue(new Error('Write permission denied.')));
     renderPanel();
 
-    fireEvent.click(screen.getByRole('button', { name: /copy link/i }));
+    fireEvent.click(screen.getByRole('button', { name: /copy the link/i }));
 
     expect(await screen.findByText(/copy it by hand/i)).toBeInTheDocument();
+  });
+
+  it('names the block, so somebody moving through the page by headings finds it', () => {
+    renderPanel();
+
+    expect(screen.getByRole('region', { name: 'The link into this room' })).toBeInTheDocument();
+  });
+
+  it('shows the whole link in a control that grows with it instead of scrolling', () => {
+    renderPanel();
+
+    // The copy of the value the control's height is taken from: without it a
+    // link longer than the field is tall would be cut off, not wrapped.
+    expect(screen.getByLabelText(/room link/i).parentElement).toHaveAttribute(
+      'data-value',
+      ROOM_URL,
+    );
   });
 });

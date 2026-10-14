@@ -912,10 +912,13 @@ describe('RoomPage', () => {
       );
     });
 
-    it('keeps the game shut while the owner is waiting alone', async () => {
+    it('offers no start while the owner is waiting alone', async () => {
+      // Changed on Viktor's ruling of 2026-09-30 (issue #199): this used to find
+      // a start button that was there and disabled. A room gets one action at a
+      // time, copying the link while it waits and starting once somebody is in.
       await openRoomAsOwner(storedRoom());
 
-      expect(startButton()).toBeDisabled();
+      expect(screen.queryByRole('button', { name: /start the game/i })).not.toBeInTheDocument();
       expect(screen.getByText(/this room needs 1 more/i)).toBeInTheDocument();
     });
 

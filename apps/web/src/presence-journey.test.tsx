@@ -280,6 +280,7 @@ describe('a room with a tab in it that nobody can reach', () => {
     // anywhere. The only thing that moves is the clock.
     await act(() => vi.advanceTimersByTimeAsync(2 * AWAY_AFTER_MS));
 
-    expect(screen.getByText(/the room has not heard from you for 1 min/i)).toBeInTheDocument();
+    expect(screen.getByText('The room has not heard from you')).toBeInTheDocument();
+    expect(screen.getByText(/^not for 1 min\./i)).toBeInTheDocument();
   });
 });

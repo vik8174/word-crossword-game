@@ -12,6 +12,12 @@ export interface FieldStyleState {
   readonly multiline: boolean;
   readonly invalid: boolean;
   readonly disabled: boolean;
+  /**
+   * Shows something and takes nothing — `.field.readonly`, the invite link
+   * (issue #199). It is always the multi-line kind, because a link is shown in
+   * full and grows to as many lines as it needs; `multiline` is set beside it.
+   */
+  readonly readOnly?: boolean;
 }
 
 /** The class the lead dot is found by from inside {@link fieldSx}'s own `:focus-within` rule. */
@@ -24,6 +30,47 @@ export const FIELD_LEAD_CLASS = 'wcg-field-lead';
  * fifth level nothing else in the app is drawn at.
  */
 const FIELD_FONT_SIZE = '13.5px';
+
+/**
+ * A read-only field's fill and edge (`.field.readonly`,
+ * `design/templates/state-tree.html` lines 554-555): the washi a little more
+ * transparent, and an edge that is not the ink's full strength, because
+ * nothing is to be typed into it and it should not look as though there were.
+ */
+export const READONLY_FILL = 'rgba(242, 231, 208, 0.9)';
+const READONLY_EDGE = 'rgba(43, 38, 32, 0.35)';
+
+/** A read-only field's tracking, tighter than the rest so a long link takes fewer lines (`.field.readonly input`). */
+const READONLY_TRACKING = '0.03em';
+
+/** A multi-line field's line, as tall as `fieldSx` sets its control. */
+const MULTILINE_LINE_HEIGHT = 1.55;
+
+/** The field's fill, `disabled` first and then `invalid`, as the template's classes cascade. */
+const fillFor = (state: FieldStyleState): string => {
+  if (state.disabled) {
+    return FIELD.lockedFill;
+  }
+
+  if (state.invalid) {
+    return FIELD.invalidFill;
+  }
+
+  return state.readOnly === true ? READONLY_FILL : FIELD.fill;
+};
+
+/** The field's edge, in the same order as {@link fillFor}. */
+const edgeFor = (state: FieldStyleState): string => {
+  if (state.disabled) {
+    return FIELD.lockedEdge;
+  }
+
+  if (state.invalid) {
+    return SCENE.vermilion;
+  }
+
+  return state.readOnly === true ? READONLY_EDGE : FIELD.ink;
+};
 
 /**
  * The field itself — `.field` and every one of its modifiers
@@ -44,11 +91,7 @@ const FIELD_FONT_SIZE = '13.5px';
  */
 export const fieldSx = (state: FieldStyleState): SxProps<Theme> => {
   const borderWidth = state.invalid ? 3 : 2;
-  const borderColor = state.disabled
-    ? FIELD.lockedEdge
-    : state.invalid
-      ? SCENE.vermilion
-      : FIELD.ink;
+  const borderColor = edgeFor(state);
 
   return {
     // Positioned, not static, so the field paints above any absolutely
@@ -64,11 +107,7 @@ export const fieldSx = (state: FieldStyleState): SxProps<Theme> => {
     gap: '10px',
     width: '100%',
     padding: state.multiline ? '12px 16px' : '10px 16px',
-    backgroundColor: state.disabled
-      ? FIELD.lockedFill
-      : state.invalid
-        ? FIELD.invalidFill
-        : FIELD.fill,
+    backgroundColor: fillFor(state),
     border: `${borderWidth}px solid ${borderColor}`,
     borderRadius: state.multiline ? '14px' : '999px',
     boxShadow: state.disabled ? 'none' : FIELD.lift,
@@ -98,10 +137,10 @@ export const fieldSx = (state: FieldStyleState): SxProps<Theme> => {
       outline: 'none',
       fontFamily: 'inherit',
       fontSize: FIELD_FONT_SIZE,
-      letterSpacing: '0.08em',
+      letterSpacing: state.readOnly === true ? READONLY_TRACKING : '0.08em',
       color: state.disabled ? FIELD.lockedInk : FIELD.ink,
       resize: 'none',
-      ...(state.multiline && { minHeight: '74px', lineHeight: 1.55 }),
+      ...(state.multiline && { minHeight: '74px', lineHeight: MULTILINE_LINE_HEIGHT }),
     },
     '& input::placeholder, & textarea::placeholder': {
       color: FIELD.placeholder,
@@ -163,4 +202,52 @@ export const fieldHelpSx: SxProps<Theme> = {
   lineHeight: 1.5,
   paddingLeft: '16px',
   color: SCENE.cream,
+};
+
+/**
+ * The box a read-only field's control stands in, so that the control is as
+ * tall as its text and never scrolls (issue #199).
+ *
+ * The template draws a link that is clipped at every width, and the app shows
+ * it in full (#101), so the field has to grow. A `<textarea>` does not, and
+ * `field-sizing: content` is not there in every browser this is played in, so
+ * the height is asked of the text itself: a copy of the value is drawn, hidden,
+ * in the same grid cell, with the same face, tracking and line, and the cell is
+ * as tall as whichever of the two is taller. The control fills the cell. No
+ * script measures anything, so nothing is a frame late on a resize or on the
+ * face arriving.
+ *
+ * Padding and margin are nought on the control here and on the copy, because a
+ * browser's own 2px would make the two wrap at different widths. `minHeight` on
+ * the control is still `fieldSx`'s 74px, which is what gives a short link the
+ * same field as a multi-line one everywhere else.
+ */
+export const fieldGrowSx: SxProps<Theme> = {
+  display: 'grid',
+  // One column that may be narrower than its text: left to `auto` it is as wide
+  // as the whole link on one line, and the control with it.
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  flex: 1,
+  minWidth: 0,
+  fontSize: FIELD_FONT_SIZE,
+  letterSpacing: READONLY_TRACKING,
+  lineHeight: MULTILINE_LINE_HEIGHT,
+
+  '&::after': {
+    // The value plus a space, so a value that ends in a line break still
+    // reserves the line it ends on.
+    content: 'attr(data-value) " "',
+    visibility: 'hidden',
+    gridArea: '1 / 1',
+    whiteSpace: 'pre-wrap',
+    overflowWrap: 'break-word',
+  },
+  '& textarea': {
+    gridArea: '1 / 1',
+    alignSelf: 'stretch',
+    width: '100%',
+    margin: 0,
+    padding: 0,
+    overflow: 'hidden',
+  },
 };
