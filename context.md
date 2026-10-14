@@ -17,15 +17,23 @@ A term is here when it names something the game has — a room, a seat, a deal �
 - **Room document** — that document as a shape: `RoomDocument` when read back from Firestore, `NewRoomDocument` on the way in, the two differing only in how a timestamp is spelled.
 - **Room id** — the id Firestore gave the document. Not a name for a room but the whole of the access control around it, which is why it is taken out of everything the browser reports ([0014](docs/decisions/0014-telemetry-without-room-ids.md), [0023](docs/decisions/0023-a-screen-name-is-text-that-has-been-redacted.md)).
 - **Invite link** — the full URL of a room, `…/room/<id>`. The only way into a game; there are no in-app invitations, and the host is the one who has it ([0026](docs/decisions/0026-the-invite-link-belongs-to-the-host.md)).
-- **Owner**, also **host** — the player who created the room. `ownerId` in the document. They play like anybody else, and they are the only one who can deal the words out.
+- **Owner**, also **host** — the person who created the room. `ownerId` in the document. They are the only one who can deal the words out. In a pair game the owner is also a player; in a lesson the owner is the teacher and does not play.
 - **Guest** — the other player, the one who arrived through the invite link.
-- **Player** — a participant, keyed in `players` by their Firebase Auth UID. A UID is issued per browser profile, so the same person in a second profile is a second player.
+- **Player** — someone who plays, keyed in `players` by their Firebase Auth UID. A UID is issued per browser profile, so the same person in a second profile is a second player.
 - **Nickname** — the name a player typed, and the only thing the other player sees them by. At most `MAX_NICKNAME_LENGTH` characters; the browser offers back the last one used, per profile.
 - **Seat** — a place in a room. There are exactly two (`PLAYERS_PER_GAME`), and a seat is not a `players` entry: it is the right to become one. A seat may be given up in the lobby and never after the deal ([0025](docs/decisions/0025-what-happens-to-the-seat-of-a-player-who-left.md)).
 - **Presence mark** — `players.<uid>.lastSeenAt`, rewritten by that player's own client every fifteen seconds while it is in a room. Nothing announces a departure; the age of this mark is the whole of what anybody knows ([0022](docs/decisions/0022-a-mark-a-player-writes-for-themselves.md)).
 - **Away** — a mark older than `AWAY_AFTER_MS` (45 seconds). Shown beside a name, and taken back the moment the player writes again.
 - **Abandoned seat** — a seat whose mark is older than `SEAT_FREE_AFTER_MS` (60 seconds) while the room is still a lobby. Somebody arriving may take it, and that cannot be taken back.
 - **Room lifetime** — the 24 hours of `ROOM_LIFETIME_MS`, refreshed on activity and enforced by `expiresAt` and Firestore's TTL policy. There is no other way out of a room.
+
+## Modes
+
+- **Mode** — which of two games a room is, chosen on `/create` and fixed for the life of the room: `pair` or `lesson`. Never changed in the lobby, because it decides who the seats are for.
+- **Pair game** — `mode: 'pair'`. Two players, and the owner is one of them. The game as it was before lessons existed.
+- **Lesson** — `mode: 'lesson'`. A teacher and two players. The teacher creates the room, types the word list and deals; both seats are for the players who arrive by the invite link. Offered on `/create` as "Run a lesson", beside "Play with a friend".
+- **Teacher** — the owner of a lesson. Not a player and not a spectator: they choose the words and deal them, and then watch the game. Never called a spectator, a word that would invite an audience nobody has designed for. Has a nickname and a presence mark of their own, kept outside `players`, so the two players see who runs the lesson and whether they are away ([0037](docs/decisions/0037-a-lesson-is-run-by-a-teacher-who-does-not-play.md)).
+- **Lesson summary** — what the teacher sees when a lesson ends, finished or closed early: for each player, the words they explained and which of those were answered. No score and no winner. It lives as long as the room does and is kept nowhere else.
 
 ## The crossword
 
@@ -52,7 +60,7 @@ A term is here when it names something the game has — a room, a seat, a deal �
 
 ## What a room is showing
 
-- **Status** — how far a room is: `lobby`, `playing`, `completed` (every word answered), `closed` (a player ended it with words unanswered). One field with four values, so illegal combinations cannot be written down.
+- **Status** — how far a room is: `lobby`, `playing`, `completed` (every word answered), `closed` (ended with words unanswered: by a player in a pair game, by the teacher alone in a lesson). One field with four values, so illegal combinations cannot be written down.
 - **Terminal** — `completed` or `closed`. A room in either stays in it, and the security rules hold that line rather than trusting the client ([0027](docs/decisions/0027-a-game-a-player-can-end.md)).
 - **Screen** — which of the seven things the room address is showing, decided as one value and never as a set of flags: `connecting`, `unavailable`, `join`, `lobby`, `playing`, `finished`, `closed-early` (`RoomScreen`).
 - **Finished** — the screen of a crossword that was filled in. It waits on the board being genuinely full and not on the status, which a client could write over a game nobody played ([0012](docs/decisions/0012-ending-a-game-from-the-received-state.md)).
