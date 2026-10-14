@@ -6,6 +6,8 @@ A term is here when it names something the game has — a room, a seat, a deal �
 
 **Keeping this file current is nobody's per-ticket duty.** An obligation checked at review rots within two releases, and this project has watched one do it. Add a term when a ticket invents one; correct a definition when you find it lying.
 
+**The game is called Across the Street** (Viktor, 2026-10-14, [#219](https://github.com/vik8174/word-crossword-game/issues/219)). The repository, the pnpm workspace and the Firebase project keep the name `word-crossword-game`. The game is played in any language written in Latin letters, not in English only ([#232](https://github.com/vik8174/word-crossword-game/issues/232)).
+
 ## Two words that are not each other
 
 - **Home** — the page at `/`, where a new game is started (`HomePage`, `home` in the telemetry funnel). Nothing else is Home.

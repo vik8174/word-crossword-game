@@ -1,6 +1,6 @@
-# Word Crossword Game
+# Across the Street
 
-A cooperative web game for two players: an asymmetric crossword in the style of Alias/Taboo, built for spoken English practice. Full specification — [PRD (issue #1)](https://github.com/vik8174/word-crossword-game/issues/1).
+A cooperative web game for two players: an asymmetric crossword in the style of Alias/Taboo, built for spoken practice of any language written in Latin letters (the repository is still named `word-crossword-game`). Full specification — [PRD (issue #1)](https://github.com/vik8174/word-crossword-game/issues/1).
 
 ## Language: English only
 
@@ -57,7 +57,7 @@ pnpm workspace over `apps/*` and `packages/*`.
 | install    | `pnpm install --frozen-lockfile`                   | 4 s with a warm store, minutes without |
 | dev server | `pnpm dev` (Vite, `--port` to move it)             | —                                      |
 | workshop   | `pnpm --filter web storybook`                      | port 6006 unless moved                 |
-| lint       | `pnpm lint` (`eslint .` then `prettier --check .`) | 7 s                                    |
+| lint       | `pnpm lint` (`eslint .` then `prettier --check .`) | 6 s                                    |
 | tests      | `pnpm test`                                        | 16 s, 967 tests in 87 files            |
 | coverage   | `pnpm test:coverage`                               | 22 s, 99.56 % of statements (web)      |
 | build      | `pnpm build`                                       | 14 s                                   |
@@ -233,7 +233,7 @@ The loop's own table, unchanged. Complexity sets the model effort of the seats:
 On top of the loop's own floor, work that touches any of these is never below high:
 
 - `firestore.rules`
-- `vite.config.ts`
+- `apps/web/vite.config.ts`
 - `apps/web/build/`
 - anything under `.github/workflows/`
 
