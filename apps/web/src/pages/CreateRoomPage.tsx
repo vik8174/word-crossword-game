@@ -189,7 +189,7 @@ export const CreateRoomPage = () => {
       }}
     >
       <Box sx={createPanelSx}>
-        <Typography component="h1" variant="signage" sx={stepTitleSx()}>
+        <Typography component="h1" variant="stepTitle" sx={stepTitleSx()}>
           New game
         </Typography>
 

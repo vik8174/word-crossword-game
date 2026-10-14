@@ -60,18 +60,22 @@ describe('HomePage', () => {
     expect(heading).toHaveTextContent(/^WORD GARDEN$/i);
   });
 
-  it('sets the name in the logotype, not the sign face the button below uses', () => {
-    // The logotype's subset is exactly the eight letters of `WORD GARDEN`
-    // plus a space (`index.html`), so this is also a check that the name
-    // does not silently fall back to a face with the letters it lacks. A test
-    // on `LOGOTYPE_FONT_FAMILY` itself would pass whether or not this
-    // component actually reached for it — checked here on the rendered
-    // element's computed style instead.
+  it('sets the name in Alegreya Sans at its bold, keeping its capitals and tracking', () => {
+    // There is no logotype face any more (issue #244): the name is the one
+    // face at 700, with the capitals and the tracking it had until the screen
+    // is redrawn (#224). Checked on the rendered element's computed style, as
+    // a test on a constant would pass whether or not this component reached
+    // for it.
     renderHomePage();
 
     const heading = screen.getByRole('heading', { name: /word garden/i });
+    const style = getComputedStyle(heading);
 
-    expect(getComputedStyle(heading).fontFamily).toContain('Dela Gothic One');
+    expect(style.fontFamily).toContain('Alegreya Sans');
+    expect(style.fontWeight).toBe('700');
+    expect(style.textTransform).toBe('uppercase');
+    // 0.34em of the computed size, which jsdom resolves to pixels.
+    expect(parseFloat(style.letterSpacing)).toBeCloseTo(parseFloat(style.fontSize) * 0.34, 3);
   });
 
   it('renders the tagline in capitals, in the text face, with no number', () => {
@@ -80,7 +84,7 @@ describe('HomePage', () => {
     const tagline = screen.getByText(/cooperative crossword/i);
 
     expect(tagline).toHaveTextContent(/^A COOPERATIVE CROSSWORD$/i);
-    expect(getComputedStyle(tagline).fontFamily).toContain('Zen Kaku Gothic New');
+    expect(getComputedStyle(tagline).fontFamily).toContain('Alegreya Sans');
     expect(getComputedStyle(tagline).textTransform).toBe('uppercase');
     expect(tagline).not.toHaveTextContent(/\d/);
   });

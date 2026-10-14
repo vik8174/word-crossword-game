@@ -284,8 +284,7 @@ describe('theme', () => {
     // the serif the board and the four headings used to be set in — its
     // stroke contrast lost first at the sizes the board draws its letters
     // at, 11px to 24px. Declared in `index.html`, latin only.
-    expect(theme.typography.fontFamily).not.toMatch(/Zen Old Mincho/);
-    expect(theme.typography.fontFamily).toMatch(/^"Zen Kaku Gothic New"/);
+    expect(theme.typography.fontFamily).toMatch(/^"Alegreya Sans"/);
     // Whatever a reader's own system draws is the tail of every stack here, so
     // a first frame and a failed fetch both have something to show.
     expect(theme.typography.fontFamily).toMatch(/system|apple|sans-serif/i);
@@ -450,5 +449,20 @@ describe('theme: the street palette', () => {
     expect((typography.lede as Record<string, unknown>)['@media (max-width:767px)']).toEqual({
       fontSize: `${20 / 16}rem`,
     });
+  });
+
+  it('sets all eight in Alegreya Sans, which MUI does not give a variant of its own', () => {
+    for (const variant of [
+      'title',
+      'stepTitle',
+      'lede',
+      'heading',
+      'body',
+      'label',
+      'hint',
+      'small',
+    ] as const) {
+      expect(theme.typography[variant].fontFamily).toBe(theme.typography.fontFamily);
+    }
   });
 });

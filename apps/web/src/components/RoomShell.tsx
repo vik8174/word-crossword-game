@@ -310,11 +310,10 @@ export const RoomShell = ({
           </Typography>
         ) : (
           // A row of its own, so that what the room is doing wraps beside or
-          // under it rather than into it, and the rule under it runs the whole
-          // width of that row: the template's `.step-title` is `flex-basis:
-          // 100%` with a rule as wide as its own block (`stepTitleSx`).
+          // under it rather than into it: the template's `.step-title` is
+          // `flex-basis: 100%` (`stepTitleSx`).
           <Box sx={{ flexBasis: '100%' }}>
-            <Typography component="h1" variant="signage" sx={stepTitleSx()}>
+            <Typography component="h1" variant="stepTitle" sx={stepTitleSx()}>
               {title}
             </Typography>
           </Box>

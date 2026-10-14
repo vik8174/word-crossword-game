@@ -178,7 +178,7 @@ export const buttonSx = (state: ButtonStyleState): SxProps<Theme> => {
     // the height is the same 40px a `<button>` and an `<a>` alike, matching
     // the template regardless of which element a given call site needs — 40,
     // not the 42 an earlier measurement of this file once said: that reading
-    // was taken before Zen Kaku Gothic New Bold had finished loading, against
+    // was taken before the bold face had finished loading, against
     // the fallback face's own metrics, and 40px is what both sides render at
     // once the real one has.
     lineHeight: 'normal',

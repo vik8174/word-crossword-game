@@ -3,24 +3,21 @@ import type { Preview } from '@storybook/react-vite';
 import { withMemoryRouter, withScene, withTheme } from './decorators';
 
 /**
- * The four faces `preview-head.html` declares, in the exact weight strings
- * `FontFaceSet.load` needs to match a `@font-face`.
+ * The three files `preview-head.html` declares, in the exact weight and style
+ * strings `FontFaceSet.load` needs to match a `@font-face`.
  *
  * `<link rel="preload">` fetches the bytes but a preloaded face is not
  * "loaded" in `document.fonts` until something actually renders with it —
  * Chrome will not parse and register a face nothing on the page asks for.
- * `HomePage` alone renders three of the four (the sign face at 300, the text
- * face at 400, and the logotype); the fourth, the text face at 700, is the
- * heading weight `CreateRoomPage`'s own step title uses, not anything on the
- * gate. Loading all four explicitly, once, is what lets any single story —
- * `HomePage`'s included — report every face as `loaded` (issue #182, AC 3)
- * rather than only the ones its own render happens to touch.
+ * Not every story draws the italic, and no story but a heading draws the 700.
+ * Loading all three explicitly, once, is what lets any single story report
+ * every face as `loaded` (issue #182, AC 3) rather than only the ones its own
+ * render happens to touch.
  */
 const FACES = [
-  '300 1em "Zen Kaku Gothic New"',
-  '400 1em "Zen Kaku Gothic New"',
-  '700 1em "Zen Kaku Gothic New"',
-  '400 1em "Dela Gothic One"',
+  '400 1em "Alegreya Sans"',
+  '700 1em "Alegreya Sans"',
+  'italic 400 1em "Alegreya Sans"',
 ];
 
 if (typeof document !== 'undefined') {

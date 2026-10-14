@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   inRem,
-  LOGOTYPE_FONT_FAMILY,
-  LOGOTYPE_FONT_WEIGHT,
   LOGOTYPE_TRACKING,
   SIGN_FONT_FAMILY,
   SIGN_FONT_WEIGHT,
@@ -59,16 +57,17 @@ describe('the scale', () => {
     }
   });
 
-  it('sets every variant in one of the two weights, or in the sign face’s own', () => {
-    const weights: unknown[] = [WEIGHTS.regular, WEIGHTS.bold, SIGN_FONT_WEIGHT];
+  it('sets every variant in one of the two weights', () => {
+    const weights: unknown[] = [WEIGHTS.regular, WEIGHTS.bold];
 
     for (const variant of EVERY_VARIANT) {
       expect(weights).toContain(theme.typography[variant].fontWeight);
     }
 
-    // No rule anywhere may land on a weight this family does not ship: 300
-    // (the sign face), 400 and 700 are the only three files fetched, so 500
+    // No rule anywhere may land on a weight this family does not ship: 400 and
+    // 700 (and the 400 italic) are the only three files fetched, so 300, 500
     // and 600 must never appear as a value here.
+    expect(weights).not.toContain(300);
     expect(weights).not.toContain(500);
     expect(weights).not.toContain(600);
 
@@ -79,31 +78,27 @@ describe('the scale', () => {
   });
 });
 
-describe('the four faces', () => {
-  it('sets the four headings in the text family, at the bold weight, and off the serif that used to carry them', () => {
-    // Issue #147 dropped the display face: the board's letters run from 11px
-    // to 24px, and a face that spends its quality on stroke contrast loses
-    // that contrast first at the sizes this board actually draws at. What is
-    // left to tell a heading from a paragraph is weight and size alone.
+describe('the one face', () => {
+  it('sets the four headings in the text family, at the bold weight', () => {
+    // There is one family (issue #244), so what tells a heading from a
+    // paragraph is weight and size alone.
     for (const heading of ['h1', 'h2', 'h3', 'h4'] as const) {
       expect(theme.typography[heading].fontFamily).toBe(TEXT_FONT_FAMILY);
       expect(theme.typography[heading].fontWeight).toBe(WEIGHTS.bold);
     }
-
-    for (const text of ['h5', 'h6', 'subtitle1', 'subtitle2', 'body1', 'body2'] as const) {
-      expect(theme.typography[text].fontFamily ?? TEXT_FONT_FAMILY).not.toMatch(/Zen Old Mincho/);
-    }
-
-    expect(TEXT_FONT_FAMILY).not.toMatch(/Zen Old Mincho/);
-    expect(SIGN_FONT_FAMILY).not.toMatch(/Zen Old Mincho/);
   });
 
-  it('names the logotype at its one weight, subset to the eight letters of the name and a space', () => {
-    expect(LOGOTYPE_FONT_FAMILY).toMatch(/^"Dela Gothic One"/);
-    expect(LOGOTYPE_FONT_FAMILY.endsWith(SYSTEM_FONT_FAMILY)).toBe(true);
-    expect(LOGOTYPE_FONT_WEIGHT).toBe(400);
-    // Its own tracking, settled on real renders in PRD #145 — not
-    // `SIGN_TRACKING`, which is a different face at a different size.
+  it('is Alegreya Sans everywhere: the text, the heading and the sign role', () => {
+    expect(TEXT_FONT_FAMILY).toMatch(/^"Alegreya Sans"/);
+    expect(SIGN_FONT_FAMILY).toMatch(/^"Alegreya Sans"/);
+    for (const family of [TEXT_FONT_FAMILY, SIGN_FONT_FAMILY]) {
+      expect(family).not.toMatch(/Zen|Dela|Mincho/);
+    }
+  });
+
+  it('keeps the name of the game’s tracking, its face being the heading’s', () => {
+    // Settled on real renders in PRD #145 and kept until the screen is
+    // redrawn (#224) — not `SIGN_TRACKING`, which is the cloth's.
     expect(LOGOTYPE_TRACKING).toBe('0.34em');
   });
 
@@ -113,6 +108,8 @@ describe('the four faces', () => {
     // font of its own that nothing else in the app could be held to.
     expect(theme.typography.signage.fontFamily).toBe(SIGN_FONT_FAMILY);
     expect(theme.typography.signage.fontWeight).toBe(SIGN_FONT_WEIGHT);
+    // There is no 300 file: the cloth's lettering is the regular.
+    expect(SIGN_FONT_WEIGHT).toBe(WEIGHTS.regular);
     // Lettering rather than text: capitals, held apart.
     expect(theme.typography.signage.textTransform).toBe('uppercase');
     expect(theme.typography.signage.letterSpacing).toBeDefined();
@@ -122,23 +119,20 @@ describe('the four faces', () => {
     // Everything read rather than looked at is in this face (issue #124), and
     // it is named once — a variant that says nothing about a family gets it.
     expect(theme.typography.fontFamily).toBe(TEXT_FONT_FAMILY);
-    expect(TEXT_FONT_FAMILY).toMatch(/^"Zen Kaku Gothic New"/);
     // The system stack is the tail of it rather than a face of its own: it is
     // what a first frame is drawn in, and what is drawn if the file never
     // arrives.
     expect(TEXT_FONT_FAMILY.endsWith(SYSTEM_FONT_FAMILY)).toBe(true);
-    expect(SYSTEM_FONT_FAMILY).not.toMatch(/Zen/);
+    expect(SYSTEM_FONT_FAMILY).not.toMatch(/Alegreya/);
   });
 
-  it('tells lettering from text by weight and tracking, not by family', () => {
-    // The sign face and the text face were chosen separately and were chosen
-    // the same, so the family no longer separates them and nothing may be left
-    // resting on it. What separates them is the job: a sign is lettered light
-    // and held apart, text is neither.
-    expect(theme.typography.signage.fontWeight).toBe(SIGN_FONT_WEIGHT);
-    expect(theme.typography.signage.fontWeight).not.toBe(WEIGHTS.regular);
+  it('tells lettering from text by tracking and capitals, not by family or weight', () => {
+    // The sign role and the text role are the same face at the same weight
+    // now, so nothing may be left resting on either. What separates them is
+    // the job: a sign is lettered in capitals and held apart, text is neither.
     expect(theme.typography.signage.letterSpacing).toBe(SIGN_TRACKING);
     expect(theme.typography.body1.letterSpacing).toBeUndefined();
+    expect(theme.typography.body1.textTransform).toBeUndefined();
   });
 });
 

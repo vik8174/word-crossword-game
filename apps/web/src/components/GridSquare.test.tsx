@@ -61,8 +61,7 @@ describe('GridSquare', () => {
 
     const style = getComputedStyle(screen.getByRole('textbox'));
 
-    expect(style.fontFamily).toMatch(/Zen Kaku Gothic New/);
-    expect(style.fontFamily).not.toMatch(/Zen Old Mincho/);
+    expect(style.fontFamily).toMatch(/Alegreya Sans/);
     expect(style.fontWeight).toBe('400');
   });
 
@@ -71,8 +70,7 @@ describe('GridSquare', () => {
 
     const style = getComputedStyle(screen.getByLabelText(/row 1, column 1/i));
 
-    expect(style.fontFamily).toMatch(/Zen Kaku Gothic New/);
-    expect(style.fontFamily).not.toMatch(/Zen Old Mincho/);
+    expect(style.fontFamily).toMatch(/Alegreya Sans/);
     expect(style.fontWeight).toBe('400');
   });
 
@@ -85,7 +83,6 @@ describe('GridSquare', () => {
     const number = container.querySelector('[aria-hidden="true"]');
     const style = getComputedStyle(number as Element);
 
-    expect(style.fontFamily).toMatch(/Zen Kaku Gothic New/);
-    expect(style.fontFamily).not.toMatch(/Zen Old Mincho/);
+    expect(style.fontFamily).toMatch(/Alegreya Sans/);
   });
 });

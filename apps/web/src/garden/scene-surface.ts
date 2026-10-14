@@ -1,6 +1,6 @@
 import type { CSSObject } from '@mui/material/styles';
 
-import { gapAt, inRem, STEP_TITLE_SIZE } from '../scale';
+import { gapAt, inRem } from '../scale';
 import {
   BAND,
   BAND_EDGE,
@@ -185,57 +185,33 @@ export const SENTENCE_BAND_SX: CSSObject = {
 };
 
 /**
- * The name of a step, with the temple's red run under it — `.step-title` in
- * `design/templates/state-tree.html` (lines 284-293), the one drawing every
- * screen that names its step is given: `/create` inside its panel, and join,
- * the lobby, `finished` ("Finished") and `closed-early` ("Game ended") at the
- * top of their frame. The game room itself has no step title: `RoomGame` gives
- * `RoomShell` none, so it takes the unseen heading instead.
+ * What the garden adds to the name of a step: its colour and its shadow.
  *
- * The rule is the whole width of the title's own block, 7px under the letters.
- * It used to start off the left edge of the window and stop at the last letter
- * (issue #197 changed that when the create screen's name moved inside a panel),
- * so the argument that said how far out to reach has gone with it: a caller
- * puts the title in a box, and the rule is as wide as that box. The block is
- * the width the caller gives it, which is why the `h1` is `display: block`
- * where it used to be `inline-block`.
+ * The name is the template's `.step-title` (`design/templates/state-tree.html`,
+ * line 112): the theme's `stepTitle` variant, which is sentence case as
+ * written, 700 at 34px, a line height of 1.1, no capitals and no tracking
+ * (issue #244). It is one drawing shared by `/create` inside its panel, and
+ * join, the lobby, `finished` ("Finished") and `closed-early` ("Game ended") at
+ * the top of their frame. The game room itself has no step title: `RoomGame`
+ * gives `RoomShell` none, so it takes the unseen heading instead.
  *
- * Nothing about the face is here beyond the size: the element is a `signage`
- * `Typography`, so the family, the capitals and the tracking are the theme's,
- * and the weight — 300, the sign face's own — is its too. All this adds is the
- * size, where it sits, what colour it is on a forest, and the rule.
+ * Only what stands on the forest is here: the cream, the dark shadow that
+ * carries the letters over a lit roof as well as a shadow, and the 6px under
+ * them. They go with the garden (#222). The temple's red rule that used to run
+ * under the letters is gone with the old drawing.
  *
- * The size is 19px, the template's own, and not one of `scale.ts`'s four text
- * levels: a sign, the same way {@link GATE_NAME_SIZE} is. Its line is the page's
- * 1.6 rather than the sign variant's 1.25, which is what makes the block 39.4px
- * tall with the rule in it (30.4px of line, 7px, 2px). The template also writes
- * a negative right margin for the tracking and, one declaration later,
- * `margin: 0 0 6px` over it, so the block runs to the full width and the rule
- * with it; the margin is not carried over because it never applied.
- *
- * @returns The title's own styles, rule included
+ * @returns The title's own styles on the garden
  *
  * @example
- * <Typography component="h1" variant="signage" sx={stepTitleSx()}>New game</Typography>
+ * <Typography component="h1" variant="stepTitle" sx={stepTitleSx()}>New game</Typography>
  */
 export const stepTitleSx = (): CSSObject => ({
-  display: 'block',
-  fontSize: inRem(STEP_TITLE_SIZE),
-  lineHeight: 1.6,
   margin: `0 0 ${inRem(6)}`,
   color: SCENE.cream,
   // No band under the letters on every screen that has one, so they carry
   // their own darkness with them and stay readable over a lit roof as well as
   // over a shadow.
   textShadow: '0 1px 8px rgba(6, 12, 10, 0.9)',
-  '&::after': {
-    content: '""',
-    display: 'block',
-    width: '100%',
-    height: '2px',
-    marginTop: inRem(7),
-    backgroundColor: SCENE.vermilion,
-  },
 });
 
 /**
