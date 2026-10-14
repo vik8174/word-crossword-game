@@ -26,138 +26,22 @@ Why it is built this way — see [`docs/decisions/`](docs/decisions/), in partic
 
 The domain has its own vocabulary, and one word in it means two things in ordinary English: **Home** is the landing page, **Lobby** is the screen of a room before the words are dealt. Every term is defined once in [`context.md`](context.md) — read it before naming anything new.
 
-## How work happens here: the Adversarial Review Loop (ARL)
+## How work happens here: TRIAL
 
-The project runs on four session roles, and the thing they form has a name: the
-**Adversarial Review Loop**, or **ARL** for short. One claim is passed between them — _the acceptance
-criteria are met_ — and the review of it is adversarial: its job is to try to
-refute that claim, not to grade the work, and to return "could not refute it"
-when that is the truth. Adversarial rather than approving, because a reviewer who
-always finds something is a reviewer nobody can act on, and because what survives
-an attempt to break it is worth more than what survives an opinion.
+This project runs on **TRIAL** (**T**emplate, **R**efute, **I**mplement, **A**ppeal, **L**and), the loop that tries to refute the claim that an issue's acceptance criteria are met. A session starts it with `/trial`.
 
-The loop is this project's own and travels nowhere else: the roles live in this
-repository, and the names below mean these four seats and nothing more general.
+The seats (Architect, issue inspector, Foreman, Worker, Inspector), their counts, the levels and the rules live in the global files, not in this repository: `~/.claude/skills/trial/SKILL.md` and `~/.claude/skills/trial/reference/loop.md`, with the agents `trial-foreman`, `trial-worker`, `trial-inspector` and `trial-issue-inspector` in `~/.claude/agents/`. Nothing under `.claude/` in this repository defines a seat, so there is one copy of each rule. **The project contract below** is the part that is this project's own, and every seat reads it.
 
-**First, determine your role:**
+**Determine your role by how you were started.** If you were handed a specific issue, a handoff document or an implementation task, you are a Worker. Every other seat is told what it is in the first line of its instruction.
 
-> If you were handed a specific issue, a handoff document, or an implementation task — **you are a WORKER**. This covers the overwhelming majority of sessions in this repo.
->
-> Every other role is told what it is, in the first line of the message that starts it. If nobody said "you are the Architect", "you are the Foreman" or "you are the Inspector", you are not one.
+The loop's earlier names (Refutation Loop, Adversarial Review Loop or ARL) and its earlier roles (Planner, Dispatcher, Challenger, and the coordinator before them) survive only as a record, in the git history, in old issues and in `docs/decisions/`; read them there as TRIAL's seats.
 
-| Role          | Model    | Started by                      | Holds                                                                             |
-| ------------- | -------- | ------------------------------- | --------------------------------------------------------------------------------- |
-| **Architect** | Opus 5   | Viktor, as a session of its own | the board: issues, dependencies, acceptance criteria                              |
-| **Foreman**   | Opus 5   | Viktor, as a session of its own | the queue: which pairs are running, how many rounds each has taken, and the merge |
-| **Worker**    | Sonnet 5 | Foreman, as a sub-agent         | one issue, from branch to open pull request                                       |
-| **Inspector** | Opus 5   | Foreman, as a sub-agent         | the verdict on one Worker's pull request                                          |
-
-Architect and Foreman are separate top-level sessions and neither reports to the other. **Everything between them is written on the board**, and a message from one session to the other only says where on it to look. That is deliberate — a message passed through an artefact survives either session dying, and a message passed through a context does not. The message is a doorbell, not a letter: if one goes unanswered, nothing is lost but time.
-
-Each role is a file, so none of this has to be pasted into a session by hand. The two Viktor opens himself are skills — `/architect` and `/foreman` — and the two the Foreman spawns are agents, `worker` and `inspector`, which carry their own model and tool list so a caller cannot get either wrong. The sections below say what each role is; the files say how it works.
-
-| Role      | File                                |
-| --------- | ----------------------------------- |
-| Architect | `.claude/skills/architect/SKILL.md` |
-| Foreman   | `.claude/skills/foreman/SKILL.md`   |
-| Worker    | `.claude/agents/worker.md`          |
-| Inspector | `.claude/agents/inspector.md`       |
-
-### If you are a Worker
-
-- You implement **one** assigned issue — from branch to open pull request
-- You do **not** plan the rest of the project, create issues, edit other tickets, or hand work to other agents
-- You do **not** merge your own pull request
-- When the Inspector's verdict says a change is needed, you get it from the Foreman, not from the Inspector directly
-- You may **disagree** with a verdict, but say so with an argument instead of implementing something you believe is wrong. A disagreement is escalated rather than argued in circles
-- Where the issue is visual, you open its **Template** before writing code and build to it; where the code cannot match it, or you believe the template itself is wrong, you stop and say so in your report rather than shipping a quiet difference
-- You finish by returning a concise report: which acceptance criteria are done, a link to the pull request, decisions made, blockers, and anything that needs a human's hands
-
-### If you are an Inspector
-
-- You are created for **one** Worker, you live as long as that Worker lives, and you carry your own past verdicts with you across every round. You are never carried over to another issue — verdicts are what make you useful inside one issue and what would make you wrong in the next
-- Your job is not to grade the work. It is to **refute the claim that the acceptance criteria are met**, and you are expected to return "could not refute it" when that is the truth. A reviewer who always finds something is a reviewer nobody can act on
-- **Read-only towards the repository and the board**: you do not commit, push, merge, edit issues, publish anything, or touch the Worker's branch. Each verdict is recorded to `handoffs/verdicts/`, which git ignores, so it is not lost when your context compacts
-- **Not read-only towards your own workspace.** You are expected to take the branch into a worktree of your own, install, build, run the app and measure it. Most of what this project has caught was invisible in a diff: a contrast ratio computed over the pixels of a canvas, a spinner that stops under `prefers-reduced-motion`, a cited precedent that did not exist. An Inspector who only reads the diff is not doing the job
-- Where the issue is visual, you serve its **Template** beside the branch and capture both at every width and state the issue names; a visible difference the issue does not explicitly allow is a finding
-- You are handed the Worker's own report. A decision the Worker took deliberately, and explained, is not a defect
-
-### If you are the Foreman
-
-- You take issues off the board, respecting dependencies, and run **one Worker + Inspector pair at a time**, spawned fresh per issue and stopped when it ends — never continued into the next one. It was two; nothing in the flow assumes either number, so the count lives in exactly two places — this line and `.claude/skills/foreman/SKILL.md`
-- You label an issue `in progress` when its pair starts and remove the label when the pull request merges or the issue is escalated. An issue waiting on a human is blocked, not in progress
-- All traffic between a Worker and its Inspector goes through you. **You are the author of the instruction** that follows a failing verdict: the Inspector reports what it found, you turn that into what the Worker should do, with the context the Worker lacks
-- You count rounds. **Three rounds per issue**; on the fourth, write a handoff and hand it back rather than escalating straight to a person. It was five, and before that three; nothing in the flow assumes a number, so it lives in exactly two places, this line and the loop's own file
-- **You merge**, once the Inspector could not refute the work and every check is green. The green half is enforced by a hook rather than by your eye: `gh pr merge` here is refused for a pull request that is red, still running, draft, conflicting, or behind its base branch. When it merges, you leave one line of your own on the issue saying so. An issue marked HITL merges the same way, and what needs Viktor's eye goes onto the release issue, for him to look at on stage before the tag. A release, a change of scope, and an escalation are still Viktor's
-- **The release issue is where a screen's completeness and a stopped queue are read.** When an issue that leaves its screen half built merges, you copy its "What stays wrong until" line onto the release issue. Whenever the queue empties, you comment there what merged last, that nothing is takeable, and which seat the board is waiting on, whether or not Viktor is notified too. Both are comments and never an edit of the issue ([0036](docs/decisions/0036-a-screen-is-finished-on-the-release-issue.md))
-- You do not write code and you do not edit issues
-
-### If you are the Architect
-
-- You own the board: issues, their dependencies, and acceptance criteria that can actually be checked. Most deadlocks come from a criterion that allowed two readings
-- You are the **first instance of appeal**, not the last. Facts and boundaries you settle yourself; taste, trade-offs and scope go to Viktor
-- **A visual issue — one where what a player sees changes — is drawn before it is built.** You publish the drawing as a **Template** and, once Viktor approves it, open a pull request of its own, `design/<name>`, to carry it onto `main` — he merges it, since a template is a drawing and his approval is its review, not yours to enact. Only after that merge does the Foreman start the issue that builds it. Where the issue also contains a fork in how something should look, the template is where that fork is closed, turning a HITL issue into a plain one. What a template cannot settle is looked at on stage before the release, from a list the issue carries ([0035](docs/decisions/0035-a-visual-issue-is-built-to-a-template.md)). **An issue that changes nothing a player sees carries no such list, and that is correct rather than an omission** — an empty eye list on a stage list trains whoever walks it to skim. Its merge still carries its "What stays wrong until" line, if it has one
-- **An issue that leaves its screen visibly different from its template says so in a section of its own, "What stays wrong until", naming the issue that closes it, and that issue exists on the board before this one starts**, even if it is not ready. A screen is finished when every issue in its row of the release issue's "Screens, and what each still needs" table has merged, and the release is not tagged while a row names an issue that does not exist ([0036](docs/decisions/0036-a-screen-is-finished-on-the-release-issue.md))
-- You do not implement, and you do not run Workers
-
-### Escalation
-
-A failing verdict is not an escalation. It is a round: Inspector to Foreman to Worker, and back. Five of those are allowed per issue.
-
-Two things break the loop early rather than late:
-
-- **A disagreement**, where the Worker does not accept the verdict and has an argument. More rounds will not resolve it, so it goes up immediately
-- **The fourth round**, whatever the reason
-
-Both go to the Architect, who tries to settle it: usually by rewriting the criterion that allowed the deadlock, and restarting the issue. What the Architect cannot settle goes to Viktor, as a package rather than as a complaint — where the disagreement lies, both positions, what the earlier rounds already tried, and the options with their consequences.
-
-### Watching context
-
-A sub-agent has no automatic compaction, so its parent watches it: the Foreman measures the size of each sub-agent's transcript on disk and tells it to hand off before it runs out. Top-level sessions compact themselves, and Viktor watches those in the client.
-
-Handoffs matter most where the loss is worst. An Inspector carries the most fragile state of anyone here — which verdicts it has already given and which are now closed — so its handoff is a list of verdicts and their status, not a summary of what it did.
-
-### The old names
-
-Three of the four roles had other names until the loop was named. The seats did
-not change; the words did, so that the four read as one trade — an architect
-draws, a foreman runs the site, a worker builds, an inspector signs off or
-refuses to. Each boundary is visible in the first word: an architect lays no
-bricks, and an inspector builds nothing.
-
-| Now           | Was        |
-| ------------- | ---------- |
-| **Architect** | Planner    |
-| **Foreman**   | Dispatcher |
-| **Worker**    | Worker     |
-| **Inspector** | Challenger |
-
-"Planner" collided with what the tool itself calls a plan, and "dispatcher"
-carried neither of that seat's real jobs, being the only channel and holding the
-merge.
-
-The loop itself was first named the **Refutation Loop**, and renamed for a term a developer already knows.
-
-The old names stay wherever they are a record rather than an instruction: in the
-git history, in the bodies of issues written before the change, and in
-`docs/decisions/`. A decision log that inherits a rewritten history is worse
-than none ([0032](docs/decisions/0032-what-the-first-visit-ceiling-measures.md)
-says so about its own subject, and it holds here), so those are left alone and
-read with this table beside them.
-
-### The coordinator, historically
-
-Until the four roles above were written down, this project ran on two: a **coordinator** and workers. The coordinator was one session Viktor ran himself, and it did everything the Architect, the Foreman and the Inspector now do between them: it held the board, prepared handoffs, reviewed the pull requests by measuring them, and merged on Viktor's literal word.
-
-Most of the git history and every ticket up to release 1.3.0 was produced that way. The word appears in older handoffs and issue bodies, and it means that session rather than any of the four roles.
-
-Handoff documents live in `handoffs/` (git-ignored). The project's durable memory is git history, GitHub issues/PRs, and `docs/decisions/`; no separate cross-session memory is needed.
+Handoff documents live in `handoffs/` (git-ignored). The project's durable memory is git history, GitHub issues and pull requests, and `docs/decisions/`.
 
 ## The project contract
 
 Every seat of the loop reads this section, and every acceptance criterion cites
-it. **Each number below was measured on `92f7797`, on 2026-09-29**, by running
-the command beside it. Nothing here is copied from a README. If you find a figure
+it. **The figures in the commands table and the five checks below were measured on `81361ea`, on 2026-10-14**, from a clean worktree, by running the command beside each. The budgets section carries its own commit. Nothing here is copied from a README. If you find a figure
 that no longer holds, that is a finding about this section, and correcting it is
 the Architect's hand.
 
@@ -170,14 +54,16 @@ pnpm workspace over `apps/*` and `packages/*`.
 
 | what       | command                                            | measured                               |
 | ---------- | -------------------------------------------------- | -------------------------------------- |
-| install    | `pnpm install --frozen-lockfile`                   | 5 s with a warm store, minutes without |
+| install    | `pnpm install --frozen-lockfile`                   | 4 s with a warm store, minutes without |
 | dev server | `pnpm dev` (Vite, `--port` to move it)             | —                                      |
 | workshop   | `pnpm --filter web storybook`                      | port 6006 unless moved                 |
-| lint       | `pnpm lint` (`eslint .` then `prettier --check .`) | 9 s                                    |
-| tests      | `pnpm test`                                        | 20 s, 943 tests in 84 files            |
-| coverage   | `pnpm test:coverage`                               | 27 s, 99.55 % of statements            |
+| lint       | `pnpm lint` (`eslint .` then `prettier --check .`) | 7 s                                    |
+| tests      | `pnpm test`                                        | 16 s, 967 tests in 87 files            |
+| coverage   | `pnpm test:coverage`                               | 22 s, 99.56 % of statements (web)      |
 | build      | `pnpm build`                                       | 14 s                                   |
 | rules      | `pnpm test:rules`                                  | 8 s                                    |
+
+The test count is the sum of two packages: 877 tests in 78 files in `apps/web` and 90 in 9 in `packages/shared`. Coverage is that of `apps/web` (1597 of 1604 statements); `packages/shared` is at 100 %.
 
 `pnpm build` is four things in a row: `tsc --noEmit`, `vite build`,
 `assert-no-source-maps.mjs`, and a Storybook build. A type error fails the build
@@ -190,7 +76,7 @@ that lands, this is the check that breaks first.
 ### The checks that must be green before a merge
 
 Five, and these are the names CI gives them: **Lint, Test, Coverage, Build,
-Rules**. All five passed on `92f7797` from a clean worktree.
+Rules**. All five passed on `81361ea` from a clean worktree.
 
 The merge is gated by a hook rather than by anyone's eye: `gh pr merge` here is
 refused for a pull request that is red, still running, draft, conflicting, or
@@ -322,6 +208,45 @@ before an inspector caught it by building the branch rather than by reading it.
 A weight is a measurement of one commit by one command: if the commit you are on
 is not the commit in the heading, **run the command** rather than cite the row.
 
+### Default level
+
+The loop's own table (`~/.claude/skills/trial/reference/loop.md`, **Priority, complexity and effort**). This project does not replace it.
+
+| The issue is                           | Its level is |
+| -------------------------------------- | ------------ |
+| `P0`, or `L` and on the risk floor     | high         |
+| `P3`, or `S` and not on the risk floor | low          |
+| anything else                          | medium       |
+
+### Priority, complexity and effort
+
+The loop's own table, unchanged. Complexity sets the model effort of the seats:
+
+| Complexity | Worker, Inspector, issue inspector | Foreman |
+| ---------- | ---------------------------------- | ------- |
+| `S`        | medium                             | medium  |
+| `M`        | high                               | medium  |
+| `L`        | xhigh                              | medium  |
+
+### Risk floor additions
+
+On top of the loop's own floor, work that touches any of these is never below high:
+
+- `firestore.rules`
+- `vite.config.ts`
+- `apps/web/build/`
+- anything under `.github/workflows/`
+
+### Paths that force the Inspector's own build
+
+At medium, an Inspector may reuse the Worker's built binary unless the diff touches one of these:
+
+- `package.json`
+- `pnpm-lock.yaml`
+- `apps/web/vite.config.ts`
+- `apps/web/build/`
+- `apps/web/index.html`
+
 ### Templates
 
 `design/templates/`, one file per drawing; the state tree is
@@ -344,7 +269,7 @@ sub-agent's context dies with it.
 
 ### What a person must look at before a release
 
-**#139**, the release issue. It carries the Screens table, and each merged issue
+**#139**, the release issue today. It may be replaced: its last comment proposes closing it and opening a new one for design v2 (_Across the Street_), and Viktor has not ruled. When a release issue replaces it, this row is corrected in the pull request that names the new one. It carries the Screens table, and each merged issue
 adds its own "what to look at by eye" list to it **where it has one**. The
 Architect keeps that table;
 its input is what lands on the release issue when an issue merges, not the merge
