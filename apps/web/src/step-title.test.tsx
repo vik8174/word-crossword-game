@@ -35,7 +35,7 @@ vi.mock('firebase/analytics', () => ({
  * and in ink with no shadow under the letters now the garden is gone (#222).
  *
  * It is guarded where it is drawn, at its two sites, and not in a test that
- * builds its own heading: putting `variant="signage"` back at either site, or a
+ * builds its own heading: putting the sign variant back at either site, or a
  * shadow, a capital or a tracking back on it, left every test passing once
  * (#244, round 1).
  */

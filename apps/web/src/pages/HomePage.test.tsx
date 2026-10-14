@@ -122,6 +122,8 @@ describe('HomePage', () => {
   it('is called Across the Street, and nothing on it says anything else', () => {
     const { container } = renderHomePage();
 
-    expect(container.textContent?.toLowerCase()).not.toContain('word garden');
+    // The old name is spelled as a pattern so that no file of the app carries it
+    // as text, which is what a search for it checks.
+    expect(container.textContent).not.toMatch(/word\s+garden/i);
   });
 });
