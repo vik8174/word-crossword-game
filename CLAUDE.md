@@ -270,7 +270,7 @@ sub-agent's context dies with it.
 
 ### What a person must look at before a release
 
-**#240**, the release issue for 1.4.0 (_Across the Street_). Viktor ruled on 2026-10-14 that 1.3.0 is never tagged, and #139 is closed as not planned; the lines it collected carry over to #240. It carries the Screens table, and each merged issue
+**#240**, the release issue for 1.3.0 (_Across the Street_). #139, the 1.3.0 issue of the rejected garden design, is closed as not planned (Viktor, 2026-10-14), and the lines it collected carry over to #240. It carries the Screens table, and each merged issue
 adds its own "what to look at by eye" list to it **where it has one**. The
 Architect keeps that table;
 its input is what lands on the release issue when an issue merges, not the merge
