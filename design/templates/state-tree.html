@@ -1,1842 +1,1172 @@
+<!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Word Garden State Tree</title>
+<title>Across the Street: state tree</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@300;400;700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<!--
+  Across the Street (the app was Word Garden until 2026-10-14), design v2. Every screen and every state of the app.
+  Drawn by the Architect on 2026-10-14 from variant L (handoffs/design-v2/r2-fd-3.html),
+  chosen by Viktor the same day (issue #219). The states and every line of UI copy are
+  taken from the previous template (design/templates/state-tree.html); nothing of its look is.
 
+  Revision 2, 2026-10-14, on Viktor's review:
+  - every screen is drawn at 1440, 834 and 375 at once ("all three", the default)
+  - the street is Andalusian: whitewash, terracotta eaves, iron balconies, geraniums, azulejos;
+    the people have faces and react to the game (explain, listen, wave, cheer, calm)
+  - the lesson (ADR 0037): a mode on /create, a teacher who deals and watches, the lesson summary
+  - a wrong word list is said inside the field (option B of three, Viktor's choice)
+
+  Query string:  ?state=<key> ?mode=pair|lesson ?role=host|guest ?size=few|many
+                 ?width=all|1440|834|375 ?bare
+  ?bare fills the window with the app alone, at the window's own size, for capture.
+
+  Tokens                         Contrast, WCAG, computed from the hex values
+  duck    #E6EEEC  ground        ink on duck      12.04:1
+  tile    #FAFBFA  squares, cards ink on tile     13.69:1
+  ink     #1B2D38  text, outlines slate on duck    5.48:1   hints on the ground (the lowest)
+  slate   #4C6170  secondary      slate on tile    6.23:1
+  spruce  #2D6658  the action     slate on wash    5.10:1   a number on the word being filled
+  ochre   #F2C766  lit window     white on spruce  6.66:1   the action's label
+  wash    #F6E3B4  word filling   brick on tile    6.33:1   error text in a card
+  rose    #E9CBC1  the refused square              brick on duck    5.57:1   the refusal line under the board
+  stone   #C5D8D6  drawing only   spruce on duck   5.65:1   "answered" in the lists
+  line    #C3D0CD  rules          ink on rose      9.31:1   a refused square, a fault strip, a wrong word tile
+  brick   #A33A2C  refusal, error ink on wash     11.20:1   the disabled button: #3E5058 on #BFCBC8, 5.05:1
+  sage    #D3E8DD  an answered square: ink on sage 11.06:1, its number slate on sage 5.03:1
+  fiesta  #B23A28  the finished card: white on fiesta 5.95:1. Its words are in the interface's language.
+  paper   #EFE6D2  a word you explain, on your board: ink on paper 11.44:1 (it was slate on nothing)
+  The teacher's board: ink on wash 11.20:1 (Olena's words), ink on stone 9.58:1 (Taras's words).
+  Drawing only, never text: whitewash #FBF7EE, shade #EDE3D2, terracotta #C2603A,
+  azulejo #2E5C8A, geranium #C8412E, pot #B4643C, leaf #3F7A4E, skin #E9B892 #C08A62 #8E5E40.
+
+  Type: Alegreya Sans 400, 700, 400 italic. Scale 56 / 34 / 22 / 18 / 16 / 14.
+  The scaffolding (the bar above, the state tree, the note) is the template's, not the app's.
+-->
 <style>
-  :root {
-    --vermilion:      #DA4620;
-    --vermilion-lit:  #F2762F;
-    --vermilion-deep: #93290F;
-    --gold:           #C9A227;
-    --cream:          #F3ECD9;
-    --washi:          #F2E7D0;
-    --shoji-1:        #E8DCBC;
-    --shoji-2:        #DED2AF;
-    --bark-deep:      #1C1A1A;
-    --sumi:           #1C1A1A;
-
-    --sev-error:   #DA4620;
-    --sev-warning: #C9A227;
-    --sev-info:    #63D8CE;
-    --sev-success: #A9D147;
-
-    --scene-ink:     #F3ECD9;
-    --scene-ink-dim: rgba(243, 236, 217, 0.78);
-    --scene-line:    rgba(243, 236, 217, 0.28);
-    --band:          rgba(6, 20, 16, 0.55);
-    --band-solid:    rgba(6, 20, 16, 0.82);
-
-    --page:      #F6F4EE;
-    --page-2:    #ECE8DE;
-    --page-ink:  #16211F;
-    --page-dim:  #55635F;
-    --page-line: rgba(22, 33, 31, 0.14);
-    --page-rule: rgba(22, 33, 31, 0.07);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --page:      #0C1614;
-      --page-2:    #121F1C;
-      --page-ink:  #E8E2D2;
-      --page-dim:  #93A29D;
-      --page-line: rgba(232, 226, 210, 0.16);
-      --page-rule: rgba(232, 226, 210, 0.07);
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --page:      #0C1614;
-    --page-2:    #121F1C;
-    --page-ink:  #E8E2D2;
-    --page-dim:  #93A29D;
-    --page-line: rgba(232, 226, 210, 0.16);
-    --page-rule: rgba(232, 226, 210, 0.07);
-    color-scheme: dark;
-  }
-
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    background: var(--page);
-    color: var(--page-ink);
-    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', -apple-system, sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .wrap { max-width: 1420px; margin: 0 auto; padding: 34px 22px 80px; display: flex; flex-direction: column; gap: 26px; }
-
-  /* ---------- masthead ---------- */
-  .masthead { display: flex; flex-direction: column; gap: 12px; }
-  .eyebrow { font-size: 10.5px; font-weight: 700; letter-spacing: 0.28em; text-transform: uppercase; color: var(--page-dim); margin: 0; }
-  .masthead h1 { font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', -apple-system, sans-serif; font-weight: 700; font-size: clamp(26px, 3.6vw, 38px); line-height: 1.1; margin: 0; text-wrap: balance; }
-  .standfirst { margin: 0; max-width: 74ch; color: var(--page-dim); font-size: 15px; }
-
-  /* ---------- the two columns ---------- */
-  .board { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
-  @media (min-width: 1020px) { .board { grid-template-columns: 268px minmax(0, 1fr); gap: 28px; } }
-
-  /* ---------- the map ---------- */
-  .map { display: flex; flex-direction: column; gap: 4px; position: sticky; top: 18px; }
-  .map-head { font-size: 10px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--page-dim); margin: 0 0 8px; }
-
-  .map-group { margin-top: 14px; display: flex; flex-direction: column; gap: 3px; }
-  .map-group:first-of-type { margin-top: 0; }
-  .map-group > .map-group-name {
-    font-size: 9.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
-    color: var(--page-dim); padding: 0 0 5px 2px; display: flex; align-items: center; gap: 8px;
-  }
-  .map-group-name::after { content: ""; flex: 1; height: 1px; background: var(--page-line); }
-
-  .node {
-    display: flex; align-items: center; gap: 9px;
-    width: 100%; text-align: left;
-    font-family: inherit; font-size: 13px; line-height: 1.35;
-    padding: 7px 10px 7px 9px;
-    border: 1px solid transparent; border-radius: 3px;
-    background: transparent; color: var(--page-ink);
-    cursor: pointer;
-    transition: background 140ms ease, border-color 140ms ease;
-  }
-  .node:hover { background: var(--page-rule); }
-  .node:focus-visible { outline: 2px solid var(--vermilion); outline-offset: 1px; }
-  .node .pip { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--page-line); transition: background 140ms ease, box-shadow 140ms ease; }
-  .node.sub { padding-left: 22px; font-size: 12.3px; color: var(--page-dim); }
-  .node.sub .pip { width: 5px; height: 5px; }
-  .node.here { background: var(--page-2); border-color: var(--page-line); font-weight: 700; color: var(--page-ink); }
-  .node.here .pip { background: var(--vermilion); box-shadow: 0 0 0 3px rgba(218, 70, 32, 0.18); }
-  .node .term { margin-left: auto; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--page-dim); }
-
-  /* ---------- controls above the stage ---------- */
-  .bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 12px; }
-  .toggle { display: inline-flex; border: 1px solid var(--page-line); border-radius: 3px; overflow: hidden; }
-  .toggle button {
-    font-family: inherit; font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-    padding: 7px 12px; border: 0; background: transparent; color: var(--page-dim); cursor: pointer;
-    transition: background 140ms ease, color 140ms ease;
-  }
-  .toggle button + button { border-left: 1px solid var(--page-line); }
-  .toggle button[aria-pressed="true"] { background: var(--page-ink); color: var(--page); }
-  .toggle button:focus-visible { outline: 2px solid var(--vermilion); outline-offset: -2px; }
-  .toggle-label { font-size: 10px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--page-dim); }
-
-  /* ---------- the stage ---------- */
-  /* The stage holds a device: a window of exactly the size the width toggle
-     names (1440 × 900, 834 × 1112 or 375 × 812), scaled down to fit the column
-     and never up. Every number below the device is a CSS pixel of that window,
-     so a template value and an app value measure the same thing.
-
-     The layouts answer the device, not the browser: they are container queries
-     on `device`, with the app's own breakpoints (`room-layout.ts`). Inside the
-     device `cqw` and `cqh` stand where the app writes `vw` and `dvh`.
-
-     `?bare` drops the page around it and makes the device the browser window
-     itself, at scale 1: open this file at 375 × 812 with `?bare&state=lobby`
-     and it is the app's lobby at 375 × 812, pixel for pixel. */
-  .stage {
-    position: relative;
-    width: 100%;
-    height: var(--stage-h, 600px);
-    border-radius: 4px;
-    overflow: hidden;
-    background: #0A0F0C;
-    box-shadow: 0 24px 56px -30px rgba(10, 20, 18, 0.7);
-  }
-  .device {
-    position: absolute; left: 50%; top: 0;
-    width: var(--device-w, 1440px); height: var(--device-h, 900px);
-    transform-origin: top center;
-    transform: translateX(-50%) scale(var(--device-scale, 1));
-    overflow: hidden;
-    background-color: #12100B;
-    isolation: isolate;
-    container-type: size; container-name: device;
-  }
-
-  html.bare body { overflow: hidden; }
-  html.bare .wrap { padding: 0; max-width: none; }
-  html.bare .masthead, html.bare .map, html.bare .bar, html.bare .under { display: none; }
-  html.bare .board { display: block; }
-  html.bare .stage { position: fixed; inset: 0; width: 100vw; height: 100dvh; border-radius: 0; box-shadow: none; }
-
-  /* ===================== the standard transition =====================
-     One transition between any two scenes, and the same one every time — the
-     shape Viktor accepted on the scene prototype, ported here unchanged:
-
-       · an 1800ms opacity crossfade on `cubic-bezier(.4, 0, .2, 1)`
-       · Ken Burns underneath it — every scene pushes forward from scale 1 to
-         1.11 over 26s, linear, ALWAYS forward and never back, so during the
-         crossfade both images travel the same way and the change reads as a
-         step forward rather than a cut between unrelated pictures
-       · a warm bloom peaking at 38% of the fade
-       · the red sun opening out of the middle
-
-     It runs on a change of SCENE, not on a change of screen: the nine screens
-     sit on three pictures, and moving between two screens of the same picture
-     is not a journey. gate → doors, doors → hall, and hall → gate on "Back to
-     the gate" all get the same 1800ms. */
-  .scene {
-    position: absolute; inset: 0;
-    opacity: 0;
-    transition: opacity 1800ms cubic-bezier(.4, 0, .2, 1);
-  }
-  .scene.on { opacity: 1; }
-  .scene .art {
-    position: absolute; inset: 0;
-    background-size: cover; background-position: center;
-    transform: scale(1);
-    will-change: transform;
-  }
-  @keyframes kenburns { from { transform: scale(1); } to { transform: scale(1.11); } }
-
-  /* the pictures the app ships: AVIF at 1440 × 810 first, JPEG at 960 × 540 behind it */
-  .scene-gate  .art { background-image: url(../../apps/web/public/scenes/gate.jpg);  background-image: image-set(url(../../apps/web/public/scenes/gate.avif) type("image/avif"), url(../../apps/web/public/scenes/gate.jpg) type("image/jpeg")); }
-  .scene-doors .art { background-image: url(../../apps/web/public/scenes/doors.jpg); background-image: image-set(url(../../apps/web/public/scenes/doors.avif) type("image/avif"), url(../../apps/web/public/scenes/doors.jpg) type("image/jpeg")); }
-  .scene-hall  .art { background-image: url(../../apps/web/public/scenes/hall.jpg);  background-image: image-set(url(../../apps/web/public/scenes/hall.avif) type("image/avif"), url(../../apps/web/public/scenes/hall.jpg) type("image/jpeg")); }
-
-  .bloom {
-    position: absolute; inset: 0; pointer-events: none; opacity: 0;
-    background: radial-gradient(circle at 50% 52%, rgba(255, 226, 170, 0.5) 0%, rgba(255, 210, 140, 0.16) 34%, rgba(255, 200, 120, 0) 62%);
-  }
-  .bloom.on { animation: bloomPulse 1800ms ease-out; }
-  @keyframes bloomPulse { 0% { opacity: 0; } 38% { opacity: 1; } 100% { opacity: 0; } }
-
-  /* The same mark that sits on the button and beside the name. Viktor read it
-     as a loading indicator the first time he saw it, which is why `connecting`
-     is the screen it may end up belonging to. */
-  .sunmark {
-    position: absolute; left: 50%; top: 52%;
-    width: 84px; height: 84px; margin: -42px 0 0 -42px;
-    border-radius: 50%; background: var(--vermilion);
-    opacity: 0; pointer-events: none;
-  }
-  .sunmark.on { animation: sunPulse 1800ms cubic-bezier(.2, .7, .3, 1); }
-  @keyframes sunPulse {
-    0% { opacity: 0; transform: scale(0.2); }
-    30% { opacity: 0.85; transform: scale(1); }
-    100% { opacity: 0; transform: scale(7); }
-  }
-
-  .veil {
-    position: absolute; inset: 0; pointer-events: none;
-    background: linear-gradient(to bottom, rgba(8, 14, 10, 0.34) 0%, rgba(8, 14, 10, 0.05) 28%, rgba(8, 14, 10, 0.05) 62%, rgba(8, 14, 10, 0.46) 100%);
-  }
-
-  /* The petals, from the scene prototype Viktor accepted: alpha 0.55–0.92,
-     three tones, half-length 5–12 px, drawn above the veil so it does not dim
-     them. Below the screen, so no petal ever crosses a line of text. Indoors
-     the layer fades out over 1600 ms rather than stopping. */
-  .petals {
-    position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
-    opacity: 1; transition: opacity 1600ms ease;
-  }
-  .petals.indoors { opacity: 0; }
-
-  /* ===================== a change of screen =====================
-     Three cases, and which one runs is decided by what changes:
-
-       · a new PICTURE: the old screen fades out with the old picture and the
-         new one fades in with the new picture, on the picture's own 1800 ms
-         curve. One animation, as in the scene prototype (Viktor, 2026-09-13)
-       · a new SCREEN on the same picture: the app's 180 ms shift, the new
-         screen in from 1.5rem on the right and the old one out to the left
-         (ADR 0030, `ScreenShift.tsx`). The header of a room stands still
-       · the same screen in another state (a message appears, a button starts
-         loading): no movement at all */
-  .screen { position: absolute; inset: 0; overflow: hidden; display: flex; flex-direction: column; }
-  .screen.leaving { pointer-events: none; }
-  .screen.fade-in  { animation: screen-fade-in  1800ms cubic-bezier(.4, 0, .2, 1) both; }
-  .screen.fade-out { animation: screen-fade-out 1800ms cubic-bezier(.4, 0, .2, 1) both; }
-  @keyframes screen-fade-in  { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes screen-fade-out { from { opacity: 1; } to { opacity: 0; } }
-  .screen.shift-in  { animation: screen-shift-in  180ms ease-out both; }
-  .screen.shift-out { animation: screen-shift-out 180ms ease-in forwards; }
-  .screen.shift-out .room-header { visibility: hidden; }
-  @keyframes screen-shift-in  { from { opacity: 0; transform: translateX(1.5rem); } to { opacity: 1; transform: none; } }
-  @keyframes screen-shift-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(-1.5rem); } }
-
-  .where {
-    position: absolute; left: 10px; bottom: 10px; z-index: 9;
-    font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
-    padding: 5px 9px; border-radius: 2px;
-    background: rgba(8, 14, 10, 0.6); color: var(--cream);
-  }
-
-  /* ===================== the app's own frame ===================== */
-  /* Three layouts, on the app's own breakpoints (`room-layout.ts`):
-
-       · under 768 wide, or under 600 tall: a document. One column in reading
-         order (what you explain, the board, what you guess), and the screen
-         scrolls. A zone with nothing in it is not drawn
-       · from 768 × 600: the application. A fixed height, the board across the
-         top, the two zones side by side under it, and only a zone scrolls
-       · from 1200 × 600: the three zones proper, a zone either side of the board */
-  .room { display: flex; flex-direction: column; gap: 16px; padding: 20px 16px 24px; min-height: 100%; }
-  .screen:has(> .room) { overflow-y: auto; }
-
-  .room-header { display: flex; flex-wrap: wrap; align-items: flex-start; column-gap: 20px; row-gap: 8px; flex: none; }
-  .step-title {
-    flex-basis: 100%;
-    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', -apple-system, sans-serif;
-    font-weight: 300; font-size: 19px; letter-spacing: 0.42em; text-transform: uppercase;
-    /* the tracking is added after the last letter too, so it comes back off the right */
-    margin-right: -0.42em;
-    color: var(--cream); margin: 0 0 6px;
-    text-shadow: 0 1px 8px rgba(6, 12, 10, 0.9);
-  }
-  .step-title::after { content: ""; display: block; width: 100%; height: 2px; background: var(--vermilion); margin-top: 7px; }
-  .room-status { flex: 1 1 16rem; min-width: 0; font-size: 12.5px; line-height: 1.5; color: var(--scene-ink); text-shadow: 0 1px 7px rgba(6, 12, 10, 0.92); }
-  .room-action { flex-basis: 100%; }
-
-  /* In a document the zones are as tall as what is on them: a grid given the
-     window's height here would squeeze its rows and lay them over each other. */
-  .zones { display: grid; gap: 16px; flex: none; grid-template-columns: minmax(0, 1fr); align-content: start; }
-  .zones.three { grid-template-areas: "left" "board" "right"; }
-  .zones.three > .zone.left  { grid-area: left; }
-  .zones.three > .zone.right { grid-area: right; }
-  .zones.three > .zone-middle { grid-area: board; }
-  .zones.solo  { place-items: center; align-content: center; }
-
-  .zone {
-    min-height: 0;
-    background: var(--band); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-    border-top: 1.5px solid var(--vermilion);
-    padding: 14px 15px 16px;
-    scrollbar-width: thin;
-  }
-  .zone.empty, .zone-middle.empty { display: none; }
-  .zone::-webkit-scrollbar { width: 6px; }
-  .zone::-webkit-scrollbar-thumb { background: rgba(243, 236, 217, 0.24); border-radius: 3px; }
-  .zone-middle { min-height: 0; }
-
-  @container device (min-width: 768px) and (min-height: 600px) {
-    .room { height: 100%; min-height: 0; padding: 16px 22px; gap: 14px; }
-    .screen:has(> .room) { overflow-y: hidden; }
-    .room-action { flex-basis: auto; margin-left: auto; }
-    .zones { gap: 14px; align-content: stretch; flex: 1; min-height: 0; }
-    .zones.three {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      grid-template-rows: auto minmax(0, 1fr);
-      grid-template-areas: "board board" "left right";
-    }
-    .zones.three > .zone, .zones.three > .zone-middle { overflow-y: auto; }
-    .zones.three > .zone.empty { display: block; background: transparent; border-top: 0; backdrop-filter: none; -webkit-backdrop-filter: none; }
-    .zones.three > .zone-middle.empty { display: block; }
-    .zones.solo { align-content: stretch; }
-  }
-
-  @container device (min-width: 1200px) and (min-height: 600px) {
-    .room { padding: 20px 22px; }
-    .zones.three {
-      grid-template-columns: 250px minmax(0, 1fr) 250px;
-      grid-template-rows: minmax(0, 1fr);
-      grid-template-areas: "left board right";
-    }
-    /* an empty side is still a column here, and still the band it was drawn as */
-    .zones.three > .zone.empty { background: var(--band); border-top: 1.5px solid var(--vermilion); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
-  }
-
-  .zone h3 {
-    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', -apple-system, sans-serif;
-    font-size: 15px; font-weight: 700; margin: 0 0 3px; color: var(--cream);
-  }
-  .hint { font-size: 11px; line-height: 1.5; color: var(--scene-ink-dim); margin: 0 0 10px; }
-
-  /* Three tracks, and the state as a mark rather than as words (variant B).
-     The reference sits in a fixed track with tabular figures, so "1 across"
-     and "17 across" are the same width and every word starts on one line.
-     The columns are visual only: each button still carries the whole
-     sentence as its accessible name, which is the decision WordEntryList.tsx
-     already made and this must not undo. */
-  .word-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-  .word-list li { margin: 0; }
-  .word-list button {
-    width: 100%; display: grid; grid-template-columns: 5.6em minmax(0, 1fr) auto;
-    align-items: baseline; column-gap: 9px;
-    text-align: left; font-family: inherit; font-size: 12px; line-height: 1.4;
-    padding: 5px 7px; border: 0; border-radius: 2px; background: transparent; color: var(--scene-ink); cursor: pointer;
-  }
-  .word-list button:hover { background: rgba(243, 236, 217, 0.1); }
-  .word-list button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
-  .word-list .ref {
-    font-variant-numeric: tabular-nums;
-    font-size: 10px; font-weight: 700; letter-spacing: 0.13em; text-transform: uppercase;
-    color: var(--scene-ink-dim); white-space: nowrap;
-  }
-  .word-list .word { min-width: 0; overflow-wrap: anywhere; }
-  .word-list .pip { width: 9px; height: 9px; border-radius: 50%; align-self: center; }
-  .word-list .pip.open { box-shadow: inset 0 0 0 1.5px var(--scene-line); }
-  .word-list .pip.shut { background: var(--vermilion-lit); box-shadow: 0 0 8px -1px rgba(242, 118, 47, 0.7); }
-  .word-list button.done .ref, .word-list button.done .word { color: rgba(243, 236, 217, 0.5); }
-  .word-list button.done .word { text-decoration: line-through; }
-
-  .players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
-  .players li { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--scene-ink); }
-  .badge {
-    font-size: 8.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
-    padding: 2px 7px; border-radius: 999px; border: 1px solid var(--scene-line); color: var(--scene-ink-dim);
-  }
-  .badge.you { background: rgba(218, 70, 32, 0.24); border-color: rgba(242, 118, 47, 0.6); color: #FFD3BE; }
-  /* the app's "away for …" chip, in the warning's own gold */
-  .badge.away { border-color: rgba(201, 162, 39, 0.7); color: #E0BC46; }
-
-  /* small lines the app says and the template had not drawn */
-  .players-line { font-size: 11px; line-height: 1.5; color: var(--scene-ink-dim); margin: 0 0 9px; }
-  .count-line { font-size: 11px; line-height: 1.5; color: var(--scene-ink); margin: 9px 0 0; }
-  .inline-status { font-size: 11px; line-height: 1.5; }
-  .inline-status.ok  { color: var(--sev-success); }
-  .inline-status.bad { color: #FFC7AE; }
-
-  html.bare .where { display: none; }
-
-  .stack { display: flex; flex-direction: column; gap: 14px; }
-  .stack-tight { display: flex; flex-direction: column; gap: 9px; }
-
-  /* the centred column: join, connecting, unavailable */
-  .middle-column {
-    width: min(430px, 92%);
-    background: var(--band-solid);
-    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-    padding: 24px 24px 26px;
-    border-radius: 2px;
-    box-shadow: 0 18px 44px -26px rgba(0, 0, 0, 0.8);
-  }
-  .middle-column p.lede { margin: 0 0 16px; font-size: 13px; line-height: 1.6; color: var(--scene-ink); }
-
-  /* the gate screens */
-  .gate-screen { flex: 1; display: grid; place-items: center; padding: 22px; min-height: 0; overflow-y: auto; position: relative; }
-
-  .lockup { text-align: center; transform: translateY(-7%); }
-
-  /* Sumi on the clear sky above the gate — the measured band. The name sits at
-     y 5-14% and the tagline at 15-19%, held inside x 24-76%, because outside
-     that the treetops and the crossbeam take the contrast away. Nothing is
-     drawn between the letters and the painting. */
-  .lockup.sumi {
-    position: absolute; left: 50%; top: 5%; transform: translateX(-50%);
-    width: 52%; text-align: center;
-  }
-  /* A window taller than the picture's 16:9 is filled by its height, so the
-     clear sky band (x 24–76% of the picture) is wider than the window itself
-     and the lockup may take almost all of it. 834 × 1112 and 375 × 812 are both
-     that case. */
-  @container device (max-aspect-ratio: 16/9) {
-    .lockup.sumi { width: min(92%, calc(100cqh * 16 / 9 * 0.52)); }
-  }
-  /* line-height: 1 is load-bearing, not tidying. Inheriting the body's 1.6 made
-     the name 12% of the picture tall instead of 8%, which pushed the tagline
-     down onto the crossbeam — where it measures 87% instead of 97%. */
-  /* Dela Gothic One — a heavy Japanese display gothic, the face of a tankobon
-     cover. Signage tracking, and a cream offset behind the sumi: the letter
-     carries the contrast, the offset gives it an edge where a treetop rises
-     into the band. */
-  .lockup.sumi .name {
-    font-family: 'Dela Gothic One', 'Zen Kaku Gothic New', sans-serif;
-    font-weight: 400;
-    color: var(--sumi);
-    line-height: 1;
-    font-size: clamp(15px, 2.35cqw, 31px);
-    letter-spacing: 0.34em;
-    margin-right: -0.34em;
-    text-shadow: 0.05em 0.05em 0 var(--cream);
-  }
-  .lockup.sumi .rule { background: var(--sumi); margin: 0.28em auto 0; font-size: clamp(15px, 2.35cqw, 31px); width: min(220px, 46%); }
-  .lockup.sumi .tag { color: var(--sumi); text-shadow: none; margin: 0.55em 0 0; line-height: 1.3; }
-  .gate-cta { position: absolute; left: 50%; top: 68%; transform: translateX(-50%); }
-  .lockup .name {
-    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', -apple-system, sans-serif; font-weight: 400;
-    font-size: clamp(24px, 3.6cqw, 46px); letter-spacing: 0.22em; margin: 0; margin-right: -0.22em;
-    color: var(--cream); text-shadow: 0 2px 14px rgba(8, 14, 10, 0.85);
-  }
-  .lockup .rule { width: min(240px, 52%); height: 2px; margin: 16px auto 0; background: var(--vermilion); }
-  .lockup .tag { margin: 13px 0 26px; font-size: 10.5px; font-weight: 400; letter-spacing: 0.3em; text-transform: uppercase; color: var(--cream); text-shadow: 0 1px 4px rgba(8, 14, 10, 0.98), 0 2px 16px rgba(8, 14, 10, 0.9); }
-
-  .create-band {
-    width: min(460px, 94%);
-    background: var(--band); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-    padding: 20px 22px 24px; border-radius: 2px;
-    max-height: 100%; overflow-y: auto;
-  }
-
-  /* ===================== components ===================== */
-  /* The standard button, as Viktor picked it: the prototype's pill, unchanged
-     in size, lettering, edge and dot. #DA4620 opaque, which is also what makes
-     it scene-independent — the label reads 3.93:1 on the gate, the doors and
-     the hall alike, so nothing has to be re-measured per screen.
-
-     Known and accepted: at this label size 3.93:1 is below the 4.5:1 that
-     small text is held to. The shadow, not the border, is what separates the
-     pill from the painting — the gold edge reads 1.00:1 against the art over
-     most of its perimeter — so the shadow is structural and stays. */
-  .btn {
-    display: inline-flex; align-items: center; gap: 10px;
-    padding: 11px 23px 11px 17px;
-    border: 1.5px solid rgba(201, 162, 39, 0.85); border-radius: 999px;
-    background: var(--vermilion); color: #FFF3E2;
-    font-family: inherit; font-size: 11.5px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
-    cursor: pointer; text-decoration: none;
-    box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    transition: background 200ms ease, box-shadow 200ms ease, transform 120ms ease, border-color 200ms ease;
-  }
-  .btn .dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: #FFF6E6; box-shadow: 0 0 0 3px rgba(255, 246, 230, 0.18); }
-  /* vermilionLit #F2762F was 2.59:1 under the cream label — the worst figure in
-     the control. This is the lightest red that still lifts under a finger. */
-  .btn:hover { background: #E45926; box-shadow: 0 12px 28px -10px rgba(0,0,0,0.7), 0 0 22px -4px rgba(201,162,39,0.55), inset 0 1px 0 rgba(255,255,255,0.16); }
-  .btn:active { transform: translateY(1px); }
-  .btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
-  .btn.sm { padding: 9px 18px 9px 14px; font-size: 10.5px; gap: 8px; }
-  .btn.sm .dot { width: 8px; height: 8px; }
-
-  .btn.quiet { background: rgba(14, 20, 16, 0.62); border-color: rgba(243, 236, 217, 0.46); color: var(--cream); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
-  .btn.quiet .dot { background: var(--cream); box-shadow: 0 0 0 3px rgba(243, 236, 217, 0.14); }
-  .btn.quiet:hover { background: rgba(14, 20, 16, 0.74); border-color: var(--cream); }
-  .btn.danger { border-color: rgba(218, 70, 32, 0.7); color: #F6C9B6; }
-  .btn.danger .dot { background: var(--vermilion-lit); }
-  .btn.danger:hover { background: rgba(147, 41, 15, 0.72); border-color: var(--vermilion-lit); }
-
-  /* the label was translucent at 0.55 and so read off the fill it sits on:
-     2.29:1, the worst thing in the whole control */
-  .btn[disabled] {
-    background: var(--vermilion-deep); border-color: rgba(242, 118, 47, 0.3);
-    color: rgba(243, 236, 217, 0.78); cursor: not-allowed; box-shadow: none;
-  }
-  .btn[disabled] .dot { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(243, 236, 217, 0.42); }
-  .btn[disabled]:hover { background: var(--vermilion-deep); border-color: rgba(242, 118, 47, 0.3); box-shadow: none; }
-
-  .btn.loading { cursor: progress; background: var(--vermilion-deep); border-color: rgba(242, 118, 47, 0.5); color: #FFF3E2; }
-  .btn.loading .dot { background: var(--vermilion-lit); animation: sun-beat 1400ms cubic-bezier(.3,.6,.3,1) infinite; }
-  @keyframes sun-beat {
-    0%   { box-shadow: 0 0 0 0 rgba(242, 118, 47, 0.6); opacity: 1; }
-    70%  { box-shadow: 0 0 0 9px rgba(242, 118, 47, 0); opacity: 0.65; }
-    100% { box-shadow: 0 0 0 0 rgba(242, 118, 47, 0); opacity: 1; }
-  }
-
-  .sun-wait { display: inline-flex; align-items: center; gap: 14px; color: var(--cream); font-size: 13px; }
-  .sun-wait .ring { position: relative; width: 26px; height: 26px; flex: none; }
-  .sun-wait .ring i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--vermilion-lit); opacity: 0; animation: sun-out 1900ms cubic-bezier(.2,.7,.3,1) infinite; }
-  .sun-wait .ring i:nth-child(2) { animation-delay: 633ms; }
-  .sun-wait .ring i:nth-child(3) { animation-delay: 1266ms; }
-  .sun-wait .core { position: absolute; inset: 9px; border-radius: 50%; background: var(--vermilion); }
-  @keyframes sun-out {
-    0%   { transform: scale(0.25); opacity: 0; }
-    28%  { opacity: 0.9; }
-    100% { transform: scale(1); opacity: 0; }
-  }
-
-  .field-set { display: flex; flex-direction: column; gap: 6px; width: 100%; }
-  .field {
-    display: flex; align-items: center; gap: 10px; width: 100%;
-    padding: 10px 16px; background: var(--washi); border: 2px solid #2B2620; border-radius: 999px;
-    box-shadow: 0 8px 22px -12px rgba(0,0,0,0.75);
-    transition: box-shadow 200ms ease, border-color 200ms ease, background 200ms ease;
-  }
-  .field:focus-within { border-color: var(--vermilion); box-shadow: 0 0 0 3px rgba(218,70,32,0.28), 0 0 18px -2px rgba(242,118,47,0.55), 0 8px 22px -12px rgba(0,0,0,0.75); }
-  .field input, .field textarea {
-    flex: 1; min-width: 0; border: 0; background: transparent; outline: none;
-    font-family: inherit; font-size: 13.5px; letter-spacing: 0.08em; color: #2B2620; resize: none;
-  }
-  .field input::placeholder, .field textarea::placeholder { color: rgba(43,38,32,0.44); }
-  .field .lead { flex: none; width: 8px; height: 8px; border-radius: 50%; background: rgba(43,38,32,0.28); transition: background 200ms ease; }
-  .field:focus-within .lead { background: var(--vermilion); }
-  .field.area { border-radius: 14px; align-items: flex-start; padding: 12px 16px; }
-  .field.area .lead { margin-top: 5px; }
-  .field.area textarea { min-height: 74px; line-height: 1.55; }
-  .field.invalid { border-color: var(--vermilion); border-width: 3px; background: #F6E6DA; }
-  .field.invalid .lead { background: var(--vermilion); }
-  .field.locked { background: rgba(242,231,208,0.42); border-color: rgba(43,38,32,0.4); box-shadow: none; }
-  .field.locked input, .field.locked textarea { color: rgba(43,38,32,0.55); }
-  .field.readonly { background: rgba(242,231,208,0.9); border-color: rgba(43,38,32,0.35); }
-  .field.readonly input { letter-spacing: 0.03em; }
-  .field-help { font-size: 10.5px; line-height: 1.5; color: var(--scene-ink-dim); padding-left: 16px; }
-  .field-help.bad { color: #FFC7AE; }
-  /* On the create panel the help is full cream, faults included (Viktor,
-     2026-09-13). Under this file's veil the panel over the gate measures cream
-     5.00–5.65:1 and cream at .78 3.76–4.17:1; #FFC7AE works out to about 3.9:1
-     on the same worst patch, so it goes too. A fault is still said three ways
-     without it: the field's border doubles, the sentence changes, and the
-     warning below lists it. */
-  .create-band .field-help, .create-band .field-help.bad { color: var(--cream); }
-  .field-row { display: flex; gap: 10px; align-items: center; width: 100%; }
-  .field-row .field { flex: 1; }
-
-  .msg {
-    display: flex; gap: 12px; width: 100%;
-    padding: 12px 15px 13px; background: var(--band-solid);
-    border-left: 3px solid var(--sev-info); border-radius: 2px;
-    backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-    box-shadow: 0 12px 30px -18px rgba(0,0,0,0.8);
-  }
-  .msg .mark { flex: none; width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--sev-info); }
-  .msg .body { min-width: 0; }
-  .msg .head { display: block; font-size: 9.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--sev-info); margin-bottom: 3px; }
-  .msg p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--scene-ink); }
-  .msg ul { margin: 7px 0 0; padding-left: 16px; }
-  .msg li { font-size: 12px; color: var(--scene-ink-dim); margin: 2px 0; }
-  .msg.error   { border-left-color: var(--sev-error); }
-  .msg.error   .mark { background: #FF9068; }
-  .msg.error   .head { color: #FF9068; }
-  .msg.warning { border-left-color: var(--sev-warning); }
-  .msg.warning .mark { background: var(--sev-warning); }
-  .msg.warning .head { color: #E0BC46; }
-  .msg.success { border-left-color: var(--sev-success); }
-  .msg.success .mark { background: var(--sev-success); }
-  .msg.success .head { color: var(--sev-success); }
-
-  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-  .tag-word { font-size: 11px; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(169,209,71,0.55); color: #D6EBA4; background: rgba(169,209,71,0.1); }
-
-  /* the board */
-  .board-head { text-align: center; margin-bottom: 10px; padding: 8px 14px; background: var(--band); border-radius: 2px; }
-  .board-head h3 { font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', -apple-system, sans-serif; font-size: 15px; font-weight: 700; margin: 0; color: var(--cream); }
-  .board-head p { margin: 3px 0 0; font-size: 11px; color: var(--scene-ink-dim); }
-
-  /* The board is sized as the app sizes it (`board-geometry.ts`): a square is
-     20–44 px, the largest that fits, and the board's box is
-     min(62% of the window's height, rows × 46 − 2) tall, or 78% where the board
-     has a column of its own. The card around it (6 px frame, 12 px paper, 36 px
-     across both sides) is the template's and is counted inside that box. The
-     box scrolls both ways when the board is larger than it. */
-  .board-box {
-    --card: 36px;
-    container-type: size;
-    height: min(62cqh, calc(var(--rows) * 46px - 2px + var(--card)));
-    overflow: auto;
-  }
-  @container device (min-width: 1200px) and (min-height: 600px) {
-    .board-box { height: min(78cqh, calc(var(--rows) * 46px - 2px + var(--card))); }
-  }
-  .grid-card {
-    width: max-content; margin: 0 auto;
-    background: linear-gradient(160deg, var(--shoji-1), var(--shoji-2));
-    border: 6px solid #33261A; border-radius: 3px;
-    box-shadow: inset 0 0 0 1.5px rgba(201,162,39,0.6), 0 22px 50px -22px rgba(0,0,0,0.85);
-    padding: 12px;
-  }
-  .grid-card .grid {
-    --cell: clamp(20px, min((100cqw - var(--card) - (var(--cols) - 1) * 3px) / var(--cols), (100cqh - var(--card) - (var(--rows) - 1) * 3px) / var(--rows)), 44px);
-    display: grid; grid-template-columns: repeat(var(--cols), var(--cell)); grid-auto-rows: var(--cell); gap: 3px;
-  }
-
-  /* A square. The surfaces are the app's (`theme.ts`, GRID), because
-     `theme.test.ts` holds them to telling each other apart with the colour
-     taken out, which is what keeps a player from explaining a word already
-     answered (ADR 0015). The card, the holes and the face are the template's. */
-  .cell {
-    position: relative; width: var(--cell); height: var(--cell);
-    background: #FFFDF7; border: 1px solid rgba(43,38,32,0.55); border-radius: 2px;
-    display: grid; place-items: center; color: #2B2620;
-    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', -apple-system, sans-serif;
-    font-size: calc(var(--cell) * 0.55); font-weight: 400; line-height: 1; text-transform: uppercase;
-  }
-  .cell.off { background: rgba(43,38,32,0.46); border-color: rgba(43,38,32,0.46); }
-  .cell.guessed   { background: #F4EFE3; }
-  .cell.explained { background: #DED4BB; border-style: dashed; border-color: #5B534A; font-style: italic; }
-  .cell.own       { background: #DCE8C6; border-color: #3F5A2E; }
-  .cell.filling   { background: #BDC8AA; border-color: #3F5A2E; }
-  .cell.refused   { background: #E29880; border-color: #83280F; }
-  /* the square the next letter lands in: a ring inside it, not another tint */
-  .cell.cursor    { outline: 3px solid #2C3F20; outline-offset: -3px; }
-  .cell .num {
-    position: absolute; top: 1px; left: 2px;
-    font-size: max(8px, calc(var(--cell) * 0.3)); font-weight: 700; font-style: normal; line-height: 1;
-    color: #2B2620; pointer-events: none;
-  }
-
-  /* the sentences under the board: the keyboard, the crossing, and a refusal */
-  .board-note {
-    margin: 8px auto 0; max-width: 40rem; padding: 6px 12px;
-    background: var(--band); border-radius: 2px;
-    font-size: 11px; line-height: 1.5; color: var(--scene-ink-dim);
-  }
-  .board-note.refusal { color: var(--cream); border-left: 2px solid var(--vermilion-lit); }
-
-  /* dialog */
-  .modal-veil {
-    position: absolute; inset: 0; z-index: 20;
-    background: rgba(6,14,11,0.62); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
-    display: grid; place-items: center; padding: 22px;
-  }
-  .dialog {
-    width: min(410px, 100%);
-    background: linear-gradient(160deg, var(--shoji-1), var(--shoji-2));
-    border: 7px solid #33261A; border-radius: 3px;
-    box-shadow: inset 0 0 0 1.5px rgba(201,162,39,0.6), 0 26px 56px -22px rgba(0,0,0,0.85);
-    padding: 22px 22px 20px;
-  }
-  .dialog h3 { font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', -apple-system, sans-serif; font-weight: 700; font-size: 20px; margin: 0; color: var(--bark-deep); }
-  .dialog .rule { width: 58px; height: 2px; background: var(--vermilion); margin: 10px 0 12px; }
-  .dialog p { margin: 0; font-size: 12.5px; line-height: 1.6; color: rgba(28,26,26,0.82); }
-  .dialog .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; justify-content: flex-end; }
-
-  .btn.on-paper { background: var(--vermilion-deep); border-color: rgba(147,41,15,0.9); color: #FFF3E2; }
-  .btn.on-paper:hover { background: #A93214; }
-  .btn.on-paper.quiet { background: transparent; border-color: rgba(28,26,26,0.42); color: rgba(28,26,26,0.85); backdrop-filter: none; -webkit-backdrop-filter: none; }
-  .btn.on-paper.quiet .dot { background: rgba(28,26,26,0.6); box-shadow: none; }
-  .btn.on-paper.quiet:hover { background: rgba(28,26,26,0.07); border-color: rgba(28,26,26,0.7); }
-
-  /* ===================== the cloth =====================
-     The cloth the app lays today (Viktor, item 17), redrawn from
-     `garden/cloth.ts`, `garden/paint-cloth.ts` and `garden/RewardCloth.tsx`:
-
-       · the room behind goes to rgba(6, 17, 26, .5) over the first 25%
-       · a full-width band, the window's height less 160 held to 220–360 px,
-         centred; two halves grow in from the edges and meet at 58% of 1900 ms
-       · one pattern for the whole banner, the halves being windows onto it:
-         rings thinning towards the middle, five chrysanthemums, one solid disc
-       · a 5 px vermilion-deep leading edge, only while a half is still moving
-       · the words from 64%, rising 14 px over 684 ms
-     The paper is painted on a canvas by the script below; the words are text. */
-  .cloth { position: absolute; inset: 0; z-index: 20; }
-  .cloth canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
-  .cloth-words {
-    position: absolute; left: 0; right: 0; top: var(--band-top); height: var(--band-h);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 0 24px; text-align: center;
-    animation: cloth-words 684ms ease-out 1216ms both;
-  }
-  @keyframes cloth-words { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-
-  /* signage: the text face at 300, capitals held .42em apart; 23 px, 31 px from 600 wide */
-  .cloth-words h3 {
-    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', -apple-system, sans-serif;
-    font-weight: 300; font-size: 23px; line-height: 1.25; text-transform: uppercase;
-    letter-spacing: 0.42em; margin: 0 -0.42em 0 0; color: var(--bark-deep);
-  }
-  @container device (min-width: 600px) { .cloth-words h3 { font-size: 31px; } }
-  .cloth-words .rule { width: 15rem; max-width: 100%; height: 2px; background: var(--vermilion); margin-top: 12px; }
-  .cloth-words .summary { margin: 24px 0 0; max-width: 34rem; font-size: 17px; line-height: 1.5; color: rgba(28,26,26,0.78); }
-
-  /* Its own button, as the app draws it: opaque vermilion-deep, because paper
-     lets nothing through; signage lettering at 17 px; 12 px by 24 px; radius 2;
-     no edge, no dot, no shadow. Not the template's `.btn` (#184 leaves it out). */
-  .cloth-action {
-    margin-top: 32px;
-    font-family: 'Zen Kaku Gothic New', 'Hiragino Sans', 'Yu Gothic', -apple-system, sans-serif;
-    font-weight: 300; font-size: 17px; line-height: 1.25; text-transform: uppercase; letter-spacing: 0.42em;
-    padding: 12px calc(24px - 0.42em) 12px 24px;
-    border: 0; border-radius: 2px; background: var(--vermilion-deep); color: #FFF3E2; cursor: pointer;
-  }
-
-  /* ---------- footnotes under the stage ---------- */
-  .under { display: flex; flex-direction: column; gap: 14px; margin-top: 16px; }
-  .under .note {
-    border-left: 2px solid var(--page-line); padding-left: 16px; max-width: 78ch;
-    font-size: 13.5px; color: var(--page-dim); display: flex; flex-direction: column; gap: 8px;
-  }
-  .under .note strong { color: var(--page-ink); font-weight: 700; }
-  .under .note p { margin: 0; }
-  .under code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.88em; background: var(--page-rule); padding: 1px 5px; border-radius: 2px; }
-
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
-    .btn.loading .dot, .sun-wait .ring i { animation-duration: 1400ms !important; animation-iteration-count: infinite !important; }
-    /* the scene changes without travelling: no push, no bloom, no sun */
-    .scene .art { animation: none !important; transform: none !important; }
-    .bloom, .sunmark { display: none !important; }
-    /* the cloth is already down with its words on it; the screens swap in place */
-    .cloth-words { animation: none !important; }
-  }
+:root{
+  --duck:#E6EEEC; --tile:#FAFBFA; --ink:#1B2D38; --slate:#4C6170; --spruce:#2D6658;
+  --ochre:#F2C766; --wash:#F6E3B4; --rose:#E9CBC1; --stone:#C5D8D6; --line:#C3D0CD; --brick:#A33A2C; --sage:#D3E8DD; --paper:#EFE6D2; --fiesta:#B23A28;
+  --face:'Alegreya Sans','Gill Sans','Trebuchet MS',sans-serif;
+  --chrome:#2B3236; --chrome-fg:#E8EDEC; --chrome-dim:#A9B6B4;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#CBD5D3;color:var(--ink);font-family:var(--face);font-size:18px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font-family:inherit}
+
+/* ===================== scaffolding: the template's own, not the app's ===================== */
+.tpl-bar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding:10px 16px;background:var(--chrome);color:var(--chrome-fg);font:14px/1.3 system-ui,sans-serif}
+.tpl-bar b{font-weight:600}
+.tpl-bar .grp{display:flex;gap:4px;align-items:center}
+.tpl-bar .grp span{color:var(--chrome-dim);margin-right:4px}
+.tpl-bar button{font:13px system-ui,sans-serif;background:transparent;color:var(--chrome-fg);border:1px solid #56626A;border-radius:6px;padding:4px 9px;cursor:pointer}
+.tpl-bar button[aria-pressed="true"]{background:var(--chrome-fg);color:var(--chrome)}
+.tpl-where{margin-left:auto;color:var(--chrome-dim)}
+.tpl-body{display:grid;grid-template-columns:230px minmax(0,1fr);gap:16px;padding:16px}
+.tpl-map{font:13px/1.35 system-ui,sans-serif;background:#EEF2F1;border:1px dashed #8A9997;border-radius:8px;padding:10px;align-self:start;max-height:calc(100vh - 90px);overflow:auto}
+.map-head{margin:0 0 6px;font-weight:600;color:#3D4A4F}
+.map-group{margin:8px 0 2px;color:#5D6B70;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.node{display:block;width:100%;text-align:left;background:none;border:0;padding:3px 6px;border-radius:5px;cursor:pointer;color:#1F2A2E;font:13px system-ui,sans-serif}
+.node.sub{padding-left:16px;color:#4A575B}
+.node.here{background:var(--chrome);color:var(--chrome-fg)}
+.tpl-stage{min-width:0}
+.tpl-note{font:14px/1.5 system-ui,sans-serif;color:#2F3A3E;background:#EEF2F1;border:1px dashed #8A9997;border-radius:8px;padding:10px 14px;margin-top:12px;max-width:1440px}
+.tpl-note p{margin:0}
+.stage{height:var(--stage-h,900px);position:relative}
+html.bare body{background:var(--duck)}
+html.bare .tpl-bar,html.bare .tpl-map,html.bare .tpl-note{display:none}
+html.bare .tpl-body{display:block;padding:0}
+html.bare .stage{height:100vh}
+
+/* ===================== the app ===================== */
+.device{position:absolute;left:0;top:0;width:var(--device-w);height:var(--device-h);transform:scale(var(--device-scale,1));transform-origin:0 0;
+  background:var(--duck);overflow:hidden;box-shadow:0 0 0 1px #9FB0AD}
+html.bare .device{box-shadow:none}
+.screens{position:absolute;inset:0}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;background:var(--duck)}
+.screen.fade-in{animation:fadeIn 180ms ease-out both}
+.screen.shift-in{animation:shiftIn 180ms ease-out both}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes shiftIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.btn.loading .dot{animation:none}}
+/* the fiesta: a crossword filled in is celebrated the way an Andalusian street celebrates */
+@keyframes sway{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
+.fiesta{position:relative;overflow:hidden;background:var(--fiesta);color:#fff;border-radius:14px;padding:44px 22px 22px;box-shadow:0 0 0 1.5px var(--ink),4px 4px 0 0 var(--ink);
+  background-image:radial-gradient(rgba(255,255,255,.16) 3.5px,transparent 4px);background-size:20px 20px;background-position:10px 10px}
+.fiesta .flags{position:absolute;left:0;right:0;top:0;height:30px;display:flex;justify-content:space-around}
+.fiesta .flag{width:22px;height:26px;clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:50% 0}
+.fiesta .ole{font-size:56px;font-weight:700;line-height:1;letter-spacing:-.01em}
+.fiesta p{margin-top:8px;font-size:18px;color:#fff}
+.fiesta .tags{margin-top:14px}
+.fiesta .tag-word{color:var(--ink)}
+
+h1,h2,h3,p{margin:0}
+.wordmark{font-weight:700;font-size:20px;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.wordmark::before{content:"";width:16px;height:16px;border-radius:3px;background:var(--tile);box-shadow:0 0 0 1.5px var(--ink),2px 2px 0 0 var(--ink);transform:rotate(-6deg)}
+.title{font-weight:700;font-size:88px;line-height:.95;letter-spacing:-.015em}
+.lede{font-size:24px;color:var(--slate);line-height:1.4}
+.step-title{font-size:34px;font-weight:700;line-height:1.1}
+.h3{font-size:22px;font-weight:700;line-height:1.3}
+.hint{color:var(--slate);font-size:16px}
+.stack{display:flex;flex-direction:column;gap:18px}
+.stack-tight{display:flex;flex-direction:column;gap:10px}
+.row-btns{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+/* buttons: one loud action per screen, never the irreversible one */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-weight:700;font-size:20px;line-height:1;border:0;background:var(--spruce);color:#fff;
+  min-height:52px;padding:0 28px;border-radius:12px;cursor:pointer;box-shadow:0 0 0 1.5px var(--ink),3px 3px 0 0 var(--ink);white-space:nowrap}
+.btn .dot{display:none;width:10px;height:10px;border-radius:50%;background:var(--ochre);box-shadow:0 0 0 1.5px var(--ink)}
+.btn.loading .dot{display:inline-block;animation:pulse 900ms ease-in-out infinite alternate}
+.btn.loading{cursor:progress}
+@keyframes pulse{from{transform:scale(.7);opacity:.6}to{transform:scale(1.15);opacity:1}}
+.btn:disabled{background:#BFCBC8;color:#3E5058;box-shadow:0 0 0 1.5px #8A9997;cursor:not-allowed}
+.btn.quiet{background:var(--tile);color:var(--ink);box-shadow:0 0 0 1.5px var(--ink);font-size:17px;min-height:44px;padding:0 18px}
+.btn.quiet.loading{background:var(--tile)}
+.btn.link{background:none;box-shadow:none;color:var(--slate);font-weight:400;font-size:17px;min-height:44px;padding:0 4px;text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
+.btn.sm{font-size:14px;min-height:34px;padding:0 10px;font-weight:400}
+.btn:focus-visible{outline:3px solid var(--ochre);outline-offset:4px}
+.btn.tpl{font:13px system-ui,sans-serif;background:#EEF2F1;color:#2F3A3E;box-shadow:none;border:1px dashed #8A9997;min-height:30px;padding:0 9px;border-radius:6px}
+
+/* messages: a card with a mark; what kind it is is written, never only coloured */
+.msg{display:flex;gap:14px;background:var(--tile);border-radius:12px;padding:16px 18px;box-shadow:0 0 0 1.5px var(--ink)}
+.msg .mark{flex:none;width:26px;height:26px;border-radius:6px;display:grid;place-items:center;font-weight:700;font-size:16px;box-shadow:inset 0 0 0 1.5px var(--ink);background:var(--tile)}
+.msg.warning .mark{background:var(--ochre)}
+.msg.warning .mark::before{content:"!"}
+.msg.error .mark{background:var(--rose)}
+.msg.error .mark::before{content:"×"}
+.msg.success .mark{background:var(--spruce);color:#fff}
+.msg.success .mark::before{content:"✓"}
+.msg.info .mark::before{content:"i";font-style:italic}
+.msg .msg-body{flex:1;min-width:0}
+.msg .head{display:block;font-weight:700;font-size:19px;margin-bottom:2px}
+.msg.error .head{color:var(--brick)}
+.msg p{font-size:17px;color:var(--ink)}
+.msg ul{margin:6px 0 0;padding-left:20px;font-size:17px}
+
+/* fields */
+.field-set{display:flex;flex-direction:column;gap:6px}
+.field-set label{font-weight:700;font-size:17px}
+.field{display:block;background:var(--tile);border-radius:12px;box-shadow:0 0 0 1.5px var(--ink);padding:0}
+.field input,.field textarea{width:100%;border:0;background:transparent;font:inherit;font-size:19px;color:var(--ink);padding:12px 16px;border-radius:12px;resize:vertical}
+.field input:focus-visible,.field textarea:focus-visible{outline:3px solid var(--ochre);outline-offset:3px}
+.field.invalid{box-shadow:0 0 0 3px var(--brick)}
+.field.locked{opacity:.75}
+.field.readonly input{font-size:17px}
+.field-help{font-size:15px;color:var(--slate)}
+.field-help.bad{color:var(--brick);font-weight:700}
+.inline-status{font-size:16px}
+.inline-status.ok{color:var(--spruce);font-weight:700}
+.inline-status.ok::before{content:"✓ "}
+.inline-status.bad{color:var(--brick)}
+
+/* players */
+.players{list-style:none;margin:8px 0 0;padding:0}
+.players li{display:flex;align-items:baseline;gap:10px;padding:10px 0;border-top:1.5px solid var(--line)}
+.players li:last-child{border-bottom:1.5px solid var(--line)}
+.players .mk{width:11px;height:11px;border-radius:50%;flex:none;align-self:center;background:var(--ochre);box-shadow:0 0 0 1.5px var(--ink)}
+.players .mk.away{background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink)}
+.players .mk.empty{background:transparent;box-shadow:inset 0 0 0 1.5px var(--slate);border:0;opacity:.7}
+.players .nm{font-size:21px;font-weight:700}
+.players .tag{font-size:15px;color:var(--slate)}
+.players .away-t{margin-left:auto;font-size:15px;color:var(--slate);font-style:italic}
+.players .open{font-size:17px;color:var(--slate);font-style:italic}
+
+/* word lists */
+.word-list{list-style:none;margin:10px 0 0;padding:0}
+.word-list li{border-top:1.5px solid var(--line)}
+.word-list li:last-child{border-bottom:1.5px solid var(--line)}
+.word-list button{display:flex;align-items:baseline;gap:12px;width:100%;background:none;border:0;padding:10px 2px;text-align:left;cursor:pointer;color:var(--ink);min-height:44px}
+.word-list .ref{width:74px;flex:none;color:var(--slate);font-size:15px}
+.word-list .word{font-style:italic;font-size:22px}
+.word-list .state{margin-left:auto;font-size:15px;color:var(--slate)}
+.word-list .done .state{color:var(--spruce);font-weight:700}
+.word-list .done .state::before{content:"✓ "}
+.word-list .slots{letter-spacing:.2em;font-size:20px}
+.count-line{margin-top:10px;font-size:16px;color:var(--slate)}
+
+/* the board: the same tiles that hang on the line between the windows */
+.board-box{display:flex;justify-content:center}
+.grid{display:grid;grid-template-columns:repeat(var(--cols),var(--sq));grid-template-rows:repeat(var(--rows),var(--sq));gap:var(--gap)}
+.cell{position:relative;display:block;border-radius:5px;background:var(--tile);box-shadow:inset 0 0 0 1.5px var(--ink),2px 2px 0 0 rgba(27,45,56,.22);
+  display:grid;place-items:center;font-size:calc(var(--sq)*.58);line-height:1;padding-bottom:6%}
+.cell.off{background:none;box-shadow:none}
+.cell .num{position:absolute;top:3px;left:4px;font-size:max(9px,calc(var(--sq)*.25));font-weight:700;line-height:1;color:var(--slate)}
+.cell.guessed{font-weight:700;background:var(--sage);box-shadow:inset 0 0 0 2px var(--spruce),2px 2px 0 0 rgba(27,45,56,.22)}
+.cell.guessed::after{content:"";position:absolute;right:12%;bottom:14%;width:18%;height:9%;border-left:2px solid var(--spruce);border-bottom:2px solid var(--spruce);transform:rotate(-45deg)}
+.cell.explained{background:var(--paper);box-shadow:2px 2px 0 0 rgba(27,45,56,.22);outline:1.5px dashed var(--ink);outline-offset:-1.5px;font-style:italic;color:var(--ink)}
+.cell.filling{background:var(--wash)}
+.cell.refused{background:var(--rose);color:var(--ink);font-weight:700}
+.cell.refused::after{content:"";position:absolute;left:18%;right:18%;top:50%;height:2px;background:var(--brick);transform:rotate(-14deg)}
+.cell.cursor{z-index:1;box-shadow:inset 0 0 0 3px var(--spruce),2px 2px 0 0 var(--ink)}
+.cell.cursor::before{content:"";position:absolute;left:30%;right:30%;bottom:15%;height:2.5px;border-radius:2px;background:var(--spruce)}
+.board-head{display:flex;align-items:baseline;justify-content:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;text-align:center}
+.board-head h3{font-size:20px;font-weight:700}
+.board-head p{font-size:16px;color:var(--slate)}
+.board-notes{max-width:560px;margin:16px auto 0;display:flex;flex-direction:column;gap:6px}
+.board-note{font-size:15px;color:var(--slate);text-align:center}
+.board-note.refusal{color:var(--brick);font-weight:700;font-size:17px}
+
+/* the drawing */
+.scene svg{display:block;width:100%;height:auto}
+
+/* the room's frame */
+.app-head{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:20px;min-height:64px;padding:10px var(--pad);background:var(--duck);border-bottom:1.5px solid var(--line)}
+.app-head .status{flex:1;min-width:0;font-size:16px;color:var(--slate);text-align:center}
+.app-head .action{flex:none}
+.body{padding:24px var(--pad) 40px}
+.device[data-layout="wide"]{--pad:48px}
+.device[data-layout="tablet"]{--pad:32px}
+.device[data-layout="phone"]{--pad:18px}
+.device[data-layout="phone"] .app-head .status{display:none}
+.device[data-layout="phone"] .app-head{justify-content:space-between}
+
+.zones{display:grid;gap:40px;grid-template-columns:290px minmax(0,1fr) 290px;align-items:start}
+.zones > *{min-width:0}
+.device[data-layout="tablet"] .zones{grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}
+.device[data-layout="tablet"] .zone-middle{grid-column:1/-1;order:-1}
+.device[data-layout="phone"] .zones{grid-template-columns:minmax(0,1fr);gap:28px}
+.device[data-layout="phone"] .zone-middle{order:-1}
+.device[data-layout="phone"] .zone.left{order:2}
+.device[data-layout="phone"] .zone.right{order:1}
+.device[data-layout="phone"] .zones.teacher .zone.left{order:1}
+.device[data-layout="phone"] .zones.teacher .zone.right{order:2}
+.zone.empty{display:block}
+.device[data-layout="phone"] .zone.empty{display:none}
+.lobby-grid{display:grid;gap:56px;grid-template-columns:420px minmax(0,1fr);align-items:start}
+.device[data-layout="tablet"] .lobby-grid,.device[data-layout="phone"] .lobby-grid{grid-template-columns:minmax(0,1fr);gap:28px}
+.device[data-layout="tablet"] .lobby-grid .lobby-picture,.device[data-layout="phone"] .lobby-grid .lobby-picture{order:-1}
+
+/* screens without a room: the street, the form, the notice */
+.street{display:grid;grid-template-columns:minmax(0,1fr) 640px;gap:64px;align-items:center;min-height:calc(100% - 64px);padding:24px var(--pad) 120px;position:relative}
+.device[data-layout="tablet"] .street,.device[data-layout="phone"] .street{grid-template-columns:minmax(0,1fr);gap:24px;padding-bottom:40px}
+.device[data-layout="tablet"] .street .scene,.device[data-layout="phone"] .street .scene{order:-1;max-width:560px;margin:0 auto;width:100%}
+.device[data-layout="phone"] .title{font-size:54px}
+.device[data-layout="phone"] .lede{font-size:20px}
+.steps{list-style:none;margin:0;padding:0;display:flex;gap:40px;position:absolute;left:var(--pad);bottom:44px}
+.device[data-layout="tablet"] .steps,.device[data-layout="phone"] .steps{position:static;flex-direction:column;gap:12px}
+.steps li{font-size:17px;color:var(--slate);max-width:240px;display:flex;gap:12px;align-items:baseline}
+.steps b{flex:none;width:28px;height:28px;border-radius:5px;display:grid;place-items:center;font-size:16px;color:var(--ink);background:var(--tile);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.column{max-width:560px;margin:0 auto;padding:48px var(--pad) 48px}
+.device[data-layout="phone"] .column{padding-top:24px}
+.column .scene{max-width:440px;margin:0 auto 28px}
+.wait-line{display:flex;align-items:center;justify-content:center;gap:12px;font-size:20px}
+.wait-line .dot{width:12px;height:12px;border-radius:50%;background:var(--ochre);box-shadow:0 0 0 1.5px var(--ink);animation:pulse 900ms ease-in-out infinite alternate}
+@media (prefers-reduced-motion: reduce){.wait-line .dot{animation:none}}
+
+/* the end-game dialog */
+.modal-veil{position:absolute;inset:0;z-index:20;background:rgba(27,45,56,.45);display:grid;place-items:center;padding:16px}
+.dialog{width:min(440px,100%);background:var(--tile);border-radius:16px;padding:24px 24px 20px;box-shadow:0 0 0 1.5px var(--ink),4px 4px 0 0 var(--ink)}
+.dialog h3{font-size:24px;font-weight:700}
+.dialog p{margin-top:8px;font-size:17px;color:var(--ink)}
+.dialog .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;flex-wrap:wrap}
+
+.tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.tag-word{font-style:italic;font-size:17px;padding:2px 10px;border-radius:6px;background:var(--tile);box-shadow:inset 0 0 0 1.5px var(--ink)}
+
+/* ===================== three windows side by side (template scaffolding) ===================== */
+.frames{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.frame{margin:0}
+.frame figcaption{font:12px/1.3 system-ui,sans-serif;color:#3D4A4F;margin:0 0 5px}
+.dev-wrap{position:relative;overflow:hidden;box-shadow:0 0 0 1px #9FB0AD}
+.dev-wrap .device{box-shadow:none}
+html.bare .frames{display:block}
+html.bare .frame figcaption{display:none}
+html.bare .dev-wrap{box-shadow:none}
+
+/* ===================== the mode, chosen on /create ===================== */
+.mode-pick{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.device[data-layout="phone"] .mode-pick{grid-template-columns:1fr}
+.mode-opt{display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--tile);border:0;border-radius:12px;padding:14px 16px;box-shadow:0 0 0 1.5px var(--ink);cursor:pointer;color:var(--ink);font:inherit}
+.mode-opt[aria-checked="true"]{box-shadow:0 0 0 3px var(--spruce),3px 3px 0 0 var(--ink)}
+.mode-opt b{font-size:19px;display:flex;align-items:center;gap:10px}
+.mode-opt b::before{content:"";flex:none;width:16px;height:16px;border-radius:50%;background:var(--tile);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.mode-opt[aria-checked="true"] b::before{background:var(--spruce);box-shadow:inset 0 0 0 1.5px var(--ink),inset 0 0 0 4px var(--tile)}
+.mode-opt span{font-size:15px;color:var(--slate);line-height:1.4}
+.mode-opt:focus-visible{outline:3px solid var(--ochre);outline-offset:4px}
+
+/* ===================== a field that is wrong: three options to choose from ===================== */
+/* B: the fault is part of the field, a strip under the words it is about */
+.field .field-fault{list-style:none;margin:0;padding:10px 16px 12px;border-top:1.5px solid var(--brick);background:var(--rose);border-radius:0 0 12px 12px;font-size:16px;color:var(--ink);display:flex;flex-direction:column;gap:4px}
+.field-fault li{display:flex;gap:8px;align-items:baseline}
+.field-fault li::before{content:"×";font-weight:700;flex:none}
+
+/* ===================== the teacher's board ===================== */
+.cell.t-a{background:var(--wash);font-style:italic;color:var(--ink)}
+.cell.t-b{background:var(--stone);box-shadow:none;outline:1.5px dotted var(--ink);outline-offset:-1.5px;font-style:italic;color:var(--ink)}
+.sw{display:inline-block;width:15px;height:15px;border-radius:3px;vertical-align:-2px;margin-right:6px}
+.sw.a{background:var(--wash);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.sw.b{background:var(--stone);outline:1.5px dotted var(--ink);outline-offset:-1.5px}
+.word-list .row{display:flex;align-items:baseline;gap:12px;width:100%;padding:10px 2px;min-height:44px}
+.word-list .open .state{color:var(--ink);font-style:italic}
+.sum-head{display:flex;align-items:baseline;gap:8px;margin-top:18px}
+.sum-head h3{font-size:19px;font-weight:700}
+
+/* ===================== motion: the street wakes up ===================================
+   One language for every movement, taken from the drawing rather than from a library.
+   A screen opens the way a balcony does in the morning: the shutters swing open, the
+   neighbours lean out, the line is thrown across, and the page settles in from below,
+   one block after another. An answered word turns over square by square, like a tile
+   flipped to its other face, and its card is pegged on the line and swings until it
+   hangs still. A wrong answer shakes once, as a head does. A dialog lifts off the page.
+   A filled crossword is a fiesta: lanterns drop in one by one and sway, confetti falls,
+   the card springs up. Two curves only: --out for arriving, --spring for celebrating.
+   Every rule lives inside no-preference: with reduced motion the page is simply there. */
+:root{--out:cubic-bezier(.22,1,.36,1);--spring:cubic-bezier(.34,1.56,.64,1)}
+@media (prefers-reduced-motion: no-preference){
+  .enter .rise{animation:rise 620ms var(--out) both;animation-delay:calc(var(--i,0) * 70ms + 120ms)}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .enter .shutter{transform-box:fill-box;animation:swing 900ms var(--out) both}
+  .enter .shutter.sl{transform-origin:100% 50%}
+  .enter .shutter.sr{transform-origin:0 50%}
+  @keyframes swing{from{transform:scaleX(-1)}35%{transform:scaleX(-.6)}to{transform:scaleX(1)}}
+  .enter .card{animation:appear 500ms ease 1250ms both}
+  @keyframes appear{from{opacity:0}to{opacity:1}}
+  .enter .who{animation:lean 700ms var(--out) 420ms both}
+  @keyframes lean{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  .enter .line-draw{stroke-dasharray:1;animation:draw 1000ms var(--out) 700ms both}
+  @keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+  .cell.just{animation:turn 560ms var(--out) both;animation-delay:calc(var(--d,0) * 80ms)}
+  @keyframes turn{from{transform:perspective(300px) rotateX(-95deg);background:var(--tile)}55%{background:var(--sage)}to{transform:none}}
+  .scene .pegged{transform-box:fill-box;transform-origin:50% 0;animation:peg 1100ms var(--out) 420ms both}
+  @keyframes peg{0%{opacity:0;transform:translateY(-26px) rotate(-16deg)}45%{opacity:1;transform:translateY(0) rotate(9deg)}70%{transform:rotate(-4deg)}88%{transform:rotate(1.5deg)}100%{transform:none}}
+  .cell.refused{animation:shake 420ms var(--out) both}
+  @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(1px)}}
+  .modal-veil{animation:veil 260ms ease-out both}
+  @keyframes veil{from{opacity:0}to{opacity:1}}
+  .dialog{animation:lift 460ms var(--out) 60ms both}
+  @keyframes lift{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}
+  .field .field-fault{animation:unfold 420ms var(--out) both}
+  @keyframes unfold{from{clip-path:inset(0 0 100% 0);opacity:0}to{clip-path:inset(0 0 0 0);opacity:1}}
+  .msg{animation:rise 520ms var(--out) both}
+  .fiesta{animation:spring 760ms var(--spring) 200ms both}
+  @keyframes spring{from{opacity:0;transform:translateY(20px) scale(.92)}to{opacity:1;transform:none}}
+  .fiesta .flag{animation:drop 640ms var(--spring) both,sway 2.4s ease-in-out infinite alternate;animation-delay:calc(var(--k) * 70ms + 400ms),calc(var(--k) * 70ms + 1040ms)}
+  .scene .lantern{transform-box:fill-box;transform-origin:50% 0;animation:drop 760ms var(--spring) both,sway 2.6s ease-in-out infinite alternate;animation-delay:calc(var(--k) * 80ms + 300ms),calc(var(--k) * 80ms + 1060ms)}
+  @keyframes drop{from{opacity:0;transform:translateY(-30px)}to{opacity:1;transform:none}}
+  @keyframes sway{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+  .scene .confetti{animation:fall 1800ms var(--out) both;animation-delay:calc(var(--k) * 45ms + 500ms)}
+  @keyframes fall{from{opacity:0;transform:translateY(-140px) rotate(-120deg)}20%{opacity:1}to{opacity:1;transform:none}}
+  .btn,.mode-opt{transition:transform 160ms var(--out),box-shadow 160ms var(--out),background-color 220ms ease}
+  .btn:not(.link):not(.tpl):not(:disabled):hover{transform:translate(-1px,-1px);box-shadow:0 0 0 1.5px var(--ink),4px 4px 0 0 var(--ink)}
+  .btn:not(.link):not(.tpl):not(:disabled):active{transform:translate(2px,2px);box-shadow:0 0 0 1.5px var(--ink),1px 1px 0 0 var(--ink);transition-duration:60ms}
+  .mode-opt:hover{transform:translateY(-1px)}
+  .word-list button{transition:background-color 200ms ease}
+  .word-list button:hover{background:rgba(255,255,255,.5)}
+}
 </style>
-
-<div class="wrap">
-
-  <header class="masthead">
-    <p class="eyebrow">Word Garden · redesign 1.3.0 · PRD #145</p>
-    <h1>Every screen the game can be on, and every way it gets there</h1>
-    <p class="standfirst">
-      Click through it: create a game, watch the words fail to fit, land in the lobby, start it or
-      be refused, play, end it early. The map on the left is the real state machine out of
-      <code>room-screen.ts</code> — nothing here is a screen the code cannot actually reach.
-    </p>
-  </header>
-
-  <div class="board">
-    <nav class="map" id="map" aria-label="States"></nav>
-
-    <div>
-      <div class="bar">
-        <span class="toggle-label">You are</span>
-        <span class="toggle" role="group" aria-label="Which player">
-          <button type="button" data-role="host" aria-pressed="true">Host</button>
-          <button type="button" data-role="guest" aria-pressed="false">Guest</button>
-        </span>
-
-        <span class="toggle-label">Word list</span>
-        <span class="toggle" role="group" aria-label="How many words">
-          <button type="button" data-size="few" aria-pressed="true">6 words</button>
-          <button type="button" data-size="many" aria-pressed="false">18 words</button>
-        </span>
-
-        <span class="toggle-label">Window</span>
-        <span class="toggle" role="group" aria-label="Window size">
-          <button type="button" data-width="1440" aria-pressed="true">1440 × 900</button>
-          <button type="button" data-width="834" aria-pressed="false">834 × 1112</button>
-          <button type="button" data-width="375" aria-pressed="false">375 × 812</button>
-        </span>
-      </div>
-
-      <div class="stage" id="stage">
-        <div class="device" id="device">
-          <div class="scene scene-gate" id="sceneGate"><div class="art"></div></div>
-          <div class="scene scene-doors" id="sceneDoors"><div class="art"></div></div>
-          <div class="scene scene-hall" id="sceneHall"><div class="art"></div></div>
-          <div class="veil"></div>
-          <canvas class="petals" id="petals" aria-hidden="true"></canvas>
-          <div id="screens"></div>
-          <div class="bloom" id="bloom"></div>
-          <div class="sunmark" id="sunmark"></div>
-          <span class="where" id="where">gate</span>
-        </div>
-      </div>
-
-      <div class="under">
-        <div class="note" id="stateNote"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="under">
-    <div class="note">
-      <p>
-        <strong>Revised after Viktor's hand review of 1.3.0 (#183).</strong> The petals of the scene
-        prototype; a screen that fades with its picture; the cloth the app lays today; full-cream help
-        on the create panel; every screen at 834 × 1112 and 375 × 812 as well as 1440 × 900; and the
-        parts of the room the app has and this drawing lacked: square numbers, the cursor, the
-        states of a square, the notes under the board, “N of M answered”, the presence notice, the
-        away mark, the player line, the invite lede, the copy result, and the loading buttons.
-      </p>
-      <p>
-        <strong>Comparing with the app.</strong> Add <code>?bare</code> to this file's address and the
-        stage becomes the browser window at scale 1, with no page around it. With
-        <code>&amp;state=playing&amp;role=guest&amp;size=many</code> it opens on that state. Opened
-        at 375 × 812, that is the app's screen at 375 × 812.
-      </p>
-      <p>
-        <strong>Switch the word list to 18 and go to <em>playing</em>.</strong> That is the panel
-        problem, made visible: two long hint paragraphs plus a list per side, in a zone that is
-        250&nbsp;px wide and one screen tall. The zones scroll — which is what the app does today —
-        but scrolling is what a player has to do <em>while somebody is talking to them</em>. Worth
-        deciding what gives: the hints, the list, or the width.
-      </p>
-    </div>
-  </div>
-
+</head>
+<body>
+<div class="tpl-bar" aria-label="Template controls (not part of the app)">
+  <b>Template · Across the Street</b>
+  <div class="grp"><span>Mode</span><button type="button" data-mode="pair">pair</button><button type="button" data-mode="lesson">lesson</button></div>
+  <div class="grp"><span>Role</span><button type="button" data-role="host">host</button><button type="button" data-role="guest">guest</button></div>
+  <div class="grp"><span>Words</span><button type="button" data-size="few">few</button><button type="button" data-size="many">many</button></div>
+  <div class="grp"><span>Width</span><button type="button" data-width="all">all three</button><button type="button" data-width="1440">1440</button><button type="button" data-width="834">834</button><button type="button" data-width="375">375</button></div>
+  <span class="tpl-where" id="where"></span>
 </div>
-
+<div class="tpl-body">
+  <nav class="tpl-map" id="map" aria-label="The state tree (not part of the app)"></nav>
+  <div class="tpl-stage">
+    <div class="frames" id="stage"></div>
+    <div class="tpl-note" id="stateNote"></div>
+  </div>
+</div>
 <script>
 (function () {
   "use strict";
 
-  /* ============================ the words ============================ */
+  /* ============================ state of the template ============================ */
+  var state = { key: "home", role: "host", size: "few", width: "all", mode: "pair" };
   var FEW = ["apple", "bread", "cheese", "dinner", "engine", "flower"];
   var MANY = ["apple", "bread", "cheese", "dinner", "engine", "flower", "garden", "harbour",
               "island", "jacket", "kitchen", "lantern", "morning", "needle", "orchard",
               "pattern", "quarter", "ribbon"];
-
-  var state = { key: "home", role: "host", size: "few", width: "1440" };
-
   function words() { return state.size === "many" ? MANY : FEW; }
+  function roomWords() { return BOARDS[state.size].words.map(function (w) { return w.text; }); }
   function isHost() { return state.role === "host"; }
-
-  function esc(s) {
-    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  }
+  function lesson() { return state.mode === "lesson"; }
+  function isTeacher() { return lesson() && isHost(); }
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  /* the context of the window being drawn: three are drawn at once */
+  var ctx = { w: 1440, h: 900, layout: "wide", idx: 0 };
+  function uid(base) { return base + "-" + ctx.idx; }
 
   /* ============================ copy from the code ============================ */
-  // Both hints now name the mark. Without that the lit dot is a decoration a
-  // player has to guess the meaning of — and on the guess side there is no
-  // word to cross out, so the mark is carrying the state on its own.
-  var EXPLAIN_HINT = "These are written into the grid for you alone, in italics on the dashed squares. Explain each one out loud — say anything except the word itself. A lit dot means it has been answered. Tap one to find it in the grid.";
-  var GUESS_HINT = "The others explain these to you. Type them into the highlighted squares, and name one by its number to ask for it again. A lit dot means it has been answered. Tap one to go to its first empty square.";
-
+  var EXPLAIN_HINT = "These are written into the grid for you alone, in italics on the dashed squares. Explain each one out loud: say anything except the word itself. Tap one to find it in the grid.";
+  var GUESS_HINT = "The others explain these to you. Type them into the highlighted squares, and name one by its number to ask for it again. Tap one to go to its first empty square.";
+  var KEYBOARD_HINT = "The arrow keys move around the whole grid, square by square. Backspace clears the square you are in, or steps back when it is already empty.";
+  var CROSSING_HINT = "Two of your words cross. On the shared square, click it again or press the space bar to swap between them.";
+  var REFUSAL_LINE = "That is not the word. The letters clear in a moment. Try again as often as you like.";
   var UNAVAILABLE = {
-    missing:    ["There is no game at this link", "It may have been mistyped, or the room may have been cleaned up — rooms are kept for 24 hours.", ""],
-    expired:    ["This room has expired", "Rooms are kept for 24 hours after they are created, and this one is past that, so nobody can join it any more. Ask whoever invited you to start a new game.", ""],
-    started:    ["This game has already begun", "The words were dealt out among the players who were in the room at the time, so it takes no new players — ask whoever invited you for a link to the next game.", ""],
-    finished:   ["This game is over", "The room has been closed. Rooms are not replayed, so there is nothing left to join here; start a new game and send the others your own link.", ""],
-    full:       ["The room is full", "This game is played by exactly two people, and this room has both of them. Start a game of your own and send its link to whoever you want to play with.", ""],
-    refused:    ["The room would not take you in", "In the moment it took to pick a nickname, somebody else may have taken the last seat or the game may have started. Start a game of your own and send its link to whoever you want to play with.", ""],
-    connection: ["Could not reach the game", "Check your connection and reload the page — the room is still there.", "error"]
+    missing:    ["There is no game at this link", "It may have been mistyped, or the room may have been cleaned up. Rooms are kept for 24 hours.", "info"],
+    expired:    ["This room has expired", "Rooms are kept for 24 hours after they are created, and this one is past that, so nobody can join it any more. Ask whoever invited you to start a new game.", "info"],
+    started:    ["This game has already begun", "The words were dealt out among the players who were in the room at the time, so it takes no new players. Ask whoever invited you for a link to the next game.", "info"],
+    finished:   ["This game is over", "The room has been closed. Rooms are not replayed, so there is nothing left to join here; start a new game and send the others your own link.", "info"],
+    full:       ["The room is full", "This game is played by exactly two people, and this room has both of them. Start a game of your own and send its link to whoever you want to play with.", "info"],
+    refused:    ["The room would not take you in", "In the moment it took to pick a nickname, somebody else may have taken the last seat or the game may have started. Start a game of your own and send its link to whoever you want to play with.", "info"],
+    connection: ["Could not reach the game", "Check your connection and reload the page. The room is still there.", "error"]
+  };
+  var UNAVAILABLE_LESSON = {
+    full:    ["This lesson is full", "A lesson is played by two players, and this room has both of them. Ask your teacher which room is yours.", "info"],
+    started: ["This lesson has already begun", "The words were dealt out to the two players who were in the room at the time. Ask your teacher which room is yours.", "info"]
   };
 
-  /* ============================ pieces ============================ */
-  function btn(label, cls, attrs) {
-    return '<button type="button" class="btn ' + (cls || "") + '" ' + (attrs || "") + '><span class="dot"></span>' + esc(label) + '</button>';
+  /* ============================ the drawing ============================
+     An Andalusian street: two whitewashed houses facing each other, terracotta eaves,
+     wrought-iron balconies with geraniums, azulejo tiles round the doors. A neighbour
+     stands at each balcony with a tin-can telephone; the line between the cans carries
+     every answered word as a tile. Between them, at the end of the street, a third
+     house: its shutters stay closed in a pair game, and in a lesson the teacher watches
+     from its balcony.
+     The people react to the room: the one who explains talks and gestures, the one who
+     listens smiles, both cheer when the crossword is full.
+       right:  "here" | "away" (curtains drawn) | "empty" (nobody yet) | "shut" (shutters closed)
+       line:   "taut" | "slack" (ended early) | "loose" (one end only) | "none"
+       mood:   "talk" | "wave" | "wait" | "cheer" | "calm"
+       teacher: "here" | "away" | absent (a pair game) */
+  var INK = "#1B2D38", LIT = "#F2C766", DARK = "#9DB3B6", ROSE = "#E9CBC1", STONE = "#C5D8D6",
+      SPRUCE = "#2D6658", TILE = "#FAFBFA", CAN = "#E3EAE9", WASH = "#F6E3B4";
+  var WHITE = "#FBF7EE", SHADE = "#EDE3D2", TERRA = "#C2603A", AZUL = "#2E5C8A", GERA = "#C8412E", POT = "#B4643C", LEAF = "#3F7A4E";
+  var SKIN = ["#E9B892", "#C08A62", "#8E5E40"], HAIR = ["#3B2A20", "#1B2D38", "#A8AFB2"];
+  var P0 = [196, 222], P2 = [444, 236];
+  var CROPS = { full: "0 30 640 490", top: "0 40 640 312", band: "0 130 640 226" };
+
+  function along(t, sag) {
+    var P1 = [320, 300 + sag], u = 1 - t;
+    return [u * u * P0[0] + 2 * u * t * P1[0] + t * t * P2[0], u * u * P0[1] + 2 * u * t * P1[1] + t * t * P2[1]];
   }
-
-  function go(label, target, cls) {
-    return '<button type="button" class="btn ' + (cls || "") + '" data-go="' + target + '"><span class="dot"></span>' + esc(label) + '</button>';
+  function attr(o) { return Object.keys(o).map(function (k) { return k + '="' + o[k] + '"'; }).join(" "); }
+  /* an arm drawn as a sleeve with an ink edge, ending in a hand */
+  function arm(sx, sy, ex, ey, hx, hy, shirt, skin) {
+    var d = "M" + sx + " " + sy + "Q" + ex + " " + ey + " " + hx + " " + hy;
+    return '<path d="' + d + '" fill="none" stroke="' + INK + '" stroke-width="10" stroke-linecap="round"/>' +
+      '<path d="' + d + '" fill="none" stroke="' + shirt + '" stroke-width="7" stroke-linecap="round"/>' +
+      '<circle cx="' + hx + '" cy="' + hy + '" r="5" fill="' + skin + '" stroke="' + INK + '" stroke-width="1.5"/>';
   }
-
-  function msg(kind, head, text, extra) {
-    return '<div class="msg ' + kind + '"><span class="mark"></span><div class="body">' +
-      '<span class="head">' + esc(head) + '</span><p>' + esc(text) + '</p>' + (extra || "") +
-      '</div></div>';
+  /* a person at a window, head at (x, y); `can` is where the can is held, in street coordinates */
+  function person(o) {
+    var f = o.facing || 1, s = (o.s || 1) * 1.12, out = '<g transform="translate(' + o.x + ' ' + o.y + ') scale(' + s + ')">';
+    out += '<path d="M-25 62C-26 8 26 8 25 62Z" fill="' + o.shirt + '" stroke="' + INK + '" stroke-width="1.6"/>';
+    out += '<rect x="-5" y="11" width="10" height="10" fill="' + o.skin + '" stroke="' + INK + '" stroke-width="1.4"/>';
+    var sx = -f * 15, sy = 31;
+    if (o.arm === "gesture") { out += arm(sx, sy, -f * 34, 30, -f * 31, 4, o.shirt, o.skin) + '<path d="M' + (-f * 31) + ' -1v-6M' + (-f * 35) + ' 0l-3-5M' + (-f * 27) + ' 0l3-5" stroke="' + INK + '" stroke-width="1.6" stroke-linecap="round"/>'; }
+    if (o.arm === "wave") { out += arm(sx, sy, -f * 36, 18, -f * 30, -14, o.shirt, o.skin); }
+    if (o.arm === "cheer") { out += arm(sx, sy, -f * 34, 6, -f * 24, -30, o.shirt, o.skin); }
+    if (o.arm === "rest") { out += arm(sx, sy, -f * 26, 46, -f * 8, 50, o.shirt, o.skin); }
+    if (o.arm === "note") {
+      out += '<rect x="-15" y="22" width="30" height="20" rx="2" fill="' + TILE + '" stroke="' + INK + '" stroke-width="1.5"/>' +
+        '<path d="M-10 28h20M-10 33h20M-10 38h12" stroke="' + SLATE + '" stroke-width="1.2"/>' +
+        '<circle cx="-15" cy="34" r="4.5" fill="' + o.skin + '" stroke="' + INK + '" stroke-width="1.4"/><circle cx="15" cy="34" r="4.5" fill="' + o.skin + '" stroke="' + INK + '" stroke-width="1.4"/>';
+    }
+    if (o.can) {
+      var hx = (o.can[0] - o.x) / s, hy = (o.can[1] - o.y) / s;
+      out += '<rect x="' + (hx - 6.5) + '" y="' + (hy - 8.5) + '" width="13" height="17" rx="2" fill="' + CAN + '" stroke="' + INK + '" stroke-width="1.6"/>';
+      out += arm(-sx, sy, (-sx + hx) / 2 + f * 4, Math.max(sy, hy) + 12, hx - f * 5, hy + 3, o.shirt, o.skin);
+    }
+    /* the head */
+    out += '<circle cx="0" cy="-2" r="16" fill="' + o.hair + '" stroke="' + INK + '" stroke-width="1.6"/>';
+    if (o.bun) { out += '<circle cx="' + (-f * 11) + '" cy="-14" r="7" fill="' + o.hair + '" stroke="' + INK + '" stroke-width="1.6"/>'; }
+    out += '<circle cx="0" cy="2" r="14" fill="' + o.skin + '" stroke="' + INK + '" stroke-width="1.6"/>';
+    out += '<path d="M-14 -2Q0 -14 14 -4" fill="' + o.hair + '" stroke="none"/>';
+    var ex = f * 2, ey = o.face === "think" ? -1 : 1;
+    out += '<circle cx="' + (ex - 5) + '" cy="' + ey + '" r="1.9" fill="' + INK + '"/><circle cx="' + (ex + 5) + '" cy="' + ey + '" r="1.9" fill="' + INK + '"/>';
+    if (o.glasses) { out += '<g fill="none" stroke="' + INK + '" stroke-width="1.3"><circle cx="' + (ex - 5) + '" cy="' + ey + '" r="4.2"/><circle cx="' + (ex + 5) + '" cy="' + ey + '" r="4.2"/><path d="M' + (ex - 0.8) + ' ' + ey + 'h1.6"/></g>'; }
+    out += '<circle cx="' + (ex - 8) + '" cy="7" r="3" fill="' + ROSE + '" opacity=".8"/><circle cx="' + (ex + 8) + '" cy="7" r="3" fill="' + ROSE + '" opacity=".8"/>';
+    var mx = f * 3;
+    if (o.face === "talk") { out += '<ellipse cx="' + mx + '" cy="9.5" rx="3.2" ry="2.8" fill="' + INK + '"/>'; }
+    else if (o.face === "grin") { out += '<path d="M' + (mx - 5.5) + ' 7.5h11q-5.5 7.5-11 0Z" fill="' + INK + '"/>'; }
+    else if (o.face === "calm" || o.face === "think") { out += '<path d="M' + (mx - 3) + ' 10h6" stroke="' + INK + '" stroke-width="1.6" stroke-linecap="round"/>'; }
+    else { out += '<path d="M' + (mx - 4) + ' 8.5q4 4 8 0" fill="none" stroke="' + INK + '" stroke-width="1.6" stroke-linecap="round"/>'; }
+    return out + '</g>';
   }
-
-  function stepTitle(t) { return '<h2 class="step-title">' + esc(t) + '</h2>'; }
-
-  function players(away) {
-    var people = [
-      { name: "Viktor", host: true, you: isHost() },
-      { name: "Olena", host: false, you: !isHost() }
-    ];
-    var rows = people.map(function (p) {
-      var isAway = (away === "self" && p.you) || (away === "other" && !p.you);
-      return '<li>' + esc(p.name) +
-        (p.host ? ' <span class="badge">host</span>' : '') +
-        (p.you ? ' <span class="badge you">you</span>' : '') +
-        (isAway ? ' <span class="badge away">away for 2 min</span>' : '') + '</li>';
+  var SLATE = "#4C6170";
+  var MOODS = {
+    talk:  { L: ["talk", "gesture"], R: ["smile", "rest"], T: "smile" },
+    wave:  { L: ["smile", "wave"], R: ["smile", "wave"], T: "smile" },
+    wait:  { L: ["smile", "rest"], R: ["smile", "rest"], T: "smile" },
+    cheer: { L: ["grin", "cheer"], R: ["grin", "cheer"], T: "grin" },
+    calm:  { L: ["calm", "rest"], R: ["calm", "rest"], T: "calm" }
+  };
+  function eave(x, y, w) {
+    var d = "M" + x + " " + y + "h" + w + "v8";
+    for (var i = 0; i < w; i += 12) { d += "a6 6 0 0 1 -12 0"; }
+    return '<path d="' + d + 'Z" fill="' + TERRA + '"/>';
+  }
+  function rail(x1, x2, y, h) {
+    h = h || 34;
+    var s = '<rect x="' + (x1 - 6) + '" y="' + (y + h) + '" width="' + (x2 - x1 + 12) + '" height="7" rx="1.5" fill="' + INK + '"/>';
+    var d = "M" + x1 + " " + y + "H" + x2 + "M" + x1 + " " + (y + h - 4) + "H" + x2;
+    for (var x = x1; x <= x2; x += 8) { d += "M" + x + " " + y + "V" + (y + h); }
+    s += '<path d="' + d + '" fill="none" stroke-width="1.6"/><path d="M' + x1 + ' ' + y + 'H' + x2 + '" stroke-width="3.5"/>';
+    for (var c = x1 + 8; h > 20 && c < x2; c += 16) { s += '<circle cx="' + c + '" cy="' + (y + 9) + '" r="3" fill="none" stroke-width="1.3"/>'; }
+    return s;
+  }
+  function geraniums(x, y) {
+    return '<path d="M' + (x - 9) + ' ' + y + 'h18l-3 14h-12Z" fill="' + POT + '"/>' +
+      '<path d="M' + (x - 8) + ' ' + y + 'c2-8 6-10 8-12M' + (x + 6) + ' ' + y + 'c-1-7-3-9-6-12" fill="none" stroke="' + LEAF + '" stroke-width="2"/>' +
+      '<circle cx="' + (x - 6) + '" cy="' + (y - 8) + '" r="4.5" fill="' + GERA + '"/><circle cx="' + (x + 2) + '" cy="' + (y - 13) + '" r="5" fill="' + GERA + '"/><circle cx="' + (x + 7) + '" cy="' + (y - 5) + '" r="4" fill="' + GERA + '"/>';
+  }
+  function wallPot(x, y) {
+    return '<path d="M' + x + ' ' + (y - 8) + 'v6" stroke-width="1.3"/><path d="M' + (x - 6) + ' ' + y + 'h12l-2 10h-8Z" fill="' + AZUL + '"/>' +
+      '<circle cx="' + (x - 3) + '" cy="' + (y - 3) + '" r="3" fill="' + GERA + '" stroke-width="1.2"/><circle cx="' + (x + 3) + '" cy="' + (y - 4) + '" r="3" fill="' + GERA + '" stroke-width="1.2"/>';
+  }
+  function azulejoDoor(x, y) {
+    var s = '<rect x="' + (x - 8) + '" y="' + (y - 10) + '" width="68" height="' + (526 - y) + '" fill="' + AZUL + '"/>';
+    for (var ty = y - 4; ty < 512; ty += 12) {
+      s += '<rect x="' + (x - 5) + '" y="' + ty + '" width="4" height="4" fill="' + WHITE + '" stroke="none" transform="rotate(45 ' + (x - 3) + ' ' + (ty + 2) + ')"/>';
+      s += '<rect x="' + (x + 53) + '" y="' + ty + '" width="4" height="4" fill="' + WHITE + '" stroke="none" transform="rotate(45 ' + (x + 55) + ' ' + (ty + 2) + ')"/>';
+    }
+    return s + '<path d="M' + x + ' 516v-50a26 26 0 0 1 52 0v50Z" fill="' + SPRUCE + '"/><path d="M' + (x + 26) + ' 446v70" stroke-width="1.4"/>';
+  }
+  function rejas(x, y, lit) {
+    var d = "";
+    for (var i = 8; i < 56; i += 8) { d += "M" + (x + i) + " " + y + "v78"; }
+    return '<rect x="' + x + '" y="' + y + '" width="56" height="78" rx="3" fill="' + (lit ? LIT : DARK) + '"/><path d="' + d + 'M' + x + ' ' + (y + 26) + 'h56M' + x + ' ' + (y + 52) + 'h56" stroke-width="1.5"/>' +
+      '<rect x="' + (x - 4) + '" y="' + (y + 78) + '" width="64" height="5" rx="1" fill="' + INK + '"/>';
+  }
+  function shutters(x1, x2, y1, y2) {
+    var s = "";
+    [[x1 - 17, x1 - 1, "sl"], [x2 + 1, x2 + 17, "sr"]].forEach(function (p) {
+      s += '<g class="shutter ' + p[2] + '"><rect x="' + p[0] + '" y="' + y1 + '" width="' + (p[1] - p[0]) + '" height="' + (y2 - y1) + '" fill="' + SPRUCE + '"/>';
+      var d = "";
+      for (var y = y1 + 8; y < y2; y += 8) { d += "M" + (p[0] + 3) + " " + y + "H" + (p[1] - 3); }
+      s += '<path d="' + d + '" stroke="' + TILE + '" stroke-width="1" opacity=".5"/></g>';
     });
-    // The size said as a requirement, as PlayerList.tsx says it.
-    return '<section><h3>In the room</h3>' +
-      '<p class="players-line">A game is played by exactly 2 people.</p>' +
-      '<ul class="players">' + rows.join("") + '</ul></section>';
+    return s;
+  }
+  function closedShutters(path, cx, y1, y2) {
+    var d = "";
+    for (var y = y1 + 10; y < y2; y += 9) { d += "M" + (cx - 36) + " " + y + "H" + (cx + 36); }
+    return '<path d="' + path + '" fill="' + SPRUCE + '"/><path d="M' + cx + ' ' + (y1 - 2) + 'V' + y2 + '" stroke-width="1.6"/>' +
+      '<path d="' + d + '" stroke="' + TILE + '" stroke-width="1" opacity=".45"/>';
+  }
+  function curtains(x1, x2, top, bottom) {
+    var m = (x1 + x2) / 2;
+    return '<path d="M' + (x1 + 4) + ' ' + bottom + 'V' + (top + 40) + 'c4-22 18-34 ' + (m - x1 - 4) + '-37c-8 30-8 ' + (bottom - top - 40) + ' 0 ' + (bottom - top - 3) + 'Z" fill="' + ROSE + '" stroke-width="1.6"/>' +
+      '<path d="M' + (x2 - 4) + ' ' + bottom + 'V' + (top + 40) + 'c-4-22-18-34-' + (x2 - m - 4) + '-37c8 30 8 ' + (bottom - top - 40) + ' 0 ' + (bottom - top - 3) + 'Z" fill="' + ROSE + '" stroke-width="1.6"/>';
+  }
+  function letterTiles(letters, sag) {
+    var n = letters.length, out = "";
+    letters.forEach(function (ch, i) {
+      var t = n === 1 ? 0.5 : 0.24 + (0.52 * i) / (n - 1), p = along(t, sag), rot = (i % 2 ? 4 : -4);
+      out += '<g class="card" transform="translate(' + p[0].toFixed(1) + ' ' + p[1].toFixed(1) + ') rotate(' + rot + ')">' +
+        '<rect x="-14" y="5" width="28" height="28" rx="4" fill="' + TILE + '" stroke="' + INK + '" stroke-width="1.6"/>' +
+        '<text x="0" y="25" text-anchor="middle" font-family="Alegreya Sans, sans-serif" font-weight="700" font-size="18" fill="' + INK + '">' + esc(ch) + '</text>' +
+        '<rect x="-2.5" y="-4" width="5" height="12" rx="1.5" fill="' + SPRUCE + '"/></g>';
+    });
+    return out;
+  }
+  function wordCards(list, sag) {
+    var n = list.length, out = "";
+    list.forEach(function (w, i) {
+      var t = n === 1 ? 0.5 : 0.16 + (0.68 * i) / (n - 1), p = along(t, sag), rot = (i % 2 ? 3 : -3);
+      var wd = Math.max(30, w.length * 8.2 + 12), lift = (i % 2) ? 34 : 4;
+      out += '<g class="card" transform="translate(' + p[0].toFixed(1) + ' ' + p[1].toFixed(1) + ') rotate(' + rot + ')"><g' + (w === JUST ? ' class="pegged"' : '') + '>' +
+        (lift > 4 ? '<path d="M0 0v' + (lift - 2) + '" stroke="' + INK + '" stroke-width="1.2"/>' : '') +
+        '<rect x="' + (-wd / 2) + '" y="' + lift + '" width="' + wd + '" height="22" rx="4" fill="' + TILE + '" stroke="' + INK + '" stroke-width="1.4"/>' +
+        '<text x="0" y="' + (lift + 16) + '" text-anchor="middle" font-family="Alegreya Sans, sans-serif" font-style="italic" font-size="14" fill="' + INK + '">' + esc(w) + '</text>' +
+        (lift > 4 ? '' : '<rect x="-2.5" y="-4" width="5" height="11" rx="1.5" fill="' + SPRUCE + '"/>') + '</g></g>';
+    });
+    return out;
+  }
+  /* farolillos strung across the street, and confetti: drawn only for a crossword filled in */
+  function fiesta() {
+    var colors = [GERA, LIT, AZUL, TILE, LEAF, "#E58A3A"], out = "";
+    [[214, 150, 426, 160, 196], [214, 116, 426, 128, 150]].forEach(function (g, gi) {
+      out += '<path d="M' + g[0] + ' ' + g[1] + 'Q320 ' + g[4] + ' ' + g[2] + ' ' + g[3] + '" fill="none" stroke="' + INK + '" stroke-width="1.3"/>';
+      for (var i = 1; i < 8; i++) {
+        var t = i / 8, u = 1 - t, x = u * u * g[0] + 2 * u * t * 320 + t * t * g[2], y = u * u * g[1] + 2 * u * t * g[4] + t * t * g[3];
+        var c = colors[(i + gi * 3) % colors.length], r = gi ? 7 : 9;
+        out += '<g class="lantern" style="--k:' + (i + gi * 7) + '">' +
+          '<path d="M' + x.toFixed(1) + ' ' + y.toFixed(1) + 'v5" stroke="' + INK + '" stroke-width="1.2"/>' +
+          '<rect x="' + (x - r * 0.5).toFixed(1) + '" y="' + (y + 4).toFixed(1) + '" width="' + r + '" height="3" fill="' + INK + '"/>' +
+          '<ellipse cx="' + x.toFixed(1) + '" cy="' + (y + 7 + r).toFixed(1) + '" rx="' + r + '" ry="' + (r * 1.1).toFixed(1) + '" fill="' + c + '" stroke="' + INK + '" stroke-width="1.4"/>' +
+          '<path d="M' + (x - r).toFixed(1) + ' ' + (y + 7 + r).toFixed(1) + 'h' + (2 * r) + '" stroke="' + INK + '" stroke-width="0.8" opacity=".5"/>' +
+          (c === TILE ? '<circle cx="' + (x - 3).toFixed(1) + '" cy="' + (y + 5 + r).toFixed(1) + '" r="1.6" fill="' + GERA + '"/><circle cx="' + (x + 3).toFixed(1) + '" cy="' + (y + 10 + r).toFixed(1) + '" r="1.6" fill="' + GERA + '"/>' : '') + '</g>';
+      }
+    });
+    for (var k = 0; k < 28; k++) {
+      var cx = (Math.sin(k * 12.9898) * 43758.5453) % 1, cy = (Math.sin(k * 78.233) * 12345.678) % 1;
+      cx = Math.abs(cx) * 640; cy = 140 + Math.abs(cy) * 220;
+      if ((cx > 110 && cx < 210 && cy < 300) || (cx > 432 && cx < 532 && cy < 314)) { continue; }
+      out += '<g class="confetti" style="--k:' + k + '"><rect x="' + cx.toFixed(1) + '" y="' + cy.toFixed(1) + '" width="4" height="8" rx="1" fill="' + colors[k % colors.length] + '" stroke="' + INK + '" stroke-width=".6" transform="rotate(' + ((k * 47) % 180) + ' ' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ')"/></g>';
+    }
+    return out;
+  }
+  function scene(o) {
+    var right = o.right || "here", line = o.line || "taut", sag = line === "slack" ? 48 : 0;
+    var mood = MOODS[o.mood || "talk"], teacher = o.teacher === undefined ? (lesson() ? "here" : "") : o.teacher;
+    var label = o.label || "Two neighbours on facing balconies in a white Andalusian street, with a line strung between them";
+    if (teacher === "here") { label += ", and the teacher watching from the house at the end of the street"; }
+    var s = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + CROPS[o.crop || "full"] + '" role="img" aria-label="' + esc(label) + '">';
+    s += '<circle cx="330" cy="100" r="56" fill="' + WASH + '"/>';
+    s += '<g stroke="' + INK + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">';
+    /* the house at the end of the street: the teacher's, in a lesson */
+    var backArch = "M298 226V192a22 22 0 0 1 44 0v34Z";
+    s += '<rect x="262" y="152" width="116" height="372" fill="' + SHADE + '"/>' + eave(256, 142, 128) +
+      '<path d="M300 516v-40a20 20 0 0 1 40 0v40Z" fill="' + SPRUCE + '"/>' + rejas(292, 380, false) +
+      '<path d="' + backArch + '" fill="' + (teacher === "here" ? LIT : DARK) + '"/>';
+    if (teacher === "here") { s += '<g class="who" stroke="none">' + person({ x: 320, y: 196, s: 0.56, facing: 1, face: mood.T, arm: "note", skin: SKIN[2], hair: HAIR[2], bun: true, glasses: true, shirt: SPRUCE }) + '</g>'; }
+    else if (teacher === "away") { s += curtains(298, 342, 170, 226); }
+    else { s += closedShutters(backArch, 320, 170, 226); }
+    s += rail(292, 348, 212, 14) + geraniums(340, 212);
+    /* the left house */
+    var leftArch = "M118 290V200a40 40 0 0 1 80 0v90Z";
+    s += '<rect x="46" y="78" width="24" height="34" fill="' + WHITE + '"/><rect x="42" y="72" width="32" height="8" fill="' + TERRA + '"/>' +
+      '<rect x="24" y="112" width="196" height="412" fill="' + WHITE + '"/>' + eave(14, 100, 216) +
+      wallPot(44, 150) + wallPot(76, 158) +
+      shutters(118, 198, 168, 290) + '<path d="' + leftArch + '" fill="' + LIT + '"/>';
+    s += '<g class="who" stroke="none">' + person({ x: 160, y: 210, facing: 1, face: mood.L[0], arm: mood.L[1], skin: SKIN[0], hair: HAIR[0], shirt: TERRA, can: P0 }) + '</g>';
+    s += rail(112, 204, 256) + geraniums(124, 256) +
+      rejas(44, 340, false) + rejas(134, 340, true) + azulejoDoor(70, 466);
+    /* the right house */
+    var rightArch = "M442 304V214a40 40 0 0 1 80 0v90Z", lit = right === "here";
+    s += '<rect x="570" y="92" width="24" height="34" fill="' + WHITE + '"/><rect x="566" y="86" width="32" height="8" fill="' + TERRA + '"/>' +
+      '<rect x="420" y="126" width="196" height="398" fill="' + WHITE + '"/>' + eave(410, 114, 216) +
+      '<rect x="416" y="150" width="204" height="10" fill="' + LIT + '" stroke-width="1.6"/>' +
+      wallPot(566, 184) + wallPot(596, 176);
+    if (right === "shut") { s += closedShutters(rightArch, 482, 174, 304); }
+    else { s += shutters(442, 522, 182, 304) + '<path d="' + rightArch + '" fill="' + (lit ? LIT : DARK) + '"/>'; }
+    if (right === "here") {
+      s += '<g class="who" stroke="none">' + person({ x: 482, y: 226, facing: -1, face: mood.R[0], arm: mood.R[1], skin: SKIN[1], hair: HAIR[1], bun: true, shirt: AZUL, can: P2 }) + '</g>';
+    } else if (right === "away") {
+      s += curtains(442, 522, 174, 304);
+    }
+    s += rail(436, 528, 270) + geraniums(516, 270);
+    if (right === "away") { s += '<rect x="443" y="254" width="13" height="17" rx="2" fill="' + CAN + '"/>'; }
+    s += rejas(450, 354, false) + rejas(536, 354, right === "here" || right === "away") + azulejoDoor(520, 466);
+    /* the street */
+    s += '<rect x="0" y="516" width="640" height="10" fill="' + STONE + '"/>';
+    /* the line */
+    if (line === "taut" || line === "slack") {
+      var end = right === "here" ? P2 : [449, 258];
+      s += '<path d="M' + P0[0] + ' ' + P0[1] + 'Q320 ' + (300 + sag) + ' ' + end[0] + ' ' + end[1] + '" fill="none" stroke-width="1.5" pathLength="1" class="line-draw"/>';
+    } else if (line === "loose") {
+      s += '<path d="M' + P0[0] + ' ' + P0[1] + 'Q236 330 ' + (o.thrown ? '330 290' : '214 300') + '" fill="none" stroke-width="1.5"' + (o.thrown ? ' stroke-dasharray="3 7"' : '') + '/>';
+    }
+    s += '</g>';
+    if (o.fiesta) { s += fiesta(); }
+    if (o.letters) { s += letterTiles(o.letters, sag); }
+    if (o.cards) { s += wordCards(o.cards, sag); }
+    return '<div class="scene">' + s + '</svg></div>';
   }
 
-  // OwnPresenceNotice.tsx, as the template's warning.
+  /* ============================ pieces ============================ */
+  function btn(label, cls, attrs) { return '<button type="button" class="btn ' + (cls || "") + '" ' + (attrs || "") + '><span class="dot"></span>' + esc(label) + '</button>'; }
+  function go(label, target, cls) { return btn(label, cls, 'data-go="' + target + '"'); }
+  function tplGo(label, target) { return '<button type="button" class="btn tpl" data-go="' + target + '" title="Template navigation, not part of the app">' + esc(label) + '</button>'; }
+  function msg(kind, head, text, extra) {
+    return '<div class="msg ' + (kind || "info") + '"' + (kind === "error" ? ' role="alert"' : '') + '><span class="mark" aria-hidden="true"></span><div class="msg-body">' +
+      '<span class="head">' + esc(head) + '</span><p>' + esc(text) + '</p>' + (extra || "") + '</div></div>';
+  }
+  /* who is in the room: a pair game is Viktor and Olena; a lesson is Carmen teaching Olena and Taras */
+  var TEACHER = "Carmen";
+  function other() { return lesson() ? "Taras" : (isHost() ? "Olena" : "Viktor"); }
+  function playerRow(name, tags, away, awayFor) {
+    return '<li><span class="mk' + (away ? " away" : "") + '"></span><span class="nm">' + esc(name) + '</span>' +
+      (tags ? '<span class="tag">' + tags + '</span>' : '') + (away ? '<span class="away-t">away for ' + (awayFor || "2 min") + '</span>' : '') + '</li>';
+  }
+  function openRow() { return '<li><span class="mk empty"></span><span class="open">A free seat. Waiting for the second player</span></li>'; }
+  function players(o) {
+    o = o || {};
+    var rows, hint;
+    if (lesson()) {
+      rows = [playerRow(TEACHER, "teacher" + (isHost() ? ", you" : ""), (o.away === "self" && isHost()) || o.away === "teacher", "3 min"),
+        playerRow("Olena", isHost() ? "" : "you", o.away === "self" && !isHost()),
+        o.open ? openRow() : playerRow("Taras", "", false)];
+      hint = isHost() ? "A lesson is played by 2 players. You deal the words and watch; you do not play."
+                      : "A lesson is played by 2 players. " + TEACHER + ", the teacher, deals the words and watches.";
+    } else {
+      rows = [playerRow("Viktor", "host" + (isHost() ? ", you" : ""), (o.away === "self" && isHost()) || (o.away === "other" && !isHost())),
+        o.open ? openRow() : playerRow("Olena", isHost() ? "" : "you", (o.away === "self" && !isHost()) || (o.away === "other" && isHost()))];
+      hint = "A game is played by exactly 2 people.";
+    }
+    return '<section><h2 class="h3">In the room</h2><p class="hint">' + esc(hint) + '</p><ul class="players">' + rows.join("") + '</ul></section>';
+  }
   function presenceNotice() {
-    return msg("warning", "The room has not heard from you",
-      "Not for 2 min. What is on this screen is what your browser last received, and nothing you do here is reaching anybody else — check your connection. This notice goes the moment the room hears from you again.");
+    return msg("warning", "The room has not heard from you", "Not for 2 min. What is on this screen is what your browser last received, and nothing you do here is reaching anybody else. Check your connection. This notice goes the moment the room hears from you again.");
   }
-
-  function wordRows(list, mode) {
-    var out = list.map(function (w, i) {
-      // Odd numbers, so the list carries both single and double digits — even
-      // numbering would make any alignment look like it works.
-      var n = (i * 2 + 1) + (i % 2 === 0 ? " across" : " down");
-      var solved = i < 2;
-
-      // The whole sentence, unbroken. This is what a screen reader is handed,
-      // whatever the eye is given — the mark says nothing out loud, so the
-      // word "answered" has to live here.
-      var said = mode === "explain"
-        ? n + " — " + w + (solved ? " — answered" : "")
-        : n + (solved ? " — answered" : " — still to answer");
-
-      return '<li><button type="button" class="' + (solved ? "done" : "") +
-        '" aria-label="' + esc(said) + '">' +
-        '<span class="ref">' + esc(n) + '</span>' +
-        '<span class="word">' + (mode === "explain" ? esc(w) : "") + '</span>' +
-        '<span class="pip ' + (solved ? "shut" : "open") + '"></span>' +
-        '</button></li>';
+  /* the lists beside the board are the board's own words, numbered as the board numbers them */
+  function wordRows(side) {
+    var out = boardWords().filter(function (w) { return w.side === side; }).map(function (w) {
+      var n = w.n + " " + w.dir, solved = isAnswered(w);
+      var said = side === "explain" ? n + ", " + w.text + (solved ? ", answered" : "") : n + ", " + w.text.length + " letters" + (solved ? ", answered" : ", still to answer");
+      var shown = side === "explain" ? '<span class="word">' + esc(w.text) + '</span>'
+        : '<span class="slots">' + (solved ? esc(w.text) : (w.play ? esc(w.play) : "") + new Array(w.text.length - (w.play ? w.play.length : 0) + 1).join("_")) + '</span>';
+      return '<li><button type="button" class="' + (solved ? "done" : "") + '" aria-label="' + esc(said) + '"><span class="ref">' + esc(n) + '</span>' + shown +
+        '<span class="state">' + (solved ? "answered" : "") + '</span></button></li>';
     });
     return '<ul class="word-list">' + out.join("") + '</ul>';
   }
+  /* the teacher's lists: every word in full, and whether it is in yet */
+  function teacherRows(side, all, asButtons) {
+    var out = boardWords().filter(function (w) { return w.side === side; }).map(function (w) {
+      var ok = all || isAnswered(w), n = w.n + " " + w.dir;
+      var inner = '<span class="ref">' + esc(n) + '</span><span class="word">' + esc(w.text) + '</span><span class="state">' + (ok ? "answered" : "not yet") + '</span>';
+      return '<li>' + (asButtons ? '<button type="button" class="' + (ok ? "done" : "open") + '">' + inner + '</button>'
+        : '<div class="row ' + (ok ? "done" : "open") + '">' + inner.replace("not yet", "not answered") + '</div>') + '</li>';
+    });
+    return '<ul class="word-list">' + out.join("") + '</ul>';
+  }
+  function countOf(side, all) {
+    var l = boardWords().filter(function (w) { return w.side === side; });
+    return (all ? l.length : l.filter(function (w) { return isAnswered(w); }).length) + " of " + l.length + " answered";
+  }
+  function explainerSection(name, guesser, side, cls) {
+    return '<section><h2 class="h3"><span class="sw ' + cls + '" aria-hidden="true"></span>' + esc(name) + ' explains</h2>' +
+      '<p class="hint">' + esc(guesser) + ' guesses these. You see every word in full; each player sees only the ones they explain.</p>' +
+      teacherRows(side, false, true) + '<p class="count-line" role="status">' + countOf(side, false) + ' by ' + esc(guesser) + '.</p></section>';
+  }
+  function lessonSummary(all) {
+    function part(name, guesser, side) {
+      return '<div class="sum-head"><h3>' + esc(name) + ' explained</h3><span class="hint">' + countOf(side, all) + ' by ' + esc(guesser) + '</span></div>' + teacherRows(side, all, false);
+    }
+    return '<section><h2 class="h3">Lesson summary</h2><p class="hint">What each player explained, and what the other one answered. No score: the game is played together. It stays here for as long as the room does, 24 hours.</p>' +
+      part("Olena", "Taras", "explain") + part("Taras", "Olena", "guess") + '</section>';
+  }
 
   /* ============================ the board ============================ */
-  // A crossword that actually crosses, so that the numbers, the cursor and every
-  // surface a square can have stand where they would. `explain` words are this
-  // player's to explain; `guess` words are theirs to type. `play` and `refused`
-  // say what a word is doing in those two moments of the game.
   var FEW_BOARD = [
-    { r: 0, c: 0, dir: "across", text: "garden", side: "guess", solved: true },
-    { r: 0, c: 0, dir: "down", text: "glow", side: "explain" },
-    { r: 0, c: 2, dir: "down", text: "river", side: "guess", play: "ri" },
-    { r: 0, c: 5, dir: "down", text: "needle", side: "explain", solved: true },
-    { r: 4, c: 2, dir: "across", text: "real", side: "guess", refused: "rai" }
+    { r: 0, c: 2, dir: "across", text: "bread", side: "explain", solved: true },
+    { r: 0, c: 4, dir: "down", text: "engine", side: "guess" },
+    { r: 1, c: 7, dir: "down", text: "cheese", side: "guess" },
+    { r: 2, c: 1, dir: "down", text: "apple", side: "guess", play: "ap", refused: "apric" },
+    { r: 3, c: 3, dir: "across", text: "dinner", side: "explain" },
+    { r: 5, c: 0, dir: "across", text: "flower", side: "explain" }
   ];
   var BOARDS = {
-    few: { rows: 7, cols: 7, cursor: { play: "2,2", refused: "4,4" }, words: FEW_BOARD },
-    many: { rows: 11, cols: 11, cursor: { play: "2,2", refused: "4,4" }, words: FEW_BOARD.concat([
-      { r: 3, c: 4, dir: "down", text: "harbour", side: "explain" },
-      { r: 7, c: 3, dir: "across", text: "morning", side: "guess", solved: true },
-      { r: 1, c: 8, dir: "down", text: "lantern", side: "guess" },
-      { r: 4, c: 7, dir: "across", text: "stem", side: "explain", solved: true },
-      { r: 7, c: 6, dir: "down", text: "nest", side: "guess" },
-      { r: 10, c: 6, dir: "across", text: "tiger", side: "guess", solved: true }
+    few: { rows: 7, cols: 9, cursor: { play: "4,1", refused: "6,1" }, words: FEW_BOARD },
+    many: { rows: 11, cols: 11, cursor: { play: "4,1", refused: "6,1" }, words: FEW_BOARD.concat([
+      { r: 5, c: 5, dir: "down", text: "ribbon", side: "guess", solved: true },
+      { r: 10, c: 5, dir: "across", text: "needle", side: "explain" }
     ]) }
   };
-
-  /* The board in one of its moments:
-       play     the game on, one word being filled (the cursor is in it)
-       refused  a wrong answer, its squares on the refused surface
-       blank    nothing is this player's (dealt out without them)
-       all      every word in place
-       closed   ended early: what was answered, and what was theirs to explain */
-  function board(mode) {
-    var b = BOARDS[state.size];
-    var squares = {};
-
+  /* the word answered a moment ago, for playing/answered: its squares turn over and its card is pegged on the line */
+  var JUST = null;
+  function isAnswered(w) { return !!w.solved || w.text === JUST; }
+  function boardWords() {
+    var b = BOARDS[state.size], starts = {};
+    b.words.forEach(function (w) { starts[w.r + "," + w.c] = true; });
+    var order = Object.keys(starts).sort(function (x, y) { var a = x.split(",").map(Number), q = y.split(",").map(Number); return a[0] - q[0] || a[1] - q[1]; });
+    return b.words.map(function (w) { var o = Object.create(w); o.n = order.indexOf(w.r + "," + w.c) + 1; return o; })
+      .sort(function (x, y) { return x.n - y.n; });
+  }
+  /* play: a word being filled, the cursor in it · refused: a wrong answer · blank: nothing is this
+     player's · all: every word in place · closed: what was answered and what was theirs to explain ·
+     teacher: every word, answered ones plain, the rest marked by who explains them */
+  function board(mode, sq) {
+    var b = BOARDS[state.size], squares = {}, r, c;
     b.words.forEach(function (w) {
       for (var i = 0; i < w.text.length; i++) {
-        var r = w.r + (w.dir === "down" ? i : 0);
-        var c = w.c + (w.dir === "across" ? i : 0);
-        var k = r + "," + c;
-        if (!squares[k]) { squares[k] = []; }
-        squares[k].push({ w: w, i: i });
+        var k = (w.r + (w.dir === "down" ? i : 0)) + "," + (w.c + (w.dir === "across" ? i : 0));
+        (squares[k] = squares[k] || []).push({ w: w, i: i });
       }
     });
-
-    // numbered in reading order, a number where a word begins
-    var numbers = {}, next = 0, r, c;
-    for (r = 0; r < b.rows; r++) {
-      for (c = 0; c < b.cols; c++) {
-        var here = squares[r + "," + c];
-        if (here && here.some(function (x) { return x.i === 0; })) { numbers[r + "," + c] = ++next; }
-      }
+    var numbers = {}, next = 0;
+    for (r = 0; r < b.rows; r++) for (c = 0; c < b.cols; c++) {
+      var here = squares[r + "," + c];
+      if (here && here.some(function (x) { return x.i === 0; })) { numbers[r + "," + c] = ++next; }
     }
-
     function look(entries) {
       function first(test) { return entries.filter(test)[0]; }
       var letter = entries[0].w.text.charAt(entries[0].i);
       if (mode === "blank") { return { cls: "", ch: "" }; }
-
-      var answered = first(function (x) { return x.w.side === "guess" && (x.w.solved || mode === "all"); });
-      if (answered) { return { cls: "guessed", ch: letter }; }
+      var justNow = first(function (x) { return x.w.text === JUST; });
+      if (justNow) { return { cls: "guessed just", ch: letter, d: justNow.i }; }
+      if (first(function (x) { return isAnswered(x.w) || mode === "all"; })) { return { cls: "guessed", ch: letter }; }
+      if (mode === "teacher") { return { cls: first(function (x) { return x.w.side === "explain"; }) ? "t-a" : "t-b", ch: letter }; }
       if (first(function (x) { return x.w.side === "explain"; })) { return { cls: "explained", ch: letter }; }
       if (mode === "closed") { return { cls: "", ch: "" }; }
-
-      // this player's own square: the word doing something in this moment wins
       var own = first(function (x) { return x.w[mode] !== undefined; }) || entries[0];
-      var typed = own.w[mode] || "";
-      var cls = "own";
-      if (mode === "play" && own.w.play !== undefined) { cls += " filling"; }
-      if (mode === "refused" && own.w.refused !== undefined) { cls += " refused"; }
+      var typed = own.w[mode] || "", cls = "";
+      if (mode === "play" && own.w.play !== undefined) { cls = "filling"; }
+      if (mode === "refused" && own.w.refused !== undefined) { cls = "refused"; }
       return { cls: cls, ch: typed.charAt(own.i) };
     }
-
     var cells = [];
-    for (r = 0; r < b.rows; r++) {
-      for (c = 0; c < b.cols; c++) {
-        var key = r + "," + c;
-        if (!squares[key]) { cells.push('<span class="cell off"></span>'); continue; }
-        var s = look(squares[key]);
-        var isCursor = b.cursor[mode] === key;
-        cells.push('<span class="cell ' + s.cls + (isCursor ? " cursor" : "") + '">' +
-          (numbers[key] ? '<span class="num">' + numbers[key] + '</span>' : '') + esc(s.ch) + '</span>');
-      }
+    for (r = 0; r < b.rows; r++) for (c = 0; c < b.cols; c++) {
+      var key = r + "," + c;
+      if (!squares[key]) { cells.push('<span class="cell off"></span>'); continue; }
+      var s = look(squares[key]);
+      cells.push('<span class="cell ' + s.cls + (b.cursor[mode] === key && s.cls.indexOf("guessed") < 0 ? " cursor" : "") + '"' + (s.d !== undefined ? ' style="--d:' + s.d + '"' : '') + '>' +
+        (numbers[key] ? '<span class="num">' + numbers[key] + '</span>' : '') + esc(s.ch) + '</span>');
     }
-    return '<div class="board-box" style="--rows:' + b.rows + '; --cols:' + b.cols + '">' +
-      '<div class="grid-card"><div class="grid">' + cells.join("") + '</div></div></div>';
+    return '<div class="board-box"><div class="grid" role="img" aria-label="The crossword" style="--rows:' + b.rows + ';--cols:' + b.cols + ';--sq:' + sq + 'px;--gap:' + (sq >= 36 ? 4 : 3) + 'px">' + cells.join("") + '</div></div>';
   }
-
-  var KEYBOARD_HINT = "The arrow keys move around the whole grid, square by square. Backspace clears the square you are in, or steps back when it is already empty.";
-  var CROSSING_HINT = "Two of your words cross. On the shared square, click it again or press the space bar to swap between them.";
-  var REFUSAL_LINE = "That is not the word — the letters clear in a moment. Try again as often as you like.";
-
-  // The sentences CrosswordGrid.tsx puts under the board, in the order it does.
-  // Both words of this player's in the drawing cross, so the crossing hint is on.
+  /* the square: between 20 and 44 px, from the space the board has (ADR 0029) */
+  function squareSize(lay) {
+    var b = BOARDS[state.size], gap = 4;
+    var room = { wide: [640, 400], tablet: [720, 520], phone: [ctx.w - 36, 900] }[lay];
+    var fit = Math.floor(Math.min((room[0] - gap * (b.cols - 1)) / b.cols, (room[1] - gap * (b.rows - 1)) / b.rows));
+    return Math.max(20, Math.min(44, fit));
+  }
   function boardNotes(mode) {
-    return '<p class="board-note">' + esc(KEYBOARD_HINT) + '</p>' +
-      '<p class="board-note">' + esc(CROSSING_HINT) + '</p>' +
-      (mode === "refused" ? '<p class="board-note refusal" role="status">' + esc(REFUSAL_LINE) + '</p>' : '');
+    return '<div class="board-notes">' +
+      (mode === "refused" ? '<p class="board-note refusal" role="status">' + esc(REFUSAL_LINE) + '</p>' : '') +
+      '<p class="board-note">' + esc(KEYBOARD_HINT) + '</p><p class="board-note">' + esc(CROSSING_HINT) + '</p></div>';
   }
-
-  function boardHead(caption) {
-    return '<div class="board-head"><h3>The crossword</h3><p>' + esc(caption) + '</p></div>';
+  function teacherLegend() {
+    return '<div class="board-notes"><p class="board-note"><span class="sw a" aria-hidden="true"></span>Olena explains · <span class="sw b" aria-hidden="true"></span>Taras explains · bold letters are answered</p></div>';
   }
+  function answeredWords() { return BOARDS[state.size].words.filter(function (w) { return isAnswered(w); }).map(function (w) { return w.text; }); }
 
-  function room(opts) {
-    var zones;
-    if (opts.solo) {
-      zones = '<div class="zones solo">' + opts.solo + '</div>';
-    } else {
-      // A side with nothing on it is marked, so each layout can decide what an
-      // empty side is: nothing on a phone, a clear column from a tablet up.
-      zones = '<div class="zones three">' +
-        '<div class="zone left' + (opts.left ? "" : " empty") + '">' + (opts.left || "") + '</div>' +
-        '<div class="zone-middle' + (opts.middle ? "" : " empty") + '">' + (opts.middle || "") + '</div>' +
-        '<div class="zone right' + (opts.right ? "" : " empty") + '">' + (opts.right || "") + '</div>' +
-        '</div>';
-    }
-    return '<div class="room">' +
-      '<div class="room-header">' +
-        (opts.title ? stepTitle(opts.title) : "") +
-        '<div class="room-status">' + (opts.status || "") + '</div>' +
-        (opts.action ? '<div class="room-action">' + opts.action + '</div>' : "") +
-      '</div>' + zones + '</div>' + (opts.overlay || "");
+  /* ============================ frames ============================ */
+  function head(o) {
+    return '<header class="app-head"><span class="wordmark">Across the Street</span><p class="status">' + (o.status || "") + '</p>' +
+      (o.action ? '<div class="action">' + o.action + '</div>' : '<div class="action"></div>') + '</header>';
   }
+  function room(o) {
+    return head(o) + '<div class="body"><div class="zones' + (isTeacher() ? " teacher" : "") + '">' +
+      '<div class="zone left' + (o.left ? "" : " empty") + '">' + (o.left || "") + '</div>' +
+      '<div class="zone-middle">' + (o.middle || "") + '</div>' +
+      '<div class="zone right' + (o.right ? "" : " empty") + '">' + (o.right || "") + '</div>' +
+      '</div></div>' + (o.overlay || "");
+  }
+  function column(inner, pic) { return head({}) + '<div class="column">' + (pic || "") + '<div class="stack">' + inner + '</div></div>'; }
+  function layout() { return ctx.layout; }
 
-  /* ============================ the states ============================ */
   var S = {};
-
-  /* ---- gate ---- */
-  S.home = {
-    scene: "gate", group: "At the gate", label: "Home",
-    note: "Sumi ink in the clear sky band above the gate, which measured 97.8% passing where cream measured 0%. No panel behind either — a first screen with one action on it should look like one, and nothing stands between the letters and the painting.",
+  /* ---- the street: home and a new game ---- */
+  S.home = { group: "Before a room", label: "Home",
+    note: "The drawing is the screen's centre: an Andalusian street, a neighbour on each balcony, one of them explaining with her hands, a word already on the line between their tin cans. The house at the end of the street keeps its shutters closed until somebody runs a lesson. One loud action; the lesson is mentioned once, under it.",
     render: function () {
-      return '<div class="gate-screen">' +
-        '<div class="lockup sumi">' +
-          '<p class="name">WORD GARDEN</p>' +
-          '<div class="rule"></div>' +
-          '<p class="tag">A cooperative crossword</p>' +
-        '</div>' +
-        '<div class="gate-cta">' + go("Create a game", "create") + '</div>' +
-        '</div>';
-    }
-  };
+      return head({}) + '<div class="street"><div class="stack" style="gap:24px">' +
+        '<h1 class="title">Across the Street</h1>' +
+        '<p class="lede">A cooperative crossword. You explain your words out loud, your friend guesses them, and the board fills up between you.</p>' +
+        '<div class="stack-tight"><div>' + go("Create a game", "create") + '</div><p class="hint">Teaching a language? Run it as a lesson for two of your students.</p></div></div>' +
+        scene({ letters: ["r", "a", "d", "i", "o"], mood: "talk", teacher: "" }) +
+        '<ol class="steps"><li><b>1</b>Type 10 to 20 words</li><li><b>2</b>Send the link to one person</li><li><b>3</b>Explain and guess out loud</li></ol></div>';
+    } };
 
-  function createScreen(variant) {
-    var help, fieldCls, extra = "", action, wordText = words().join(", ");
-
-    fieldCls = variant === "errors" ? "invalid" : "";
-    help = variant === "errors"
-      ? '<span class="field-help bad">Two of these are repeats, and “a” is shorter than three letters.</span>'
-      : '<span class="field-help">4–20 English words, 3–16 letters each, no repeats. ' + words().length + ' words entered.</span>';
-
-    if (variant === "errors") {
-      extra = msg("warning", "The list needs a change", "Fix these before the game can be built:",
-        '<ul><li>“apple” appears twice</li><li>“a” is shorter than three letters</li></ul>');
+  function modePick(locked) {
+    function opt(mode, title, text) {
+      return '<button type="button" class="mode-opt" role="radio" aria-checked="' + (state.mode === mode) + '" data-pick="' + mode + '"' + (locked ? " disabled" : "") + '><b>' + esc(title) + '</b><span>' + esc(text) + '</span></button>';
     }
-    if (variant === "nogrid") {
-      extra = msg("warning", "No crossword can be built", "None of these words cross each other. Add or change a few — words that share letters can cross.");
-    }
-    if (variant === "failed") {
-      extra = msg("error", "The room could not be created", "Check your connection and try again.");
-    }
-
-    if (variant === "creating") {
-      action = btn("Creating the room", "loading");
-    } else if (variant === "errors" || variant === "nogrid") {
-      action = btn("Create room", "", "disabled");
-    } else {
-      action = go("Create room", "connecting");
-    }
-
-    return '<div class="gate-screen"><div class="create-band">' +
-      stepTitle("New game") +
-      '<div class="stack">' +
-        '<div class="field-set">' +
-          '<label class="field' + (variant === "creating" ? " locked" : "") + '"><span class="lead"></span>' +
-          '<input type="text" value="Viktor" aria-label="Your nickname"' + (variant === "creating" ? " disabled" : "") + '></label>' +
-          '<span class="field-help">Other players see you by this name. You play in your own room too.</span>' +
-        '</div>' +
-        '<div class="field-set">' +
-          '<label class="field area ' + fieldCls + (variant === "creating" ? " locked" : "") + '"><span class="lead"></span>' +
-          '<textarea rows="3" aria-label="Words"' + (variant === "creating" ? " disabled" : "") + '>' + esc(wordText) + '</textarea></label>' +
-          help +
-        '</div>' +
-        extra +
-        action +
-      '</div></div></div>';
+    return '<div class="mode-pick" role="radiogroup" aria-label="What kind of game">' +
+      opt("pair", "Play with a friend", "You and one other person. You explain your words, they explain theirs.") +
+      opt("lesson", "Run a lesson", "Two of your students play. You choose the words, deal them and watch; you do not play.") + '</div>';
   }
-
-  S.create        = { scene: "gate", group: "At the gate", label: "Create", note: "Validation runs while the owner types but stays quiet until there is something to judge. An untouched form shows the rules, not complaints.", render: function () { return createScreen("editing"); } };
-  S["create/errors"]   = { scene: "gate", group: "At the gate", label: "…list has errors", sub: true, note: "The submit button is disabled, and the reason is written in three places at once: the field's border doubles, the helper turns, and the list of faults is spelled out. Colour is never carrying this alone — the accent is already red.", render: function () { return createScreen("errors"); } };
-  S["create/nogrid"]   = { scene: "gate", group: "At the gate", label: "…nothing crosses", sub: true, note: "Different from words being dropped: there is no grid at all, so there is no game to create. The owner has to change the list.", render: function () { return createScreen("nogrid"); } };
-  S["create/creating"] = { scene: "gate", group: "At the gate", label: "…writing the room", sub: true, note: "The form freezes but stays readable, and the button's own sun dot is what beats. This is the loading mark doing its second job.", render: function () { return createScreen("creating"); } };
-  S["create/failed"]   = { scene: "gate", group: "At the gate", label: "…write failed", sub: true, note: "Firebase says “Missing or insufficient permissions”, which means nothing to a player. They get a plain sentence; the detail goes to the console.", render: function () { return createScreen("failed"); } };
-
-  S["create/unplaced"] = {
-    scene: "gate", group: "At the gate", label: "…some did not fit", sub: true,
-    note: "A fork, not an error. The owner is shown exactly which words were dropped and decides — and confirming builds the room from the grid they were shown, not from a freshly generated different one.",
+  var ERR_WORDS = FEW.concat(["apple", "a"]);
+  /* a wrong list is said inside the field, in a strip under the words it is about (Viktor, 2026-10-14) */
+  function wordsField(variant, locked) {
+    var bad = variant === "errors" || variant === "nogrid", list = variant === "errors" ? ERR_WORDS : words();
+    var faults = variant === "errors"
+      ? ["“apple” is in the list twice. Keep one of them.", "“a” is too short. A word needs 3 letters or more."]
+      : ["None of these words share a letter, so nothing can cross. Swap in a few that do."];
+    var inner = '<textarea id="' + uid("wordsIn") + '" rows="4"' + (locked ? " disabled" : "") + (bad ? ' aria-invalid="true" aria-describedby="' + uid("fault") + '"' : '') + '>' + esc(list.join(", ")) + '</textarea>';
+    if (bad) { inner += '<ul class="field-fault" id="' + uid("fault") + '">' + faults.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join("") + '</ul>'; }
+    return '<div class="field-set"><label for="' + uid("wordsIn") + '">Words</label><span class="field' + (bad ? " invalid" : "") + (locked ? " locked" : "") + '">' + inner + '</span>' +
+      '<span class="field-help">10 to 20 words, 3 to 16 letters each, no repeats. ' + list.length + ' words entered.</span></div>';
+  }
+  function createScreen(variant) {
+    var locked = variant === "creating", extra = "", action, bad = variant === "errors" || variant === "nogrid";
+    if (variant === "failed") { extra = msg("error", "The room could not be created", "Check your connection and try again."); }
+    if (locked) { action = btn("Creating the room", "loading"); }
+    else if (bad) { action = btn("Create room", "", "disabled") + '<span class="hint">' + (variant === "errors" ? "Change the 2 words above to go on." : "Change the list to go on.") + '</span>'; }
+    else { action = go("Create room", "connecting"); }
+    var nickHelp = lesson() ? "Your players see you by this name. In a lesson you do not play: you deal the words and watch."
+                            : "The other player sees you by this name. You play in your own room too.";
+    return column('<h1 class="step-title">' + (lesson() ? "New lesson" : "New game") + '</h1>' + modePick(locked) +
+      '<div class="field-set"><label for="' + uid("nick") + '">Your nickname</label><span class="field' + (locked ? " locked" : "") + '"><input id="' + uid("nick") + '" type="text" value="' + (lesson() ? TEACHER : "Viktor") + '"' + (locked ? " disabled" : "") + '></span>' +
+      '<span class="field-help">' + esc(nickHelp) + '</span></div>' +
+      wordsField(variant, locked) + extra + '<div class="row-btns">' + action + '</div>');
+  }
+  var ERR_NOTE = " The fault is part of the field: a strip under the words it is about, saying what to change, and nothing else on the screen. The border thickens and the strip is written, so colour never carries it alone. Chosen by Viktor on 2026-10-14 over a card under the field and a field of word tiles.";
+  S.create = { group: "Before a room", label: "Create", note: "No drawing: this is the one screen where somebody writes. The mode is the first choice, because it decides who the seats are for, and it cannot be changed once the room exists (ADR 0037). The rules show before anything is wrong.", render: function () { return createScreen("editing"); } };
+  S["create/errors"] = { group: "Before a room", sub: true, label: "…list has errors", note: "The button is disabled and the reason is never carried by colour alone." + ERR_NOTE, render: function () { return createScreen("errors"); } };
+  S["create/nogrid"] = { group: "Before a room", sub: true, label: "…nothing crosses", note: "There is no grid at all, so there is no game to create." + ERR_NOTE, render: function () { return createScreen("nogrid"); } };
+  S["create/unplaced"] = { group: "Before a room", sub: true, label: "…some did not fit", note: "A fork, not an error. The owner sees which words were dropped and decides; confirming builds the room from the grid they were shown.",
     render: function () {
-      return '<div class="gate-screen"><div class="create-band">' +
-        stepTitle("New game") +
-        '<div class="stack">' +
-          msg("warning", "Some words did not fit into the crossword",
-            "These three cross nothing, so they are not in the grid. You can build the game without them, or go back and change the list.",
-            '<ul><li>rhythm</li><li>quartz</li><li>jukebox</li></ul>') +
-          '<div class="field-row" style="justify-content:flex-end">' +
-            go("Back", "create", "quiet") +
-            go("Build it anyway", "connecting") +
-          '</div>' +
-        '</div></div></div>';
-    }
-  };
+      return column('<h1 class="step-title">' + (lesson() ? "New lesson" : "New game") + '</h1>' +
+        msg("warning", "Some words did not fit into the crossword", "These three cross nothing, so they are not in the grid. You can build the game without them, or go back and change the list.", '<ul><li>rhythm</li><li>quartz</li><li>jukebox</li></ul>') +
+        '<div class="row-btns">' + go("Build it anyway", "connecting") + go("Back", "create", "quiet") + '</div>');
+    } };
+  S["create/creating"] = { group: "Before a room", sub: true, label: "…writing the room", note: "The form freezes but stays readable, and the button's own dot beats.", render: function () { return createScreen("creating"); } };
+  S["create/failed"] = { group: "Before a room", sub: true, label: "…write failed", note: "A failure of the wire, not of the list, so it stays a card: there is no field it belongs to.", render: function () { return createScreen("failed"); } };
 
-  /* ---- the doors ---- */
-  S.connecting = {
-    scene: "doors", group: "At the doors", label: "Connecting",
-    note: "No room frame is drawn at all — there is no room yet. Earlier both this and “unavailable” stood inside the frame every real screen draws, so a guest saw that frame appear, vanish, and reappear a second later (issue #132).",
+  /* ---- the doors: connecting, joining, turned away ---- */
+  S.connecting = { group: "At the door", label: "Connecting", note: "No room frame yet, because there is no room yet. The line is being thrown across the street.",
     render: function () {
-      return '<div class="gate-screen"><div class="middle-column" style="text-align:center">' +
-        '<span class="sun-wait"><span class="ring"><i></i><i></i><i></i><span class="core"></span></span> Connecting to the game…</span>' +
-        '<div style="margin-top:20px; display:flex; gap:9px; justify-content:center; flex-wrap:wrap">' +
-          go("→ a free seat", "join", "quiet sm") +
-          go("→ already in", "lobby", "quiet sm") +
-          go("→ no room", "unavailable/missing", "quiet sm") +
-        '</div></div></div>';
-    }
-  };
-
-  S.join = {
-    scene: "doors", group: "At the doors", label: "Join",
-    note: "Shown only to somebody the room does not hold yet, which is what makes the event it reports honest: a player reopening their own link never reaches this screen, so nobody is counted as joining twice.",
-    render: function () {
-      return room({
-        title: "Join the game",
-        status: "",
-        solo: '<div class="middle-column">' +
-          '<p class="lede">You have been invited to a game. Pick a name the other players will know you by.</p>' +
-          '<div class="stack">' +
-            '<label class="field"><span class="lead"></span><input type="text" value="Olena" aria-label="Your nickname"></label>' +
-            '<div style="display:flex; gap:9px; flex-wrap:wrap">' +
-              go("Join the game", "lobby") +
-              go("…refused", "unavailable/refused", "quiet sm") +
-              go("…wire failed", "join/failed", "quiet sm") +
-            '</div>' +
-          '</div></div>'
-      });
-    }
-  };
-
-  S["join/failed"] = {
-    scene: "doors", group: "At the doors", label: "…could not join", sub: true,
-    note: "A join fails in two ways and they are not the same news. The wire failing leaves the room exactly as it was, so the form stays and says to try again. The rules refusing means the room moved on without this visitor, and that is the other state.",
-    render: function () {
-      return room({
-        title: "Join the game",
-        solo: '<div class="middle-column">' +
-          '<p class="lede">You have been invited to a game. Pick a name the other players will know you by.</p>' +
-          '<div class="stack">' +
-            '<label class="field"><span class="lead"></span><input type="text" value="Olena" aria-label="Your nickname"></label>' +
-            msg("error", "Could not join the game", "Check your connection and try again — the room is still there.") +
-            go("Join the game", "lobby") +
-          '</div></div>'
-      });
-    }
-  };
-
-  S["join/joining"] = {
-    scene: "doors", group: "At the doors", label: "…joining", sub: true,
-    note: "The name is frozen but readable, and the button's sun dot beats: the same loading mark creating a room uses.",
-    render: function () {
-      return room({
-        title: "Join the game",
-        solo: '<div class="middle-column">' +
-          '<p class="lede">You have been invited to a game. Pick a name the other players will know you by.</p>' +
-          '<div class="stack">' +
-            '<label class="field locked"><span class="lead"></span><input type="text" value="Olena" aria-label="Your nickname" disabled></label>' +
-            btn("Joining the game", "loading") +
-          '</div></div>'
-      });
-    }
-  };
-
+      return column('<p class="wait-line" role="status"><span class="dot"></span>Connecting to the game…</p>' +
+        '<div class="row-btns" style="justify-content:center">' + tplGo("→ a free seat", "join") + tplGo("→ already in", "lobby") + tplGo("→ no room", "unavailable/missing") + '</div>',
+        scene({ right: "empty", line: "loose", thrown: true, crop: "top", mood: "wave", label: "A line being thrown across the street to an empty balcony" }));
+    } };
+  function joinScreen(variant) {
+    var locked = variant === "joining";
+    var lede = lesson() ? TEACHER + " has invited you to a lesson. Pick a name the others will know you by." : "Viktor has invited you to a game. Pick a name he will know you by.";
+    return column('<h1 class="step-title">' + (lesson() ? "Join the lesson" : "Join the game") + '</h1>' +
+      '<p class="lede">' + esc(lede) + '</p>' +
+      '<div class="field-set"><label for="' + uid("nick2") + '">Your nickname</label><span class="field' + (locked ? " locked" : "") + '"><input id="' + uid("nick2") + '" type="text" value="Olena"' + (locked ? " disabled" : "") + '></span></div>' +
+      (variant === "failed" ? msg("error", "Could not join the game", "Check your connection and try again. The room is still there.") : "") +
+      '<div class="row-btns">' + (locked ? btn("Joining the game", "loading") : go(lesson() ? "Join the lesson" : "Join the game", "lobby")) +
+      (variant === "plain" ? tplGo("…refused", "unavailable/refused") + tplGo("…wire failed", "join/failed") : "") + '</div>',
+      scene({ right: "empty", line: "loose", crop: "top", mood: "wave", label: "A neighbour waving from her balcony, holding out a line to an empty balcony across the street" }));
+  }
+  S.join = { group: "At the door", label: "Join", note: "Only somebody the room does not hold yet sees this. The empty balcony across the street is theirs; the line is waiting for them. In a lesson the teacher is already at the end of the street. A teacher never sees this screen: they made the room.", render: function () { return joinScreen("plain"); } };
+  S["join/joining"] = { group: "At the door", sub: true, label: "…joining", note: "The name is frozen but readable, and the button's dot beats.", render: function () { return joinScreen("joining"); } };
+  S["join/failed"] = { group: "At the door", sub: true, label: "…could not join", note: "The wire failing leaves the room as it was, so the form stays. The rules refusing is the other state, under Turned away.", render: function () { return joinScreen("failed"); } };
   Object.keys(UNAVAILABLE).forEach(function (reason) {
-    var m = UNAVAILABLE[reason];
-    S["unavailable/" + reason] = {
-      scene: "doors", group: "Turned away", label: reason, sub: true,
-      note: "Every one of the seven is a normal thing to run into — a stale link, a late arrival, a third friend — so none may surface as a raw Firebase error, and each leaves a way forward.",
+    S["unavailable/" + reason] = { group: "Turned away", sub: true, label: reason,
+      note: "All seven are normal things to run into, so none surfaces as a raw error and each leaves a way forward. The balcony across the street has its shutters closed and no line runs to it. In a lesson, “full” and “started” send the player back to their teacher rather than to a game of their own.",
       render: function () {
-        return '<div class="gate-screen"><div class="middle-column">' +
-          '<div class="stack">' +
-            msg(m[2] || "", m[0], m[1]) +
-            go("Start a new game", "home") +
-          '</div></div></div>';
-      }
-    };
+        var m = (lesson() && UNAVAILABLE_LESSON[reason]) || UNAVAILABLE[reason];
+        return column(msg(m[2], m[0], m[1]) + '<div>' + go("Start a new game", "home") + '</div>',
+          scene({ right: "shut", line: "none", crop: "top", mood: "calm", teacher: "", label: "A balcony across the street with its shutters closed" }));
+      } };
   });
 
   /* ---- the lobby ---- */
-  var LOBBY_NOTE = "Everything the lobby has stands in the zone on the left, and the middle is left empty on purpose: this screen is at the doors of the temple, and the doorway is the middle of it. From a tablet down the zone is the left of two columns under the doorway; on a phone it is the screen.";
-
   function lobby(variant) {
-    var count = words().length;
     var waiting = variant === "waiting" || variant === "copied" || variant === "copyfailed";
+    var noun = lesson() ? "A lesson" : "A game", starter = lesson() ? TEACHER : "The host";
     var status, panel = "";
-
     if (waiting) {
-      status = isHost()
-        ? "A game takes 2 players, so this room needs 1 more before you can start it — share the room link."
-        : "A game takes 2 players, so this room needs 1 more. The host starts the game once they are in.";
+      status = isHost() ? noun + " takes 2 players, so this room needs 1 more before you can start it. Share the room link."
+                        : noun + " takes 2 players, so this room needs 1 more. " + starter + " starts the game once they are in.";
     } else if (variant === "crowded") {
       status = "This crossword holds 1 word and the room holds 2 players, so somebody would have nothing to guess. " +
-        (isHost() ? "This game cannot start — create a new room from a longer word list."
-                  : "The host cannot start this game; ask them for a link to a new one, built from a longer word list.");
+        (isHost() ? "This game cannot start. Create a new room from a longer word list." : starter + " cannot start this game; ask for a link to a new one.");
+    } else if (variant === "teacheraway") {
+      status = "Both players are here. Only " + TEACHER + " can start the lesson.";
     } else {
-      status = isHost()
-        ? "The game can start now. Nobody else is needed for it — start it as soon as everybody you invited is in."
-        : "Everybody a game needs is already here. The host is the one who starts it, and the game begins on this screen the moment they do.";
+      status = isHost() ? (lesson() ? "Both players are here. The lesson can start now." : "The game can start now. Nobody else is needed for it.")
+                        : (lesson() ? "Both players are here. " + TEACHER + " starts the lesson, and it begins on this screen the moment they do."
+                                    : "Everybody a game needs is here. The host starts it, and the game begins on this screen the moment they do.");
     }
-
-    if (isHost()) {
-      if (waiting) {
-        var result = "";
-        if (variant === "copied") { result = '<span class="inline-status ok" role="status">Link copied</span>'; }
-        if (variant === "copyfailed") { result = '<span class="inline-status bad" role="status">Could not copy automatically — select the link and copy it by hand.</span>'; }
-        panel = '<section><h3>The link into this room</h3>' +
-          '<p class="hint">Send this link to the other players — they join with a nickname, no sign-up.</p>' +
-          '<label class="field readonly"><span class="lead"></span><input type="text" value="wordgarden.app/room/7pQ2xk" readonly aria-label="Invite link"></label>' +
-          '<div class="field-row" style="margin-top:9px; flex-wrap:wrap">' + btn("Copy the link", "quiet sm") + result + '</div></section>';
-      }
-      if (variant === "ready" || variant === "away") { panel = go("Start the game", "playing"); }
-      if (variant === "starting") { panel = btn("Starting the game", "loading"); }
-      if (variant === "crowded") { panel = btn("Start the game", "", "disabled"); }
-      if (variant === "failed") {
-        panel = '<div class="stack-tight">' + msg("error", "Could not start the game", "Check your connection and try again — nothing has been dealt out yet.") + go("Start the game", "playing") + '</div>';
-      }
+    if (isHost() && waiting) {
+      var result = "";
+      if (variant === "copied") { result = '<span class="inline-status ok" role="status">Link copied</span>'; }
+      if (variant === "copyfailed") { result = '<span class="inline-status bad" role="status">Could not copy automatically. Select the link and copy it by hand.</span>'; }
+      panel = '<section class="stack-tight"><h2 class="h3">Invite</h2><p class="hint">' + (lesson() ? "Send this link to both of your players. They join with a nickname, no sign-up." : "Send this link to the person you will play with. They join with a nickname, no sign-up.") + '</p>' +
+        '<span class="field readonly"><input type="text" value="https://acrossthestreet.app/room/k3J9xQ2mPa" readonly aria-label="Invite link"></span>' +
+        '<div class="row-btns">' + btn("Copy link", "quiet") + result + '</div></section>';
     }
+    var startLabel = lesson() ? "Deal the words" : "Start the game";
+    if (isHost() && (variant === "ready" || variant === "away")) { panel = '<div>' + go(startLabel, "playing") + '</div>'; }
+    if (isHost() && variant === "starting") { panel = '<div>' + btn("Dealing the words", "loading") + '</div>'; }
+    if (isHost() && variant === "crowded") { panel = '<div>' + btn(startLabel, "", "disabled") + '</div>'; }
+    if (isHost() && variant === "failed") { panel = '<div class="stack-tight">' + msg("error", "Could not start the game", "Check your connection and try again. Nothing has been dealt out yet.") + '<div>' + go(startLabel, "playing") + '</div></div>'; }
+    if (!isHost() && !waiting && variant !== "crowded" && variant !== "teacheraway") { panel = '<p class="hint" style="font-size:17px">Waiting for ' + (lesson() ? TEACHER : "Viktor") + ' to start the game.</p>'; }
+    var notice = variant === "away" ? presenceNotice() : "";
+    if (variant === "teacheraway") { notice = msg("info", TEACHER + " is away", "The room has not heard from your teacher for 3 min. Only the teacher can start a lesson, so it waits here until they are back."); }
 
-    var left = '<div class="stack">' +
-      (variant === "away" ? presenceNotice() : "") +
-      players(variant === "away" ? "self" : "") +
-      panel +
-      '<section><h3>The crossword</h3><p class="hint" style="margin:0">' + count + ' words are hidden in this grid.</p></section>' +
-      '</div>';
-
-    return room({ title: "Lobby", status: esc(status), left: left });
+    var label = waiting ? "Your balcony, and the one across the street still empty" : "Both balconies taken, the line strung between them";
+    var pic = '<div class="lobby-picture stack-tight">' + scene({ right: waiting ? "empty" : "here", line: waiting ? "loose" : "taut", crop: "top", mood: waiting ? "wait" : "wave",
+        teacher: lesson() ? (variant === "teacheraway" ? "away" : "here") : "", label: label }) +
+      '<p class="hint" style="text-align:center">The crossword: ' + roomWords().length + ' words, half of them for each ' + (lesson() ? "player" : "of you") + '.</p></div>';
+    var left = '<div class="stack">' + notice + players({ away: variant === "away" ? "self" : (variant === "teacheraway" ? "teacher" : ""), open: waiting }) + panel + '</div>';
+    return head({ status: esc(status) }) + '<div class="body"><div class="lobby-grid">' + left + pic + '</div></div>';
   }
+  var LOBBY_NOTE = "The board is not shown before the deal: which words are whose is decided by it. The drawing says who is in: the second balcony fills when the second player arrives, and in a lesson the teacher is at the end of the street. In a lesson the action is named for what it does, “Deal the words”.";
+  S.lobby = { group: "The lobby", label: "Lobby · ready", note: LOBBY_NOTE, render: function () { return lobby("ready"); } };
+  S["lobby/waiting"] = { group: "The lobby", sub: true, label: "…one more needed", note: "The invite link is offered to the owner alone, and only while there is a free seat. The balcony across the street is empty and the line hangs loose.", render: function () { return lobby("waiting"); } };
+  S["lobby/copied"] = { group: "The lobby", sub: true, label: "…link copied", note: "The copy answers beside its own button, in a line read out as it appears.", render: function () { return lobby("copied"); } };
+  S["lobby/copyfailed"] = { group: "The lobby", sub: true, label: "…copy refused", note: "A browser may refuse the clipboard. The line says what to do instead.", render: function () { return lobby("copyfailed"); } };
+  S["lobby/crowded"] = { group: "The lobby", sub: true, label: "…more players than words", note: "Somebody would have nothing to guess, so the deal refuses.", render: function () { return lobby("crowded"); } };
+  S["lobby/starting"] = { group: "The lobby", sub: true, label: "…dealing the words", note: "The button's dot beats while the words are dealt. Nothing else moves.", render: function () { return lobby("starting"); } };
+  S["lobby/failed"] = { group: "The lobby", sub: true, label: "…deal refused", note: "Nothing has been dealt out, so the room is where it was and the control stays live.", render: function () { return lobby("failed"); } };
+  S["lobby/away"] = { group: "The lobby", sub: true, label: "…you are away", note: "The room has not heard from this player. The notice comes first, and they carry the away mark in the list: a hollow ring and the words, never a colour alone.", render: function () { return lobby("away"); } };
+  S["lobby/teacheraway"] = { group: "The lobby", sub: true, label: "…teacher away (lesson)", lessonOnly: true, note: "A lesson only, seen by a player. Only the teacher deals, so a lobby whose teacher left waits for nobody, and this is how the players learn it. The teacher's balcony has its curtains drawn.", render: function () { return lobby("teacheraway"); } };
 
-  S.lobby              = { scene: "doors", group: "The lobby", label: "Lobby · ready", note: LOBBY_NOTE, render: function () { return lobby("ready"); } };
-  S["lobby/waiting"]   = { scene: "doors", group: "The lobby", label: "…one more needed", sub: true, note: "The invite link is offered to exactly one viewer — the host, and only while there is a free seat. Everybody else gets nothing, because they have nobody to send it to. The sentence above the field is what it is for; the field holds the link in full.", render: function () { return lobby("waiting"); } };
-  S["lobby/copied"]    = { scene: "doors", group: "The lobby", label: "…link copied", sub: true, note: "The copy answers beside its own button, in a line read out as it appears.", render: function () { return lobby("copied"); } };
-  S["lobby/copyfailed"]= { scene: "doors", group: "The lobby", label: "…copy refused", sub: true, note: "A browser may refuse the clipboard. The line says what to do instead, and the link is still in the field to select.", render: function () { return lobby("copyfailed"); } };
-  S["lobby/crowded"]   = { scene: "doors", group: "The lobby", label: "…more players than words", sub: true, note: "Somebody would have nothing to guess, so the deal refuses. The start is disabled and the sentence says which of the two numbers is wrong.", render: function () { return lobby("crowded"); } };
-  S["lobby/starting"]  = { scene: "doors", group: "The lobby", label: "…dealing the words", sub: true, note: "The button's own sun dot beats while the words are dealt, as it does while a room is written. Nothing else on the screen moves.", render: function () { return lobby("starting"); } };
-  S["lobby/failed"]    = { scene: "doors", group: "The lobby", label: "…deal refused", sub: true, note: "Nothing has been dealt out, so the room is exactly where it was and the control stays live.", render: function () { return lobby("failed"); } };
-  S["lobby/away"]      = { scene: "doors", group: "The lobby", label: "…you are away", sub: true, note: "The room has not heard from this player. The notice comes first in the zone, and the player carries the away mark in the list, which is also what the others see of them.", render: function () { return lobby("away"); } };
-
-  /* ---- the hall ---- */
-  function playing(variant) {
-    var list = words();
-    var half = Math.ceil(list.length / 2);
-    var mine = list.slice(0, half);
-    var theirs = list.slice(half);
-    var answered = Math.min(2, theirs.length);
-    var isLeftOut = variant === "leftout";
-
-    var left = isLeftOut
-      ? msg("", "This game is running without you", "It was dealt out just as you arrived, so none of its words are yours to explain or guess, and none of them are shown here. Ask the others for a link to the next game.")
-      : '<section><h3>Yours to explain</h3><p class="hint">' + esc(EXPLAIN_HINT) + '</p>' + wordRows(mine, "explain") + '</section>';
-
-    var right = '<div class="stack">' +
-      (variant === "away" ? presenceNotice() : "") +
-      players(variant === "away" ? "self" : "") +
-      (isLeftOut ? "" : '<section><h3>Yours to guess</h3><p class="hint">' + esc(GUESS_HINT) + '</p>' + wordRows(theirs, "guess") +
-        '<p class="count-line" role="status">' + answered + ' of ' + theirs.length + ' answered.</p></section>') +
-      '</div>';
-
-    var mode = "play";
-    if (isLeftOut) { mode = "blank"; }
-    if (variant === "refused") { mode = "refused"; }
-
-    var middle = boardHead(list.length + " words are hidden in this grid.") + board(mode) +
-      (isLeftOut ? "" : boardNotes(mode)) +
-      (variant === "guessfail" ? '<div style="margin-top:12px">' + msg("error", "Your answer was not saved", "It was right, but the others could not be told. The room may have expired — reload the page to see where the game stands.") + '</div>' : "") +
-      '<div style="margin-top:14px; display:flex; gap:9px; justify-content:center; flex-wrap:wrap">' +
-        go("→ finish it", "finished", "quiet sm") +
-        go("→ left out", "playing/leftout", "quiet sm") +
-        go("→ answer refused", "playing/refused", "quiet sm") +
-        go("→ answer failed", "playing/guessfail", "quiet sm") +
-      '</div>';
-
-    var overlay = "";
+  /* ---- the game ---- */
+  function guessCount() { var g = boardWords().filter(function (w) { return w.side === "guess"; }); return g.filter(function (w) { return isAnswered(w); }).length + " of " + g.length + " answered."; }
+  function endDialog(variant) {
+    var t = isTeacher(), id = uid("endTitle");
     if (variant === "confirm") {
-      overlay = '<div class="modal-veil"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="endTitle">' +
-        '<h3 id="endTitle">End the game?</h3><div class="rule"></div>' +
-        '<p>The room closes for both of you and the words nobody guessed stay unguessed. This cannot be undone, and the game cannot be restarted from here.</p>' +
-        '<div class="actions">' + go("Keep playing", "playing", "on-paper") + go("End it", "playing/ending", "on-paper quiet") + '</div>' +
-        '</div></div>';
+      return '<div class="modal-veil"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="' + id + '"><h3 id="' + id + '">' + (t ? "End the lesson?" : "End the game?") + '</h3>' +
+        '<p>' + (t ? "The room closes for both players and the words nobody guessed stay unguessed. You will see the lesson summary. This cannot be undone."
+                   : "The room closes for both of you and the words nobody guessed stay unguessed. This cannot be undone, and the game cannot be restarted from here.") + '</p>' +
+        '<div class="actions">' + go("End it", "playing/ending", "quiet") + go(t ? "Keep watching" : "Keep playing", "playing") + '</div></div></div>';
     }
     if (variant === "endfail") {
-      overlay = '<div class="modal-veil"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="endTitle2">' +
-        '<h3 id="endTitle2">End the game?</h3><div class="rule"></div>' +
-        '<p style="margin-bottom:14px">The game could not be ended. The room may have expired, or it may have ended already — reload the page to see where it stands.</p>' +
-        '<div class="actions">' + go("Keep playing", "playing", "on-paper") + go("Try again", "closed-early", "on-paper quiet") + '</div>' +
-        '</div></div>';
+      return '<div class="modal-veil"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="' + id + '"><h3 id="' + id + '">' + (t ? "End the lesson?" : "End the game?") + '</h3>' +
+        '<p>The game could not be ended. The room may have expired, or it may have ended already. Reload the page to see where it stands.</p>' +
+        '<div class="actions">' + go("Try again", "closed-early", "quiet") + go(t ? "Keep watching" : "Keep playing", "playing") + '</div></div></div>';
     }
-
-    var action = "";
-    if (!isLeftOut) {
-      action = variant === "ending"
-        ? btn("Ending the game", "quiet danger loading")
-        : go("End the game", "playing/confirm", "quiet danger");
-    }
-
-    return room({ status: "The game is on.", action: action, left: left, right: right, middle: middle, overlay: overlay });
+    return "";
   }
+  function teacherPlaying(variant) {
+    var action = variant === "ending" ? btn("Ending the lesson", "link loading") : go("End the lesson", "playing/confirm", "link");
+    var showPic = layout() !== "phone" && state.size === "few";
+    return room({ status: "Olena and Taras are playing. You are watching.", action: action,
+      left: '<div class="stack">' + (variant === "away" ? presenceNotice() : "") + explainerSection("Olena", "Taras", "explain", "a") + '</div>',
+      right: '<div class="stack">' + players({ away: variant === "away" ? "self" : "" }) + explainerSection("Taras", "Olena", "guess", "b") + '</div>',
+      middle: (showPic ? scene({ crop: "band", cards: answeredWords(), mood: "talk", label: "The answered words hanging on the line, the teacher watching from the end of the street" }) : "") +
+        '<div style="margin-top:' + (showPic ? 18 : 0) + 'px">' + board("teacher", squareSize(layout())) + '</div>' + teacherLegend() +
+        '<div class="row-btns" style="justify-content:center;margin-top:14px">' + tplGo("→ finish it", "finished") + tplGo("→ end it", "playing/confirm") + '</div>',
+      overlay: endDialog(variant) });
+  }
+  function playing(variant) {
+    if (isTeacher() && ["plain", "confirm", "ending", "endfail", "away"].indexOf(variant) > -1) { return teacherPlaying(variant); }
+    var leftOut = variant === "leftout", mode = leftOut ? "blank" : (variant === "refused" ? "refused" : "play");
+    var left = leftOut
+      ? msg("info", "This game is running without you", "It was dealt out just as you arrived, so none of its words are yours to explain or guess, and none of them are shown here. Ask the others for a link to the next game.")
+      : '<section><h2 class="h3">You explain</h2><p class="hint">' + esc(EXPLAIN_HINT) + '</p>' + wordRows("explain") + '</section>';
+    var notice = variant === "away" ? presenceNotice() : (variant === "teacheraway" ? msg("info", TEACHER + " is away", "The game goes on without your teacher watching. Only the teacher can end it.") : "");
+    var right = '<div class="stack">' + notice + players({ away: variant === "away" ? "self" : (variant === "teacheraway" ? "teacher" : "") }) +
+      (leftOut ? "" : '<section><h2 class="h3">You guess</h2><p class="hint">' + esc(GUESS_HINT) + '</p>' + wordRows("guess") +
+        '<p class="count-line" role="status">' + guessCount() + '</p></section>') + '</div>';
+    var showPic = layout() !== "phone" && state.size === "few";
+    var middle = (showPic ? scene({ crop: "band", cards: answeredWords(), mood: "talk", teacher: lesson() ? (variant === "teacheraway" ? "away" : "here") : "", label: "The answered words hanging on the line between the two balconies" }) : "") +
+      '<div style="margin-top:' + (showPic ? 18 : 0) + 'px">' + board(mode, squareSize(layout())) + '</div>' + (leftOut ? "" : boardNotes(mode)) +
+      (variant === "guessfail" ? '<div style="margin-top:14px">' + msg("error", "Your answer was not saved", "It was right, but the other player could not be told. The room may have expired. Reload the page to see where the game stands.") + '</div>' : "") +
+      '<div class="row-btns" style="justify-content:center;margin-top:14px">' + tplGo("→ answer apple", "playing/answered") + tplGo("→ finish it", "finished") + tplGo("→ left out", "playing/leftout") + tplGo("→ answer refused", "playing/refused") + tplGo("→ answer failed", "playing/guessfail") + '</div>';
+    /* in a lesson a player cannot end the game: only the teacher can */
+    var action = (leftOut || lesson()) ? "" : (variant === "ending" ? btn("Ending the game", "link loading") : go("End the game", "playing/confirm", "link"));
+    var status = leftOut ? "" : (lesson() ? "Playing with " + other() + ". " + TEACHER + " is watching." : "Playing with " + other());
+    return room({ status: esc(status), action: action, left: left, right: right, middle: middle, overlay: lesson() ? "" : endDialog(variant) });
+  }
+  S.playing = { group: "The game", label: "Playing", note: "No title: the letters say what this is. The drawing is a band above the board: one neighbour explaining with her hands, the other listening, every answered word hanging on the line. At 375 the drawing is left out so the board is the first thing under the header; with the long word list it is left out at every width. The teacher (lesson, host) sees every word, coloured and outlined by who explains it, and the only thing they can do is end the lesson. A player in a lesson has no “End the game”.", render: function () { return playing("plain"); } };
+  S["playing/answered"] = { group: "The game", sub: true, label: "…a word answered", note: "The moment “apple” is answered: its squares turn over one by one to their answered face, and its card is pegged on the line between the balconies and swings until it hangs still. The list marks it answered. Click it again to replay. With reduced motion it is simply answered.",
+    render: function () { JUST = "apple"; try { return playing("plain"); } finally { JUST = null; } } };
+  S["playing/leftout"] = { group: "The game", sub: true, label: "…dealt out without you", note: "Joined in the instant before the deal. Every word would read as theirs, so they are shown none.", render: function () { return playing("leftout"); } };
+  S["playing/refused"] = { group: "The game", sub: true, label: "…answer refused", note: "A wrong answer turns its squares to the refused surface, struck through, and says so under the board, where the player was looking when they typed it.", render: function () { return playing("refused"); } };
+  S["playing/guessfail"] = { group: "The game", sub: true, label: "…answer not saved", note: "The database refused the write outright, most likely an expired room.", render: function () { return playing("guessfail"); } };
+  S["playing/away"] = { group: "The game", sub: true, label: "…you are away", note: "The same notice the lobby gives, first in the zone with the players.", render: function () { return playing("away"); } };
+  S["playing/teacheraway"] = { group: "The game", sub: true, label: "…teacher away (lesson)", lessonOnly: true, note: "A lesson only, seen by a player. The game goes on; the teacher's balcony has its curtains drawn, and the room expires with its lifetime if they never come back.", render: function () { return playing("teacheraway"); } };
+  S["playing/confirm"] = { group: "The game", sub: true, label: "…end it? (dialog)", note: "The one irreversible thing, so it asks. “End it” is the quiet button and “Keep playing” (for the teacher, “Keep watching”) the loud one. In a lesson only the teacher sees it.", render: function () { return playing("confirm"); } };
+  S["playing/ending"] = { group: "The game", sub: true, label: "…ending it", note: "The control says what it is doing, beats, and takes no second press.", render: function () { return playing("ending"); } };
+  S["playing/endfail"] = { group: "The game", sub: true, label: "…could not end it", note: "Not retried on its own: ending was a person's decision.", render: function () { return playing("endfail"); } };
 
-  S.playing             = { scene: "hall", group: "The game", label: "Playing", note: "No title on this screen: the letters in the squares say what it is, and the strip a title would take is height the board has none of. The cursor is the ring inside a square, the word being filled is the darker green, and a number sits wherever a word begins. From a tablet up only the zones scroll; on a phone the page does.", render: function () { return playing("plain"); } };
-  S["playing/leftout"]  = { scene: "hall", group: "The game", label: "…dealt out without you", sub: true, note: "Somebody who joined in the instant between the owner reading the room and dealing the words. Every word would read as theirs to explain, so they are shown none: the board is all blank squares.", render: function () { return playing("leftout"); } };
-  S["playing/refused"]  = { scene: "hall", group: "The game", label: "…answer refused", sub: true, note: "A wrong answer turns its own squares to the refused surface and says so under the board, where the player was looking when they typed it. The line takes no height while there is nothing to say.", render: function () { return playing("refused"); } };
-  S["playing/guessfail"]= { scene: "hall", group: "The game", label: "…answer not saved", sub: true, note: "Firestore keeps retrying a write it merely could not send, so a rejection here means the database refused it outright — most likely an expired room.", render: function () { return playing("guessfail"); } };
-  S["playing/away"]     = { scene: "hall", group: "The game", label: "…you are away", sub: true, note: "The same notice the lobby gives, first in the zone with the players, and the same mark in the list.", render: function () { return playing("away"); } };
-  S["playing/confirm"]  = { scene: "hall", group: "The game", label: "…end it? (popup)", sub: true, note: "The one irreversible thing a player can do, so it asks. Note which button is louder: “End it” is the quiet one on paper, because the primary action of this app is already vermilion.", render: function () { return playing("confirm"); } };
-  S["playing/ending"]   = { scene: "hall", group: "The game", label: "…ending it", sub: true, note: "Between the confirmation and the room closing, the control says what it is doing, beats, and takes no second press.", render: function () { return playing("ending"); } };
-  S["playing/endfail"]  = { scene: "hall", group: "The game", label: "…could not end it", sub: true, note: "Not retried on the next snapshot, unlike the ending a full board asks for: this one was a person's decision, and repeating it on their behalf is not the screen's to do.", render: function () { return playing("endfail"); } };
-
-  S.finished = {
-    scene: "hall", group: "The game", label: "Finished", cloth: true,
-    note: "The cloth the app lays today, kept by Viktor's choice: the room behind dims, a band of paper is drawn in from both edges, and the words rise on it. The player never leaves the hall. With reduced motion the cloth is already down with its words on it.",
+  function fiestaCard(headline, text, withWords) {
+    var flags = [GERA, LIT, AZUL, TILE, LEAF, "#E58A3A", LIT, AZUL, TILE, LEAF];
+    return '<section class="fiesta" role="status"><div class="flags" aria-hidden="true">' + flags.map(function (c, i) { return '<span class="flag" style="background:' + c + ';--k:' + i + '"></span>'; }).join("") + '</div>' +
+      '<h2 class="ole">' + esc(headline) + '</h2><p>' + esc(text) + '</p>' +
+      (withWords ? '<div class="tags">' + roomWords().map(function (w) { return '<span class="tag-word">' + esc(w) + '</span>'; }).join("") + '</div>' : '') + '</section>';
+  }
+  S.finished = { group: "The game", label: "Finished", note: "A fiesta, the way an Andalusian street throws one: farolillos strung between the balconies and swaying, confetti, both neighbours cheering (the teacher too, in a lesson), every word on the line and every square of the board answered. The card is fiesta red with white polka dots and a row of flags, and says “You did it!” in the language of the interface, which is English today: the style is Spanish, the words are the app's own (Viktor, 2026-10-14). No score. With reduced motion nothing sways.",
     render: function () {
-      var n = words().length;
-      var summary = "You finished the crossword together — all " + n + " of its words, between the 2 of you.";
-      return room({
-        title: "Finished",
-        left: '<div class="stack">' +
-          msg("success", "Every word is in", summary,
-            '<div class="tags">' + words().map(function (w) { return '<span class="tag-word">' + esc(w) + '</span>'; }).join("") + '</div>') +
-          '</div>',
-        middle: boardHead("All " + n + " words of this grid are in place.") + board("all"),
-        right: players(),
-        overlay: '<div class="cloth"><canvas aria-hidden="true"></canvas>' +
-          '<section class="cloth-words" aria-labelledby="clothTitle">' +
-            '<h3 id="clothTitle">Congratulations</h3><div class="rule"></div>' +
-            '<p class="summary">' + esc(summary) + '</p>' +
-            '<button type="button" class="cloth-action" data-go="home">Back to the gate</button>' +
-          '</section></div>'
-      });
-    }
-  };
-
-  S["closed-early"] = {
-    scene: "hall", group: "The game", label: "Ended early",
-    note: "No cloth here. Nothing was finished, so nothing is being greeted — the board simply stays as far as it got, and the words nobody guessed are not spelled out.",
+      var n = roomWords().length, middle = scene({ crop: "band", cards: roomWords(), mood: "cheer", fiesta: true, label: "A fiesta in the street: paper lanterns and confetti, both neighbours cheering, every word hanging on the line" }) +
+        '<div style="margin-top:18px">' + board("all", squareSize(layout())) + '</div>';
+      if (isTeacher()) {
+        return room({ status: "The lesson is finished", left: fiestaCard("They did it!", "Your players finished the crossword together: all " + n + " of its words.", false) + '<div style="margin-top:22px">' + lessonSummary(true) + '</div><div style="margin-top:18px">' + go("Start a new lesson", "create") + '</div>', middle: middle, right: players() });
+      }
+      var summary = "You finished the crossword together: all " + n + " of its words, between the 2 of you.";
+      return room({ status: lesson() ? "The lesson is finished" : "The game is finished",
+        left: fiestaCard("You did it!", summary, true) +
+          '<div style="margin-top:18px">' + go("Start a new game", "home") + '</div>',
+        middle: middle, right: players() });
+    } };
+  S["closed-early"] = { group: "The game", label: "Ended early", note: "Not celebrated: the neighbours are calm and the line sags, holding only what was answered. The teacher's summary says which words were not answered, because those are what the next lesson is about.",
     render: function () {
-      var n = words().length;
-      return room({
-        title: "Game ended",
-        left: '<p class="hint" style="border-left:2px solid var(--scene-line); padding-left:12px; margin:0">This game was ended before every word had been answered, and the room is closed for good. The words nobody guessed are not spelled out, apart from the ones that were yours to explain, which were on your screen all along.</p>',
-        middle: boardHead("Of the " + n + " words of this grid, the ones that were answered are in place; the rest stay blank.") + board("closed") +
-          '<div style="margin-top:14px; text-align:center">' + go("Back to the gate", "home", "quiet sm") + '</div>',
-        right: players()
-      });
-    }
-  };
+      var n = roomWords().length, line = "Of the " + n + " words, the ones that were answered are in place; the rest stay blank.";
+      if (isTeacher()) {
+        return room({ status: "The lesson was ended", left: lessonSummary(false) + '<div style="margin-top:18px">' + go("Start a new lesson", "create", "quiet") + '</div>',
+          middle: scene({ crop: "band", line: "slack", cards: answeredWords(), mood: "calm", label: "A sagging line between the balconies, holding only the answered words" }) +
+            '<div style="margin-top:12px">' + board("teacher", squareSize(layout())) + '</div>' + teacherLegend(), right: players() });
+      }
+      return room({ status: lesson() ? "The lesson was ended" : "The game was ended",
+        left: msg("info", lesson() ? TEACHER + " ended the lesson" : "This game was ended early", (lesson() ? "Your teacher ended it" : "It was ended") + " before every word had been answered, and the room is closed for good. The words nobody guessed are not spelled out, apart from the ones that were yours to explain.") +
+          '<div style="margin-top:18px">' + go("Start a new game", "home", "quiet") + '</div>',
+        middle: scene({ crop: "band", line: "slack", cards: answeredWords(), mood: "calm", label: "A sagging line between the balconies, holding only the words that were answered" }) +
+          '<p class="hint" style="text-align:center;margin-top:14px">' + esc(line) + '</p>' +
+          '<div style="margin-top:12px">' + board("closed", squareSize(layout())) + '</div>',
+        right: players() });
+    } };
 
   /* ============================ the map ============================ */
   var ORDER = ["home", "create", "create/errors", "create/nogrid", "create/unplaced", "create/creating", "create/failed",
     "connecting", "join", "join/joining", "join/failed",
-    "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished",
-    "unavailable/full", "unavailable/refused", "unavailable/connection",
-    "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away",
-    "playing", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/confirm", "playing/ending", "playing/endfail",
+    "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection",
+    "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/teacheraway",
+    "playing", "playing/answered", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
     "finished", "closed-early"];
-
-  var mapEl = document.getElementById("map");
-
+  var mapEl = document.getElementById("map"), stageEl = document.getElementById("stage");
+  var whereEl = document.getElementById("where"), noteEl = document.getElementById("stateNote");
   function buildMap() {
-    var html = '<p class="map-head">The state tree</p>';
-    var group = null;
-
+    var html = '<p class="map-head">The state tree</p>', group = null;
     ORDER.forEach(function (key) {
       var s = S[key];
-      if (!s) { return; }
-      if (s.group !== group) {
-        group = s.group;
-        html += '<div class="map-group"><span class="map-group-name">' + esc(group) + '</span>';
-      }
-      html += '<button type="button" class="node' + (s.sub ? " sub" : "") + '" data-go="' + key + '">' +
-        '<span class="pip"></span>' + esc(s.label) + '</button>';
+      if (s.group !== group) { group = s.group; html += '<p class="map-group">' + esc(group) + '</p>'; }
+      html += '<button type="button" class="node' + (s.sub ? " sub" : "") + '" data-go="' + key + '">' + esc(s.label) + '</button>';
     });
-    html += '</div>';
     mapEl.innerHTML = html;
   }
 
-  /* ============================ render ============================ */
-  var stageEl = document.getElementById("stage");
-  var deviceEl = document.getElementById("device");
-  var screensEl = document.getElementById("screens");
-  var whereEl = document.getElementById("where");
-  var noteEl = document.getElementById("stateNote");
-  var petalsEl = document.getElementById("petals");
-  var scenes = { gate: document.getElementById("sceneGate"), doors: document.getElementById("sceneDoors"), hall: document.getElementById("sceneHall") };
-
-  var bloomEl = document.getElementById("bloom");
-  var sunEl = document.getElementById("sunmark");
-  var FADE = 1800;
-  var SHIFT = 180;
-  var KEN_BURNS = 26000;
-  var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-  var showing = null;
-  var current = null;
-
-  function pushForward(scene) {
-    var art = scene.querySelector(".art");
-    art.style.animation = "none";
-    void art.offsetWidth;
-    art.style.animation = "kenburns " + KEN_BURNS + "ms linear both";
-  }
-
-  /* The standard transition, and the only way a scene ever changes here. */
-  function goToScene(name) {
-    if (name === showing) { return; }
-    var incoming = scenes[name];
-    var outgoing = showing ? scenes[showing] : null;
-    showing = name;
-
-    // the incoming picture starts travelling as the fade starts, so for 1800ms
-    // both pictures are moving the same way
-    pushForward(incoming);
-    incoming.classList.add("on");
-    petalsEl.classList.toggle("indoors", name === "hall");
-    if (outgoing) {
-      outgoing.classList.remove("on");
-      setTimeout(function () {
-        if (!outgoing.classList.contains("on")) {
-          outgoing.querySelector(".art").style.animation = "none";
-        }
-      }, FADE);
-
-      // replayed rather than toggled: the same transition has to be able to
-      // run twice in a row, which is what "Back to the gate" does
-      bloomEl.classList.remove("on"); sunEl.classList.remove("on");
-      void bloomEl.offsetWidth; void sunEl.offsetWidth;
-      bloomEl.classList.add("on"); sunEl.classList.add("on");
-    }
-  }
-
-  /* A screen is the part of a state's key before the slash: `lobby/failed` is
-     the lobby in another state, not another screen. */
-  function screenOf(key) { return key.split("/")[0]; }
-
-  function showScreen(html, screen, sceneChanges) {
-    if (current && current.screen === screen) {
-      current.el.innerHTML = html;
-      return;
-    }
-
-    var el = document.createElement("div");
-    el.className = "screen";
-    el.innerHTML = html;
-
-    if (current) {
-      var old = current.el;
-      var motion = null;
-      if (!reducedMotion.matches) { motion = sceneChanges ? "fade" : "shift"; }
-      if (motion) {
-        old.classList.add("leaving", motion + "-out");
-        old.inert = true;
-        el.classList.add(motion + "-in");
-        setTimeout(function () { old.remove(); }, motion === "fade" ? FADE : SHIFT);
-      } else {
-        old.remove();
-      }
-    }
-    screensEl.appendChild(el);
-    current = { el: el, screen: screen };
-  }
-
-  function render() {
-    var s = S[state.key] || S.home;
-
-    showScreen(s.render(), screenOf(state.key), s.scene !== showing);
-    goToScene(s.scene);
-
-    // a dialog or the cloth covers the window, so the screen under it is read from its top
-    var cover = current.el.querySelector(".modal-veil, .cloth");
-    current.el.style.overflowY = cover ? "hidden" : "";
-    if (cover) { current.el.scrollTop = 0; }
-    if (s.cloth) { layCloth(current.el.querySelector(".cloth"), false); }
-
-    whereEl.textContent = s.scene + " · " + s.label.replace(/^…/, "");
-    noteEl.innerHTML = "<p><strong>" + esc(s.label.replace(/^…/, "")) + ".</strong> " + esc(s.note) + "</p>";
-
-    Array.prototype.forEach.call(mapEl.querySelectorAll(".node"), function (node) {
-      node.classList.toggle("here", node.getAttribute("data-go") === state.key);
-    });
-    remember();
-  }
-
-  /* ============================ the window ============================ */
+  /* ============================ the windows ============================ */
   var WINDOWS = { "1440": [1440, 900], "834": [834, 1112], "375": [375, 812] };
-  var params = new URLSearchParams(window.location.search);
-  var isBare = params.has("bare");
-
+  var params = new URLSearchParams(window.location.search), isBare = params.has("bare");
   if (params.get("state") && S[params.get("state")]) { state.key = params.get("state"); }
   if (params.get("role") === "guest") { state.role = "guest"; }
   if (params.get("size") === "many") { state.size = "many"; }
+  if (params.get("mode") === "lesson") { state.mode = "lesson"; }
   if (WINDOWS[params.get("width")]) { state.width = params.get("width"); }
   if (isBare) { document.documentElement.classList.add("bare"); }
-
-  // the address says what is on the stage, so a state can be sent as a link
+  function layoutFor(w) { return w >= 1200 ? "wide" : (w >= 768 ? "tablet" : "phone"); }
+  function windows() {
+    if (isBare) { return [{ w: window.innerWidth, h: window.innerHeight, name: "" }]; }
+    var keys = state.width === "all" ? ["1440", "834", "375"] : [state.width];
+    return keys.map(function (k) { return { w: WINDOWS[k][0], h: WINDOWS[k][1], name: k + " × " + WINDOWS[k][1] }; });
+  }
   function remember() {
-    var next = new URLSearchParams();
-    if (isBare) { next.set("bare", ""); }
-    next.set("state", state.key);
-    if (state.role !== "host") { next.set("role", state.role); }
-    if (state.size !== "few") { next.set("size", state.size); }
-    if (!isBare && state.width !== "1440") { next.set("width", state.width); }
-    try {
-      history.replaceState(null, "", "?" + next.toString().replace("bare=&", "bare&").replace(/bare=$/, "bare"));
-    } catch (error) {
-      // a sandboxed viewer may refuse history; the page works without it
-      console.warn("Could not keep the state in the address", error);
-    }
+    var q = [];
+    if (isBare) { q.push("bare"); }
+    q.push("state=" + state.key);
+    if (state.mode !== "pair") { q.push("mode=" + state.mode); }
+    if (state.role !== "host") { q.push("role=" + state.role); }
+    if (state.size !== "few") { q.push("size=" + state.size); }
+    if (!isBare && state.width !== "all") { q.push("width=" + state.width); }
+    try { history.replaceState(null, "", "?" + q.join("&")); } catch (error) { console.warn("Could not keep the state in the address", error); }
   }
 
-  function sizeDevice() {
-    var width, height, scale;
-    if (isBare) {
-      width = window.innerWidth; height = window.innerHeight; scale = 1;
-    } else {
-      width = WINDOWS[state.width][0]; height = WINDOWS[state.width][1];
-      scale = Math.min(1, stageEl.clientWidth / width);
-    }
-    deviceEl.style.setProperty("--device-w", width + "px");
-    deviceEl.style.setProperty("--device-h", height + "px");
-    deviceEl.style.setProperty("--device-scale", String(scale));
-    stageEl.style.setProperty("--stage-h", Math.round(height * scale) + "px");
-    fitPetals();
-    var cloth = current && current.el.querySelector(".cloth");
-    if (cloth) { layCloth(cloth, true); }
-  }
-
-  function syncToggles() {
-    [["data-role", state.role], ["data-size", state.size], ["data-width", state.width]].forEach(function (pair) {
-      Array.prototype.forEach.call(document.querySelectorAll("[" + pair[0] + "]"), function (b) {
-        b.setAttribute("aria-pressed", String(b.getAttribute(pair[0]) === pair[1]));
+  /* ============================ render ============================ */
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)"), lastScreen = null;
+  function render() {
+    var s = S[state.key] || S.home, saved = { mode: state.mode, role: state.role };
+    if (s.lessonOnly) { state.mode = "lesson"; state.role = "guest"; }
+    var scr = state.key.split("/")[0], anim = lastScreen !== scr ? " enter" : "";
+    var wins = windows(), scale = isBare ? 1 : Math.min(1, (stageEl.clientWidth - 2) / wins[0].w);
+    var html = wins.map(function (win, i) {
+      ctx = { w: win.w, h: win.h, layout: layoutFor(win.w), idx: i };
+      var w = Math.round(win.w * scale), h = Math.round(win.h * scale);
+      return '<figure class="frame"><figcaption>' + esc(win.name) + '</figcaption><div class="dev-wrap" style="width:' + w + 'px;height:' + h + 'px">' +
+        '<div class="device" data-layout="' + ctx.layout + '" style="--device-w:' + win.w + 'px;--device-h:' + win.h + 'px;--device-scale:' + scale + '">' +
+        '<div class="screens"><div class="screen' + anim + '">' + s.render() + '</div></div></div></div></figure>';
+    }).join("");
+    state.mode = saved.mode; state.role = saved.role;
+    stageEl.innerHTML = html;
+    Array.prototype.forEach.call(stageEl.querySelectorAll(".screen"), function (el) {
+      el.style.overflowY = el.querySelector(".modal-veil") ? "hidden" : "";
+      ["header.app-head", ".zones > *", ".lobby-grid > *", ".column > .scene", ".column .stack > *", ".street > *", ".lobby-grid .stack > *"].forEach(function (sel) {
+        Array.prototype.forEach.call(el.querySelectorAll(sel), function (node, i) { node.classList.add("rise"); node.style.setProperty("--i", String(i)); });
       });
     });
+    lastScreen = scr;
+    whereEl.textContent = state.key + " · " + state.mode + " · " + state.role + " · " + state.size + " · " + (isBare ? "bare" : state.width);
+    noteEl.innerHTML = "<p><strong>" + esc(s.label.replace(/^…/, "")) + ".</strong> " + esc(s.note) + "</p>";
+    Array.prototype.forEach.call(mapEl.querySelectorAll(".node"), function (n) { n.classList.toggle("here", n.getAttribute("data-go") === state.key); });
+    syncToggles();
+    remember();
   }
-
-  document.addEventListener("click", function (event) {
-    var target = event.target.closest("[data-go]");
-    if (!target) { return; }
-    var key = target.getAttribute("data-go");
-    if (!key || !S[key]) { return; }
-    state.key = key;
+  function syncToggles() {
+    [["data-mode", state.mode], ["data-role", state.role], ["data-size", state.size], ["data-width", state.width]].forEach(function (p) {
+      Array.prototype.forEach.call(document.querySelectorAll(".tpl-bar [" + p[0] + "]"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute(p[0]) === p[1])); });
+    });
+    document.querySelector('[data-role="host"]').textContent = lesson() ? "teacher" : "host";
+    document.querySelector('[data-role="guest"]').textContent = lesson() ? "player" : "guest";
+  }
+  document.addEventListener("click", function (e) {
+    var pick = e.target.closest("[data-pick]");
+    if (pick && !pick.disabled) { state.mode = pick.getAttribute("data-pick"); state.role = "host"; render(); return; }
+    var t = e.target.closest("[data-go]");
+    if (!t || !S[t.getAttribute("data-go")]) { return; }
+    state.key = t.getAttribute("data-go");
     render();
   });
-
-  [["data-role", "role"], ["data-size", "size"], ["data-width", "width"]].forEach(function (pair) {
-    Array.prototype.forEach.call(document.querySelectorAll("[" + pair[0] + "]"), function (b) {
-      b.addEventListener("click", function () {
-        state[pair[1]] = b.getAttribute(pair[0]);
-        syncToggles();
-        if (pair[1] === "width") { sizeDevice(); remember(); } else { render(); }
-      });
+  [["data-mode", "mode"], ["data-role", "role"], ["data-size", "size"], ["data-width", "width"]].forEach(function (p) {
+    Array.prototype.forEach.call(document.querySelectorAll(".tpl-bar [" + p[0] + "]"), function (b) {
+      b.addEventListener("click", function () { state[p[1]] = b.getAttribute(p[0]); lastScreen = null; render(); });
     });
   });
-
-  window.addEventListener("resize", sizeDevice);
-
-  /* ============================ the petals ============================
-     The scene prototype's layer, unchanged in its numbers. One continuous
-     layer that knows nothing about screens; with reduced motion it holds still. */
-  var CALM_PETALS = 60;
-  var REFERENCE_SKY = 1440 * 900;
-  var THINNEST_SKY = 0.45, THICKEST_SKY = 1.8, SEED_BAND = 0.15;
-  var FALL = { least: 22, most: 62 };
-  var SWAY = { least: 7, most: 26 };
-  var SPIN = { least: -1.1, most: 1.1 };
-  var SIZE = { least: 5, most: 12 };
-  var INK = { least: 0.55, most: 0.92 };
-  var SWAY_RATE = 0.9;
-  var TONES = ["#F7D3B8", "#EEC4A8", "#EE9A8C"];
-  var PETAL_WIDTH = 1.05, PETAL_WAIST = -0.02, THINNEST_TURN = 0.25;
-
-  var petalBrush = petalsEl.getContext("2d");
-  var sky = { width: 0, height: 0 };
-  var petals = [];
-
-  function between(range) { return range.least + Math.random() * (range.most - range.least); }
-
-  function spawnPetal(atTop) {
-    return {
-      x: Math.random() * sky.width,
-      y: atTop ? -Math.random() * sky.height * SEED_BAND : Math.random() * sky.height,
-      fall: between(FALL), sway: between(SWAY), phase: Math.random() * Math.PI * 2,
-      spin: between(SPIN), angle: Math.random() * Math.PI * 2, size: between(SIZE),
-      ink: between(INK), tone: TONES[Math.floor(Math.random() * TONES.length)]
-    };
-  }
-
-  function stepPetal(p, dt) {
-    p.phase += SWAY_RATE * dt;
-    p.y += p.fall * dt;
-    p.x += Math.sin(p.phase) * p.sway * dt;
-    p.angle += p.spin * dt;
-    if (p.y > sky.height + p.size) { return spawnPetal(true); }
-    if (p.x < -p.size) { p.x = sky.width + p.size; }
-    if (p.x > sky.width + p.size) { p.x = -p.size; }
-    return p;
-  }
-
-  function paintPetal(p) {
-    petalBrush.save();
-    petalBrush.translate(p.x, p.y);
-    petalBrush.rotate(p.angle);
-    petalBrush.scale(Math.max(Math.abs(Math.cos(p.phase)), THINNEST_TURN), 1);
-    petalBrush.globalAlpha = p.ink;
-    petalBrush.fillStyle = p.tone;
-    petalBrush.beginPath();
-    petalBrush.moveTo(0, -p.size);
-    petalBrush.quadraticCurveTo(p.size * PETAL_WIDTH, p.size * PETAL_WAIST, 0, p.size);
-    petalBrush.quadraticCurveTo(-p.size * PETAL_WIDTH, p.size * PETAL_WAIST, 0, -p.size);
-    petalBrush.fill();
-    petalBrush.restore();
-  }
-
-  function fitPetals() {
-    var dpr = Math.min(2, window.devicePixelRatio || 1);
-    sky = { width: deviceEl.clientWidth, height: deviceEl.clientHeight };
-    petalsEl.width = sky.width * dpr;
-    petalsEl.height = sky.height * dpr;
-    petalBrush.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var density = Math.min(THICKEST_SKY, Math.max(THINNEST_SKY, (sky.width * sky.height) / REFERENCE_SKY));
-    var count = Math.round(CALM_PETALS * density);
-    petals = petals.slice(0, count);
-    while (petals.length < count) { petals.push(spawnPetal(false)); }
-  }
-
-  var lastFrame = performance.now();
-  function petalFrame(now) {
-    var dt = Math.min(0.05, (now - lastFrame) / 1000);
-    lastFrame = now;
-    petalBrush.clearRect(0, 0, sky.width, sky.height);
-    for (var i = 0; i < petals.length; i++) {
-      if (!reducedMotion.matches) { petals[i] = stepPetal(petals[i], dt); }
-      paintPetal(petals[i]);
-    }
-    requestAnimationFrame(petalFrame);
-  }
-
-  /* ============================ the cloth ============================
-     `garden/paint-cloth.ts`, `cloth.ts`, `easing.ts` and `seeded-random.ts`,
-     ported line for line so the pattern is the same cloth the app lays. */
-  var CLOTH_MS = 1900, CLOSED_AT = 0.58;
-  var CLOTH_PAPER = ["#E4D8B6", "#D6C9A3", "#C3B48D"];
-  var CLOTH_STRONG = "#93290F", CLOTH_SOFT = "#DA4620";
-  var KIKU = [[0.08, 0.16], [0.2, 0.78], [0.76, 0.86], [0.86, 0.13], [0.63, 0.9]];
-  var clothRun = 0;
-
-  function seeded(seed) {
-    var s = seed >>> 0;
-    return function () {
-      s = (s + 0x6d2b79f5) >>> 0;
-      var m = Math.imul(s ^ (s >>> 15), 1 | s);
-      m = (m + Math.imul(m ^ (m >>> 7), 61 | m)) ^ m;
-      return ((m ^ (m >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-
-  // cubic-bezier(.65, 0, .35, 1), solved for x by Newton's method as easing.ts does
-  function eased(time) {
-    if (time <= 0) { return 0; }
-    if (time >= 1) { return 1; }
-    function along(a, b, t) { var r = 1 - t; return 3 * r * r * t * a + 3 * r * t * t * b + t * t * t; }
-    function slope(a, b, t) { var r = 1 - t; return 3 * r * r * a + 6 * r * t * (b - a) + 3 * t * t * (1 - b); }
-    var guess = time;
-    for (var i = 0; i < 8; i++) {
-      var error = along(0.65, 0.35, guess) - time;
-      if (Math.abs(error) < 1e-6) { break; }
-      guess -= error / slope(0.65, 0.35, guess);
-    }
-    return along(0, 1, guess);
-  }
-
-  function clothBand(width, height) {
-    var h = Math.min(360, Math.max(220, height - 160));
-    return { x: 0, y: Math.max(0, (height - h) / 2), width: width, height: h };
-  }
-
-  function ring(brush, x, y, radius) { brush.beginPath(); brush.ellipse(x, y, radius, radius, 0, 0, Math.PI * 2); }
-
-  function rings(brush, x, y, radius) {
-    var step = Math.max(3.5, radius * 0.17);
-    for (var across = radius; across > radius * 0.16; across -= step) {
-      brush.lineWidth = across > radius * 0.7 ? 1.2 : 0.8;
-      ring(brush, x, y, across);
-      brush.stroke();
-    }
-  }
-
-  function kiku(brush, x, y, radius, seed) {
-    var random = seeded(seed);
-    var count = 22 + Math.floor(random() * 8);
-    brush.lineWidth = Math.max(0.7, radius * 0.045);
-    for (var i = 0; i < count; i++) {
-      var angle = (i / count) * Math.PI * 2;
-      brush.beginPath();
-      brush.ellipse(x + Math.cos(angle) * radius * 0.6, y + Math.sin(angle) * radius * 0.6, radius * 0.42, radius * 0.12, angle, 0, Math.PI * 2);
-      brush.stroke();
-    }
-    [0.2, 0.08].forEach(function (heart) { ring(brush, x, y, radius * heart); brush.stroke(); });
-  }
-
-  function clothPattern(brush, band) {
-    var random = seeded(3131);
-    for (var i = 0; i < 260; i++) {
-      var x = band.x + random() * band.width;
-      var y = band.y + random() * band.height;
-      var across = Math.abs(x - (band.x + band.width / 2)) / (band.width / 2);
-      var down = Math.abs(y - (band.y + band.height / 2)) / (band.height / 2);
-      var fromEdge = Math.max(across, down);
-      var radius = 12 + random() * 40;
-      var isHeavy = random() > 0.62;
-      if (random() > fromEdge * fromEdge * 1.25) { continue; }
-      brush.strokeStyle = isHeavy ? CLOTH_STRONG : CLOTH_SOFT;
-      brush.globalAlpha = (isHeavy ? 0.5 : 0.26) * (0.45 + fromEdge * 0.55);
-      rings(brush, x, y, radius);
-    }
-    brush.strokeStyle = CLOTH_STRONG;
-    brush.globalAlpha = 0.5;
-    KIKU.forEach(function (place, index) {
-      kiku(brush, band.x + band.width * place[0], band.y + band.height * place[1], 16 + (index % 3) * 7, 3131 + index * 17);
-    });
-    brush.globalAlpha = 0.9;
-    brush.fillStyle = CLOTH_STRONG;
-    ring(brush, band.x + band.width * 0.9, band.y + band.height * 0.78, band.height * 0.2);
-    brush.fill();
-    brush.globalAlpha = 1;
-  }
-
-  function paintCloth(brush, width, height, time) {
-    var band = clothBand(width, height);
-    var reached = eased(Math.min(Math.max(time, 0), CLOSED_AT) / CLOSED_AT);
-    var half = (width / 2) * reached;
-
-    brush.save();
-    brush.clearRect(0, 0, width, height);
-    brush.globalAlpha = 1;
-    brush.fillStyle = "rgba(6, 17, 26, " + 0.5 * Math.min(Math.max(time, 0) / 0.25, 1) + ")";
-    brush.fillRect(0, 0, width, height);
-    if (half < 1) { brush.restore(); return; }
-
-    brush.beginPath();
-    brush.rect(0, band.y, half, band.height);
-    brush.rect(width - half, band.y, half, band.height);
-    brush.clip();
-    var paper = brush.createLinearGradient(0, band.y, 0, band.y + band.height);
-    paper.addColorStop(0, CLOTH_PAPER[0]);
-    paper.addColorStop(0.5, CLOTH_PAPER[1]);
-    paper.addColorStop(1, CLOTH_PAPER[2]);
-    brush.fillStyle = paper;
-    brush.fillRect(band.x, band.y, band.width, band.height);
-    clothPattern(brush, band);
-    brush.restore();
-    if (reached >= 1) { return; }
-
-    // the leading edge, only while a half is still travelling
-    brush.save();
-    brush.fillStyle = CLOTH_STRONG;
-    brush.fillRect(half - 2.5, band.y - 6, 5, band.height + 12);
-    brush.fillRect(width - half - 2.5, band.y - 6, 5, band.height + 12);
-    brush.restore();
-  }
-
-  function layCloth(cloth, atOnce) {
-    var canvas = cloth.querySelector("canvas");
-    var wordsEl = cloth.querySelector(".cloth-words");
-    var brush = canvas.getContext("2d");
-    var run = ++clothRun;
-    var started = null;
-    var still = atOnce || reducedMotion.matches;
-
-    function frame(now) {
-      if (run !== clothRun || !canvas.isConnected) { return; }
-      var width = deviceEl.clientWidth, height = deviceEl.clientHeight;
-      var dpr = Math.min(2, window.devicePixelRatio || 1);
-      var band = clothBand(width, height);
-      wordsEl.style.setProperty("--band-top", band.y + "px");
-      wordsEl.style.setProperty("--band-h", band.height + "px");
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      brush.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (started === null) { started = now; }
-      var time = still ? 1 : Math.min((now - started) / CLOTH_MS, 1);
-      paintCloth(brush, width, height, time);
-      if (time < 1) { requestAnimationFrame(frame); }
-    }
-    if (still) { wordsEl.style.animation = "none"; }
-    requestAnimationFrame(frame);
-  }
-
-  syncToggles();
-  sizeDevice();
-  requestAnimationFrame(petalFrame);
-
+  var resizeTimer = null;
+  window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(function () { lastScreen = null; render(); }, 120); });
   buildMap();
   render();
 })();
 </script>
+</body>
+</html>
