@@ -15,10 +15,9 @@ declare module '@mui/material/styles' {
   /**
    * The sign face as a variant of the theme's own.
    *
-   * It is one of the three roles a face plays here and the only one MUI has no
-   * slot for, so it is given one: the scene reads `theme.typography.signage`
-   * rather than writing a family and a tracking of its own onto a canvas
-   * (issue #115).
+   * Only the garden's cloth reads it now (`garden/RewardCloth.tsx`), in
+   * Alegreya Sans 400, and it leaves with the cloth (#222). The name of a step
+   * is the `stepTitle` variant (`street.ts`).
    */
   interface TypographyVariants {
     signage: CSSProperties;
@@ -116,8 +115,8 @@ export const TYPOGRAPHY: TypographyVariantsOptions = {
   // it rather than shouted in capitals.
   button: { ...textLevel(TEXT_LEVELS.body, WEIGHTS.bold), textTransform: 'none' },
 
-  // The third role, which nothing in the interface uses and the garden does:
-  // lettering on a sign, in capitals held apart (issue #115).
+  // The sign role, which nothing in the interface uses and the garden's cloth
+  // does: lettering on a sign, in capitals held apart (issue #115).
   signage: {
     fontFamily: SIGN_FONT_FAMILY,
     fontWeight: SIGN_FONT_WEIGHT,

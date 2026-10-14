@@ -57,8 +57,7 @@ describe('NotFoundPage', () => {
       screen.getByRole('heading', { name: /this page does not exist/i }),
     );
 
-    expect(style.fontFamily).toMatch(/Zen Kaku Gothic New/);
-    expect(style.fontFamily).not.toMatch(/Zen Old Mincho/);
+    expect(style.fontFamily).toMatch(/Alegreya Sans/);
     expect(style.fontWeight).toBe('700');
   });
 });

@@ -14,22 +14,16 @@
  * the scene of issue #115 paints its text onto a canvas, and canvas has no
  * variants.
  *
- * There used to be three faces and a serif among them (issue #124): a display
- * face for the crossword and the two large levels, a sign face for lettering,
- * and a text face for everything read. Issue #147 dropped the serif — the
- * board's letters run 11px to 24px, and a face that spends its quality on
- * stroke contrast loses that contrast first at the sizes this board actually
- * draws at. What was left of its job, once the board moved off it, was four
- * short panel headings and one `h1` nobody sees rendered — fifteen and a half
- * kibibytes for that is not a trade this app makes. See
- * `docs/decisions/0034-one-text-family-and-a-logotype.md`.
- *
- * Four roles now, not three: a **logotype** ({@link LOGOTYPE_FONT_FAMILY}),
- * fetched for eight glyphs and one route; a **sign** ({@link
- * SIGN_FONT_FAMILY}) for lettering; a **text** ({@link TEXT_FONT_FAMILY}) for
- * everything read, including the board's letters now; and a **heading** —
- * the same family as text, told apart from it by weight alone
- * ({@link WEIGHTS}), and nothing else.
+ * There is one face: Alegreya Sans, in design v2 (`design/templates/
+ * state-tree.html`, `--face`; issue #244). It replaced a text face and a
+ * logotype that were two families (issues #124, #147), so the roles below are
+ * told apart by weight and size and no longer by family. The **text** role
+ * ({@link TEXT_FONT_FAMILY}) is everything read, the board's letters
+ * included; the **heading** role is the same family at 700 ({@link WEIGHTS}).
+ * What is left of the old **sign** role ({@link SIGN_FONT_FAMILY}) is the
+ * garden's cloth alone, and it leaves with the cloth (#222). The name of the
+ * game is the heading weight with its own tracking ({@link
+ * LOGOTYPE_TRACKING}), until its screen is redrawn (#224).
  */
 
 /**
@@ -92,18 +86,6 @@ export const TEXT_LEVELS = {
 export const GATE_NAME_SIZE = levelAt(4);
 
 /**
- * How big the name of a step stands, in pixels — 19, the template's own
- * (`design/templates/state-tree.html`'s `.step-title`).
- *
- * Not a fifth text level, for the same reason {@link GATE_NAME_SIZE} is not: it
- * is a sign, set on the sign face, and the name of the step on the create panel
- * and at the top of every room. It lies between `body` (17) and `heading` (23),
- * and is a number written down rather than a step of the ratio because the
- * template chose it on a real render (issue #197). `stepTitleSx` reads it.
- */
-export const STEP_TITLE_SIZE = 19;
-
-/**
  * A level as a share of the reader's own text size rather than as pixels.
  *
  * Somebody who has made text larger in their browser has said something, and a
@@ -119,17 +101,10 @@ export const inRem = (level: number): string => `${level / 16}rem`;
  *
  * Two, because a third is a distinction nobody makes on purpose: what is not
  * ordinary text is a heading, and a heading is already a size. Both name a
- * weight the text family actually ships — 400 and 700 — rather than asking a
- * browser to imitate one it does not have. Only 300 (the sign face's own),
- * 400 and 700 are ever fetched; a rule naming 500 or 600 would be a weight
- * nobody chose, matched to whichever real file the browser judges closest.
- *
- * `bold` used to be requested as 600 and matched by the browser to the 700
- * file that was the only thing present above 400 — a working trick, but one
- * that named a weight nothing in the family is. Issue #147 made the board's
- * heading role a real, deliberate 700 (`docs/decisions/
- * 0034-one-text-family-and-a-logotype.md`), so the number here now says what
- * is actually drawn rather than what a browser used to be left to guess at.
+ * weight the face actually ships (Alegreya Sans 400 and 700, `index.html`)
+ * rather than asking a browser to imitate one it does not have. A rule naming
+ * 500 or 600 would be a weight nobody chose, matched to whichever real file
+ * the browser judges closest.
  */
 export const WEIGHTS = { regular: 400, bold: 700 } as const;
 
@@ -187,120 +162,55 @@ export const SYSTEM_FONT_FAMILY = [
 ].join(', ');
 
 /**
- * The one family two of the four roles below name, with what to draw while it
- * is on its way.
+ * Alegreya Sans, the one face of Across the Street, and what to draw while its
+ * files are on their way.
  *
- * It is written once and read twice, and that is a saving of one list rather
- * than a claim that the two roles are one thing: the sign face and the text
- * face were chosen separately and happen to have been chosen the same. A ticket
- * that changes either of them splits this constant in two rather than editing
- * it in place — otherwise renaming the face over the gates would silently
- * restyle every sentence in the app.
+ * Self-hosted: three latin files (400, 700 and 400 italic) declared and
+ * preloaded in `index.html`, and in the workshop's `preview-head.html`. The
+ * system stack is the tail of it, drawn on the first frame and instead of the
+ * face if a file never arrives.
  */
-const ZEN_KAKU_GOTHIC = ['"Zen Kaku Gothic New"', '"Hiragino Sans"', '"Yu Gothic"'].join(', ');
+const ALEGREYA_SANS = ['"Alegreya Sans"', SYSTEM_FONT_FAMILY].join(', ');
 
 /**
- * The logotype: the name of the game, over the gates, and nowhere else.
+ * How far apart the letters of the name of the game stand, as a share of their
+ * own size, on the landing page.
  *
- * A display face chosen for one word standing eight glyphs tall rather than for
- * reading — `WORD GARDEN` is `W O R D G A E N`, and the file behind this
- * constant is subset to exactly those letters plus a space, weighing well
- * under a kibibyte (measured in the pull request that added it,
- * `docs/decisions/0034-one-text-family-and-a-logotype.md`). Preloaded in
- * `index.html`, the same way the sign face is: issue #148 put the name of
- * the game over the gates in this face, the one thing the first screen is
- * lettered in, so a request that only started after first paint would swap
- * it out from under somebody already reading it (issue #115).
- *
- * Where the name stands and at what size is `HomePage.tsx`'s, not this
- * file's — this constant is only the face and the subset.
- */
-export const LOGOTYPE_FONT_FAMILY = ['"Dela Gothic One"', SYSTEM_FONT_FAMILY].join(', ');
-
-/** The one weight the logotype is fetched at, and the only one it has. */
-export const LOGOTYPE_FONT_WEIGHT = 400;
-
-/**
- * How far apart the logotype's own letters stand — settled on real renders in
- * PRD #145, not the sign face's {@link SIGN_TRACKING}: the two were chosen on
- * two different faces at two different sizes and only happen to be close.
- *
- * A centred line counts the space this puts after the last letter as part of
- * its own width, which would sit the visible letters left of the middle by
- * half of it. Issue #148's own lockup takes that space off the right rather
- * than leaving it in, the same correction {@link SIGN_TRACKING} already gets
- * for the button below the gate.
+ * Settled on real renders in PRD #145 and kept until the screen is redrawn
+ * (#224). A centred line counts the space this puts after the last letter as
+ * part of its own width, which would sit the visible letters left of the
+ * middle by half of it, so `HomePage.tsx` takes the space off the right.
  */
 export const LOGOTYPE_TRACKING = '0.34em';
 
 /**
- * The sign face: what is painted onto a sign rather than written on paper.
+ * The sign face: what the garden's cloth is lettered in, and nothing else.
  *
- * A modern Japanese gothic at its lightest weight, set in capitals with the
- * letters held apart — which is a lettering job and not a text one. It names
- * the game over the gates of the garden and names the steps inside it (issue
- * #115), where the words are drawn onto a canvas and there is no such thing as
- * a variant to reach for. That is why the family is declared here: the scene
- * takes its face from the same place the interface does, rather than naming a
- * font of its own that nothing else in the app could be held to.
- *
- * Declared in `index.html` and preloaded there. It was not, when it arrived,
- * and that was right at the time: nothing in the interface was set in it. The
- * garden changed it — the landing page is a gate with the name of the game
- * lettered over it, so the one thing on the first screen is set in this face,
- * and a face fetched after the first paint would swap that name out from under
- * somebody reading it (issue #115). The 9.4 KB behind it is counted against the
- * ceiling either way (`apps/web/build/first-visit-weight.ts`).
+ * It was a lighter weight of a second family. There is one family now and no
+ * 300 file, so the sign is Alegreya Sans 400. It is read by
+ * `garden/RewardCloth.tsx` alone and goes when the cloth does (#222).
  */
-export const SIGN_FONT_FAMILY = [ZEN_KAKU_GOTHIC, SYSTEM_FONT_FAMILY].join(', ');
+export const SIGN_FONT_FAMILY = ALEGREYA_SANS;
 
-/** The one weight the sign face is fetched at: light, as a sign is lettered. */
-export const SIGN_FONT_WEIGHT = 300;
+/** The weight the sign face is drawn at: the regular, there being no lighter. */
+export const SIGN_FONT_WEIGHT = 400;
 
 /**
- * The text face: everything that is read rather than looked at, and now the
+ * The text face: everything that is read rather than looked at, and the
  * board's letters as well.
  *
  * Fields, hints, counters, the labels on buttons, the names of panels, the
- * names of players — all of it, on the two small levels, and on the four
- * heading levels above them told apart by weight alone
- * ({@link WEIGHTS}). Issue #147 moved the crossword's letters onto it too:
- * a serif that spent its quality on stroke contrast lost that contrast first
- * at the sizes the board draws its letters at (11px to 24px), so the board now
- * reads in the same 400 that already shipped for every sentence in the app —
- * no new file, no new bytes.
- *
- * It is the same family as the sign face and a different job. The garden
- * letters that family at 300 with the letters held apart, which is lettering;
- * this is the same family set as text, at 400 and at the bold below. Two files,
- * 19.0 KB together, and they are what put a first visit over the ceiling that
- * was there before — see `apps/web/build/first-visit-weight.ts`.
- *
- * Chosen against three others on real screens of the game (issue #124). The
- * measurement that decided the shape of the choice rather than the winner: a
- * face with two weights costs about twenty kilobytes and there were twelve to
- * spend, so every candidate but one was a decision about the ceiling and not
- * about a typeface.
- *
- * The system stack is still the tail of it. Nothing on the landing page is set
- * in this face — the name of the game and the one button there are lettering —
- * so the first screen is drawn without waiting for these files. `/create` is
- * where it is first read, which is why they are preloaded rather than merely
- * declared: fetched late, the face lands on a screen already laid out and moves
- * a paragraph somebody is reading by a line of it.
+ * names of players, and on the heading levels the same family at 700
+ * ({@link WEIGHTS}). Preloaded in `index.html` so the face does not land on a
+ * screen already laid out and move a paragraph somebody has begun reading
+ * (issue #124).
  */
-export const TEXT_FONT_FAMILY = [ZEN_KAKU_GOTHIC, SYSTEM_FONT_FAMILY].join(', ');
+export const TEXT_FONT_FAMILY = ALEGREYA_SANS;
 
 /**
  * How far apart the letters of a sign are held, as a share of their own size.
  *
- * Forty-two per cent, which is a great deal — and it is the number the whole
- * look was chosen against (issue #115). It is one number rather than two,
- * because lettering is one job: the name over the gates and the name of a step
- * inside them are the same sign at two sizes, and a tracking that changed
- * between them would be the same distinction this file exists to refuse, made
- * in a second place. The tracked line is also half a letter wider than it
- * looks — the space is added after the last letter too — so anything centring
- * one takes this back off the right of it.
+ * Read by the garden's cloth alone now; the name of a step is set in the
+ * template's `stepTitle` variant, with no tracking.
  */
 export const SIGN_TRACKING = '0.42em';

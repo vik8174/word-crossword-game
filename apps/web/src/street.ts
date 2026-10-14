@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import { inRem } from './scale';
+import { inRem, TEXT_FONT_FAMILY } from './scale';
 
 /**
  * The colours of Across the Street (design v2), by the names the drawing gives
@@ -85,29 +85,34 @@ const PHONE_BELOW = 768;
 
 const underPhoneWidth = `@media (max-width:${PHONE_BELOW - 1}px)`;
 
+/** A variant set in the app's one face, which a custom variant is not given by MUI. */
+const inFace = (style: StreetStyle): StreetStyle => ({ fontFamily: TEXT_FONT_FAMILY, ...style });
+
 /**
- * The eight text sizes of the drawing (lines 110-114), as theme variants.
- * Only the sizes, weights and leading are here: the face is #244.
+ * The eight text sizes of the drawing (lines 110-114), as theme variants, all
+ * in Alegreya Sans (`--face`, line 53; issue #244). A variant MUI does not ship
+ * gets no family of its own, so each names it rather than leaning on the page
+ * around it.
  */
 export const STREET_TYPOGRAPHY: StreetVariantsOptions = {
-  title: {
+  title: inFace({
     fontSize: inRem(88),
     fontWeight: 700,
     lineHeight: 0.95,
     letterSpacing: '-.015em',
     [underPhoneWidth]: { fontSize: inRem(54) },
-  },
-  stepTitle: { fontSize: inRem(34), fontWeight: 700, lineHeight: 1.1 },
-  lede: {
+  }),
+  stepTitle: inFace({ fontSize: inRem(34), fontWeight: 700, lineHeight: 1.1 }),
+  lede: inFace({
     fontSize: inRem(24),
     lineHeight: 1.4,
     [underPhoneWidth]: { fontSize: inRem(20) },
-  },
-  heading: { fontSize: inRem(22), fontWeight: 700, lineHeight: 1.3 },
-  body: { fontSize: inRem(18), lineHeight: 1.5 },
-  label: { fontSize: inRem(17), lineHeight: 1.5 },
-  hint: { fontSize: inRem(16), lineHeight: 1.5 },
-  small: { fontSize: inRem(15), lineHeight: 1.5 },
+  }),
+  heading: inFace({ fontSize: inRem(22), fontWeight: 700, lineHeight: 1.3 }),
+  body: inFace({ fontSize: inRem(18), lineHeight: 1.5 }),
+  label: inFace({ fontSize: inRem(17), lineHeight: 1.5 }),
+  hint: inFace({ fontSize: inRem(16), lineHeight: 1.5 }),
+  small: inFace({ fontSize: inRem(15), lineHeight: 1.5 }),
 };
 
 declare module '@mui/material/styles' {

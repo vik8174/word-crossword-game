@@ -131,7 +131,7 @@ declare module '@mui/material/styles' {
 }
 
 /**
- * The four roles a face plays, the four levels and the row of gaps this app is
+ * The roles a face plays, the four levels and the row of gaps this app is
  * drawn with are in `scale.ts`, and the typography below is nothing but those
  * handed to MUI. Two of them leave again through this module — the crossword
  * reads the text face here (its letters and its numbers alike, since issue

@@ -13,12 +13,7 @@ import {
   GATE_LOCKUP_TEXT_SIZE,
   GATE_RULE_SX,
 } from '../scenes/gate-chrome';
-import {
-  LOGOTYPE_FONT_FAMILY,
-  LOGOTYPE_FONT_WEIGHT,
-  LOGOTYPE_TRACKING,
-  TEXT_FONT_FAMILY,
-} from '../scale';
+import { LOGOTYPE_TRACKING, TEXT_FONT_FAMILY, WEIGHTS } from '../scale';
 import { useScreenReached } from '../telemetry/use-screen-reached';
 
 /**
@@ -45,20 +40,20 @@ import { useScreenReached } from '../telemetry/use-screen-reached';
  * `position: fixed; inset: 0`, which is unchanged by where the picture
  * itself is drawn.
  *
- * The name is lettered rather than written, in the logotype — Dela Gothic
- * One, the one weight it has, sumi with a cream offset behind it — sized off
- * a `vw`-driven `clamp()` so the rendered line stays inside the block
- * continuously rather than at a handful of sampled widths (issue #148, the
- * same technique the name's own sizing already used for its previous
- * string, before this one). `GATE_NAME_SIZE`, one step above `title` in
- * `scale.ts`, was sized for an earlier, unconstrained `max-content` box this
- * text no longer sits in — left there for a later ticket, not read from
- * here. The rule between the name and the tagline is decoration
- * (`GATE_RULE_SX`): `aria-hidden`, and a `div` rather than an `<hr>`, so
- * nothing is read out between the two. The tagline underneath is set in the
- * interface's own text face instead: it needs six letters — C, P, T, I, V,
- * S — the logotype's subset does not carry, cutting a wider subset being
- * issue #147's call and not this page's to reopen.
+ * The name is lettered rather than written: Alegreya Sans at its bold, in
+ * capitals held apart by `LOGOTYPE_TRACKING`, sumi with a cream offset behind
+ * it — sized off a `vw`-driven `clamp()` so the rendered line stays inside the
+ * block continuously rather than at a handful of sampled widths (issue #148,
+ * the same technique the name's own sizing already used for its previous
+ * string, before this one). Its face was a logotype of its own until issue
+ * #244; its capitals, tracking and size stay until the screen is redrawn
+ * (#224). `GATE_NAME_SIZE`, one step above `title` in `scale.ts`, was sized
+ * for an earlier, unconstrained `max-content` box this text no longer sits in
+ * — left there for a later ticket, not read from here. The rule between the
+ * name and the tagline is decoration (`GATE_RULE_SX`): `aria-hidden`, and a
+ * `div` rather than an `<hr>`, so nothing is read out between the two. The
+ * tagline underneath is set in the interface's own text face at its regular
+ * weight.
  *
  * Joining an existing game does not start here: players arrive straight at
  * their room link (issue #5), so the only action this page offers is creating
@@ -92,8 +87,8 @@ export const HomePage = () => {
           component="h1"
           sx={{
             margin: 0,
-            fontFamily: LOGOTYPE_FONT_FAMILY,
-            fontWeight: LOGOTYPE_FONT_WEIGHT,
+            fontFamily: TEXT_FONT_FAMILY,
+            fontWeight: WEIGHTS.bold,
             // A continuous formula off the viewport's width rather than a
             // handful of steps pinned to MUI's breakpoints, the same size the
             // rule below also uses so its own `margin-top` scales with this
