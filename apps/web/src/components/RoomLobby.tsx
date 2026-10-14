@@ -121,11 +121,9 @@ export const RoomLobby = ({ roomId, room, viewerId, invitation }: RoomLobbyProps
           {invitation}
 
           {/* The one control, in the zone with everything else this screen has:
-            the middle of the window is the doorway, and a control let through
-            the picture cannot be read off the roof of a temple anyway
-            (`garden/scene-palette.ts`). It stands above the line about the
-            crossword, where the template puts the block that is the screen's
-            one action (issue #199). */}
+            the middle of the window is left empty. It stands above the line
+            about the crossword, where the template puts the block that is the
+            screen's one action (issue #199). */}
           {isOwner && (
             <StartGamePanel
               playerCount={players.length}

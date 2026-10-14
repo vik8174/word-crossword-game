@@ -1,59 +1,33 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { useLayoutEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { PillButton } from '../components/PillButton';
-import { useGardenControls } from '../garden/garden-controls';
-import { ON_SCENE_SX } from '../garden/scene-surface';
-import {
-  GATE_ACTION_SX,
-  GATE_INK,
-  GATE_LOCKUP_SX,
-  GATE_LOCKUP_TEXT_SIZE,
-  GATE_RULE_SX,
-} from '../scenes/gate-chrome';
 import { LOGOTYPE_TRACKING, TEXT_FONT_FAMILY, WEIGHTS } from '../scale';
+import { STREET } from '../street';
 import { useScreenReached } from '../telemetry/use-screen-reached';
+import { GATE_ACTION_SX, GATE_LOCKUP_SX, GATE_LOCKUP_TEXT_SIZE, GATE_RULE_SX } from './gate-chrome';
 
 /**
- * Landing page — the gate, and the one thing there is to do at it.
+ * Landing page — the name of the game, and the one thing there is to do at it.
  *
- * It is a photograph rather than a painting (issue #151), drawn by the same
- * `GardenScene` every other screen shares rather than by a component of its
- * own: this page claims the `gate` scene on mount, in a layout effect rather
- * than the plain one `CreateRoomPage` claims its own in. `App.tsx` mounts
- * `Garden` here the same way it does everywhere else (issue #166) — so the
- * picture behind this page crossfades like any other change of scene, and
- * the same weather falls behind it as behind every other screen `Garden`
- * wraps. The layout effect matters because `/` is the first frame of a
- * session with nothing behind it yet:
- * `Garden` renders nothing while its `scene` is still `null`, and a plain
- * effect runs only after the browser has already painted that, which is
- * exactly the pictureless frame this ticket exists to close, reappearing at
- * the other end of the journey. A layout effect claims the scene, and the
- * render it causes, before that paint happens.
- * The name, a rule and the tagline hang in the clear sky above the torii as
- * one block, and the button stands on the stairs below it, both placed
- * against percentages of the picture (issue #191, `scenes/gate-chrome.ts`).
- * Those percentages are read against this component's own root below,
- * `position: fixed; inset: 0`, which is unchanged by where the picture
- * itself is drawn.
+ * It stands on the ground the whole app stands on, `duck`. The name, a rule and
+ * the tagline hang near the top of the window as one block, and the button
+ * stands lower down, both placed against percentages of the window
+ * (`gate-chrome.ts`). Those percentages are read against this component's own
+ * root below, `position: fixed; inset: 0`. They were places on a photograph of
+ * a gate until issue #222 removed it; the layout is the old one and goes when
+ * this screen is redrawn (#224).
  *
  * The name is lettered rather than written: Alegreya Sans at its bold, in
- * capitals held apart by `LOGOTYPE_TRACKING`, sumi with a cream offset behind
- * it — sized off a `vw`-driven `clamp()` so the rendered line stays inside the
- * block continuously rather than at a handful of sampled widths (issue #148,
- * the same technique the name's own sizing already used for its previous
- * string, before this one). Its face was a logotype of its own until issue
- * #244; its capitals, tracking and size stay until the screen is redrawn
- * (#224). `GATE_NAME_SIZE`, one step above `title` in `scale.ts`, was sized
- * for an earlier, unconstrained `max-content` box this text no longer sits in
- * — left there for a later ticket, not read from here. The rule between the
- * name and the tagline is decoration (`GATE_RULE_SX`): `aria-hidden`, and a
- * `div` rather than an `<hr>`, so nothing is read out between the two. The
- * tagline underneath is set in the interface's own text face at its regular
- * weight.
+ * capitals held apart by `LOGOTYPE_TRACKING`, in ink — sized off a `vw`-driven
+ * `clamp()` so the rendered line stays inside the block continuously rather
+ * than at a handful of sampled widths (issue #148). Its face was a logotype of
+ * its own until issue #244; its capitals, tracking and size stay until the
+ * screen is redrawn (#224). The rule between the name and the tagline is
+ * decoration (`GATE_RULE_SX`): `aria-hidden`, and a `div` rather than an
+ * `<hr>`, so nothing is read out between the two. The tagline underneath is set
+ * in the interface's own text face at its regular weight.
  *
  * Joining an existing game does not start here: players arrive straight at
  * their room link (issue #5), so the only action this page offers is creating
@@ -64,24 +38,8 @@ import { useScreenReached } from '../telemetry/use-screen-reached';
 export const HomePage = () => {
   useScreenReached('home');
 
-  const { showScene } = useGardenControls();
-
-  // A layout effect, not a plain one: `/` is the first frame of a session
-  // with nothing behind it yet, unlike `/create`, which always arrives with
-  // a picture already standing there from wherever it was reached. `Garden`
-  // renders nothing while `scene` is still `null`, and a passive effect runs
-  // only after the browser has already painted that — a flat frame with the
-  // logotype, the tagline and the button standing on nothing, measured under
-  // throttling at 24-62ms, which is the very defect this ticket exists to
-  // close, moved from the exit to the entrance. A layout effect runs before
-  // the paint, so the claim above and the render it causes both happen
-  // first, and the browser never gets a frame with no photograph in it.
-  useLayoutEffect(() => {
-    showScene('gate');
-  }, [showScene]);
-
   return (
-    <Box component="main" sx={{ ...ON_SCENE_SX, position: 'fixed', inset: 0 }}>
+    <Box component="main" sx={{ position: 'fixed', inset: 0 }}>
       <Box sx={GATE_LOCKUP_SX}>
         <Typography
           component="h1"
@@ -89,14 +47,14 @@ export const HomePage = () => {
             margin: 0,
             fontFamily: TEXT_FONT_FAMILY,
             fontWeight: WEIGHTS.bold,
+            color: STREET.ink,
             // A continuous formula off the viewport's width rather than a
             // handful of steps pinned to MUI's breakpoints, the same size the
             // rule below also uses so its own `margin-top` scales with this
             // line (issue #191, `GATE_LOCKUP_TEXT_SIZE`).
             fontSize: GATE_LOCKUP_TEXT_SIZE,
             // Tight on purpose: a line height with room in it moves the
-            // rendered line outside the block measured down to a tenth of a
-            // percent (`handoffs/scenes/README.md`).
+            // rendered line outside the block it is measured against.
             lineHeight: 1,
             textTransform: 'uppercase',
             letterSpacing: LOGOTYPE_TRACKING,
@@ -106,44 +64,9 @@ export const HomePage = () => {
             // whole space off the right corrects it, the same way the button
             // below does for its own tracking.
             marginRight: `-${LOGOTYPE_TRACKING}`,
-            // `&&&` rather than a plain `color`: `ON_SCENE_SX` on this page's
-            // own `<main>` carries `'& .MuiTypography-root': { color:
-            // 'inherit' }` (`garden/scene-surface.ts`), a descendant rule at
-            // specificity (0,2,0). A single generated `sx` class targeting
-            // this element directly is only (0,1,0), so that rule always won
-            // regardless of source order — sumi was never reaching the
-            // screen, cream was, unmeasured because the only test on this
-            // colour checked the constant rather than a rendered pixel. Three
-            // ampersands repeat this element's own class three times,
-            // (0,3,0), which beats (0,2,0) outright rather than depending on
-            // which rule happens to be inserted last (issue #126 hit the same
-            // trap first).
-            '&&&': {
-              color: GATE_INK,
-              // The cream offset PRD #145 calls for: a second, lighter copy
-              // of the letter shown down and right of the sumi one, so the
-              // edge it peeks out from behind reads as a colour block
-              // slightly out of register rather than as a shadow. `0.05em`
-              // both ways, sumi's own cream (`garden/scene-palette.ts`'s
-              // `SCENE.cream`, `#F3ECD9`) written as its own literal for the
-              // same reason `GATE_INK` is: a token every scene's chrome
-              // shares is not the same thing as a colour chosen against one
-              // photograph, even where the two happen to match today. It
-              // carries no contrast duty of its own — it reads against the
-              // sumi letter it sits behind, which is where an offset is
-              // supposed to read. Measured over the scene's real pixels plus
-              // its veil, the letter itself is median 3.41:1 against the sky
-              // with the offset present or not: large text (31px at 1440,
-              // 30.86px at 834) clears the 3:1 WCAG threshold that size gets,
-              // at 98.9% and 99.1%, but 375's 13.875px falls under the same
-              // 4.5:1 the offset does not carry — a shortfall this ticket
-              // inherits rather than introduces (`main` measures the same
-              // band at 3.42:1 median, 0.1% at 4.5:1).
-              textShadow: '0.05em 0.05em 0 #F3ECD9',
-            },
           }}
         >
-          WORD GARDEN
+          Across the Street
         </Typography>
 
         <Box aria-hidden sx={GATE_RULE_SX} />
@@ -153,6 +76,7 @@ export const HomePage = () => {
             margin: '0.55em 0 0',
             fontFamily: TEXT_FONT_FAMILY,
             fontWeight: 400,
+            color: STREET.ink,
             // Fixed rather than clamped, unlike the name above: the template
             // holds the tagline at one size, 10.5px, at every width (issue
             // #191).
@@ -166,7 +90,6 @@ export const HomePage = () => {
             // Its own inked centre sits a couple of pixels off the name's as
             // a result — measured and left rather than corrected, since the
             // template renders the same way.
-            '&&&': { color: GATE_INK },
           }}
         >
           A cooperative crossword

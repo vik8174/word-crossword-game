@@ -2,14 +2,11 @@ import Box from '@mui/material/Box';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
 
-import { ON_SCENE_SX } from '../garden/scene-surface';
 import { PillButton } from './PillButton';
 
 /**
- * Centres a control over whichever scene the story picks, the same way
- * `Message.stories.tsx`'s own surfaces stand over one — `ON_SCENE_SX` for
- * nothing but the veiled picture underneath, since every colour `PillButton`
- * draws is its own rather than read off that rule.
+ * Centres a control on the ground, `duck`, which the decorator paints behind
+ * every story.
  */
 const Stage = ({ children }: { readonly children: ReactNode }) => (
   <Box
@@ -18,7 +15,6 @@ const Stage = ({ children }: { readonly children: ReactNode }) => (
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      ...ON_SCENE_SX,
     }}
   >
     {children}
@@ -27,8 +23,7 @@ const Stage = ({ children }: { readonly children: ReactNode }) => (
 
 /**
  * Every kind and prop-driven state `PillButton` carries in this app — one
- * story per row of issue #184's "What to build" table, on the scene its
- * first screen stands on (primary and quiet on `gate`, danger on `hall`).
+ * story per row of issue #184's "What to build" table.
  *
  * `resting`, `hover`, `focus-visible` and `active` are not each a story of
  * their own: no pseudo-state addon is installed here on purpose
@@ -56,43 +51,36 @@ export default meta;
 type Story = StoryObj<typeof PillButton>;
 
 export const Primary: Story = {
-  name: 'Primary · gate (create room)',
-  parameters: { scene: 'gate' },
+  name: 'Primary (create room)',
   args: { children: 'Create room' },
 };
 
 export const PrimaryDisabled: Story = {
-  name: 'Primary · gate, disabled (create/errors)',
-  parameters: { scene: 'gate' },
+  name: 'Primary, disabled (create/errors)',
   args: { children: 'Create room', disabled: true },
 };
 
 export const PrimaryLoading: Story = {
-  name: 'Primary · gate, loading (create/creating)',
-  parameters: { scene: 'gate' },
+  name: 'Primary, loading (create/creating)',
   args: { children: 'Creating the room...', loading: true },
 };
 
 export const Quiet: Story = {
-  name: 'Quiet · gate (edit the word list)',
-  parameters: { scene: 'gate' },
+  name: 'Quiet (edit the word list)',
   args: { kind: 'quiet', children: 'Edit the word list' },
 };
 
 export const QuietSmall: Story = {
-  name: 'Quiet · gate, small (copy link)',
-  parameters: { scene: 'gate' },
+  name: 'Quiet, small (copy link)',
   args: { kind: 'quiet', small: true, children: 'Copy link' },
 };
 
 export const Danger: Story = {
-  name: 'Quiet danger · hall (end the game)',
-  parameters: { scene: 'hall' },
+  name: 'Quiet danger (end the game)',
   args: { kind: 'quiet', danger: true, children: 'End the game' },
 };
 
 export const DangerLoading: Story = {
-  name: 'Quiet danger · hall, loading (playing/ending)',
-  parameters: { scene: 'hall' },
+  name: 'Quiet danger, loading (playing/ending)',
   args: { kind: 'quiet', danger: true, loading: true, children: 'Ending the game...' },
 };

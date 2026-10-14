@@ -14,11 +14,7 @@ import { RoomLobby } from '../components/RoomLobby';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import { ScreenShift } from '../components/ScreenShift';
 import { WaitingMark } from '../components/WaitingMark';
-import { RewardCloth } from '../garden/RewardCloth';
-import { useRoomGarden } from '../garden/use-room-garden';
-import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
-import { finishedGameSummary } from '../rooms/game-summary';
 import {
   hasSomebodyToInvite,
   type RoomScreen,
@@ -27,7 +23,6 @@ import {
 } from '../rooms/room-screen';
 import { usePresenceHeartbeat } from '../rooms/use-presence-heartbeat';
 import { useRoomConnection } from '../rooms/use-room-connection';
-import { finishedWordsOf } from '../rooms/word-visibility';
 import { funnelScreenFor } from '../telemetry/funnel';
 import { useScreenReached } from '../telemetry/use-screen-reached';
 
@@ -67,13 +62,11 @@ const UNSEEN_HEADING = {
  * times (issue #132). This has none for either to draw, so there is nothing
  * to see twice.
  *
- * Centred over the doors, which is the picture both `connecting` and
- * `unavailable` stand in front of (see `sceneFor` in
- * `garden/use-room-garden.ts`) — a visitor waiting to learn whether a room
- * will let them in, standing at its threshold rather than at the gate. What
- * stands there is the same panel `join` stands on ({@link MiddlePanel}), and
- * this is only the centring: the screen the gate's own panel is centred in,
- * with the template's 22px of air round it (`gateScreenSx`).
+ * Centred in the window: a visitor waiting to learn whether a room will let
+ * them in. What stands there is the same panel `join` stands on
+ * ({@link MiddlePanel}), and this is only the centring: the screen the create
+ * panel is centred in, with the template's 22px of air round it
+ * (`gateScreenSx`).
  *
  * Named the same page a real room screen is, unseen for the same reason
  * `RoomShell` says it unseen on the screen a game is played on — a reader
@@ -189,20 +182,6 @@ const RoomScreenView = ({
  * between the two is a shift that plays when a player pressed something and one
  * that twitches all game.
  *
- * The garden behind the page is told the same thing, from here rather than from
- * the screens, and for the same reason twice over: it is a change and not a
- * render that matters, and while a shift is running two screens are on the page
- * at once — a game and the finished game replacing it would each be answering
- * for the background, and the one on its way out would answer last
- * (see {@link useRoomGarden}).
- *
- * The cloth a finished game is answered with is put up from here for the third
- * time that same reason applies, and for one more of its own. It belongs to the
- * moment the game ended rather than to the finished screen, which is true
- * forever; and it is a reward nobody has yet earned on the landing page, so
- * having it inside this route's own chunk is what keeps a first visit from
- * paying for it (issue #92, `build/first-visit-weight.ts`).
- *
  * One thing here is not read from the room: whether the room refused to take
  * this visitor in. It cannot be — a refused write is answered with
  * `permission-denied` and the document that would explain it is the very thing
@@ -245,43 +224,19 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
   usePresenceHeartbeat(roomId, connection);
   useScreenReached(funnelScreenFor(screen.kind));
 
-  // The cloth is the whole of what a finished game is answered with, and it
-  // belongs to the game having ended rather than to the finished screen — which
-  // is true forever, a completed room being terminal (see {@link useRoomGarden},
-  // `docs/decisions/0031-one-camera-and-what-it-promises.md`).
-  const isUnderTheCloth = useRoomGarden(screen.kind) && screen.kind === 'finished';
-
   return (
-    <>
-      {/* Made `inert` under the cloth, exactly as the screen on its way out of a
-        shift is. Both are on the page and only one of them is being looked at:
-        a board nobody can see is not a board anybody should be able to tab into
-        or be read out, and the sentence the cloth carries is the same sentence
-        the panel behind it does. */}
-      <Box inert={isUnderTheCloth}>
-        <ScreenShift shiftKey={screen.kind}>
-          <RoomScreenView
-            roomId={roomId}
-            screen={screen}
-            invitation={
-              hasSomebodyToInvite(screen, now) ? (
-                <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
-              ) : undefined
-            }
-            onJoinRefused={() => setRefusedRoom(latestRoom.current)}
-          />
-        </ScreenShift>
-      </Box>
-
-      {isUnderTheCloth && screen.kind === 'finished' ? (
-        <RewardCloth
-          summary={finishedGameSummary(
-            finishedWordsOf(screen.room).length,
-            playersInJoinOrder(screen.room).length,
-          )}
-        />
-      ) : null}
-    </>
+    <ScreenShift shiftKey={screen.kind}>
+      <RoomScreenView
+        roomId={roomId}
+        screen={screen}
+        invitation={
+          hasSomebodyToInvite(screen, now) ? (
+            <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
+          ) : undefined
+        }
+        onJoinRefused={() => setRefusedRoom(latestRoom.current)}
+      />
+    </ScreenShift>
   );
 };
 

@@ -4,6 +4,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import Typography from '@mui/material/Typography';
 
 import type { WordLocation } from '../rooms/word-visibility';
+import { inRem, TEXT_LEVELS } from '../scale';
 import { AnsweredMark } from './AnsweredMark';
 import type { WordEntry } from './word-entry';
 
@@ -24,15 +25,8 @@ interface WordEntryListProps {
 /**
  * The sentence of a row when it is done, struck through wherever it has
  * anything to strike — the reference always, the word too where this half of
- * the game draws one — and dimmed wherever the surface underneath lets that
- * show.
- *
- * The dimming is inherited rather than new here, and so is its one gap: on
- * the surface a room's zone stands on, `scene-surface.ts`'s
- * `.MuiTypography-body2` rule is more specific than this `sx` and wins, so a
- * done row on that surface is struck through without being dimmed. Pre-existing
- * and out of scope for issue #150, which is why the third signal below is the
- * one this ticket can actually promise everywhere.
+ * the game draws one — and in secondary text, `slate`, so a done row is quieter
+ * than one still open.
  *
  * Kept apart from {@link AnsweredMark} on purpose: whether a word is done is
  * said by things that do not depend on each other — this styling, the mark's
@@ -53,6 +47,16 @@ const doneSx = {
  * point (issue #150).
  */
 const REFERENCE_TRACK_WIDTH = '5.6em';
+
+/**
+ * The text size the reference track is measured in: 17px, the `body` level.
+ *
+ * The track is in `em`, and a button takes its size from the page. The page's
+ * own size was 17px until the street's 18px (issue #222), which would have
+ * widened the track by 5.6px and moved every word of the list across. Naming
+ * the size here keeps the list where it was, whatever the page is set in.
+ */
+const TRACK_TEXT_SIZE = inRem(TEXT_LEVELS.body);
 
 /**
  * The list under one of the two headings: every word of that half, each one a
@@ -94,6 +98,7 @@ export const WordEntryList = ({ labelledBy, entries, onSelectWord }: WordEntryLi
           sx={{
             py: 1,
             px: 1,
+            fontSize: TRACK_TEXT_SIZE,
             display: 'grid',
             gridTemplateColumns: `${REFERENCE_TRACK_WIDTH} minmax(0, 1fr) auto`,
             columnGap: 1,

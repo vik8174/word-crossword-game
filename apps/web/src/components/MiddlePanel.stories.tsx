@@ -1,7 +1,6 @@
 import Box from '@mui/material/Box';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { ON_SCENE_SX } from '../garden/scene-surface';
 import { gateScreenSx } from './gate-panel-styles';
 import { JoinRoomForm } from './JoinRoomForm';
 import { MiddlePanel } from './MiddlePanel';
@@ -10,11 +9,10 @@ import { WaitingMark } from './WaitingMark';
 /**
  * The screen the panel stands in: the same window-sized grid `Waiting` centres
  * it in for `connecting` and `unavailable` (`components/gate-panel-styles.ts`'s
- * `gateScreenSx`), over the doors, which is the picture all three screens that
- * use it stand in front of.
+ * `gateScreenSx`).
  */
 const Screen = ({ children }: { readonly children: React.ReactNode }) => (
-  <Box sx={{ ...ON_SCENE_SX, ...gateScreenSx }}>{children}</Box>
+  <Box sx={gateScreenSx}>{children}</Box>
 );
 
 /**
@@ -28,7 +26,6 @@ const Screen = ({ children }: { readonly children: React.ReactNode }) => (
 const meta: Meta<typeof MiddlePanel> = {
   title: 'Components/MiddlePanel',
   component: MiddlePanel,
-  parameters: { scene: 'doors' },
   decorators: [
     (Story) => (
       <Screen>

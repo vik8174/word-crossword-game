@@ -2,7 +2,6 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { Garden } from './garden/Garden';
 import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PageLoading } from './pages/PageLoading';
@@ -35,17 +34,15 @@ const GATE_PATH = '/';
  * A component of its own because `usePageView` reads the current route, which
  * only something inside the router can do.
  *
- * The garden wraps every route, `/` included — the picture, the veil and the
- * weather stand behind the landing page exactly as they do everywhere else,
- * so a change of scene crossfades across it the same way it does between any
- * other two screens, and the ~300ms gap a lazy chunk used to load behind is
- * gone with it (issue #166). `HomePage` claims the `gate` scene on mount, the
- * same way `CreateRoomPage` claims its own.
+ * Every route stands on the same ground, `duck`, which `CssBaseline` paints on
+ * the body from the theme. Nothing wraps the routes: the garden that used to
+ * (a picture, weather and a veil) went in issue #222, and with it the hand-off
+ * where each page claimed the picture it stood in front of.
  */
 const RoutedPages = () => {
   usePageView();
 
-  const routes = (
+  return (
     <Suspense fallback={<PageLoading />}>
       <Routes>
         <Route path={GATE_PATH} element={<HomePage />} />
@@ -55,8 +52,6 @@ const RoutedPages = () => {
       </Routes>
     </Suspense>
   );
-
-  return <Garden>{routes}</Garden>;
 };
 
 /**

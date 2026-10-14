@@ -57,17 +57,15 @@ describe('assetHrefs', () => {
     expect(assetHrefs(html)).toEqual([]);
   });
 
-  it('leaves a preloaded scene image to the ceiling that is its own', () => {
+  it('leaves a preloaded picture out, since a typeface is all the ceiling counts', () => {
     const html = `
       <link rel="preload" href="/fonts/some-face-v1-latin-400.woff2" as="font" crossorigin />
-      <link rel="preload" href="/scenes/gate.avif" as="image" />
+      <link rel="preload" href="/pictures/street.avif" as="image" />
     `;
 
-    // Issue #151: the gate's picture is preloaded for the same reason a face
-    // is, but it is weighed against a ceiling of its own
-    // (`scene-weight.ts`) rather than this one — otherwise the same
-    // kilobytes would be charged against two ceilings kept deliberately
-    // separate.
+    // Only `as="font"` links are a first visit's own: a picture preloaded for
+    // the same reason a face is would otherwise be charged to a ceiling that
+    // was never about pictures.
     expect(assetHrefs(html)).toEqual(['/fonts/some-face-v1-latin-400.woff2']);
   });
 

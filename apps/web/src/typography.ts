@@ -1,38 +1,6 @@
 import type { TypographyVariantsOptions } from '@mui/material/styles';
-import type { CSSProperties } from 'react';
 
-import {
-  inRem,
-  SIGN_FONT_FAMILY,
-  SIGN_FONT_WEIGHT,
-  SIGN_TRACKING,
-  TEXT_FONT_FAMILY,
-  TEXT_LEVELS,
-  WEIGHTS,
-} from './scale';
-
-declare module '@mui/material/styles' {
-  /**
-   * The sign face as a variant of the theme's own.
-   *
-   * Only the garden's cloth reads it now (`garden/RewardCloth.tsx`), in
-   * Alegreya Sans 400, and it leaves with the cloth (#222). The name of a step
-   * is the `stepTitle` variant (`street.ts`).
-   */
-  interface TypographyVariants {
-    signage: CSSProperties;
-  }
-
-  interface TypographyVariantsOptions {
-    signage?: CSSProperties;
-  }
-}
-
-declare module '@mui/material/Typography' {
-  interface TypographyPropsVariantOverrides {
-    signage: true;
-  }
-}
+import { inRem, TEXT_FONT_FAMILY, TEXT_LEVELS, WEIGHTS } from './scale';
 
 /**
  * A heading: the text face at its bold weight, on one of the four levels.
@@ -114,15 +82,4 @@ export const TYPOGRAPHY: TypographyVariantsOptions = {
   // A button says what pressing it does, in the words of the sentence beside
   // it rather than shouted in capitals.
   button: { ...textLevel(TEXT_LEVELS.body, WEIGHTS.bold), textTransform: 'none' },
-
-  // The sign role, which nothing in the interface uses and the garden's cloth
-  // does: lettering on a sign, in capitals held apart (issue #115).
-  signage: {
-    fontFamily: SIGN_FONT_FAMILY,
-    fontWeight: SIGN_FONT_WEIGHT,
-    fontSize: inRem(TEXT_LEVELS.heading),
-    lineHeight: 1.25,
-    textTransform: 'uppercase',
-    letterSpacing: SIGN_TRACKING,
-  },
 };

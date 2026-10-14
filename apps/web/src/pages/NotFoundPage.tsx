@@ -1,11 +1,9 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { useLayoutEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { PillButton } from '../components/PillButton';
-import { useGardenControls } from '../garden/garden-controls';
-import { GATE_BAND_WIDTH, ON_SCENE_SX, fullHeightBandSx } from '../garden/scene-surface';
+import { fullHeightBandSx, GATE_BAND_WIDTH } from '../components/surface-styles';
 import { gapAt } from '../scale';
 
 /** The step of the row this page keeps between its column and the band's own edge. */
@@ -13,8 +11,8 @@ const PAGE_PADDING_STEP = 4;
 const PAGE_PADDING = gapAt(PAGE_PADDING_STEP);
 
 /**
- * How wide the column standing on the band is: the gate's band
- * (`garden/scene-surface.ts`'s `GATE_BAND_WIDTH`), less this page's own
+ * How wide the column standing on the band is: the band
+ * (`components/surface-styles.ts`'s `GATE_BAND_WIDTH`), less this page's own
  * padding either side of it — the same arithmetic `/create` runs for its own
  * column (`pages/CreateRoomPage.tsx`'s `COLUMN_WIDTH`). Kept as this page's
  * own copy rather than a shared export: the two pages read the same sign for
@@ -32,31 +30,17 @@ const COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${PAGE_PADDING} - ${PAGE_PADDING
  *
  * A mistyped address is, more often than not, the first thing a tab does —
  * nobody browses here from inside the app, they land here cold from a broken
- * link — which is exactly the shape `HomePage.tsx` writes its own layout
- * effect for rather than a plain one: `Garden` renders nothing while its
- * `scene` is still `null`, and a passive effect runs only after the browser
- * has already painted that frame. A layout effect claims `'gate'`, and the
- * render it causes, before that paint happens, so a cold, mistyped address
- * gets the same picture behind it `/` and `/create` do instead of standing on
- * nothing for the first frames of the session.
+ * link.
  *
- * Stands on the gate's centre band (`garden/scene-surface.ts`'s
- * `fullHeightBandSx`; `join` stood on it too until issue #198), since it now
- * claims a picture the way `/create` does: cream ink directly on the photograph would
- * not be readable otherwise. Its own column is sized to what the band leaves
- * inside its hairlines (`COLUMN_WIDTH`, below) rather than to a fixed
- * breakpoint, so the text never reaches past the band onto the picture.
+ * Stands on a tile down the middle of the window (`fullHeightBandSx`; `join`
+ * stood on it too until issue #198). Its own column is sized to what the band
+ * leaves inside its hairlines (`COLUMN_WIDTH`, below) rather than to a fixed
+ * breakpoint, so the text never reaches past the band onto the ground.
  *
  * @example
  * <Route path="*" element={<NotFoundPage />} />
  */
 export const NotFoundPage = () => {
-  const { showScene } = useGardenControls();
-
-  useLayoutEffect(() => {
-    showScene('gate');
-  }, [showScene]);
-
   return (
     <Box
       component="main"
@@ -65,15 +49,13 @@ export const NotFoundPage = () => {
         minHeight: '100dvh',
         px: PAGE_PADDING_STEP,
         py: 7,
-        ...ON_SCENE_SX,
       }}
     >
       <Box aria-hidden sx={fullHeightBandSx('centre', GATE_BAND_WIDTH)} />
 
-      {/* Sized to what the band leaves inside its own hairlines, the way
-        `CreateRoomPage.tsx`'s own column is: an unrestricted column stays as
-        wide as the page, so past about 600px it started 17.5px outside the
-        band's inner edge on cream text drawn straight over the photograph. */}
+      {/* Sized to what the band leaves inside its own hairlines: an
+        unrestricted column stays as wide as the page, so past about 600px it
+        would start outside the band's inner edge. */}
       <Box sx={{ position: 'relative', width: '100%', maxWidth: COLUMN_WIDTH, mx: 'auto' }}>
         <Typography variant="h1" component="h1" sx={{ mb: 2 }}>
           This page does not exist

@@ -20,12 +20,10 @@
  * which is the typefaces, preloaded or merely declared. Chunks behind a lazy
  * route are not on it and neither is anything a click causes.
  *
- * A scene image is not on it either, even though `/` preloads one. Issue #151
- * split what used to be one number into two the moment a picture joined the
- * typefaces on the first screen: this ceiling covers what it always covered,
- * and a second, separate one covers the picture
- * (`apps/web/build/scene-weight.ts`,
- * `docs/decisions/0033-a-second-ceiling-for-a-picture.md`).
+ * There used to be a second ceiling beside this one, for the garden's pictures
+ * (`docs/decisions/0033-a-second-ceiling-for-a-picture.md`). The pictures went
+ * with the garden (issue #222, `docs/decisions/0038-across-the-street-replaces-the-garden.md`),
+ * and so did that ceiling.
  */
 
 /**
@@ -85,14 +83,9 @@ export interface FetchedFile {
  *
  * Restricted to `as="font"` rather than every `rel="preload"` link, because
  * this ceiling is the one named in {@link FIRST_VISIT_CEILING_BYTES} — HTML,
- * chunks and typefaces — and a route may preload something else that is not
- * one of those: `/` preloads `gate.avif` for the same reason a face is
- * preloaded, landing before the screen it belongs to is laid out, and that
- * image is weighed against a ceiling of its own instead
- * (`apps/web/build/scene-weight.ts`,
- * `docs/decisions/0033-a-second-ceiling-for-a-picture.md`). Counting it here
- * too would charge the same kilobytes against two ceilings that are
- * deliberately kept apart.
+ * chunks and typefaces — and a page may preload something else that is not one
+ * of those, a picture for instance. Counting it here would charge the same
+ * kilobytes against a ceiling that was never about pictures.
  *
  * @param html - The built `index.html`
  * @returns What it preloads a font for, as the paths written in it

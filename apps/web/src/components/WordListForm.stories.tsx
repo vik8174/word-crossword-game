@@ -1,7 +1,9 @@
+import Box from '@mui/material/Box';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useMemo, useState } from 'react';
 import { validateWordList } from 'shared';
 
+import { createPanelSx, gateScreenSx } from './gate-panel-styles';
 import { WordListForm } from './WordListForm';
 
 /**
@@ -28,13 +30,21 @@ const InteractiveWordListForm = () => {
 };
 
 /**
- * The room-creation form, on its own — the same scene it stands over inside
- * `CreateRoomPage` (`.storybook/preview.tsx`'s `scene` parameter defaults to
- * `gate`, which both pages claim).
+ * The room-creation form, on its own — on the panel it stands on inside
+ * `CreateRoomPage`.
  */
 const meta: Meta<typeof InteractiveWordListForm> = {
   title: 'Components/WordListForm',
   component: InteractiveWordListForm,
+  decorators: [
+    (Story) => (
+      <Box sx={gateScreenSx}>
+        <Box sx={createPanelSx}>
+          <Story />
+        </Box>
+      </Box>
+    ),
+  ],
 };
 
 export default meta;

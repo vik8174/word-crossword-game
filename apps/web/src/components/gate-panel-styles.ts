@@ -1,10 +1,11 @@
 import type { CSSObject } from '@mui/material/styles';
 
-import { BAND, BAND_SOLID, SCENE } from '../garden/scene-palette';
 import { inRem } from '../scale';
+import { STREET } from '../street';
+import { TILE_SX } from './surface-styles';
 
 /**
- * The surfaces the gate's panels and the doors' panel are drawn on, the way the
+ * The surfaces the create panel and the doors' panel are drawn on, the way the
  * template draws them (`design/templates/state-tree.html`'s `.gate-screen`,
  * `.create-band`, `.middle-column` and `.stack`, lines 413, 460-466, 402-410
  * and 398).
@@ -49,14 +50,12 @@ export const gateScreenSx: CSSObject = {
  * becomes taller than the frame — `max-height: 100%` with its own scroll — so
  * there is no overflowing centre to keep the top of.
  *
- * `backdrop-filter` is written twice for a browser that still asks for the
- * prefix, the way the template writes it.
+ * A tile with the street's hairline round it. It was a translucent band of
+ * the garden's shadow, blurred over the picture, until issue #222.
  */
 export const createPanelSx: CSSObject = {
   width: `min(${inRem(460)}, 94%)`,
-  backgroundColor: BAND,
-  backdropFilter: 'blur(2px)',
-  WebkitBackdropFilter: 'blur(2px)',
+  ...TILE_SX,
   padding: `${inRem(20)} ${inRem(22)} ${inRem(24)}`,
   borderRadius: '2px',
   maxHeight: '100%',
@@ -91,12 +90,10 @@ export const gateButtonRowSx: CSSObject = {
  * The doors' panel: `.middle-column`, the one surface `connecting`, `join` and
  * every `unavailable` stand on (issue #198).
  *
- * Opaque where the create panel is translucent (`BAND_SOLID`, not `BAND`),
- * which is the template's own difference between the two. It is as wide as the
- * template's 430px or 92% of what it stands in, whichever is less, and as tall
- * as what is on it, so it needs no `max-height` of its own: the frame or screen
- * it stands in scrolls instead. Lengths are in `rem` for the reason the create
- * panel's are.
+ * The same tile as the create panel's. It is as wide as the template's 430px or
+ * 92% of what it stands in, whichever is less, and as tall as what is on it, so
+ * it needs no `max-height` of its own: the frame or screen it stands in scrolls
+ * instead. Lengths are in `rem` for the reason the create panel's are.
  *
  * `line-height: 1.6` is the template's page-wide value, which its panel
  * inherits and this app's body (1.5) does not: `Message`'s heading and list set
@@ -105,26 +102,22 @@ export const gateButtonRowSx: CSSObject = {
  */
 export const middlePanelSx: CSSObject = {
   width: `min(${inRem(430)}, 92%)`,
-  backgroundColor: BAND_SOLID,
-  backdropFilter: 'blur(2px)',
-  WebkitBackdropFilter: 'blur(2px)',
+  ...TILE_SX,
   padding: `${inRem(24)} ${inRem(24)} ${inRem(26)}`,
   borderRadius: '2px',
-  boxShadow: '0 18px 44px -26px rgba(0, 0, 0, 0.8)',
   lineHeight: 1.6,
 };
 
 /**
  * `p.lede`: the sentence above a form on the doors' panel.
  *
- * Full cream and not `SCENE_INK_DIM`, which the template's own rule writes as
- * `--scene-ink`. A `p` of its own rather than a `Typography`: the template
- * draws 13px here and no variant of this app's four text levels is that size
- * under this name.
+ * Ink. A `p` of its own rather than a `Typography`: the template draws 13px
+ * here and no variant of this app's four text levels is that size under this
+ * name.
  */
 export const middleLedeSx: CSSObject = {
   margin: `0 0 ${inRem(16)}`,
   fontSize: inRem(13),
   lineHeight: 1.6,
-  color: SCENE.cream,
+  color: STREET.ink,
 };

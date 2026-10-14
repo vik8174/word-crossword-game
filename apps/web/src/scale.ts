@@ -1,6 +1,6 @@
 /**
- * The two rows this interface is measured with, and the four roles a face
- * plays in it.
+ * The two rows this interface is measured with, and the roles a face plays in
+ * it.
  *
  * They are here rather than inside the theme for the same reason the colours
  * are written down as tokens: a size that is chosen at the place it is used is
@@ -9,10 +9,8 @@
  * to MUI and adds nothing of its own, so every size and every gap in the app
  * comes out of this file.
  *
- * Nothing here knows about MUI, which is what lets the crossword and the garden
- * read a face or a level without going through a theme they are not drawn by:
- * the scene of issue #115 paints its text onto a canvas, and canvas has no
- * variants.
+ * Nothing here knows about MUI, which is what lets a module read a face or a
+ * level without going through a theme it is not drawn by.
  *
  * There is one face: Alegreya Sans, in design v2 (`design/templates/
  * state-tree.html`, `--face`; issue #244). It replaced a text face and a
@@ -20,8 +18,7 @@
  * told apart by weight and size and no longer by family. The **text** role
  * ({@link TEXT_FONT_FAMILY}) is everything read, the board's letters
  * included; the **heading** role is the same family at 700 ({@link WEIGHTS}).
- * What is left of the old **sign** role ({@link SIGN_FONT_FAMILY}) is the
- * garden's cloth alone, and it leaves with the cloth (#222). The name of the
+ * The old **sign** role went with the garden's cloth (#222). The name of the
  * game is the heading weight with its own tracking ({@link
  * LOGOTYPE_TRACKING}), until its screen is redrawn (#224).
  */
@@ -184,18 +181,6 @@ const ALEGREYA_SANS = ['"Alegreya Sans"', SYSTEM_FONT_FAMILY].join(', ');
 export const LOGOTYPE_TRACKING = '0.34em';
 
 /**
- * The sign face: what the garden's cloth is lettered in, and nothing else.
- *
- * It was a lighter weight of a second family. There is one family now and no
- * 300 file, so the sign is Alegreya Sans 400. It is read by
- * `garden/RewardCloth.tsx` alone and goes when the cloth does (#222).
- */
-export const SIGN_FONT_FAMILY = ALEGREYA_SANS;
-
-/** The weight the sign face is drawn at: the regular, there being no lighter. */
-export const SIGN_FONT_WEIGHT = 400;
-
-/**
  * The text face: everything that is read rather than looked at, and the
  * board's letters as well.
  *
@@ -206,11 +191,3 @@ export const SIGN_FONT_WEIGHT = 400;
  * (issue #124).
  */
 export const TEXT_FONT_FAMILY = ALEGREYA_SANS;
-
-/**
- * How far apart the letters of a sign are held, as a share of their own size.
- *
- * Read by the garden's cloth alone now; the name of a step is set in the
- * template's `stepTitle` variant, with no tracking.
- */
-export const SIGN_TRACKING = '0.42em';

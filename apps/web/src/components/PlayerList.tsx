@@ -2,9 +2,9 @@ import Box from '@mui/material/Box';
 import type { CSSObject } from '@mui/material/styles';
 import type { ReactNode } from 'react';
 
-import { SCENE, SCENE_INK_DIM, SCENE_LINE } from '../garden/scene-palette';
 import { inRem } from '../scale';
 import { PLAYERS_PER_GAME, type RoomPlayerEntry } from '../rooms/room-access';
+import { STREET } from '../street';
 import { zoneHeadingSx, zoneHintSx } from './zone-styles';
 
 /** The three things a row can say about a player, each with the look the template gives it. */
@@ -12,18 +12,14 @@ type BadgeKind = 'host' | 'you' | 'away';
 
 /**
  * How a badge is drawn (`.badge`, `design/templates/state-tree.html` lines
- * 377-384): 8.5px capitals held apart, in a pill. `you` is the temple's red, and
- * `away` is the warning's own gold, the mark the app drew with a MUI `Chip` in
- * `warning` until issue #199.
+ * 377-384): 8.5px capitals held apart, in a pill. `host` is secondary text,
+ * `you` is ink with an ink edge, and `away` is secondary text with a slate
+ * edge, the label the lobby shows beside a player who has gone quiet.
  */
 const BADGE_SX: Record<BadgeKind, CSSObject> = {
   host: {},
-  you: {
-    backgroundColor: 'rgba(218, 70, 32, 0.24)',
-    borderColor: 'rgba(242, 118, 47, 0.6)',
-    color: '#FFD3BE',
-  },
-  away: { borderColor: 'rgba(201, 162, 39, 0.7)', color: '#E0BC46' },
+  you: { borderColor: STREET.ink, color: STREET.ink },
+  away: { borderColor: STREET.slate },
 };
 
 /** One small thing said beside a name. */
@@ -32,13 +28,13 @@ const Badge = ({ kind, children }: { readonly kind: BadgeKind; readonly children
     component="span"
     sx={{
       padding: '2px 7px',
-      border: `1px solid ${SCENE_LINE}`,
+      border: `1px solid ${STREET.line}`,
       borderRadius: '999px',
       fontSize: inRem(8.5),
       fontWeight: 700,
       letterSpacing: '0.14em',
       textTransform: 'uppercase',
-      color: SCENE_INK_DIM,
+      color: STREET.slate,
       ...BADGE_SX[kind],
     }}
   >
@@ -121,7 +117,7 @@ export const PlayerList = ({ players, ownerId, viewerId, awayDurations = {} }: P
               gap: inRem(7),
               fontSize: inRem(12.5),
               lineHeight: 1.6,
-              color: SCENE.cream,
+              color: STREET.ink,
             }}
           >
             <span>{player.nickname}</span>

@@ -1,6 +1,6 @@
 import type { SxProps, Theme } from '@mui/material/styles';
 
-import { FIELD, SCENE } from '../garden/scene-palette';
+import { FOCUS_RING, STREET } from '../street';
 
 /**
  * Every prop {@link fieldSx} and {@link fieldLeadSx} need to resolve a look,
@@ -33,12 +33,12 @@ const FIELD_FONT_SIZE = '13.5px';
 
 /**
  * A read-only field's fill and edge (`.field.readonly`,
- * `design/templates/state-tree.html` lines 554-555): the washi a little more
- * transparent, and an edge that is not the ink's full strength, because
- * nothing is to be typed into it and it should not look as though there were.
+ * `design/templates/state-tree.html` lines 554-555): the ground's own colour
+ * and a thinner edge than a field that takes writing, because nothing is to be
+ * typed into it and it should not look as though there were.
  */
-export const READONLY_FILL = 'rgba(242, 231, 208, 0.9)';
-const READONLY_EDGE = 'rgba(43, 38, 32, 0.35)';
+export const READONLY_FILL = STREET.duck;
+const READONLY_EDGE = STREET.slate;
 
 /** A read-only field's tracking, tighter than the rest so a long link takes fewer lines (`.field.readonly input`). */
 const READONLY_TRACKING = '0.03em';
@@ -49,27 +49,36 @@ const MULTILINE_LINE_HEIGHT = 1.55;
 /** The field's fill, `disabled` first and then `invalid`, as the template's classes cascade. */
 const fillFor = (state: FieldStyleState): string => {
   if (state.disabled) {
-    return FIELD.lockedFill;
+    return STREET.disabledSurface;
   }
 
   if (state.invalid) {
-    return FIELD.invalidFill;
+    return STREET.rose;
   }
 
-  return state.readOnly === true ? READONLY_FILL : FIELD.fill;
+  return state.readOnly === true ? READONLY_FILL : STREET.tile;
+};
+
+/** The colour of the example in an empty field, by the surface it is drawn on. */
+const placeholderFor = (state: FieldStyleState): string => {
+  if (state.disabled) {
+    return STREET.disabledLabel;
+  }
+
+  return state.invalid ? STREET.ink : STREET.slate;
 };
 
 /** The field's edge, in the same order as {@link fillFor}. */
 const edgeFor = (state: FieldStyleState): string => {
   if (state.disabled) {
-    return FIELD.lockedEdge;
+    return STREET.disabledRule;
   }
 
   if (state.invalid) {
-    return SCENE.vermilion;
+    return STREET.brick;
   }
 
-  return state.readOnly === true ? READONLY_EDGE : FIELD.ink;
+  return state.readOnly === true ? READONLY_EDGE : STREET.ink;
 };
 
 /**
@@ -95,12 +104,10 @@ export const fieldSx = (state: FieldStyleState): SxProps<Theme> => {
 
   return {
     // Positioned, not static, so the field paints above any absolutely
-    // positioned band drawn earlier in the same parent: a static element there
-    // paints underneath it. `join` was the screen that showed it, standing on
-    // the gate's band, where without this the field read the band's dimmed
-    // colour instead of the washi fill (issue #193 round 1). `join` stands on a
-    // panel of its own now (issue #198, `MiddlePanel`), and the rule stays
-    // because it costs nothing and MUI's own field carried it too.
+    // positioned surface drawn earlier in the same parent: a static element
+    // there paints underneath it (issue #193 round 1). `join` stands on a panel
+    // of its own now (issue #198, `MiddlePanel`), and the rule stays because it
+    // costs nothing and MUI's own field carried it too.
     position: 'relative',
     display: 'flex',
     alignItems: state.multiline ? 'flex-start' : 'center',
@@ -110,15 +117,14 @@ export const fieldSx = (state: FieldStyleState): SxProps<Theme> => {
     backgroundColor: fillFor(state),
     border: `${borderWidth}px solid ${borderColor}`,
     borderRadius: state.multiline ? '14px' : '999px',
-    boxShadow: state.disabled ? 'none' : FIELD.lift,
     cursor: state.disabled ? 'default' : 'text',
     transition: 'box-shadow 200ms ease, border-color 200ms ease, background 200ms ease',
 
     '&:focus-within': {
-      borderColor: SCENE.vermilion,
-      boxShadow: FIELD.focusRing,
+      borderColor: STREET.spruce,
+      boxShadow: FOCUS_RING,
     },
-    [`&:focus-within .${FIELD_LEAD_CLASS}`]: { backgroundColor: SCENE.vermilion },
+    [`&:focus-within .${FIELD_LEAD_CLASS}`]: { backgroundColor: STREET.spruce },
 
     // Padding and margin are the browser's own defaults for a text control,
     // not reset to zero: the template's own `.field input, .field textarea`
@@ -138,12 +144,15 @@ export const fieldSx = (state: FieldStyleState): SxProps<Theme> => {
       fontFamily: 'inherit',
       fontSize: FIELD_FONT_SIZE,
       letterSpacing: state.readOnly === true ? READONLY_TRACKING : '0.08em',
-      color: state.disabled ? FIELD.lockedInk : FIELD.ink,
+      color: state.disabled ? STREET.disabledLabel : STREET.ink,
       resize: 'none',
       ...(state.multiline && { minHeight: '74px', lineHeight: MULTILINE_LINE_HEIGHT }),
     },
+    // The example in an empty field: `slate`, which reads 6.23:1 on a tile. On
+    // `rose` (a fault) it would read 4.24:1 and on the disabled surface 3.87:1,
+    // so there it takes the colour that clears 4.5:1 on that surface.
     '& input::placeholder, & textarea::placeholder': {
-      color: FIELD.placeholder,
+      color: placeholderFor(state),
       opacity: 1,
     },
   };
@@ -160,7 +169,7 @@ export const fieldLeadSx = (state: FieldStyleState): SxProps<Theme> => ({
   width: '8px',
   height: '8px',
   borderRadius: '50%',
-  backgroundColor: state.invalid ? SCENE.vermilion : FIELD.dot,
+  backgroundColor: state.invalid ? STREET.brick : STREET.stone,
   transition: 'background 200ms ease',
   ...(state.multiline && { marginTop: '5px' }),
 });
@@ -184,16 +193,11 @@ export const fieldSetSx: SxProps<Theme> = {
 
 /**
  * The help line under a field — `.field-help`
- * (`design/templates/state-tree.html` line 556) — always in full cream
- * rather than switching to `.field-help.bad`'s `#FFC7AE` for a fault.
+ * (`design/templates/state-tree.html` line 556) — in secondary text, `slate`,
+ * whether or not the field is at fault.
  *
- * Every field this issue builds stands on the gate's own surface, where help is
- * full cream regardless of severity — a decision #190 already made and this
- * issue only carries forward (issue #193, "Decided, not to reopen"; the
- * template's own comment at line 558-564 explains why `#FFC7AE` fails the
- * same measurement there). A fault is still said two other ways without the
- * colour: `WordListForm`'s field doubles its border, and its sentence
- * changes to name what is wrong.
+ * A fault is said two other ways without the colour: `WordListForm`'s field
+ * doubles its border, and its sentence changes to name what is wrong.
  */
 export const fieldHelpSx: SxProps<Theme> = {
   display: 'block',
@@ -201,7 +205,7 @@ export const fieldHelpSx: SxProps<Theme> = {
   fontSize: '10.5px',
   lineHeight: 1.5,
   paddingLeft: '16px',
-  color: SCENE.cream,
+  color: STREET.slate,
 };
 
 /**

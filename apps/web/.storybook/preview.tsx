@@ -1,6 +1,6 @@
 import type { Preview } from '@storybook/react-vite';
 
-import { withMemoryRouter, withScene, withTheme } from './decorators';
+import { withGround, withMemoryRouter, withTheme } from './decorators';
 
 /**
  * The three files `preview-head.html` declares, in the exact weight and style
@@ -29,8 +29,7 @@ if (typeof document !== 'undefined') {
 
 /**
  * What every story in this project renders inside, so a story file only says
- * which component and which scene — not the theme, the router, or the
- * picture behind it. #184 (the button) and #185 (the message) build their own
+ * which component — not the theme, the router, or the ground behind it. #184 (the button) and #185 (the message) build their own
  * stories on top of exactly this.
  *
  * Order among the three does not matter: none of them depends on being inside
@@ -38,12 +37,12 @@ if (typeof document !== 'undefined') {
  * story in the tree, which every entry here does by construction.
  */
 const preview: Preview = {
-  decorators: [withTheme, withMemoryRouter, withScene],
+  decorators: [withTheme, withMemoryRouter, withGround],
 
   parameters: {
     // No `backgrounds` addon is installed, and none is needed: every story
-    // already stands on one of the garden's three photographs, which is a
-    // background addon's own job done by the app's real code instead.
+    // already stands on `duck`, which is a background addon's own job done by
+    // the decorator.
     layout: 'fullscreen',
   },
 };

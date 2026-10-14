@@ -87,12 +87,11 @@ export const RoomJoin = ({ roomId, playerId, seatToRelease, onRefused }: RoomJoi
   };
 
   return (
-    // Standing alone in the frame, on the doors: this visitor is not in the room
-    // yet, so there is nothing of the game to put either side of them. It is the
-    // same frame all the same, so walking in moves the contents of a screen
-    // rather than replacing one. Not the gate, where it stood on a full-height
-    // band (issues #137 and #175): the room's own picture is the doors, and the
-    // panel is the one `connecting` and `unavailable` stand on too (issue #198).
+    // Standing alone in the frame: this visitor is not in the room yet, so
+    // there is nothing of the game to put either side of them. It is the same
+    // frame all the same, so walking in moves the contents of a screen rather
+    // than replacing one. The panel is the one `connecting` and `unavailable`
+    // stand on too (issue #198).
     <RoomShell title="Join the game" solo>
       <MiddlePanel>
         <JoinRoomForm

@@ -48,7 +48,7 @@ const firebaseBoundaryPlugin = (): Plugin => ({
 
 /**
  * Storybook, configured so a component or a page renders the way it does in
- * the app: the app's MUI theme, its self-hosted faces, a scene picture
+ * the app: the app's MUI theme, its self-hosted faces, the `duck` ground
  * behind it, and no Firebase (issue #182).
  *
  * `build-storybook` runs inside the existing **Build** job of `ci.yml` rather
@@ -59,7 +59,8 @@ const config: StorybookConfig = {
 
   // No addon is installed. Controls, actions and docs ship inside `storybook`
   // itself since v8, and the one thing an addon here would otherwise be for —
-  // a background swatch — is already the garden's own picture (`preview.tsx`).
+  // a background swatch — is already the ground the decorator paints
+  // (`preview.tsx`).
   addons: [],
 
   framework: {

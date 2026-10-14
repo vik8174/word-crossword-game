@@ -1,9 +1,9 @@
 import Typography from '@mui/material/Typography';
 
-import { SCENE_LINE } from '../garden/scene-palette';
 import { closedGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
+import { STREET } from '../street';
 import { PlayerList } from './PlayerList';
 import { RoomCrossword } from './RoomCrossword';
 import { RoomShell } from './RoomShell';
@@ -68,15 +68,14 @@ export const RoomClosedEarly = ({ room, viewerId }: RoomClosedEarlyProps) => {
     <RoomShell
       title="Game ended"
       left={
-        // Said on the band with a quiet rule beside it rather than on a pale
-        // sheet of its own. A sheet is the brightest thing on a screen, and this
-        // is the one screen in the app that is never celebrated: a game was
-        // ended with words nobody answered on it
-        // (`docs/decisions/0027-a-game-a-player-can-end.md`).
+        // Said with a quiet rule beside it rather than on a sheet of its own. A
+        // sheet is the brightest thing on a screen, and this is the one screen in
+        // the app that is never celebrated: a game was ended with words nobody
+        // answered on it (`docs/decisions/0027-a-game-a-player-can-end.md`).
         <Typography
           variant="body1"
           role="status"
-          sx={{ borderLeft: `2px solid ${SCENE_LINE}`, pl: 4 }}
+          sx={{ borderLeft: `2px solid ${STREET.line}`, pl: 4 }}
         >
           {CLOSED_UNFINISHED_MESSAGE}
         </Typography>

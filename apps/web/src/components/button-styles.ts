@@ -1,6 +1,6 @@
 import type { SxProps, Theme } from '@mui/material/styles';
 
-import { CONTROL, QUIET_CONTROL } from '../garden/scene-palette';
+import { STREET } from '../street';
 
 /** The two kinds the template draws the control in (`.btn` and `.btn.quiet`). */
 export type ButtonKind = 'primary' | 'quiet';
@@ -33,13 +33,16 @@ export const SUN_BEAT_MS = 1400;
 export const LOADING_DOT_CLASS = 'wcg-btn-dot';
 
 /**
- * `sun-beat`, the dot's own pulse — `design/templates/state-tree.html` lines
- * 514-518, unchanged.
+ * `sun-beat`, the dot's own pulse: a ring grows out of the dot and fades.
+ *
+ * The ring takes the dot's own `color` (`currentColor`), so the keyframes name
+ * no colour of their own; the movement is the pulse it always was, and it is
+ * the motion issue's (#230) to redraw.
  */
 const SUN_BEAT_KEYFRAMES = {
-  '0%': { boxShadow: '0 0 0 0 rgba(242, 118, 47, 0.6)', opacity: 1 },
-  '70%': { boxShadow: '0 0 0 9px rgba(242, 118, 47, 0)', opacity: 0.65 },
-  '100%': { boxShadow: '0 0 0 0 rgba(242, 118, 47, 0)', opacity: 1 },
+  '0%': { boxShadow: '0 0 0 0 currentColor', opacity: 1 },
+  '70%': { boxShadow: '0 0 0 9px transparent', opacity: 0.65 },
+  '100%': { boxShadow: '0 0 0 0 transparent', opacity: 1 },
 } as const;
 
 /**
@@ -52,44 +55,42 @@ const SIZE = {
 } as const;
 
 /**
- * The control's fill, edge and label colour, resolved the way the template's
- * own cascade resolves them rather than guessed at.
+ * The control's fill, edge and label colour, by the role each state plays.
  *
  * `loading` is checked first and, when it is true, decides fill, edge and ink
- * on its own — not because the other modifiers stop applying, but because
- * they measurably do not win. `design/templates/state-tree.html`'s
- * `.btn.loading` rule is declared after `.btn.quiet` and `.btn.danger` at the
- * same specificity (two classes each), so on `playing/ending` — `class="btn
- * quiet danger loading"` (`btn("Ending the game", "quiet danger loading")`,
- * the template's own generator) — the rendered control is the opaque
- * `vermilion-deep` loading surface, not the translucent quiet-danger one.
- * Measured live off the served template (`getComputedStyle`) rather than
- * assumed from the cascade rules on paper, because a hand-derivation of three
- * overlapping selectors is exactly the kind of thing worth checking against
- * the browser that actually resolves them. The issue's own prose calls this
- * state "the loading dot and cursor: progress on the quiet danger surface",
- * which reads as the surface staying quiet-danger — the template it cites
- * draws otherwise, and the template is what an AFK issue settles the look
- * with.
+ * on its own, for every kind: the control that is waiting on a write is the
+ * action in progress, whatever it looked like a moment ago. It is the action's
+ * spruce with a white label, as `design/templates/state-tree.html` draws it
+ * (`.btn.loading`, lines 125-126), and not the disabled fill. The two are not
+ * the same state. A control mapped by name instead of by role came out as white
+ * on `#BFCBC8`, 1.67:1.
+ *
+ * The quiet kind is a tile with an ink label, and its `danger` modifier turns
+ * the edge and the label brick: brick is text on a tile or on the ground and
+ * nowhere else, and a quiet control is a tile.
  */
 const surfaceOf = (state: ButtonStyleState) => {
   if (state.loading) {
-    return { fill: CONTROL.restingFill, edge: CONTROL.loadingEdge, ink: CONTROL.ink };
+    return { fill: STREET.spruce, edge: STREET.ink, ink: STREET.onAccent };
   }
 
   if (state.disabled) {
-    return { fill: CONTROL.restingFill, edge: CONTROL.restingEdge, ink: CONTROL.restingInk };
+    return {
+      fill: STREET.disabledSurface,
+      edge: STREET.disabledRule,
+      ink: STREET.disabledLabel,
+    };
   }
 
   if (state.kind === 'quiet') {
     return {
-      fill: QUIET_CONTROL.fill,
-      edge: state.danger ? QUIET_CONTROL.dangerEdge : QUIET_CONTROL.edge,
-      ink: state.danger ? QUIET_CONTROL.dangerInk : QUIET_CONTROL.ink,
+      fill: STREET.tile,
+      edge: state.danger ? STREET.brick : STREET.ink,
+      ink: state.danger ? STREET.brick : STREET.ink,
     };
   }
 
-  return { fill: CONTROL.fill, edge: CONTROL.edge, ink: CONTROL.ink };
+  return { fill: STREET.spruce, edge: STREET.ink, ink: STREET.onAccent };
 };
 
 /**
@@ -97,38 +98,24 @@ const surfaceOf = (state: ButtonStyleState) => {
  * from the returned style entirely while disabled or loading, so a disabled
  * or loading control stays put under a pointer rather than reacting to one.
  *
- * This matches the template for `disabled`: `.btn[disabled]:hover` restates
- * the same resting colours rather than lighting up. It does not match the
- * template for `loading`. The template has no `.btn.loading:hover` rule of
- * its own, but that does not mean hovering a loading control leaves it
- * unmoved — `.btn:hover`'s `background`/`box-shadow` are not overridden by
- * `.loading`, so they still apply on a real hover: `create/creating` gains
- * the gold bloom, and `playing/ending` turns `rgba(147, 41, 15, 0.72)` with
- * edge `#F2762F`, measured live on the served template. This control leaves
- * a loading control's colours unmoved on hover instead, which is a known,
- * deliberate difference from the template rather than an oversight — no
- * acceptance criterion names hover-while-loading as a state, and whether the
- * template's own hover-while-loading is itself intended or a cascade
- * accident is an open question for the Architect (issue #184, round 2).
- * Change this only once that question is settled.
+ * The action darkens to the theme's own darker shade of spruce (`primary.dark`,
+ * which is MUI's, worked out from the token). A quiet control takes the ground's
+ * colour under a finger, and a quiet danger control takes `rose` with an ink
+ * label: brick is never text on rose (4.31:1), ink is (9.31:1).
+ *
+ * Hovering a loading control leaves its colours unmoved. That is a known,
+ * deliberate difference from the template, which has no `.btn.loading:hover`
+ * rule of its own and so lets `.btn:hover` apply to it. No acceptance criterion
+ * names hover-while-loading as a state (issue #184, round 2).
  */
-const hoverOf = (
-  state: ButtonStyleState,
-): { backgroundColor: string; borderColor: string; boxShadow: string } => {
-  // The bloom is the one hover figure every kind shares — the template's own
-  // `.btn:hover` rule, which nothing more specific overrides for `box-shadow`
-  // on `.quiet` or `.danger` alike (neither rule mentions the property).
-  const boxShadow = CONTROL.hoverLift;
-
+const hoverOf = (state: ButtonStyleState) => {
   if (state.kind === 'quiet') {
-    return {
-      backgroundColor: state.danger ? QUIET_CONTROL.dangerHoverFill : QUIET_CONTROL.hoverFill,
-      borderColor: state.danger ? QUIET_CONTROL.dangerHoverEdge : QUIET_CONTROL.hoverEdge,
-      boxShadow,
-    };
+    return state.danger
+      ? { backgroundColor: STREET.rose, color: STREET.ink, borderColor: STREET.brick }
+      : { backgroundColor: STREET.duck };
   }
 
-  return { backgroundColor: CONTROL.litFill, borderColor: CONTROL.edge, boxShadow };
+  return { backgroundColor: (theme: Theme) => theme.palette.primary.dark };
 };
 
 /**
@@ -140,6 +127,9 @@ const hoverOf = (
  * duration to the template, and copying the template's own numbers here is
  * the more literal reading of "build to the template" for a value nothing
  * else asks this control to share.
+ *
+ * It casts no shadow. The lift under the pill and the bloom under a finger were
+ * there to separate it from a picture, and the ground it stands on now is flat.
  *
  * @param state - Which kind, modifiers and interaction state to draw
  */
@@ -183,57 +173,57 @@ export const buttonSx = (state: ButtonStyleState): SxProps<Theme> => {
     // once the real one has.
     lineHeight: 'normal',
     cursor: state.loading ? 'progress' : state.disabled ? 'not-allowed' : 'pointer',
-    boxShadow: state.disabled ? 'none' : CONTROL.lift,
-    transition:
-      'background 200ms ease, box-shadow 200ms ease, transform 120ms ease, border-color 200ms ease',
-    ...(state.kind === 'quiet' && {
-      backdropFilter: 'blur(3px)',
-      WebkitBackdropFilter: 'blur(3px)',
-    }),
+    transition: 'background 200ms ease, transform 120ms ease, border-color 200ms ease',
 
     ...(canHover && { '&:hover': hoverOf(state) }),
     '&:active': { transform: 'translateY(1px)' },
-    '&:focus-visible': { outline: `2px solid ${CONTROL.focusOutline}`, outlineOffset: '3px' },
+    // A focus indicator is not drawn for the picture, so it stays: in the
+    // action's own colour, on the same offset.
+    '&:focus-visible': { outline: `2px solid ${STREET.spruce}`, outlineOffset: '3px' },
   };
 };
 
 /**
  * The sun dot before the label — a real element (`components/PillButton.tsx`
- * renders a `<span>`, not the pseudo-element `garden/scene-surface.ts` used to
- * draw), which is what lets `theme.ts`'s reduced-motion freeze name it out by
- * class: a `*::before` selector cannot be, since the freeze's `:not()` list
- * only ever reaches the plain `*` part of that rule.
+ * renders a `<span>`, not a pseudo-element), which is what lets `theme.ts`'s
+ * reduced-motion freeze name it out by class: a `*::before` selector cannot be,
+ * since the freeze's `:not()` list only ever reaches the plain `*` part of that
+ * rule.
+ *
+ * It is the label's colour, so it is read the way the label is. A control that
+ * is loading wears the lit window instead (`ochre`, ringed in ink as the
+ * template draws it), and one that cannot be pressed is a hollow ring.
  *
  * @param state - Which kind, modifiers and interaction state to draw
  */
 export const dotSx = (state: ButtonStyleState): SxProps<Theme> => {
   const size = state.small ? SIZE.small : SIZE.primary;
-
-  if (state.disabled) {
-    return {
-      flex: 'none',
-      width: size.dot,
-      height: size.dot,
-      borderRadius: '50%',
-      backgroundColor: 'transparent',
-      boxShadow: `inset 0 0 0 1.5px ${CONTROL.disabledDotRing}`,
-    };
-  }
-
-  const isLit = state.loading || (state.kind === 'quiet' && state.danger);
-  const color = isLit ? CONTROL.litDot : state.kind === 'quiet' ? QUIET_CONTROL.mark : CONTROL.mark;
-  const ring = state.kind === 'quiet' ? QUIET_CONTROL.markRing : CONTROL.markRing;
-
-  return {
+  const base = {
     flex: 'none',
     width: size.dot,
     height: size.dot,
     borderRadius: '50%',
-    backgroundColor: color,
-    boxShadow: `0 0 0 3px ${ring}`,
-    ...(state.loading && {
+    boxSizing: 'border-box',
+  } as const;
+
+  if (state.disabled) {
+    return {
+      ...base,
+      backgroundColor: 'transparent',
+      border: `1.5px solid ${STREET.disabledLabel}`,
+    };
+  }
+
+  if (state.loading) {
+    return {
+      ...base,
+      backgroundColor: STREET.ochre,
+      color: STREET.ochre,
+      border: `1.5px solid ${STREET.ink}`,
       animation: `sun-beat ${SUN_BEAT_MS}ms cubic-bezier(.3,.6,.3,1) infinite`,
       '@keyframes sun-beat': SUN_BEAT_KEYFRAMES,
-    }),
-  };
+    };
+  }
+
+  return { ...base, backgroundColor: surfaceOf(state).ink };
 };
