@@ -1,6 +1,6 @@
 # 0028. A design system inside the MUI theme
 
-Status: Accepted
+Status: Accepted, with its four token names and its Japanese direction superseded by [0038](0038-across-the-street-replaces-the-garden.md). The mechanism stands.
 
 ## Context
 
