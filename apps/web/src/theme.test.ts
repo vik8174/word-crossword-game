@@ -364,3 +364,91 @@ describe('theme', () => {
     expect(selector).toContain(`:not(.${WAIT_RING_CLASS})`);
   });
 });
+
+describe('theme: the street palette', () => {
+  const street = theme.palette.street;
+
+  it('declares the 14 tokens and the 4 derived values by their names', () => {
+    expect(Object.keys(street).sort()).toEqual(
+      [
+        'duck',
+        'tile',
+        'ink',
+        'slate',
+        'spruce',
+        'ochre',
+        'wash',
+        'rose',
+        'stone',
+        'line',
+        'brick',
+        'sage',
+        'paper',
+        'fiesta',
+        'onAccent',
+        'disabledSurface',
+        'disabledLabel',
+        'disabledRule',
+      ].sort(),
+    );
+    expect(street.duck).toBe('#E6EEEC');
+    expect(street.fiesta).toBe('#B23A28');
+    expect(street.onAccent).toBe('#FFFFFF');
+    expect(street.disabledRule).toBe('#8A9997');
+  });
+
+  // The contrast table of design/templates/state-tree.html, lines 27-43.
+  const TABLE: ReadonlyArray<readonly [string, string, string, number]> = [
+    ['ink', 'duck', 'ink on duck', 12.04],
+    ['ink', 'tile', 'ink on tile', 13.69],
+    ['slate', 'duck', 'slate on duck', 5.48],
+    ['slate', 'tile', 'slate on tile', 6.23],
+    ['slate', 'wash', 'slate on wash', 5.1],
+    ['onAccent', 'spruce', 'white on spruce', 6.66],
+    ['brick', 'tile', 'brick on tile', 6.33],
+    ['brick', 'duck', 'brick on duck', 5.57],
+    ['spruce', 'duck', 'spruce on duck', 5.65],
+    ['ink', 'rose', 'ink on rose', 9.31],
+    ['ink', 'wash', 'ink on wash', 11.2],
+    ['disabledLabel', 'disabledSurface', 'disabled label on disabled surface', 5.05],
+    ['ink', 'sage', 'ink on sage', 11.06],
+    ['slate', 'sage', 'slate on sage', 5.03],
+    ['onAccent', 'fiesta', 'white on fiesta', 5.95],
+    ['ink', 'paper', 'ink on paper', 11.44],
+    ['ink', 'stone', 'ink on stone', 9.58],
+  ];
+
+  it.each(TABLE)('%s on %s matches the drawing (%s)', (text, ground, _name, figure) => {
+    const ratio = contrastBetween(
+      street[text as keyof typeof street],
+      street[ground as keyof typeof street],
+    );
+
+    expect(Math.round(ratio * 100) / 100).toBe(figure);
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('exposes the eight text variants, the title and the lede smaller on a phone', () => {
+    const { typography } = theme;
+    const sizes = [
+      ['title', 88],
+      ['stepTitle', 34],
+      ['lede', 24],
+      ['heading', 22],
+      ['body', 18],
+      ['label', 17],
+      ['hint', 16],
+      ['small', 15],
+    ] as const;
+
+    for (const [variant, px] of sizes) {
+      expect(typography[variant].fontSize).toBe(`${px / 16}rem`);
+    }
+    expect((typography.title as Record<string, unknown>)['@media (max-width:767px)']).toEqual({
+      fontSize: `${54 / 16}rem`,
+    });
+    expect((typography.lede as Record<string, unknown>)['@media (max-width:767px)']).toEqual({
+      fontSize: `${20 / 16}rem`,
+    });
+  });
+});
