@@ -258,12 +258,13 @@ serves it beside the branch.
 ### Recording a round
 
 ```bash
-scripts/record-round.sh <issue> <round> report|verdict     # handoffs/verdicts/<issue>/
+scripts/record-round.sh <issue> <round> report|verdict     # handoffs/verdicts/<issue>/round-<n>-<kind>.md
+scripts/record-round.sh <issue> <cycle> issue-verdict   # handoffs/issue-reviews/<issue>/cycle-<n>-verdict.md
 ```
 
-**The copy in this repository does not yet take `issue-verdict`, and it silently
-overwrites a record that already exists.** Both are #205; until it merges, an
-issue inspector writes its verdict to `handoffs/issue-reviews/<issue>/` by hand.
+**One script takes all three kinds, and it never replaces a record.** A second
+write to an existing record fails, names the file, and writes nothing. An issue
+inspector records with `issue-verdict`; it needs no hand-written file.
 `handoffs/` is git-ignored, which is the point: a verdict that lives only in a
 sub-agent's context dies with it.
 
