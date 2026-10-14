@@ -34,7 +34,7 @@ const Stage = ({ children }: { readonly children: ReactNode }) => (
  * their own: no pseudo-state addon is installed here on purpose
  * (`.storybook/main.ts`), and all three are CSS pseudo-classes any of the
  * stories below already carries — reachable by hovering, tabbing to, or
- * pressing the rendered control directly, the way `.claude/agents/inspector.md`
+ * pressing the rendered control directly, the way an Inspector
  * drives a real browser rather than a frozen snapshot. `disabled`, `loading`
  * and `small` are prop-driven and cannot be reached that way, so each gets
  * its own story.

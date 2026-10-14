@@ -64,36 +64,10 @@ A visual issue — one whose outcome is visible on a screen — is drawn before 
 
 Every user-facing pull request adds a line to the `[Unreleased]` section of [`CHANGELOG.md`](CHANGELOG.md), following [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## Working process: the Adversarial Review Loop (ARL)
+## Working process: TRIAL
 
-Work moves through four session roles, and one claim passes between them: _the
-acceptance criteria are met_. The loop exists to try to refute that claim. See
-[`CLAUDE.md`](CLAUDE.md) for the full description, including how a session
-determines its own role.
+Work moves through TRIAL, a loop in which one claim passes between its seats: _the acceptance criteria are met_. The loop exists to try to refute that claim. A session starts it with `/trial`. The seats, their counts and the levels are defined in the global TRIAL files, and [`CLAUDE.md`](CLAUDE.md) holds this project's own contract: the commands, the checks, the ports and the risk floor.
 
-| Role          | Holds                                                         | Model    |
-| ------------- | ------------------------------------------------------------- | -------- |
-| **Architect** | the board: issues, dependencies, criteria that can be checked | Opus 5   |
-| **Foreman**   | the queue, the round count, and the merge                     | Opus 5   |
-| **Worker**    | one issue, from branch to open pull request                   | Sonnet 5 |
-| **Inspector** | the verdict on one Worker's pull request                      | Opus 5   |
+If a session was handed an issue or a handoff document, it is a Worker, and it does not merge its own pull request.
 
-Four things about it are worth knowing before reading anything else:
-
-- **A Worker never merges its own pull request**, and an Inspector never commits,
-  pushes or merges at all. The Foreman merges, and only on a pull request GitHub
-  itself reports as green.
-- **Nobody talks to anybody directly.** Every message between a Worker and its
-  Inspector goes through the Foreman; the Architect and the Foreman pass work
-  through the board — an issue, its labels, its comments — and a message between
-  the two sessions only says where on the board to look.
-- **A pair is spawned per issue and stopped when it ends.** It is never carried
-  into the next one.
-- **A failing verdict is a round, not a failure.** Five are allowed per issue;
-  the sixth, or a disagreement the Worker can argue, goes up.
-
-If a session was handed an issue or a handoff document, it is a Worker.
-
-The roles were called Planner, Dispatcher, Worker and Challenger before the loop
-was named; `CLAUDE.md` carries the table, and the old names are left standing in
-the git history and in `docs/decisions/`.
+The loop was called the Adversarial Review Loop (ARL) before, and its roles Planner, Dispatcher, Worker and Challenger before that. Those names are left standing in the git history and in `docs/decisions/`.
