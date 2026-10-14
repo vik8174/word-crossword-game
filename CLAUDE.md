@@ -270,7 +270,7 @@ sub-agent's context dies with it.
 
 ### What a person must look at before a release
 
-**#139**, the release issue today. It may be replaced: its last comment proposes closing it and opening a new one for design v2 (_Across the Street_), and Viktor has not ruled. When a release issue replaces it, this row is corrected in the pull request that names the new one. It carries the Screens table, and each merged issue
+**#240**, the release issue for 1.4.0 (_Across the Street_). Viktor ruled on 2026-10-14 that 1.3.0 is never tagged, and #139 is closed as not planned; the lines it collected carry over to #240. It carries the Screens table, and each merged issue
 adds its own "what to look at by eye" list to it **where it has one**. The
 Architect keeps that table;
 its input is what lands on the release issue when an issue merges, not the merge
