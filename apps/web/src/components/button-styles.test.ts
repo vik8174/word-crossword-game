@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { contrastBetween as contrast } from '../contrast';
 import { theme } from '../theme';
 import {
   buttonSx,
@@ -46,41 +47,6 @@ const hoverFill = (state: ButtonStyleState): string => {
   const fill = asSx(asSx(buttonSx(state))['&:hover']).backgroundColor;
 
   return String(typeof fill === 'function' ? (fill as (t: typeof theme) => unknown)(theme) : fill);
-};
-
-/** A colour as three channels, from `#rrggbb` or from the `rgb(r, g, b)` MUI derives. */
-const channelsOf = (colour: string): readonly [number, number, number] => {
-  if (colour.startsWith('#')) {
-    return [
-      parseInt(colour.slice(1, 3), 16),
-      parseInt(colour.slice(3, 5), 16),
-      parseInt(colour.slice(5, 7), 16),
-    ];
-  }
-
-  const [red = NaN, green = NaN, blue = NaN] = colour
-    .slice(colour.indexOf('(') + 1, colour.lastIndexOf(')'))
-    .split(',')
-    .map(Number);
-
-  return [red, green, blue];
-};
-
-/** WCAG contrast of two opaque colours. */
-const contrast = (foreground: string, background: string): number => {
-  const luminance = (colour: string): number => {
-    const [red, green, blue] = channelsOf(colour).map((channel) => {
-      const value = channel / 255;
-
-      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-    }) as [number, number, number];
-
-    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
-  };
-  const one = luminance(foreground);
-  const other = luminance(background);
-
-  return (Math.max(one, other) + 0.05) / (Math.min(one, other) + 0.05);
 };
 
 describe('the pill button, in every kind and state this app puts one in', () => {
