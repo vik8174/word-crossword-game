@@ -3,6 +3,7 @@ import { LOADING_DOT_CLASS } from './components/button-styles';
 import { WAIT_RING_CLASS } from './components/waiting-mark-styles';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
 import { SPACING_STEPS } from './scale';
+import { STREET, STREET_TYPOGRAPHY } from './street';
 import { TYPOGRAPHY } from './typography';
 
 /**
@@ -175,6 +176,8 @@ export const theme = createTheme({
         sakura: { ...TOKENS.sakura, contrastText: ON_ACCENT },
         matcha: { ...TOKENS.matcha, contrastText: ON_ACCENT },
         grid: GRID,
+        // Design v2, beside the tokens above; nothing reads it yet (#243).
+        street: STREET,
 
         primary: { ...TOKENS.sakura, contrastText: ON_ACCENT },
         secondary: { ...TOKENS.matcha, contrastText: ON_ACCENT },
@@ -212,7 +215,7 @@ export const theme = createTheme({
   // multiplier — `mt: 5` is the fifth step and so twenty-four pixels.
   spacing: [...SPACING_STEPS],
 
-  typography: TYPOGRAPHY,
+  typography: { ...TYPOGRAPHY, ...STREET_TYPOGRAPHY },
 
   // Ink on paper has edges. Four pixels of rounding on every corner is the
   // house style of a control panel, which is the thing this palette is not.
