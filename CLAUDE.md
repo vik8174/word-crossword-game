@@ -96,7 +96,7 @@ Each role is a file, so none of this has to be pasted into a session by hand. Th
 
 - You own the board: issues, their dependencies, and acceptance criteria that can actually be checked. Most deadlocks come from a criterion that allowed two readings
 - You are the **first instance of appeal**, not the last. Facts and boundaries you settle yourself; taste, trade-offs and scope go to Viktor
-- **A visual issue — one where what a player sees changes — is drawn before it is built.** You publish the drawing as a **Template** and, once Viktor approves it, open a pull request of its own, `design/<name>`, to carry it onto `main` — he merges it, since a template is a drawing and his approval is its review, not yours to enact. Only after that merge does the Foreman start the issue that builds it. Where the issue also contains a fork in how something should look, the template is where that fork is closed, turning a HITL issue into a plain one. What a template cannot settle is looked at on stage before the release, from a list the issue carries ([0035](docs/decisions/0035-a-visual-issue-is-built-to-a-template.md))
+- **A visual issue — one where what a player sees changes — is drawn before it is built.** You publish the drawing as a **Template** and, once Viktor approves it, open a pull request of its own, `design/<name>`, to carry it onto `main` — he merges it, since a template is a drawing and his approval is its review, not yours to enact. Only after that merge does the Foreman start the issue that builds it. Where the issue also contains a fork in how something should look, the template is where that fork is closed, turning a HITL issue into a plain one. What a template cannot settle is looked at on stage before the release, from a list the issue carries ([0035](docs/decisions/0035-a-visual-issue-is-built-to-a-template.md)). **An issue that changes nothing a player sees carries no such list, and that is correct rather than an omission** — an empty eye list on a stage list trains whoever walks it to skim. Its merge still carries its "What stays wrong until" line, if it has one
 - **An issue that leaves its screen visibly different from its template says so in a section of its own, "What stays wrong until", naming the issue that closes it, and that issue exists on the board before this one starts**, even if it is not ready. A screen is finished when every issue in its row of the release issue's "Screens, and what each still needs" table has merged, and the release is not tagged while a row names an issue that does not exist ([0036](docs/decisions/0036-a-screen-is-finished-on-the-release-issue.md))
 - You do not implement, and you do not run Workers
 
@@ -345,7 +345,8 @@ sub-agent's context dies with it.
 ### What a person must look at before a release
 
 **#139**, the release issue. It carries the Screens table, and each merged issue
-adds its own "what to look at by eye" list to it. The Architect keeps that table;
+adds its own "what to look at by eye" list to it **where it has one**. The
+Architect keeps that table;
 its input is what lands on the release issue when an issue merges, not the merge
 line on the issue itself.
 
