@@ -242,6 +242,18 @@ describe('a word in any Latin alphabet', () => {
       }
     });
 
+    it('refuses a letter inside the ranges that is not of Latin script, as the rule says', () => {
+      // The alphabet is two conditions: a Latin letter, and inside the ranges.
+      // Each of these lies inside them (a range is a list of code points, and
+      // says nothing of script) and is not Latin: µ (U+00B5) is the micro sign,
+      // ʻ (U+02BB) the Hawaiian okina, ᴦ (U+1D26) a Greek small capital gamma,
+      // ᴫ (U+1D2B) a Cyrillic small capital el, ℓ (U+2113) the script small l.
+      // The range check alone accepts every one.
+      for (const letter of ['µ', 'ʻ', 'ʼ', 'ˆ', 'ᴦ', 'ᴫ', 'ℓ']) {
+        expect(faultOf(`ab${letter}`)?.code, letter).toBe('word-not-latin');
+      }
+    });
+
     it('accepts the part of the Vietnamese block that latin-ext holds, and refuses the rest', () => {
       expect(faultOf('abẳ')?.code).toBe('word-not-latin');
       expect(faultOf('abỳ')).toBeUndefined();
