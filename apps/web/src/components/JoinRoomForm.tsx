@@ -3,6 +3,7 @@ import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
+import type { RoomMode } from '../rooms/room-document';
 import { readRememberedNickname } from '../rooms/nickname-store';
 import { Field } from './Field';
 import { gateButtonRowSx, gateLedeSx, gateStackSx } from './gate-panel-styles';
@@ -13,6 +14,8 @@ import { stepTitleSx } from './surface-styles';
 interface JoinRoomFormProps {
   /** The name the owner of the room goes by, for the sentence that says who invited the visitor. */
   readonly ownerNickname: string;
+  /** What the room is for; `pair` unless given. A lesson invites to a lesson and not to a game. */
+  readonly mode?: RoomMode;
   /** Called with the raw nickname once it is worth submitting. */
   readonly onJoin: (nickname: string) => void;
   /** `true` while the join is being written — the form freezes but stays readable. */
@@ -39,7 +42,13 @@ interface JoinRoomFormProps {
  * one difference from the template, which says "he"). While the join is written
  * the button says so in the template's words (issues #198 and #226).
  *
+ * In a lesson the title is "Join the lesson", and the sentence names the teacher
+ * and says the visitor is invited to a lesson (template line 899, `lesson()`).
+ * The button says "Join the lesson" and, while the join is written, "Joining the
+ * game": the template words the second state the same for both modes.
+ *
  * @param props.ownerNickname - Who invited the visitor
+ * @param props.mode - What the room is for
  * @param props.onJoin - Receives the nickname when the player submits a valid one
  * @param props.errorMessage - Message about a join that was refused
  *
@@ -48,6 +57,7 @@ interface JoinRoomFormProps {
  */
 export const JoinRoomForm = ({
   ownerNickname,
+  mode = 'pair',
   onJoin,
   isJoining,
   errorMessage,
@@ -58,6 +68,8 @@ export const JoinRoomForm = ({
   // keeps that from being a read of the storage per render whose answer is
   // thrown away.
   const [nickname, setNickname] = useState(readRememberedNickname);
+  const isLesson = mode === 'lesson';
+  const joinLabel = isLesson ? 'Join the lesson' : 'Join the game';
 
   return (
     <Box
@@ -70,11 +82,13 @@ export const JoinRoomForm = ({
       sx={gateStackSx}
     >
       <Typography component="h1" variant="stepTitle" sx={{ ...stepTitleSx(), margin: 0 }}>
-        Join the game
+        {joinLabel}
       </Typography>
 
       <Box component="p" sx={gateLedeSx}>
-        {ownerNickname} has invited you to a game. Pick a name they will know you by.
+        {isLesson
+          ? `${ownerNickname} has invited you to a lesson. Pick a name the others will know you by.`
+          : `${ownerNickname} has invited you to a game. Pick a name they will know you by.`}
       </Box>
 
       <Field
@@ -95,7 +109,7 @@ export const JoinRoomForm = ({
 
       <Box sx={gateButtonRowSx}>
         <PillButton type="submit" loading={isJoining} disabled={!isValidNickname(nickname)}>
-          {isJoining ? 'Joining the game' : 'Join the game'}
+          {isJoining ? 'Joining the game' : joinLabel}
         </PillButton>
       </Box>
     </Box>

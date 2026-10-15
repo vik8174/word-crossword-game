@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import { Link as RouterLink } from 'react-router-dom';
 
+import type { RoomMode } from '../rooms/room-document';
 import type { RoomUnavailableReason } from '../rooms/room-screen';
 import { DoorColumn, RefusalStreet } from './DoorColumn';
 import { Message } from './Message';
@@ -52,8 +53,27 @@ const MESSAGES: Readonly<Record<RoomUnavailableReason, UnavailableNotice>> = {
   },
 };
 
+/**
+ * The two refusals a lesson words for itself (template `UNAVAILABLE_LESSON`,
+ * lines 413-416): a third student, and one who comes after the deal. Both send
+ * the visitor back to their teacher and not to a game of their own, because the
+ * room was never meant for them.
+ */
+const LESSON_MESSAGES: Readonly<Partial<Record<RoomUnavailableReason, UnavailableNotice>>> = {
+  full: {
+    heading: 'This lesson is full',
+    text: 'A lesson is played by two players, and this room has both of them. Ask your teacher which room is yours.',
+  },
+  started: {
+    heading: 'This lesson has already begun',
+    text: 'The words were dealt out to the two players who were in the room at the time. Ask your teacher which room is yours.',
+  },
+};
+
 interface RoomUnavailableNoticeProps {
   readonly reason: RoomUnavailableReason;
+  /** What the room is for; `pair` unless given. Only `full` and `started` read differently for a lesson. */
+  readonly mode?: RoomMode;
 }
 
 /**
@@ -69,12 +89,14 @@ interface RoomUnavailableNoticeProps {
  * error, and each one leaves a way forward.
  *
  * @param props.reason - What stands between the player and the room
+ * @param props.mode - What the room is for, since a lesson words two of the refusals for itself
  *
  * @example
  * <RoomUnavailableNotice reason="expired" />
+ * <RoomUnavailableNotice reason="full" mode="lesson" />
  */
-export const RoomUnavailableNotice = ({ reason }: RoomUnavailableNoticeProps) => {
-  const notice = MESSAGES[reason];
+export const RoomUnavailableNotice = ({ reason, mode = 'pair' }: RoomUnavailableNoticeProps) => {
+  const notice = (mode === 'lesson' ? LESSON_MESSAGES[reason] : undefined) ?? MESSAGES[reason];
 
   return (
     <DoorColumn picture={<RefusalStreet />} unseenHeading="Game room">

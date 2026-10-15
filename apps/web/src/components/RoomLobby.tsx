@@ -15,12 +15,25 @@ import { gateHintSx, gateStackSx } from './gate-panel-styles';
 import { LobbyPlayers } from './LobbyPlayers';
 import { LobbyStreet } from './LobbyStreet';
 import { lobbyTightStackSx } from './lobby-styles';
+import { Message } from './Message';
 import { OwnPresenceNotice } from './OwnPresenceNotice';
 import { RoomShell } from './RoomShell';
 import { StartGamePanel } from './StartGamePanel';
+import type { LessonView } from './street-labels';
 
 /** The heading is `StartGamePanel`'s own — "Could not start the game", fixed. */
 const START_FAILED_MESSAGE = 'Check your connection and try again. Nothing has been dealt out yet.';
+
+/**
+ * Who is reading a lesson's lobby, which is what the drawing and the line in the
+ * frame's header are worded and drawn for.
+ *
+ * The teacher is always drawn present on their own screen, whatever their own
+ * mark says, so a teacher has no way to see themselves away here; a student sees
+ * the teacher away when the teacher's mark is old as the student reads it.
+ */
+const lessonViewFor = (isTeacher: boolean, teacherAway: boolean): LessonView =>
+  isTeacher ? { viewer: 'teacher' } : { viewer: 'student', teacherAway };
 
 interface RoomLobbyProps {
   /** Id of the room, for the deal this screen writes. */
@@ -69,6 +82,16 @@ interface RoomLobbyProps {
  * freed by silence (the host is still offered the link, because `invitation` is
  * handed down only while a seat is free).
  *
+ * A lesson's lobby is the same screen with a teacher in it
+ * (`design/templates/state-tree.html`, `?mode=lesson`, lines 924-977). The
+ * teacher is no player: their row stands first in the list, tagged "teacher",
+ * the seats under it are the students', and the street shows them at the end of
+ * the street. The teacher's action is "Deal the words" and the invitation is
+ * worded for both students. A student whose teacher has gone quiet is told so,
+ * and is not offered the line that says who they are waiting for. On the
+ * teacher's own screen they are always drawn at their window, whatever their own
+ * mark says: that is the notice's to say, in words.
+ *
  * The status line is the frame's header, not this screen's: `useFrameSlot`
  * puts the sentence for this reader there, and the frame hides it under 768.
  * There is no board in a lobby, because which words are whose is decided by the
@@ -78,7 +101,7 @@ interface RoomLobbyProps {
  *
  * @param props.roomId - Id of the room this lobby belongs to
  * @param props.room - The room document
- * @param props.viewerId - Which player is reading, so only the owner is offered the start
+ * @param props.viewerId - Which person is reading, so only the owner (the host, or a lesson's teacher) is offered the start
  * @param props.invitation - The room's link, for a viewer who has somebody to invite
  * @param props.deal - The deal's write; the workshop's way to draw it unfinished or refused
  *
@@ -97,6 +120,16 @@ export const RoomLobby = ({
   const players = playersInJoinOrder(room);
   const wordCount = room.layout.placedWords.length;
   const isOwner = viewerId === room.ownerId;
+  // The teacher of a lesson stands outside `players`, so the list, the status
+  // line and the drawing are each told about them apart from the two who play.
+  const teacher =
+    room.teacher === undefined ? undefined : { id: room.ownerId, nickname: room.teacher.nickname };
+  const isLesson = teacher !== undefined;
+  const teacherAwayDuration = teacher === undefined ? undefined : awayDurations[teacher.id];
+  // On the teacher's own screen they are always at their window: whether the room
+  // has heard from them is the notice's to say, in words, and not the drawing's.
+  const teacherAway = !isOwner && teacherAwayDuration !== undefined;
+  const lesson = isLesson ? lessonViewFor(isOwner, teacherAway) : undefined;
 
   const submitStart = async () => {
     setStart({ phase: 'submitting' });
@@ -115,16 +148,23 @@ export const RoomLobby = ({
   // Two players in and the host still holds the link: the guest's seat has been
   // freed by silence (`hasFreeSeatIn`, asked one screen up).
   const seatFreedBySilence = !waiting && invitation !== undefined;
-  const ownerName = players.find((player) => player.id === room.ownerId)?.nickname;
+  const starterName =
+    teacher?.nickname ?? players.find((player) => player.id === room.ownerId)?.nickname;
   const canBeDealt = wordAssignmentRefusal({ wordCount, playerCount: players.length }) === null;
 
+  const teacherName = teacher?.nickname;
   const status = useMemo(
     () => (
       <span role="status">
-        {lobbyStatusMessage({ isOwner, playerCount: players.length, wordCount })}
+        {lobbyStatusMessage({
+          isOwner,
+          playerCount: players.length,
+          wordCount,
+          ...(teacherName === undefined ? {} : { lesson: { teacherName, teacherAway } }),
+        })}
       </span>
     ),
-    [isOwner, players.length, wordCount],
+    [isOwner, players.length, wordCount, teacherName, teacherAway],
   );
   useFrameSlot({ status });
 
@@ -135,11 +175,18 @@ export const RoomLobby = ({
         <Box sx={gateStackSx}>
           <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
 
+          {teacher !== undefined && teacherAway && (
+            <Message kind="info" heading={`${teacher.nickname} is away`} role="status">
+              {`The room has not heard from your teacher for ${teacherAwayDuration}. Only the teacher can start a lesson, so it waits here until they are back.`}
+            </Message>
+          )}
+
           <LobbyPlayers
             players={players}
             ownerId={room.ownerId}
             viewerId={viewerId}
             awayDurations={awayDurations}
+            teacher={teacher}
           />
 
           {invitation}
@@ -151,21 +198,26 @@ export const RoomLobby = ({
               onStart={() => void submitStart()}
               isStarting={start.phase === 'submitting'}
               errorMessage={failureOf(start)}
+              isLesson={isLesson}
             />
           )}
 
-          {!isOwner && !waiting && canBeDealt && (
+          {!isOwner && !waiting && canBeDealt && !teacherAway && (
             <Box component="p" sx={{ ...gateHintSx, fontSize: inRem(17) }}>
-              {`Waiting for ${ownerName ?? 'the host'} to start the game.`}
+              {`Waiting for ${starterName ?? 'the host'} to start the game.`}
             </Box>
           )}
         </Box>
       }
       picture={
         <Box sx={lobbyTightStackSx}>
-          <LobbyStreet waiting={waiting} seatFreedBySilence={seatFreedBySilence} />
+          <LobbyStreet
+            players={players.length}
+            seatFreedBySilence={seatFreedBySilence}
+            lesson={lesson}
+          />
           <Box component="p" sx={{ ...gateHintSx, textAlign: 'center' }}>
-            {lobbyCaption(wordCount)}
+            {lobbyCaption(wordCount, isLesson)}
           </Box>
         </Box>
       }

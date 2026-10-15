@@ -86,11 +86,24 @@ describe('HomePage', () => {
     ]);
   });
 
-  it('does not mention a language, and builds no lesson hint yet', () => {
+  it('does not name a language, and says under the action that a lesson can be run', () => {
     const { container } = renderHomePage();
 
     expect(container.textContent).not.toMatch(/english/i);
-    expect(container.textContent).not.toMatch(/teaching a language/i);
+    expect(
+      screen.getByText('Teaching a language? Run it as a lesson for two of your students.'),
+    ).toBeInTheDocument();
+  });
+
+  it('puts the lesson hint after the one action, in the same block, and makes it no link', () => {
+    renderHomePage();
+
+    const action = screen.getByRole('link', { name: 'Create a game' });
+    const hint = screen.getByText(/Teaching a language\?/);
+
+    expect(action.compareDocumentPosition(hint) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(hint.closest('a')).toBeNull();
+    expect(screen.getAllByRole('link')).toHaveLength(1);
   });
 
   it('reports that the first screen of the funnel was reached', async () => {

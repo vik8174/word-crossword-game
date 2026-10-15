@@ -16,6 +16,11 @@ interface StartGamePanelProps {
   readonly isStarting: boolean;
   /** Why the last attempt did not go through, if it did not. */
   readonly errorMessage?: string;
+  /**
+   * Whether the room is a lesson. The action is named for what it does there:
+   * the teacher deals the words, they do not start a game they play in.
+   */
+  readonly isLesson?: boolean;
 }
 
 /**
@@ -37,6 +42,7 @@ interface StartGamePanelProps {
  * @param props.wordCount - Words in the room's crossword
  * @param props.onStart - Called when the owner starts the game
  * @param props.errorMessage - Message about a start that was refused
+ * @param props.isLesson - The teacher's control, worded "Deal the words"
  *
  * @example
  * <StartGamePanel playerCount={2} wordCount={12} onStart={start} isStarting={false} />
@@ -47,8 +53,10 @@ export const StartGamePanel = ({
   onStart,
   isStarting,
   errorMessage,
+  isLesson = false,
 }: StartGamePanelProps) => {
   const refusal = wordAssignmentRefusal({ wordCount, playerCount });
+  const startLabel = isLesson ? 'Deal the words' : 'Start the game';
 
   // One action per state: alone in the room, the owner's action is copying the
   // link, and once somebody is there it is starting the game, which is why the
@@ -74,7 +82,7 @@ export const StartGamePanel = ({
 
       <Box>
         <PillButton onClick={onStart} loading={isStarting} disabled={refusal !== null}>
-          {isStarting ? 'Dealing the words' : 'Start the game'}
+          {isStarting ? 'Dealing the words' : startLabel}
         </PillButton>
       </Box>
     </Box>

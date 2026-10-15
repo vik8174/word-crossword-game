@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
+import { Frame } from '../components/Frame';
+import { FrameSlotProvider } from '../components/FrameSlotProvider';
 import { HomePage } from './HomePage';
 
 /**
@@ -16,3 +18,18 @@ export default meta;
 type Story = StoryObj<typeof HomePage>;
 
 export const Default: Story = {};
+
+/**
+ * Home under the frame's header, as the app shows it: the same page, with the
+ * hint that a lesson can be run under the action (template line 841).
+ */
+export const UnderTheFrame: Story = {
+  decorators: [
+    (Story) => (
+      <FrameSlotProvider>
+        <Frame />
+        <Story />
+      </FrameSlotProvider>
+    ),
+  ],
+};
