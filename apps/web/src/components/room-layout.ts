@@ -14,8 +14,11 @@ import { inRem } from '../scale';
  */
 
 /**
- * Narrowest window the room stops being a document and becomes an application:
- * a fixed height, no page scroll, and the board always on screen.
+ * Narrowest window the room stops being a phone's one column and takes a
+ * tablet's arrangement: the board across the top and the two indexes side by
+ * side under it. From {@link APP_SHELL_MIN_HEIGHT} high it is also an
+ * application (a fixed height, no page scroll, the board always on screen), and
+ * from {@link TABLET_SHELL_MIN_HEIGHT} high on a tablet.
  *
  * A tablet held upright is the smallest screen that is worth it, and it is also
  * the smallest one it works on. Below this the board is a scrolling document,
@@ -32,7 +35,8 @@ export const PHONE_SIDE_PX = 18;
 export const TABLET_SIDE_PX = 32;
 
 /**
- * Shortest window the application layout is used in.
+ * Shortest window the tablet's arrangement is used in, and, from
+ * {@link THREE_ZONE_MIN_WIDTH} wide, the application with it.
  *
  * Width alone would hand it to a phone turned on its side — 844 by 390 on a
  * recent one — where a fixed-height screen has nothing left over once the
@@ -40,6 +44,19 @@ export const TABLET_SIDE_PX = 32;
  * asked for.
  */
 export const APP_SHELL_MIN_HEIGHT = 600;
+
+/**
+ * Shortest window a tablet (768 to 1199 wide) is an application in: 900.
+ *
+ * Under it the tablet keeps its arrangement and its sizing but loses the fixed
+ * height, so the page scrolls and no zone is a scroll box (ADR 0029, addendum
+ * of issue #274). An iPad on its side is 1024 by 768, or 1180 by 820: the board
+ * took what a fixed height left it and the indexes under it were left a few
+ * pixels (4 of 231 on an ending with many words), which is a box with its
+ * content cut off. The board is no longer always on screen in that band. From
+ * 1200 wide the threshold stays {@link APP_SHELL_MIN_HEIGHT}.
+ */
+export const TABLET_SHELL_MIN_HEIGHT = 900;
 
 /**
  * Narrowest window the board and both of its indexes stand side by side in.
@@ -62,10 +79,11 @@ export const THREE_ZONE_MIN_WIDTH = 1200;
 export const NARROW_WINDOW = `@media (max-width: ${APP_SHELL_MIN_WIDTH - 1}px)`;
 
 /**
- * When the window is a tablet: the application layout, narrower than three zones
- * (768 to 1199 wide, 600 or more high).
+ * When the window is a tablet: the tablet's arrangement, narrower than three
+ * zones (768 to 1199 wide, 600 or more high). It is not always an application:
+ * see {@link APP_SHELL}.
  *
- * The board stands under the drawing there, in a column of its own, and the
+ * The board stands over the two indexes there, in a column of its own, and the
  * template draws its box no taller than its grid (issue #267).
  */
 export const TABLET_WINDOW = `@media (min-width: ${APP_SHELL_MIN_WIDTH}px) and (max-width: ${THREE_ZONE_MIN_WIDTH - 1}px) and (min-height: ${APP_SHELL_MIN_HEIGHT}px)`;
@@ -77,8 +95,20 @@ export const TABLET_WINDOW = `@media (min-width: ${APP_SHELL_MIN_WIDTH}px) and (
  */
 export const BOX_AT_ITS_GRID = `${NARROW_WINDOW}, ${TABLET_WINDOW.replace('@media ', '')}`;
 
-/** When the room is an application: a fixed height with no page scroll. */
-export const APP_SHELL = `@media (min-width: ${APP_SHELL_MIN_WIDTH}px) and (min-height: ${APP_SHELL_MIN_HEIGHT}px)`;
+/**
+ * When the room has the arrangement of a tablet or of a wide window: the board
+ * in the top row (or the middle column) and the zones in the grid's named
+ * areas. It says nothing about the height, which is {@link APP_SHELL}'s.
+ */
+export const ARRANGED_ROOM = `@media (min-width: ${APP_SHELL_MIN_WIDTH}px) and (min-height: ${APP_SHELL_MIN_HEIGHT}px)`;
+
+/**
+ * When the room is an application: a fixed height with no page scroll, and a
+ * zone that is a scroll box. A wide window from {@link APP_SHELL_MIN_HEIGHT}
+ * high, or a tablet from {@link TABLET_SHELL_MIN_HEIGHT} high. A tablet shorter
+ * than that has {@link ARRANGED_ROOM} and not this.
+ */
+export const APP_SHELL = `@media (min-width: ${APP_SHELL_MIN_WIDTH}px) and (max-width: ${THREE_ZONE_MIN_WIDTH - 1}px) and (min-height: ${TABLET_SHELL_MIN_HEIGHT}px), (min-width: ${THREE_ZONE_MIN_WIDTH}px) and (min-height: ${APP_SHELL_MIN_HEIGHT}px)`;
 
 /** When the board has a column of its own, with an index either side of it. */
 export const THREE_ZONES = `@media (min-width: ${THREE_ZONE_MIN_WIDTH}px) and (min-height: ${APP_SHELL_MIN_HEIGHT}px)`;
