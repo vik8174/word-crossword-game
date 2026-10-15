@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { contrastBetween as contrast } from '../contrast';
+import { OUT_CURVE } from '../motion';
 import { theme } from '../theme';
 import { buttonSx, dotSx, PULSE_MS, type ButtonStyleState } from './button-styles';
 
@@ -82,14 +83,50 @@ describe('the button, in every look this app puts one in', () => {
     expect(asSx(buttonSx(STATE.quietLoading)).backgroundColor).toBe(street.tile);
   });
 
-  it('has no hover and no press movement until the motion issue (#230)', () => {
-    for (const state of Object.values(STATE)) {
-      const sx = asSx(buttonSx(state));
+  describe('movement', () => {
+    const NO_PREFERENCE = '@media (prefers-reduced-motion: no-preference)';
+    const motionOf = (state: ButtonStyleState): Sx => asSx(asSx(buttonSx(state))[NO_PREFERENCE]);
 
-      expect(sx['&:hover']).toBeUndefined();
-      expect(sx['&:active']).toBeUndefined();
-      expect(sx.transition).toBeUndefined();
-    }
+    it('is all inside no-preference: at the top level a control does not move or transition', () => {
+      for (const state of Object.values(STATE)) {
+        const sx = asSx(buttonSx(state));
+
+        expect(sx['&:hover']).toBeUndefined();
+        expect(sx['&:active']).toBeUndefined();
+        expect(sx.transition).toBeUndefined();
+      }
+    });
+
+    it('moves shadow and transform for 160ms on --out and the colour for 220ms on ease', () => {
+      for (const state of Object.values(STATE)) {
+        expect(motionOf(state).transition).toBe(
+          `transform 160ms ${OUT_CURVE}, box-shadow 160ms ${OUT_CURVE}, background-color 220ms ease`,
+        );
+      }
+    });
+
+    it('lifts a live loud or quiet control 1px on hover and presses it 2px in 60ms', () => {
+      for (const state of [STATE.loud, STATE.quiet]) {
+        const motion = motionOf(state);
+        const hover = asSx(motion['&:hover']);
+        const press = asSx(motion['&:active']);
+
+        expect(hover.transform).toBe('translate(-1px, -1px)');
+        expect(hover.boxShadow).toBe(`0 0 0 1.5px ${street.ink}, 4px 4px 0 0 ${street.ink}`);
+        expect(press.transform).toBe('translate(2px, 2px)');
+        expect(press.boxShadow).toBe(`0 0 0 1.5px ${street.ink}, 1px 1px 0 0 ${street.ink}`);
+        expect(press.transitionDuration).toBe('60ms');
+      }
+    });
+
+    it('does not lift a link, a disabled control or one that is loading', () => {
+      for (const state of [STATE.link, STATE.disabled, STATE.loading, STATE.quietLoading]) {
+        const motion = motionOf(state);
+
+        expect(motion['&:hover']).toBeUndefined();
+        expect(motion['&:active']).toBeUndefined();
+      }
+    });
   });
 
   it('shows focus as a 3px ochre outline held 4px off', () => {

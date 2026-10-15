@@ -9,6 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Frame } from '../components/Frame';
 import { FrameSlotProvider } from '../components/FrameSlotProvider';
+import { ENTER_MS } from '../motion';
 import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from '../rooms/presence';
 import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
 import { theme } from '../theme';
@@ -2014,7 +2015,7 @@ describe('RoomPage', () => {
     });
   });
 
-  describe('the shift from one screen to the next', () => {
+  describe('a screen opening', () => {
     const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
     const lobbyRoom = storedRoom({ players: bothPlayers });
 
@@ -2030,48 +2031,194 @@ describe('RoomPage', () => {
         },
       });
 
+    /** The same room with every word answered and the game completed. */
+    const finishedRoom = () =>
+      storedRoom({
+        status: 'completed',
+        layout: TWO_WORD_LAYOUT,
+        players: { ...bothPlayers },
+        words: {
+          w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: 'guest-uid' },
+          w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: 'owner-uid' },
+        },
+      });
+
     const emit = (room: unknown) =>
       act(async () => {
         emitRoom({ exists: () => true, data: () => room });
       });
 
-    it('draws the lobby over the nickname form rather than in its place', async () => {
+    /** The screen's entering mark, which is on the wrapper for the first moments of a screen. */
+    const entering = () => document.querySelector('.enter');
+
+    /** The fiesta's mark: on the screen only when it was reached by playing. */
+    const fiestaMark = () => document.querySelector('[data-fiesta]')?.getAttribute('data-fiesta');
+
+    it('replaces the nickname form with the lobby, leaving nothing of the old screen behind', async () => {
       await openRoom();
       joinAs('Bob');
 
       await emit(lobbyRoom);
 
-      // Both screens on the page at once, which is the whole of what a shift
-      // is. Nothing else about this address changes — the form and the lobby
-      // are both `/room/room-1` — so the movement is the only thing there is to
-      // say that a state changed rather than a page redrawing.
-      expect(screen.getByText('Bob')).toBeInTheDocument();
-      expect(screen.getByLabelText(/nickname/i)).toBeInTheDocument();
+      // One screen on the page, as there was one before: the form and the lobby
+      // are both `/room/room-1`, and the screen opening is what says a state
+      // changed rather than a page redrawing.
+      await waitFor(() => expect(screen.getByText('Bob')).toBeInTheDocument());
+      expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
+      expect(entering()).not.toBeNull();
+    });
 
-      await untilGone(() => screen.queryByLabelText(/nickname/i));
+    it('numbers the blocks of a screen in reading order across the whole of it, from 0', async () => {
+      await openRoom(lobbyRoom);
+
+      const places = [
+        ...document.querySelectorAll<HTMLElement>(
+          '.enter [data-rise], .enter [data-rise-children] > *',
+        ),
+      ].map((block) => block.style.getPropertyValue('--i'));
+
+      expect(places.length).toBeGreaterThan(1);
+      expect(places).toEqual(places.map((_place, index) => String(index)));
     });
 
     it('stands still through the snapshots a game is full of', async () => {
       await openRoom(dealtRoom(), true);
 
-      // The room arriving over the spinner is itself a shift, so it is waited
-      // out before the thing this test is about begins.
+      // The room arriving over the spinner is itself a screen opening, so it is
+      // waited out before the thing this test is about begins.
       await untilGone(() => screen.queryByText(/connecting to the game/i));
       expect(screen.getAllByText(/^playing with/i)).toHaveLength(1);
+
+      const wrapper = entering();
+      const blocks = [...document.querySelectorAll('[data-rise-children] > *')];
+
+      expect(wrapper).not.toBeNull();
+      expect(blocks.length).toBeGreaterThan(0);
 
       // Two minutes of a game as it really behaves: each client rewrites its own
       // presence mark every fifteen seconds and every write is a snapshot for
       // everybody, so a room with two players in it redraws roughly every seven
-      // for the whole game. Not one of those is a screen changing. A shift
-      // hanging off the render would twitch through all of them — and nowhere a
-      // developer would see it, a machine with one player receiving no
-      // snapshots at all.
+      // for the whole game. Not one of those is a screen changing. A movement
+      // hanging off the render would twitch through all of them, and nowhere a
+      // developer would see it: a machine with one player receives no
+      // snapshots at all. Nothing is mounted again, so nothing starts again.
       for (let beat = 0; beat < 16; beat += 1) {
         await emit(dealtRoom());
       }
 
       expect(screen.getAllByText(/^playing with/i)).toHaveLength(1);
-      expect(screen.getAllByRole('heading', { level: 1, hidden: true })).toHaveLength(1);
+      expect(document.querySelector('.enter')).toBe(wrapper);
+      expect([...document.querySelectorAll('[data-rise-children] > *')]).toEqual(blocks);
+    });
+
+    it('takes the entering mark off once the screen has finished arriving', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+
+      try {
+        await openRoom(lobbyRoom);
+        expect(entering()).not.toBeNull();
+
+        await act(async () => {
+          vi.advanceTimersByTime(ENTER_MS + 50);
+        });
+
+        expect(entering()).toBeNull();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('lets the fiesta arrive when the game finishes under the player’s eyes', async () => {
+      await openRoom(dealtRoom());
+      await untilGone(() => screen.queryByText(/connecting to the game/i));
+      expect(fiestaMark()).toBeUndefined();
+
+      await emit(finishedRoom());
+
+      expect(await screen.findByText(/you did it/i)).toBeInTheDocument();
+      expect(fiestaMark()).toBe('arrives');
+    });
+
+    it('shows a finished room that was opened as it is with the fiesta already standing', async () => {
+      await openRoom(finishedRoom());
+
+      expect(await screen.findByText(/you did it/i)).toBeInTheDocument();
+      expect(fiestaMark()).toBeUndefined();
+    });
+  });
+
+  describe('an answered word', () => {
+    const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
+
+    /** `cat` across is dealt to the guest and `car` down to the owner; `cat` is answered or not. */
+    const gameWithCat = (isCatAnswered: boolean) =>
+      storedRoom({
+        status: 'playing',
+        layout: TWO_WORD_LAYOUT,
+        players: { ...bothPlayers },
+        words: {
+          w0: {
+            hiddenFromPlayerId: 'guest-uid',
+            guessedByPlayerId: isCatAnswered ? 'guest-uid' : null,
+          },
+          w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+        },
+      });
+
+    const emit = (room: unknown) =>
+      act(async () => {
+        emitRoom({ exists: () => true, data: () => room });
+      });
+
+    /** The squares turning over, each with its place in the word. */
+    const turning = () =>
+      [...document.querySelectorAll<HTMLElement>('.cell.just')].map((square) =>
+        square.style.getPropertyValue('--d'),
+      );
+
+    it('turns its squares over one after another when it turns answered in front of the player', async () => {
+      await openRoom(gameWithCat(false));
+      await untilGone(() => screen.queryByText(/connecting to the game/i));
+      expect(turning()).toEqual([]);
+
+      await emit(gameWithCat(true));
+
+      expect(turning()).toEqual(['0', '1', '2']);
+    });
+
+    it('turns them once: the snapshots that follow turn nothing and change nothing', async () => {
+      await openRoom(gameWithCat(false));
+      await emit(gameWithCat(true));
+      const squares = [...document.querySelectorAll('.cell.just')];
+
+      for (let beat = 0; beat < 4; beat += 1) {
+        await emit(gameWithCat(true));
+      }
+
+      expect([...document.querySelectorAll('.cell.just')]).toEqual(squares);
+      expect(turning()).toEqual(['0', '1', '2']);
+    });
+
+    it('is shown answered with no movement when the room is opened with the word already answered', async () => {
+      await openRoom(gameWithCat(true));
+      await untilGone(() => screen.queryByText(/connecting to the game/i));
+
+      expect(turning()).toEqual([]);
+      expect(document.querySelector('svg .pegged')).toBeNull();
+    });
+
+    it('pegs the card of the word on the line once, as it arrives', async () => {
+      // A window tall enough for the board to leave room for the drawing above it.
+      vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(2400);
+      vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1440);
+
+      await openRoom(gameWithCat(false));
+      await untilGone(() => screen.queryByText(/connecting to the game/i));
+      expect(document.querySelector('svg .pegged')).toBeNull();
+
+      await emit(gameWithCat(true));
+
+      expect(document.querySelectorAll('svg .pegged')).toHaveLength(1);
     });
   });
 

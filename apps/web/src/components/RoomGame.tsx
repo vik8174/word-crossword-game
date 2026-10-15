@@ -3,6 +3,7 @@ import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
 import { answeredSpellings } from '../rooms/answered-spellings';
 import { answeredWordsOf } from '../rooms/answered-words';
+import { useJustAnswered } from '../rooms/use-just-answered';
 import { openGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
@@ -213,6 +214,8 @@ export const RoomGame = ({
   // Every answered word, in the order the board numbers them: the ones this
   // player explained and the ones they guessed.
   const answeredWords = useMemo(() => answeredWordsOf(wordView, gridView), [wordView, gridView]);
+  // The card of the word answered while this screen was open, pegged on the line.
+  const justAnswered = useJustAnswered(answeredWords);
 
   // The two zones the board sits between, and the one thing the deal can leave
   // a player with instead of them. Built as values rather than inline, so it is
@@ -263,7 +266,15 @@ export const RoomGame = ({
         errorMessage={guessError ?? undefined}
         wordToReach={wordToReach}
         hasVisibleHeading={false}
-        band={<Street crop="band" mood="talk" cards={answeredWords} label={BAND_LABEL} />}
+        band={
+          <Street
+            crop="band"
+            mood="talk"
+            cards={answeredWords}
+            justAnswered={justAnswered}
+            label={BAND_LABEL}
+          />
+        }
       />
     </RoomShell>
   );

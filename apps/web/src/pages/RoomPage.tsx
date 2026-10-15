@@ -1,3 +1,4 @@
+import GlobalStyles from '@mui/material/GlobalStyles';
 import { type ReactElement, type ReactNode, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -9,8 +10,9 @@ import { RoomInvitePanel } from '../components/RoomInvitePanel';
 import { RoomJoin } from '../components/RoomJoin';
 import { RoomLobby } from '../components/RoomLobby';
 import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
-import { ScreenShift } from '../components/ScreenShift';
+import { ScreenEnter } from '../components/ScreenEnter';
 import { WaitingMark } from '../components/WaitingMark';
+import { MOTION_PLAY_CSS } from '../motion-play-styles';
 import type { RoomDocument } from '../rooms/room-document';
 import {
   hasSomebodyToInvite,
@@ -129,10 +131,10 @@ const RoomScreenView = ({
  *
  * The change from one of those screens to the next is the one thing on this
  * page that moves, and it is keyed on which screen is showing rather than on
- * this component rendering (see {@link ScreenShift}). The heartbeat above
+ * this component rendering (see {@link ScreenEnter}). The heartbeat above
  * causes a render every fifteen seconds in every client, so the difference
- * between the two is a shift that plays when a player pressed something and one
- * that twitches all game.
+ * between the two is a screen that opens when a player pressed something and
+ * one that twitches all game.
  *
  * One thing here is not read from the room: whether the room refused to take
  * this visitor in. It cannot be — a refused write is answered with
@@ -176,19 +178,37 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
   usePresenceHeartbeat(roomId, connection);
   useScreenReached(funnelScreenFor(screen.kind));
 
+  // The screen this one replaced, kept so the fiesta can tell the change from
+  // `playing` to `finished` seen in this session from a finished room that was
+  // opened as it is. Set while rendering, not in an effect, so the first render
+  // of the new screen already knows where it came from.
+  const [screens, setScreens] = useState<{ current: string; previous: string | null }>({
+    current: screen.kind,
+    previous: null,
+  });
+
+  if (screens.current !== screen.kind) {
+    setScreens({ current: screen.kind, previous: screens.current });
+  }
+
+  const arrivesFromPlay = screen.kind === 'finished' && screens.previous === 'playing';
+
   return (
-    <ScreenShift shiftKey={screen.kind}>
-      <RoomScreenView
-        roomId={roomId}
-        screen={screen}
-        invitation={
-          hasSomebodyToInvite(screen, now) ? (
-            <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
-          ) : undefined
-        }
-        onJoinRefused={() => setRefusedRoom(latestRoom.current)}
-      />
-    </ScreenShift>
+    <>
+      <GlobalStyles styles={MOTION_PLAY_CSS} />
+      <ScreenEnter key={screen.kind} arrivesFromPlay={arrivesFromPlay}>
+        <RoomScreenView
+          roomId={roomId}
+          screen={screen}
+          invitation={
+            hasSomebodyToInvite(screen, now) ? (
+              <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
+            ) : undefined
+          }
+          onJoinRefused={() => setRefusedRoom(latestRoom.current)}
+        />
+      </ScreenEnter>
+    </>
   );
 };
 

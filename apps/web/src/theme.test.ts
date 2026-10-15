@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
+import { MOTION_DURATIONS_MS, MOTION_EASING, OUT_CURVE } from './motion';
 import { theme } from './theme';
 
 /** A colour as the three channels a screen draws it with, and how solid it is. */
@@ -296,13 +296,15 @@ describe('theme', () => {
       new Set([MOTION_DURATIONS_MS.quick, MOTION_DURATIONS_MS.settle]),
     );
     expect(easingValues).toEqual(new Set([MOTION_EASING]));
+    // And that curve is `--out`, the street's own: MUI's components use no third.
+    expect(MOTION_EASING).toBe(OUT_CURVE);
   });
 
   it('turns off all motion under prefers-reduced-motion, not only its own three consumers', () => {
-    // The screen shift already asks `REDUCED_MOTION_QUERY` itself; this is the
-    // backstop for everything MUI draws, which cannot be asked the same
-    // question and could not be trusted to ask it consistently one component
-    // at a time.
+    // The street's own rules are inside `no-preference` and so are not applied
+    // at all; this is the backstop for everything MUI draws, which cannot be
+    // asked the same question and could not be trusted to ask it consistently
+    // one component at a time.
     const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
       Record<string, unknown> | undefined;
     const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as
@@ -312,6 +314,18 @@ describe('theme', () => {
 
     expect(everything?.transitionDuration).toMatch(/!important/);
     expect(everything?.animationDuration).toMatch(/!important/);
+  });
+
+  it('zeroes delays as well as durations, so nothing waits invisible for its turn', () => {
+    const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
+      Record<string, unknown> | undefined;
+    const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as
+      Record<string, unknown> | undefined;
+    const selector = Object.keys(media ?? {}).find((key) => key.includes('*::before'));
+    const everything = selector ? (media?.[selector] as Record<string, string>) : undefined;
+
+    expect(everything?.animationDelay).toBe('0s !important');
+    expect(everything?.transitionDelay).toBe('0s !important');
   });
 
   it('leaves the page spinner turning under prefers-reduced-motion, so "wait" stays true', () => {

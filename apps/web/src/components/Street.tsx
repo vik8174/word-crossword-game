@@ -76,7 +76,7 @@ export type StreetProps = LineProps & {
   readonly fiesta?: boolean;
   /** The words hanging on the line, in the order given. */
   readonly cards?: readonly string[];
-  /** One of `cards`: that card carries the `pegged` class that #230 animates. */
+  /** One of `cards`: that card carries the `pegged` class that is hung on the line and swings still. */
   readonly justAnswered?: string;
   /** One word, drawn as tiles pegged to the line. */
   readonly letters?: string;
@@ -96,9 +96,11 @@ const SVG_STYLE: CSSProperties = { display: 'block', width: '100%', height: 'aut
  *
  * A port of `scene()` in `design/templates/state-tree.html` (lines 600-656),
  * with its geometry unchanged. It fills the width it is given and draws no
- * motion: the template's motion class names (`shutter`, `who`, `line-draw`,
- * `card`, `pegged`, `lantern`, `confetti`) are on the same elements and the
- * lanterns, confetti and lines carry the `--k` index, for #230 to animate.
+ * motion of its own: the template's motion class names (`shutter`, `who`,
+ * `line-draw`, `card`, `pegged`, `lantern`, `confetti`) are on the same
+ * elements, and the rules in `motion-styles.ts` move them when a screen opens
+ * (`ScreenEnter`). The lanterns and the confetti carry the `--k` index that
+ * staggers them; the flags of the fiesta card carry theirs (`FiestaCard`).
  *
  * @example
  * <Street right="empty" line="loose" crop="top" mood="wave" label="A neighbour waiting" />

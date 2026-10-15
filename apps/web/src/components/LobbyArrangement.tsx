@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import { inRem } from '../scale';
 import { FROM_TABLET, FROM_WIDE } from './frame-styles';
+import { BLOCK_PROPS, BLOCKS_PROPS } from './screen-blocks';
 import { LOBBY_COLUMN_WIDTH, LOBBY_GRID_GAP, LOBBY_STACKED_GAP } from './lobby-styles';
 import { UNSEEN_HEADING } from './surface-styles';
 
@@ -58,8 +59,11 @@ export const LobbyArrangement = ({ title, column, picture }: LobbyArrangementPro
         },
       }}
     >
-      <Box sx={{ minWidth: 0 }}>{column}</Box>
+      <Box {...BLOCKS_PROPS} sx={{ minWidth: 0 }}>
+        {column}
+      </Box>
       <Box
+        {...BLOCK_PROPS}
         sx={{
           minWidth: 0,
           order: -1,

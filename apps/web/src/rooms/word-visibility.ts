@@ -348,6 +348,22 @@ const solvedCellKeys = (room: ReadableRoom): ReadonlySet<string> =>
   );
 
 /**
+ * The squares of each word the group has answered, in the order the word runs.
+ *
+ * What the board turns over square by square when a word is answered: the order
+ * is the word's own, so the first square turns first
+ * (`docs/decisions/0039-the-street-wakes-up.md`). Like {@link solvedCellKeys}
+ * it does not depend on who is looking.
+ *
+ * @param room - The room as it stands
+ * @returns One list of {@link cellKey}s per answered word
+ */
+export const answeredWordCellKeys = (room: ReadableRoom): readonly (readonly string[])[] =>
+  room.layout.placedWords
+    .filter((_placed, index) => isWordSolved(room.words[wordIdAt(index)]))
+    .map((placed) => placed.cells.map(cellKey));
+
+/**
  * The squares of the words this viewer explains, keyed by {@link cellKey}.
  *
  * Taken from the view rather than from the layout, and that is the whole of its

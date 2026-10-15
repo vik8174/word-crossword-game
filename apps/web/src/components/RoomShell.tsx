@@ -7,6 +7,7 @@ import { belowFrame } from './frame-height';
 import { FROM_TABLET, FROM_WIDE } from './frame-styles';
 import { LobbyArrangement } from './LobbyArrangement';
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES, ZONES_GAP } from './room-layout';
+import { BLOCKS_PROPS } from './screen-blocks';
 import { UNSEEN_HEADING } from './surface-styles';
 
 /** What the page is, said once for every phase the room goes through. */
@@ -229,6 +230,7 @@ export const RoomShell = ({ title, left, right, picture, children }: RoomShellPr
       </Typography>
 
       <Box
+        {...BLOCKS_PROPS}
         component="main"
         sx={{
           display: 'grid',

@@ -64,10 +64,10 @@ describe('the frame slot', () => {
     expect(statusShown()).toBe('');
   });
 
-  it('keeps the arriving screen’s status when the leaving screen is unmounted, as a shift does', () => {
-    // `ScreenShift` mounts the screen that arrives while the one that leaves is
-    // still mounted, and unmounts the leaving one 180 ms later. A filler that
-    // cleared the slot on unmount would wipe the arriving screen's line then.
+  it('keeps the arriving screen’s status when the leaving screen is unmounted afterwards', () => {
+    // A screen can be mounted while the one it replaces is still mounted, and
+    // the old one unmounted a moment later. A filler that cleared the slot on
+    // unmount would wipe the arriving screen's line then.
     const leaving = <Filler key="leaving" content={{ status: 'Lobby' }} />;
     const arriving = <Filler key="arriving" content={{ status: 'Playing with Ana' }} />;
 

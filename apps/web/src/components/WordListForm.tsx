@@ -12,6 +12,7 @@ import {
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
 import { Field } from './Field';
 import { gateButtonRowSx, gateHintSx, gateStackSx } from './gate-panel-styles';
+import { BLOCKS_PROPS } from './screen-blocks';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
 import {
@@ -119,6 +120,7 @@ export const WordListForm = ({
 
   return (
     <Box
+      {...BLOCKS_PROPS}
       component="form"
       onSubmit={(event) => {
         event.preventDefault();

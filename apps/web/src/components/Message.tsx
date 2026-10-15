@@ -97,6 +97,7 @@ export const Message = ({
   return (
     <Box
       role={role}
+      className="msg"
       sx={{
         display: 'flex',
         gap: inRem(14),
