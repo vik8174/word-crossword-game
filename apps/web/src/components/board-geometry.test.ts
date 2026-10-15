@@ -17,6 +17,7 @@ import {
   fitsIn,
   MAX_CELL_SIZE,
   MIN_CELL_SIZE,
+  NARROW_BOARD_HEIGHT_CSS,
   WIDE_BOARD_HEIGHT_CSS,
   WIDE_BOARD_HEIGHT_PERCENT,
 } from './board-geometry';
@@ -421,6 +422,7 @@ describe('the board under the band on the endings', () => {
   it('leaves a board with nothing above it exactly as it was', () => {
     expect(boardHeightsFor('none')).toEqual({
       phone: BOARD_HEIGHT_CSS,
+      narrow: NARROW_BOARD_HEIGHT_CSS,
       appShell: APP_SHELL_BOARD_HEIGHT_CSS,
       wide: WIDE_BOARD_HEIGHT_CSS,
     });
@@ -431,6 +433,7 @@ describe('the board under the band on the endings', () => {
 
     // A phone is a page that scrolls: the drawing costs the board nothing there.
     expect(heights.phone).toBe(BOARD_HEIGHT_CSS);
+    expect(heights.narrow).toBe(NARROW_BOARD_HEIGHT_CSS);
     expect(heights.appShell).toContain('100cqw * 226 / 640 + 18px');
     expect(heights.wide).toContain('100cqw * 226 / 640 + 18px');
   });
@@ -471,6 +474,8 @@ describe('the board under the band on the endings', () => {
     expect(withBand).toEqual(boardBoxIn(PHONE, MANY_BOARD, 'none'));
     expect(withBand.width).toBe(375 - 36);
     expect(cellSizeIn(withBand, MANY_BOARD)).toBeCloseTo(29, 0);
+    // The box is as tall as its grid: 11 squares of 29 and ten gaps of 2.
+    expect(withBand.height).toBeCloseTo(11 * 29 + 10 * CELL_GAP, 6);
   });
 
   it('takes the band off the board on a tablet, where the room is one window', () => {
@@ -502,6 +507,104 @@ describe('the board under the band on the endings', () => {
             shape.rows * (MIN_CELL_SIZE + CELL_GAP) - CELL_GAP,
           );
           expect(cellSizeIn(box, shape)).toBeGreaterThanOrEqual(MIN_CELL_SIZE);
+        }
+      }
+    },
+    MEASUREMENT_TIMEOUT_MS,
+  );
+});
+
+/**
+ * The box of a phone held upright is no taller than its grid (issue #260).
+ *
+ * The blank a phone page used to scroll past under the last row was the box's
+ * height being worked out for squares of 44 whatever the width allowed. The
+ * term that caps it can only be held here in numbers: the browser works out the
+ * CSS, and jsdom lays nothing out.
+ */
+describe('the board on a phone held upright', () => {
+  const PHONE = { width: 375, height: 812 };
+  const FEW_BOARD: BoardShape = { cols: 9, rows: 7 };
+  const MANY_BOARD: BoardShape = { cols: 11, rows: 11 };
+
+  /** The box before the cap: its share of the window and the 44px bound, nothing else. */
+  const uncappedBox = (window: BoardBox, shape: BoardShape): BoardBox => ({
+    width: window.width - 36,
+    height: Math.min(
+      (BOARD_HEIGHT_PERCENT / 100) * window.height,
+      shape.rows * (MAX_CELL_SIZE + CELL_GAP) - CELL_GAP,
+    ),
+  });
+
+  it('adds one term to the min() of the phone box and leaves the others', () => {
+    expect(NARROW_BOARD_HEIGHT_CSS).toContain(BOARD_HEIGHT_CSS);
+    expect(NARROW_BOARD_HEIGHT_CSS).toContain('100cqw');
+  });
+
+  it('is as tall as its grid for the six-word board at 375 by 812', () => {
+    const box = boardBoxIn(PHONE, FEW_BOARD, 'none');
+
+    // 9 columns in 339 leave 35.89 a square, and 7 rows of that with 6 gaps.
+    expect(box.height).toBeCloseTo(7 * ((339 - 8 * CELL_GAP) / 9) + 6 * CELL_GAP, 6);
+    expect(box.height).toBeLessThan(uncappedBox(PHONE, FEW_BOARD).height);
+  });
+
+  it('keeps the phone on its side as it was: 62% of a short window', () => {
+    const box = boardBoxIn({ width: 812, height: 375 }, MANY_BOARD, 'none');
+
+    expect(box.height).toBeCloseTo(0.62 * 375, 6);
+  });
+
+  it('caps the box at 767 wide and leaves it at 768, where the room is one window', () => {
+    // 20 columns in 731 leave 34.65 a square, which is not 44: the width binds.
+    const wide: BoardShape = { cols: 20, rows: 12 };
+    const phone = boardBoxIn({ width: 767, height: 1024 }, wide, 'none');
+    const tablet = boardBoxIn({ width: 768, height: 1024 }, wide, 'none');
+
+    expect(phone.height).toBeCloseTo(12 * ((731 - 19 * CELL_GAP) / 20) + 11 * CELL_GAP, 6);
+    expect(tablet.height).toBe(12 * (MAX_CELL_SIZE + CELL_GAP) - CELL_GAP);
+  });
+
+  it(
+    'is exactly the grid’s height on every seeded layout whose grid fits at 375 by 812',
+    () => {
+      let fitted = 0;
+
+      for (const shape of gamesPlayed()) {
+        const box = boardBoxIn(PHONE, shape, 'none');
+        const side = cellSizeIn(box, shape);
+        const grid = shape.rows * side + (shape.rows - 1) * CELL_GAP;
+
+        if (fitsIn(box, shape)) {
+          fitted += 1;
+          expect(box.height).toBeCloseTo(grid, 6);
+        } else {
+          // Past the floor the grid scrolls inside a box that is its share of the window.
+          expect(box.height).toBeLessThanOrEqual(grid + 1e-9);
+        }
+      }
+
+      expect(fitted).toBeGreaterThan(0);
+    },
+    MEASUREMENT_TIMEOUT_MS,
+  );
+
+  it(
+    'never changes the size of a square on any of the 45 seeded layouts, on three phones',
+    () => {
+      for (const window of [
+        { width: 320, height: 568 },
+        { width: 375, height: 812 },
+        { width: 414, height: 896 },
+      ]) {
+        for (const shape of gamesPlayed()) {
+          const capped = boardBoxIn(window, shape, 'none');
+
+          expect(cellSizeIn(capped, shape)).toBeCloseTo(
+            cellSizeIn(uncappedBox(window, shape), shape),
+            9,
+          );
+          expect(capped.height).toBeLessThanOrEqual(uncappedBox(window, shape).height);
         }
       }
     },

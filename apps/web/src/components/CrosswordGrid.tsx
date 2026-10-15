@@ -20,7 +20,7 @@ import {
   GRID_COLUMNS_CSS,
 } from './board-geometry';
 import { GridSquare } from './GridSquare';
-import { APP_SHELL, THREE_ZONES } from './room-layout';
+import { APP_SHELL, NARROW_WINDOW, THREE_ZONES } from './room-layout';
 
 /** One line under the board (`.board-note`): 15px, slate, centred. */
 const NOTE_SX = {
@@ -258,8 +258,21 @@ export const CrosswordGrid = ({
     );
   };
 
+  /** Whether anything is written under the board: a hint, or a word about a refused answer. */
+  const hasNotes = entry.hasRefusal || hasSquaresToFill || entry.hasCrossings;
+
   return (
-    <Box sx={{ py: 2 }}>
+    <Box
+      sx={{
+        py: 2,
+        // On a phone held upright the box below is as tall as its grid, which it
+        // can only be if it knows its own width: this is the container whose
+        // width that is (`NARROW_BOARD_HEIGHT_CSS`). A screen with nothing under
+        // the board (a viewer left out, a finished game) draws no space under
+        // it either: the next zone stands the template's 28px away and not 52.
+        [NARROW_WINDOW]: { containerType: 'inline-size', ...(hasNotes ? {} : { pb: 0 }) },
+      }}
+    >
       {/*
         The board's own patch of the page, and the thing every square is
         measured against: it is declared a CSS container, and the size of a
@@ -280,6 +293,7 @@ export const CrosswordGrid = ({
           containerType: 'size',
           height: heights.phone,
           overflow: 'auto',
+          [NARROW_WINDOW]: { height: heights.narrow },
           [APP_SHELL]: { height: heights.appShell },
           [THREE_ZONES]: { height: heights.wide },
         }}
@@ -336,6 +350,8 @@ export const CrosswordGrid = ({
           gap: inRem(6),
           maxWidth: inRem(560),
           margin: `${inRem(16)} auto 0`,
+          // An empty line opens no gap of its own, so it opens no margin either.
+          ...(hasNotes ? {} : { [NARROW_WINDOW]: { marginTop: 0 } }),
         }}
       >
         <Typography
