@@ -1,7 +1,7 @@
 import type { CSSObject } from '@mui/material/styles';
 
-import { SCENE, SCENE_INK_DIM } from '../garden/scene-palette';
 import { inRem, WEIGHTS } from '../scale';
+import { STREET } from '../street';
 
 /**
  * What is written inside a zone: its air, the gap between its blocks, and the
@@ -24,7 +24,7 @@ export const ZONE_PADDING = `${inRem(14)} ${inRem(15)} ${inRem(16)}`;
 export const ZONE_BLOCK_GAP = inRem(14);
 
 /**
- * The name of a block in a zone: 15px, bold, cream, its line the page's 1.6
+ * The name of a block in a zone: 15px, bold, ink, its line the page's 1.6
  * (24px) and 3px under it before the hint.
  *
  * 15px is not one of the four levels `context.md` closes (31, 23, 17, 13). It
@@ -36,20 +36,17 @@ export const zoneHeadingSx: CSSObject = {
   fontSize: inRem(15),
   fontWeight: WEIGHTS.bold,
   lineHeight: 1.6,
-  color: SCENE.cream,
+  color: STREET.ink,
 };
 
 /**
- * The sentence under a block's name: 11px, dim cream, and 10px before what
- * follows it. A block whose hint is the last thing in it takes the margin off.
- *
- * Written as a plain element and not as a `Typography` `body2`: `ON_SCENE_SX`
- * dims that variant by descendant selector, and a hint that is dim because of
- * its own rule cannot be dimmed a second time by somebody else's.
+ * The sentence under a block's name: 11px, in secondary text (`slate`), and
+ * 10px before what follows it. A block whose hint is the last thing in it takes
+ * the margin off.
  */
 export const zoneHintSx: CSSObject = {
   margin: `0 0 ${inRem(10)}`,
   fontSize: inRem(11),
   lineHeight: 1.5,
-  color: SCENE_INK_DIM,
+  color: STREET.slate,
 };

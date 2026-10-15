@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CONTROL } from './garden/scene-palette';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
-import { WAIT_RING_CLASS } from './components/waiting-mark-styles';
 import { theme } from './theme';
 
 /** A colour as the three channels a screen draws it with, and how solid it is. */
@@ -129,119 +127,95 @@ describe('theme', () => {
     expect(theme.palette.mode).toBe('light');
   });
 
-  it('reads ink on paper', () => {
+  it('reads ink on the ground and on a tile', () => {
     // The one figure everything else on the page rests on: body text, the
     // letters of the crossword, and the numbers printed in its corners are all
-    // sumi, and all of them are on washi.
-    expect(
-      contrastBetween(theme.palette.sumi.main, theme.palette.washi.main),
-    ).toBeGreaterThanOrEqual(4.5);
+    // ink, and all of them are on duck or on a tile.
+    const { ink, duck, tile } = theme.palette.street;
+
+    expect(contrastBetween(ink, duck)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastBetween(ink, tile)).toBeGreaterThanOrEqual(4.5);
     expect(
       contrastBetween(theme.palette.text.primary, theme.palette.background.default),
     ).toBeGreaterThanOrEqual(4.5);
     expect(
       contrastBetween(theme.palette.text.secondary, theme.palette.background.default),
     ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastBetween(theme.palette.text.secondary, theme.palette.background.paper),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('keeps every accent readable, both as writing and as something written on', () => {
-    const roles = [
+  it('keeps every accent readable as it is used, and ochre as a fill under ink', () => {
+    // A text accent is writing on a tile and on the ground, and the ground a
+    // word inside it is written on.
+    const textAccents = [
       theme.palette.primary,
       theme.palette.secondary,
       theme.palette.error,
-      theme.palette.warning,
-      theme.palette.info,
       theme.palette.success,
+      theme.palette.info,
     ];
 
-    for (const role of roles) {
-      // As a word on the page — an outlined button, a line saying the link was
-      // copied — and as the ground a word inside it is written on.
+    for (const role of textAccents) {
       expect(contrastBetween(role.main, theme.palette.background.default)).toBeGreaterThanOrEqual(
+        4.5,
+      );
+      expect(contrastBetween(role.main, theme.palette.background.paper)).toBeGreaterThanOrEqual(
         4.5,
       );
       expect(contrastBetween(role.contrastText, role.main)).toBeGreaterThanOrEqual(4.5);
     }
+
+    // Ochre is not one of them. It is a fill, and what is written on it is ink:
+    // the lit window of a warning, never a warning's words.
+    const { warning } = theme.palette;
+
+    expect(warning.main).toBe(theme.palette.street.ochre);
+    expect(warning.contrastText).toBe(theme.palette.street.ink);
+    expect(contrastBetween(warning.contrastText, warning.main)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastBetween(warning.main, theme.palette.background.default)).toBeLessThan(3);
   });
 
-  it('holds every state of the gate button to the bar its label size sets', () => {
-    // The label this control actually carries, measured live off `HomePage.tsx`
-    // (`getComputedStyle`): 17px at weight 300, not the 11.5px/700 issue #149's
-    // own PRD (#145) describes as unchanged — a mockup figure that never
-    // matched what `ON_SCENE_SX` and `theme.typography.signage` render, and
-    // this ticket does not touch label size or weight either way (issue #149's
-    // own boundary). Either figure is far under the 18.66px-bold floor WCAG
-    // calls "large text", so the bar every one of the three states is measured
-    // against is 4.5:1, the same one small text anywhere else in this app is
-    // held to.
-    //
-    // Only the resting fill clears it. That is not an oversight: `#DA4620` is
-    // the temple's own red, chosen deliberately and rejected as a colour to
-    // darken further, and the PRD accepts 3.93:1 in writing rather than
-    // resolving it here. Arithmetic makes the same true of the hover fill —
-    // `#E45926` was picked for margin over the 3:1 a decorative edge is owed,
-    // not for 4.5:1 — though the PRD's own "Open" section names only the
-    // resting state; this test holds both of the label's two accepted
-    // shortfalls to their own measured floor rather than to the bar they miss,
-    // so a further regression is still caught. The waiting state's ink was
-    // already 78% before this ticket touched anything — not 55% as the PRD's
-    // own "today" figure has it — and against an opaque `restingFill` it does
-    // clear 4.5:1 outright.
-    const SMALL_TEXT = 4.5;
-    const states = [
-      { name: 'at rest', fill: CONTROL.fill, ink: CONTROL.ink, floor: 3.9 },
-      { name: 'under a finger', fill: CONTROL.litFill, ink: CONTROL.ink, floor: 3.3 },
-      {
-        name: 'not yet pressable',
-        fill: CONTROL.restingFill,
-        ink: CONTROL.restingInk,
-        floor: SMALL_TEXT,
-      },
-    ];
+  it('draws the board from the street, each kind of square on its own token', () => {
+    // The surfaces are the drawing's (`design/templates/state-tree.html`, `.cell`
+    // and its kinds), named by the token and not by a value of their own.
+    const { grid, street } = theme.palette;
 
-    for (const state of states) {
-      expect(contrastBetween(state.ink, state.fill), state.name).toBeGreaterThanOrEqual(
-        state.floor,
-      );
-    }
+    expect(grid).toEqual({
+      empty: street.tile,
+      own: street.tile,
+      ownFilling: street.wash,
+      guessed: street.sage,
+      explained: street.paper,
+      refused: street.rose,
+      rule: street.ink,
+    });
+    expect(grid.guessed).toBe('#D3E8DD');
+    expect(grid.explained).toBe('#EFE6D2');
   });
 
-  it('tells the four states of a square apart with the colour taken out', () => {
-    // Empty, mine, the ones I explain, the ones the group answered. A player
-    // who reads a word they are explaining as one already answered stops
-    // explaining it, and the game stalls with both of them waiting
-    // (`docs/decisions/0015-explained-words-in-the-grid.md`), so this cannot be
-    // left to hue: the squares carry a dashed outline and a slanted letter as
-    // well, and the surfaces under them stand apart on their own.
-    const { empty, own, explained, guessed } = theme.palette.grid;
-    const states = { empty, own, explained, guessed };
-    const names = Object.keys(states) as (keyof typeof states)[];
+  it('cannot tell an answered square from an explained one by the fill, and leaves that to the outline', () => {
+    // Sage and paper are 1.28 apart in lightness (CIE L*), too close to carry
+    // the difference on their own, so the two are told apart by their outline
+    // and their marks instead (a 2px spruce outline and a tick against a dashed
+    // ink outline and an italic letter), which `GridSquare.test.tsx` holds. The
+    // gap is asserted so that nobody leans on the fill without knowing it.
+    const { guessed, explained } = theme.palette.grid;
 
-    for (const one of names) {
-      for (const other of names.filter((name) => name !== one)) {
-        expect(greyscaleGapBetween(states[one], states[other])).toBeGreaterThanOrEqual(
-          A_VISIBLE_DIFFERENCE,
-        );
-      }
-    }
+    expect(greyscaleGapBetween(guessed, explained)).toBeLessThan(A_VISIBLE_DIFFERENCE);
   });
 
-  it("does not let a square of the player's own be read as a refused answer", () => {
-    // The trap this palette was built around. Both are tinted squares of the
-    // same board and one of them means the answer has already been thrown out,
-    // so they part company in lightness rather than only in hue — a player who
-    // read one as the other would go on believing a word the room had refused.
-    expect(
-      greyscaleGapBetween(theme.palette.grid.own, theme.palette.grid.refused),
-    ).toBeGreaterThanOrEqual(A_VISIBLE_DIFFERENCE);
-    expect(
-      greyscaleGapBetween(theme.palette.grid.ownFilling, theme.palette.grid.refused),
-    ).toBeGreaterThanOrEqual(A_VISIBLE_DIFFERENCE);
-    // And their outlines with them, since a refused square keeps the shape of
-    // the one it replaced and swaps only what it is drawn in.
-    expect(
-      greyscaleGapBetween(theme.palette.secondary.main, theme.palette.error.dark),
-    ).toBeGreaterThanOrEqual(A_VISIBLE_DIFFERENCE);
+  it('reads the letters of the board on the surface they stand on', () => {
+    const { grid, street } = theme.palette;
+
+    // Answered letters on sage, explained letters on paper, and the corner
+    // number in slate on sage, the surface it has the least contrast on.
+    expect(contrastBetween(street.ink, grid.guessed)).toBeGreaterThanOrEqual(11);
+    expect(contrastBetween(street.ink, grid.explained)).toBeGreaterThanOrEqual(11);
+    expect(contrastBetween(street.slate, grid.guessed)).toBeGreaterThanOrEqual(5);
+    expect(contrastBetween(street.ink, grid.refused)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastBetween(street.ink, grid.ownFilling)).toBeGreaterThanOrEqual(4.5);
   });
 
   it('rules the board in a line that can be seen on either paper it is drawn on', () => {
@@ -258,25 +232,33 @@ describe('theme', () => {
   });
 
   it('has one source of truth for a colour: the roles point at the tokens', () => {
-    // Sakura is the room and matcha is the board, which is the split that keeps
-    // pink off the squares. Anything that let a role drift onto a value of its
-    // own would be a second palette nobody had measured.
-    expect(theme.palette.primary.main).toBe(theme.palette.sakura.main);
-    expect(theme.palette.secondary.main).toBe(theme.palette.matcha.main);
-    expect(theme.palette.background.default).toBe(theme.palette.washi.main);
-    expect(theme.palette.background.paper).toBe(theme.palette.washi.light);
-    expect(theme.palette.text.primary).toBe(theme.palette.sumi.main);
+    // MUI's roles are not a second palette. Anything that let a role drift onto
+    // a value of its own would be a colour nobody had measured.
+    const { palette } = theme;
+    const { street } = palette;
+
+    expect(palette.primary.main).toBe(street.spruce);
+    expect(palette.secondary.main).toBe(street.spruce);
+    expect(palette.success.main).toBe(street.spruce);
+    expect(palette.error.main).toBe(street.brick);
+    expect(palette.warning.main).toBe(street.ochre);
+    expect(palette.info.main).toBe(street.slate);
+    expect(palette.background.default).toBe(street.duck);
+    expect(palette.background.paper).toBe(street.tile);
+    expect(palette.text.primary).toBe(street.ink);
+    expect(palette.text.secondary).toBe(street.slate);
+    expect(palette.divider).toBe(street.line);
   });
 
-  it('keeps sakura off the board', () => {
-    // The decision this ticket turns on, asserted rather than remembered: the
-    // squares are paper, ink and the one green accent, and the accent of the
-    // room around them appears in none of them.
-    const surfaces = Object.values(theme.palette.grid);
+  it("gives an error MUI's own darker shade of brick as its `dark`", () => {
+    // Used by the refused square's outline on the board, which is why it is
+    // not brick itself: the shade is worked out, not declared.
+    const { error } = theme.palette;
 
-    expect(surfaces).not.toContain(theme.palette.sakura.light);
-    expect(surfaces).not.toContain(theme.palette.sakura.main);
-    expect(surfaces).not.toContain(theme.palette.sakura.dark);
+    expect(error.dark).not.toBe(error.main);
+    expect(contrastBetween(theme.palette.street.onAccent, error.dark)).toBeGreaterThan(
+      contrastBetween(theme.palette.street.onAccent, error.main),
+    );
   });
 
   it('reads everything in one family, headings told apart from text by weight alone', () => {
@@ -317,12 +299,10 @@ describe('theme', () => {
   });
 
   it('turns off all motion under prefers-reduced-motion, not only its own three consumers', () => {
-    // The screen shift, the petals and the garden's cloth already ask
-    // `REDUCED_MOTION_QUERY` themselves; this is the backstop for everything
-    // MUI draws, which cannot be asked the same question and could not be
-    // trusted to ask it consistently one component at a time. There used to
-    // be a fourth consumer, the camera, removed along with the rest of the
-    // painted world it flew through (issue #152).
+    // The screen shift already asks `REDUCED_MOTION_QUERY` itself; this is the
+    // backstop for everything MUI draws, which cannot be asked the same
+    // question and could not be trusted to ask it consistently one component
+    // at a time.
     const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
       Record<string, unknown> | undefined;
     const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as
@@ -348,19 +328,15 @@ describe('theme', () => {
     expect(selector).toContain(':not(.MuiCircularProgress-circle)');
   });
 
-  it("leaves the waiting mark's three rings turning too, at their own pace (issue #198)", () => {
-    // `connecting` draws the template's `.sun-wait` and not a spinner now, and
-    // a mark that stopped would read as a stalled screen for the same reason.
-    // They are named out by class rather than by duration, so the freeze does
-    // not change how long a ring takes: the template's own rule would give
-    // them 1400ms, the dot's number, and the issue keeps their 1900.
+  it('names nothing but the spinner out of it: the waiting dot stands still too (issue #226)', () => {
     const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
       Record<string, unknown> | undefined;
     const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as
       Record<string, unknown> | undefined;
     const selector = Object.keys(media ?? {}).find((key) => key.includes('*::before'));
 
-    expect(selector).toContain(`:not(.${WAIT_RING_CLASS})`);
+    expect(selector).toContain(':not(.MuiCircularProgress-root)');
+    expect(selector).not.toContain('wait');
   });
 });
 

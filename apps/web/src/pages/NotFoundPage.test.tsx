@@ -1,9 +1,8 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { GardenControlsContext } from '../garden/garden-controls';
 import { theme } from '../theme';
 import { NotFoundPage } from './NotFoundPage';
 
@@ -23,32 +22,32 @@ describe('NotFoundPage', () => {
     expect(screen.getByRole('link', { name: /go to the start/i })).toHaveAttribute('href', '/');
   });
 
-  it('claims the gate as its own picture on mount, rather than trusting a default', () => {
-    // The scene `Garden` starts on is `null`, not a guess (issue #152's second
-    // finding): a screen that never says which picture it wants is left with
-    // none, which is a silent failure a green CI run would not otherwise
-    // catch — nothing here renders visibly differently either way.
-    // `GardenControlsContext`'s own default (`NO_GARDEN`) makes `showScene` a
-    // no-op, so a render that never wraps this page in a spied context would
-    // pass whether or not the page actually claims anything.
-    const showScene = vi.fn();
+  it('draws a refusal: the shuttered balcony above an info card', () => {
+    renderNotFoundPage();
 
-    render(
-      <ThemeProvider theme={theme}>
-        <GardenControlsContext value={{ showAir: vi.fn(), showScene }}>
-          <MemoryRouter>
-            <NotFoundPage />
-          </MemoryRouter>
-        </GardenControlsContext>
-      </ThemeProvider>,
+    expect(
+      screen.getByRole('img', { name: 'A balcony across the street with its shutters closed' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('i');
+  });
+
+  it("names the page by the card's head, as its one h1", () => {
+    renderNotFoundPage();
+
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('This page does not exist');
+  });
+
+  it('says what a link looks like, with no dash', () => {
+    renderNotFoundPage();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The link may be incomplete or mistyped. If you were invited to a game, ask for the link again. It looks like /room/…',
     );
-
-    expect(showScene).toHaveBeenCalledWith('gate');
   });
 
   it('sets its heading in the text family at the bold weight', () => {
-    // The one visible `h1` in the app (`RoomShell.tsx` and `RoomPage.tsx`
-    // hide theirs). Issue #147 moved it off the serif and onto the text
+    // The card's head is the page's `h1`, drawn as the card's head. Issue #147 moved it off the serif and onto the text
     // family, checked on the rendered element's computed style rather than
     // on the theme's own config object.
     renderNotFoundPage();

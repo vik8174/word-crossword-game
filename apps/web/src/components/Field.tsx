@@ -1,78 +1,53 @@
 import Box from '@mui/material/Box';
-import type { ChangeEvent, ReactNode } from 'react';
+import { type ChangeEvent, useId } from 'react';
 
-import {
-  FIELD_LEAD_CLASS,
-  fieldGrowSx,
-  fieldHelpSx,
-  fieldLeadSx,
-  fieldSetSx,
-  fieldSx,
-} from './field-styles';
+import { fieldFaultSx, fieldHelpSx, fieldLabelSx, fieldSetSx, fieldSx } from './field-styles';
 
 export interface FieldProps {
-  /**
-   * The field's accessible name — given as `aria-label` on the real control,
-   * never as text on screen (issue #193, "Decided, not to reopen": "No label
-   * on screen"). This is also the template's own choice
-   * (`design/templates/state-tree.html`'s `aria-label="Your nickname"` and
-   * `aria-label="Words"`), not merely the plainest way to reach the same
-   * accessible name — a visually hidden `<label>` would have worked too,
-   * and is the reason this stays a plain string rather than a `ReactNode`
-   * `Message.tsx`'s `heading` is: nothing here is ever shown.
-   */
+  /** The name shown above the field, and the control's accessible name. */
   readonly label: string;
   readonly value: string;
   readonly onChange: (value: string) => void;
-  /** The multi-line kind — `.field.area`, a fixed-height `<textarea>` that scrolls rather than grows. */
+  /** The multi-line kind, four rows that the reader may drag taller. */
   readonly multiline?: boolean;
-  readonly invalid?: boolean;
   /** Frozen while the form that holds it is being written — `.field.locked`. */
   readonly disabled?: boolean;
   readonly placeholder?: string;
   readonly autoFocus?: boolean;
   readonly maxLength?: number;
-  /**
-   * `id` of the element this field is described by — wired to
-   * `aria-describedby` by hand, the way `components/WordListForm.tsx`'s
-   * nickname field needs (issue #193's second trap: MUI wired this through
-   * its own field component's `helperText` prop, and nothing does that here).
-   */
-  readonly describedBy?: string;
   readonly id?: string;
+  /** The line under the field, in slate. */
+  readonly help?: string;
+  /**
+   * What is wrong with the field, one sentence per line. While there are any,
+   * the field is ringed in brick, carries them in a strip under its words, and
+   * the control is `aria-invalid` and described by the strip.
+   */
+  readonly faults?: readonly string[];
+  /** Tells whether the control has focus, for a form that judges what is typed only when it is finished. */
+  readonly onFocusChange?: (focused: boolean) => void;
 }
 
 /**
- * The template's one field — `.field` in `design/templates/state-tree.html`,
- * replacing MUI's own field component in `components/WordListForm.tsx` and
- * `components/JoinRoomForm.tsx` (issue #193). The read-only kind, the invite
- * link's, is {@link ReadOnlyField}, and it came with the lobby (issue #199).
+ * The template's one field — `.field-set` with its label, its `.field` and its
+ * help line (`design/templates/state-tree.html`, lines 151-164).
  *
- * Rendered as a real `<label>` wrapping the control, exactly as the template
- * does: clicking anywhere in the pill focuses the input, and the control's
- * own `aria-label` (not this wrapper) is what actually names it, since
- * `aria-label` on a form control always wins over an enclosing `<label>`'s
- * own text — which this one has none of anyway.
+ * The label is shown, and it names the control through `for`, so clicking it
+ * focuses the control. A wrong value is said inside the field: pass `faults`
+ * and the strip appears under the words, the ring thickens to brick, and the
+ * control points `aria-describedby` at the strip and nowhere else, so a screen
+ * reader reads the faults as the field's description. With no fault the control
+ * is described by its help line.
  *
- * Not built on MUI's own field component: that draws an outline meant for
- * paper, a floating label this template has none of, and helper text wired
- * through a prop this component does not take. What is kept is a native
- * `<input>`/`<textarea>`, which already gives `:focus-within` (read by
- * `field-styles.ts`'s `fieldSx`), a native `disabled` attribute, and every
- * built-in keyboard behaviour a hand-rolled control would have to
- * reimplement.
+ * Not built on MUI's field component: that draws an outline meant for paper
+ * and a floating label this template has none of. What is kept is a native
+ * `<input>`/`<textarea>`, which gives a native `disabled` attribute and every
+ * built-in keyboard behaviour.
  *
- * The lead dot is a real `<span>`, `aria-hidden` and named out of nothing —
- * it adds no word to the accessible name, and reduced motion turns off its
- * 200ms colour change through `theme.ts`'s own blanket freeze, the same way
- * every other transition in a field is (issue #193's tenth trap): unlike
- * `PillButton`'s loading dot, nothing about a field is meant to keep moving
- * once the freeze is on.
- *
- * @param props.label - The accessible name — never shown as text
- * @param props.multiline - The multi-line kind, a fixed three rows that scroll rather than grow
- * @param props.disabled - Frozen while the form that holds it writes
- * @param props.describedBy - `id` of this field's own description, wired to `aria-describedby`
+ * @param props.label - Shown above the field and its accessible name
+ * @param props.multiline - The multi-line kind
+ * @param props.help - The line under the field
+ * @param props.faults - Sentences saying what is wrong, shown inside the field
  *
  * @example
  * <Field label="Your nickname" value={nickname} onChange={setNickname} autoFocus />
@@ -82,94 +57,74 @@ export const Field = ({
   value,
   onChange,
   multiline = false,
-  invalid = false,
   disabled = false,
   placeholder,
   autoFocus = false,
   maxLength,
-  describedBy,
   id,
+  help,
+  faults = [],
+  onFocusChange,
 }: FieldProps) => {
-  const state = { multiline, invalid, disabled };
+  const generated = useId();
+  const controlId = id ?? generated;
+  const helpId = `${controlId}-help`;
+  const faultId = `${controlId}-fault`;
+  const invalid = faults.length > 0;
+  const describedBy = invalid ? faultId : help === undefined ? undefined : helpId;
+
   const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     onChange(event.target.value);
+  const shared = {
+    id: controlId,
+    value,
+    onChange: handleChange,
+    disabled,
+    placeholder,
+    maxLength,
+    'aria-invalid': invalid ? true : undefined,
+    'aria-describedby': describedBy,
+    onFocus: () => onFocusChange?.(true),
+    onBlur: () => onFocusChange?.(false),
+  };
 
   return (
-    <Box component="label" sx={fieldSx(state)}>
-      <Box aria-hidden className={FIELD_LEAD_CLASS} sx={fieldLeadSx(state)} />
-      {multiline ? (
-        <Box
-          component="textarea"
-          id={id}
-          rows={3}
-          value={value}
-          onChange={handleChange}
-          disabled={disabled}
-          placeholder={placeholder}
-          aria-label={label}
-          aria-describedby={describedBy}
-          maxLength={maxLength}
-        />
-      ) : (
-        <Box
-          component="input"
-          type="text"
-          id={id}
-          value={value}
-          onChange={handleChange}
-          disabled={disabled}
-          placeholder={placeholder}
-          autoFocus={autoFocus}
-          aria-label={label}
-          aria-describedby={describedBy}
-          maxLength={maxLength}
-        />
+    <Box sx={fieldSetSx}>
+      <Box component="label" htmlFor={controlId} sx={fieldLabelSx}>
+        {label}
+      </Box>
+      <Box component="span" sx={fieldSx({ invalid, disabled })}>
+        {multiline ? (
+          <Box component="textarea" rows={4} {...shared} />
+        ) : (
+          <Box component="input" type="text" autoFocus={autoFocus} {...shared} />
+        )}
+        {invalid && (
+          <Box component="ul" id={faultId} sx={fieldFaultSx}>
+            {faults.map((fault) => (
+              <li key={fault}>{fault}</li>
+            ))}
+          </Box>
+        )}
+      </Box>
+      {help !== undefined && (
+        <Box component="span" id={helpId} sx={fieldHelpSx}>
+          {help}
+        </Box>
       )}
     </Box>
   );
 };
 
 /**
- * The column a {@link Field} and its help line stand in — `.field-set`.
- * `components/JoinRoomForm.tsx`'s field needs none of this (join carries no
- * help line under its field, per issue #193's own measured table), so it
- * renders a bare `Field` and skips this wrapper entirely.
- */
-export const FieldSet = ({ children }: { readonly children: ReactNode }) => (
-  <Box sx={fieldSetSx}>{children}</Box>
-);
-
-/**
- * The help line under a field — `.field-help`, always in full cream on the
- * gate's own band (`field-styles.ts`'s `fieldHelpSx` explains why).
+ * The read-only kind — `.field.readonly` (template line 945) — that shows the
+ * invite link: a one-line input that clips at every width.
  *
- * @param props.id - Set when a `Field` nearby points `aria-describedby` at this line
- */
-export const FieldHelp = ({
-  id,
-  children,
-}: {
-  readonly id?: string;
-  readonly children: ReactNode;
-}) => (
-  <Box component="p" id={id} sx={fieldHelpSx}>
-    {children}
-  </Box>
-);
-
-/**
- * The read-only kind — `.field.readonly` — that shows the invite link.
- *
- * The same pill of paper as {@link Field} in its multi-line shape (14px corners,
- * `12px 16px` padding, the lead dot at the top), with two differences the lobby
- * needs. It takes nothing, so it has no `onChange`, and its fill and edge are
- * the template's read-only pair. And it grows: a link is shown in full and
- * wraps to as many lines as it needs, where the template draws one line and
- * clips it at every width (issue #199, the one allowed difference).
- *
- * The control is a real `<textarea readOnly>`, so the link is selectable and a
- * browser that refuses the clipboard still leaves it to be copied by hand
- * (issue #101).
+ * It no longer grows (the growing field of issue #199 is superseded by the
+ * template). The control is a real `<input readOnly>`, so the link is
+ * selectable and a browser that refuses the clipboard still leaves it to be
+ * copied by hand (issue #101). It has no label on screen: the panel it stands
+ * in names it, and the control carries the name.
  *
  * @param props.label - The accessible name — never shown as text
  * @param props.value - What is shown
@@ -183,15 +138,8 @@ export const ReadOnlyField = ({
 }: {
   readonly label: string;
   readonly value: string;
-}) => {
-  const state = { multiline: true, invalid: false, disabled: false, readOnly: true };
-
-  return (
-    <Box component="label" sx={fieldSx(state)}>
-      <Box aria-hidden className={FIELD_LEAD_CLASS} sx={fieldLeadSx(state)} />
-      <Box sx={fieldGrowSx} data-value={value}>
-        <Box component="textarea" rows={1} value={value} readOnly aria-label={label} />
-      </Box>
-    </Box>
-  );
-};
+}) => (
+  <Box component="span" sx={fieldSx({ invalid: false, disabled: false, readOnly: true })}>
+    <Box component="input" type="text" value={value} readOnly aria-label={label} />
+  </Box>
+);

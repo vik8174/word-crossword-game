@@ -7,7 +7,8 @@ import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { BAND_SOLID } from '../garden/scene-palette';
+import { Frame } from '../components/Frame';
+import { FrameSlotProvider } from '../components/FrameSlotProvider';
 import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from '../rooms/presence';
 import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
 import { theme } from '../theme';
@@ -199,20 +200,26 @@ const unsubscribe = vi.fn();
 
 // In the app's own theme, as `App.tsx` renders it: the board takes its surfaces
 // from `theme.palette.grid`, which MUI's stock theme does not have.
-const renderRoomPage = () =>
+//
+// `framed` puts the app's frame above the page, for the tests that read the
+// lobby's status line: it is the frame's header, not the page's.
+const renderRoomPage = (framed = false) =>
   render(
     <ThemeProvider theme={theme}>
-      <MemoryRouter initialEntries={[roomPath('room-1')]}>
-        <Routes>
-          <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
-        </Routes>
-      </MemoryRouter>
+      <FrameSlotProvider>
+        {framed && <Frame />}
+        <MemoryRouter initialEntries={[roomPath('room-1')]}>
+          <Routes>
+            <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
+          </Routes>
+        </MemoryRouter>
+      </FrameSlotProvider>
     </ThemeProvider>,
   );
 
 /** Opens the room screen and lets Firestore deliver the room behind the link. */
-const openRoom = async (room: unknown = storedRoom()) => {
-  renderRoomPage();
+const openRoom = async (room: unknown = storedRoom(), framed = false) => {
+  renderRoomPage(framed);
 
   await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
   await act(async () => {
@@ -357,6 +364,14 @@ describe('RoomPage', () => {
       expect(onSnapshot).toHaveBeenCalledOnce();
     });
 
+    it('says who invited the newcomer, by the nickname the owner chose', async () => {
+      await openRoom();
+
+      expect(
+        screen.getByText('Vik has invited you to a game. Pick a name they will know you by.'),
+      ).toBeInTheDocument();
+    });
+
     it('asks a newcomer for a nickname', async () => {
       await openRoom();
 
@@ -385,16 +400,15 @@ describe('RoomPage', () => {
       expect(unsubscribe).toHaveBeenCalledOnce();
     });
 
-    // A visitor who has not yet been told what the room is stands wherever the
-    // garden already does — the gate, for a link opened cold — and used to be
-    // handed a full room frame to stand in while they waited there: a header,
-    // three zones. That frame is what a room looks like once it exists, so a
-    // guest saw it appear at the gate and then again, moments later, in the
-    // doorway the camera had by then arrived at — the same frame twice, with
-    // nothing behind it either time (issue #132). Waiting for news of a room
-    // that has not answered yet is not a room, so it gets none of that shape —
-    // it still gets the same unseen heading every real room screen carries,
-    // since a reader moving by headings finds one on every other screen here.
+    // A visitor who has not yet been told what the room is was once handed a full
+    // room frame to stand in while they waited: a header, three zones. That
+    // frame is what a room looks like once it exists, so a guest saw it appear
+    // and then again, moments later, once the room had answered: the same frame
+    // twice, with nothing in it either time (issue #132). Waiting for news of a
+    // room that has not answered yet is not a room, so it gets none of that
+    // shape — it still gets the same unseen heading every real room screen
+    // carries, since a reader moving by headings finds one on every other
+    // screen here.
     it('shows no room frame while waiting for the first snapshot', async () => {
       renderRoomPage();
 
@@ -405,19 +419,22 @@ describe('RoomPage', () => {
       expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     });
 
-    // Cream read straight off the scene falls short of the small-text
-    // threshold (issue #136), because this line has no zone of its own to stand
-    // in. It stands on the doors' panel, the one `join` and every `unavailable`
-    // stand on too, rather than on the strip of band it stood on before issue
-    // #198 drew all three from the template's one `.middle-column`.
-    it('stands the connecting line on the panel every screen at the doors stands on', async () => {
+    // This line has no zone of its own to stand in (issue #136). It stands in
+    // the column every screen at the doors stands in, under the line being
+    // thrown across the street to an empty balcony (issue #226).
+    it('draws the line being thrown across the street above the connecting line', async () => {
       renderRoomPage();
 
       await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
 
-      expect(screen.getByRole('status').parentElement).toHaveStyle({
-        backgroundColor: BAND_SOLID,
+      const picture = screen.getByRole('img', {
+        name: 'A line being thrown across the street to an empty balcony',
       });
+
+      expect(
+        picture.compareDocumentPosition(screen.getByRole('status')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
     });
 
     it('shows no room frame either for a link that leads nowhere', async () => {
@@ -436,7 +453,7 @@ describe('RoomPage', () => {
 
   describe('the link to the room', () => {
     const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
-    const inviteLink = () => screen.queryByLabelText(/room link/i);
+    const inviteLink = () => screen.queryByLabelText(/invite link/i);
     const linkToThisRoom = roomUrl('room-1', window.location.origin);
 
     /** Opens the room as its host rather than as the visitor everything else runs as. */
@@ -746,8 +763,7 @@ describe('RoomPage', () => {
       // not move when the game begins — is the doorway itself now, visible in
       // the picture and left empty, and the doorway is the middle of this
       // window (issue #152 removed the camera that used to travel through it).
-      expect(screen.getByRole('heading', { name: /the crossword/i })).toBeInTheDocument();
-      expect(screen.getByText(/words are hidden in this grid/i)).toBeInTheDocument();
+      expect(screen.getByText(/^The crossword: /)).toBeInTheDocument();
       expect(screen.queryByRole('group', { name: /crossword grid/i })).not.toBeInTheDocument();
       expect(screen.queryByText(/\bcat\b/i)).not.toBeInTheDocument();
     });
@@ -826,7 +842,7 @@ describe('RoomPage', () => {
         }),
       );
 
-      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.getByText(/you did it/i)).toBeInTheDocument();
       expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
     });
 
@@ -894,7 +910,7 @@ describe('RoomPage', () => {
     const openRoomAsOwner = async (room: unknown) => {
       vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
 
-      await openRoom(room);
+      await openRoom(room, true);
     };
 
     it('deals every word out to a player and opens the game', async () => {
@@ -954,7 +970,9 @@ describe('RoomPage', () => {
       );
 
       expect(screen.queryByRole('button', { name: /start the game/i })).not.toBeInTheDocument();
-      expect(screen.getByText(/the game is on/i)).toBeInTheDocument();
+      // The game room, which is named and has no visible title: its status is
+      // the frame's, and a player the deal did not cover has none.
+      expect(screen.getByRole('heading', { level: 1, name: 'Game room' })).toBeInTheDocument();
     });
   });
 
@@ -991,9 +1009,9 @@ describe('RoomPage', () => {
       // direction is what tells them apart — which is how the players say them.
       // Read off each row's accessible name rather than its visible text: the
       // state is a mark on screen and a word in the name (issue #150).
-      expect(screen.getByRole('button', { name: /1 down — car/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /1 down, car/i })).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /1 across — still to answer/i }),
+        screen.getByRole('button', { name: /1 across, 3 letters, still to answer/i }),
       ).toBeInTheDocument();
       expect(screen.getByText('0 of 1 answered.')).toBeInTheDocument();
     });
@@ -1135,7 +1153,7 @@ describe('RoomPage', () => {
 
       expect(gridLetters()).toBe('CAR');
       expect(within(grid()).queryByLabelText(/yours to explain/i)).not.toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /1 down — car — answered/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /1 down, car, answered/i })).toBeInTheDocument();
       expect(screen.getByLabelText(/row 1, column 1\b/i)).not.toHaveAccessibleName(
         /one of your words/i,
       );
@@ -1154,7 +1172,9 @@ describe('RoomPage', () => {
       expect(gridLetters()).toBe('CATAR');
       expect(screen.queryByLabelText(/a letter of one of your words/i)).not.toBeInTheDocument();
       expect(screen.getByText('1 of 1 answered.')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /1 across — answered/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /1 across, 3 letters, answered/i }),
+      ).toBeInTheDocument();
     });
 
     it('leaves the room to another ticket to finish', async () => {
@@ -1177,7 +1197,7 @@ describe('RoomPage', () => {
 
       await spellCat();
 
-      expect(await screen.findByText(/could not be told about it/i)).toBeInTheDocument();
+      expect(await screen.findByText(/could not be told/i)).toBeInTheDocument();
     });
 
     it('crosses out a word this player explains once its guesser has answered it', async () => {
@@ -1190,7 +1210,7 @@ describe('RoomPage', () => {
 
       // `car` is Bob's to explain and Vik has just answered it: there is
       // nothing left to explain, and the panel says so as well as the grid.
-      expect(screen.getByRole('button', { name: /1 down — car — answered/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /1 down, car, answered/i })).toBeInTheDocument();
     });
 
     it('fills two of a player own crossing words without the cursor going astray', async () => {
@@ -1300,7 +1320,9 @@ describe('RoomPage', () => {
       // across the top.
       await openRoom(playing());
 
-      fireEvent.click(screen.getByRole('button', { name: /1 across — still to answer/i }));
+      fireEvent.click(
+        screen.getByRole('button', { name: /1 across, 3 letters, still to answer/i }),
+      );
 
       // The first square of `cat` holds the `C` of the `car` he explains, so
       // the word is reached at the first square that is still his to fill.
@@ -1308,7 +1330,7 @@ describe('RoomPage', () => {
         /row 1, column 2 — a letter of one of your words/i,
       );
 
-      fireEvent.click(screen.getByRole('button', { name: /1 down — car/i }));
+      fireEvent.click(screen.getByRole('button', { name: /1 down, car/i }));
 
       // A word he explains is brought into view and stays nobody's to type in.
       expect(document.activeElement).toHaveAccessibleName(/row 1, column 1 — C, yours to explain/i);
@@ -1421,40 +1443,32 @@ describe('RoomPage', () => {
 
     it('shows the finished game to a player who answered nothing, without a reload', async () => {
       await openRoom(withWords({ w0: open, w1: carOpen }));
-      expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/you did it/i)).not.toBeInTheDocument();
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
-      // Twice on the page and once on the screen: the panel says it beside the
-      // board, and the cloth laid over both says it again, which is the one a
-      // player is looking at (issue #116).
-      expect(
-        screen.getAllByText(/all 2 of its words, between the 2 of you/i).length,
-      ).toBeGreaterThan(0);
+      expect(screen.getByText(/you did it/i)).toBeInTheDocument();
+      // Said once, by the card beside the board. It was said a second time by a
+      // cloth laid over the table at the moment the game ended (issue #116), and
+      // that went with the garden (issue #222).
+      expect(screen.getAllByText(/all 2 of its words, between the 2 of you/i)).toHaveLength(1);
     });
 
-    it('lays the cloth over the table when the game ends in this session', async () => {
+    it('lays nothing over the table when the game ends in this session', async () => {
       await openRoom(withWords({ w0: open, w1: carOpen }));
 
-      expect(screen.queryByRole('heading', { name: /congratulations/i })).not.toBeInTheDocument();
-
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByRole('heading', { name: /congratulations/i })).toBeInTheDocument();
-      // One action and no other: the reward is a place to leave from, not a
-      // panel with things to do on it.
-      expect(screen.getByRole('link', { name: /back to the gate/i })).toHaveAttribute('href', '/');
+      // A finished game is answered by its card alone: no greeting, and no
+      // second control that leaves the room.
+      expect(screen.queryByRole('heading', { name: /congratulations/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /back to the gate/i })).not.toBeInTheDocument();
     });
 
-    it('lays no cloth over a finished room opened in a fresh tab', async () => {
-      // `finished` is true forever, so a cloth keyed on the screen would be laid
-      // again on every reload and in every tab opened an hour later. What is
-      // shown instead is a calm result, and that is the answer rather than a gap
-      // (`docs/decisions/0030-where-movement-is-allowed.md`).
+    it('shows a finished room opened in a fresh tab the same way', async () => {
       await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.getByText(/you did it/i)).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: /congratulations/i })).not.toBeInTheDocument();
     });
 
@@ -1465,12 +1479,12 @@ describe('RoomPage', () => {
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      // Scoped to the finished panel itself rather than the whole page: the
+      // Scoped to the fiesta card itself rather than the whole page: the
       // leaving screen still has `car` in its own words-to-explain index while
       // the shift is running, and a bare `getByText` would pass on that alone
-      // — this is the one place the whole crossword, secrets included, is
-      // meant to be spelled out (`GameCompletedPanel.tsx`).
-      const finishedPanel = screen.getByRole('region', { name: /every word is in/i });
+      // (this is the one place the whole crossword, secrets included, is
+      // meant to be spelled out, `FiestaCard.tsx`).
+      const finishedPanel = screen.getByRole('status', { name: /you did it/i });
       expect(within(finishedPanel).getByText('cat')).toBeInTheDocument();
       expect(within(finishedPanel).getByText('car')).toBeInTheDocument();
     });
@@ -1478,7 +1492,7 @@ describe('RoomPage', () => {
     it('gives a player who comes back to the link their finished game, not a refusal', async () => {
       await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.getByText(/you did it/i)).toBeInTheDocument();
       expect(screen.queryByText(/this game is over/i)).not.toBeInTheDocument();
     });
 
@@ -1507,7 +1521,7 @@ describe('RoomPage', () => {
       await openRoom(room);
 
       expectNoHiddenWordOnScreen(room);
-      expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/you did it/i)).not.toBeInTheDocument();
       expect(screen.getByText(/ended before every word had been answered/i)).toBeInTheDocument();
     });
 
@@ -1523,7 +1537,6 @@ describe('RoomPage', () => {
       expect(
         screen.getByText(/apart from the ones that were yours to explain/i),
       ).toBeInTheDocument();
-      expect(screen.getByText(/apart from any that were yours to explain/i)).toBeInTheDocument();
     });
 
     it('stops taking answers in a closed room, whatever it says about its words', async () => {
@@ -1538,7 +1551,7 @@ describe('RoomPage', () => {
     it('keeps the celebration for a room that really did finish its crossword', async () => {
       await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.getByText(/you did it/i)).toBeInTheDocument();
       expect(
         screen.queryByText(/ended before every word had been answered/i),
       ).not.toBeInTheDocument();
@@ -1584,7 +1597,7 @@ describe('RoomPage', () => {
       fireEvent.click(endButton());
 
       await act(async () => {
-        fireEvent.click(within(confirmation()).getByRole('button', { name: /^end the game$/i }));
+        fireEvent.click(within(confirmation()).getByRole('button', { name: /^end it$/i }));
       });
     };
 
@@ -1592,11 +1605,11 @@ describe('RoomPage', () => {
     const openRoomAsOwner = async (room: unknown) => {
       vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
 
-      await openRoom(room);
+      await openRoom(room, true);
     };
 
     it('asks before it ends anything, and says what ending costs', async () => {
-      await openRoom(gameInProgress());
+      await openRoom(gameInProgress(), true);
 
       fireEvent.click(endButton());
 
@@ -1604,24 +1617,24 @@ describe('RoomPage', () => {
       // snapshot arrives every fifteen seconds and could flip that reading
       // while the question is on screen.
       expect(
-        within(confirmation()).getByText(/ends the game for both of you/i),
+        within(confirmation()).getByText(/the room closes for both of you/i),
       ).toBeInTheDocument();
-      expect(within(confirmation()).getByText(/no way back/i)).toBeInTheDocument();
+      expect(within(confirmation()).getByText(/this cannot be undone/i)).toBeInTheDocument();
       expect(gameWrites()).toEqual([]);
     });
 
     it('ends nothing for the player who changes their mind', async () => {
-      await openRoom(gameInProgress());
+      await openRoom(gameInProgress(), true);
 
       fireEvent.click(endButton());
       fireEvent.click(within(confirmation()).getByRole('button', { name: /keep playing/i }));
 
       expect(gameWrites()).toEqual([]);
-      expect(screen.getByText(/the game is on/i)).toBeInTheDocument();
+      expect(screen.getByText(/^playing with/i)).toBeInTheDocument();
     });
 
     it('writes the ending as its own status, not as a finished game', async () => {
-      await openRoom(gameInProgress());
+      await openRoom(gameInProgress(), true);
 
       await endTheGame();
 
@@ -1644,7 +1657,7 @@ describe('RoomPage', () => {
     });
 
     it('reports an ended game apart from a finished one, by the same two counts', async () => {
-      await openRoom(gameInProgress());
+      await openRoom(gameInProgress(), true);
 
       await endTheGame();
 
@@ -1660,8 +1673,8 @@ describe('RoomPage', () => {
     it('takes the other player to the closed room on the next snapshot, with no reload', async () => {
       // Nobody presses anything on this screen: Vik ended it elsewhere and the
       // subscription is what tells Bob.
-      await openRoom(gameInProgress({ words: { w0: catAnswered, w1: openWords.w1 } }));
-      expect(screen.getByText(/the game is on/i)).toBeInTheDocument();
+      await openRoom(gameInProgress({ words: { w0: catAnswered, w1: openWords.w1 } }), true);
+      expect(screen.getByText(/^playing with/i)).toBeInTheDocument();
 
       await act(async () => {
         emitRoom({
@@ -1672,7 +1685,7 @@ describe('RoomPage', () => {
       });
 
       expect(screen.getByText(/ended before every word had been answered/i)).toBeInTheDocument();
-      await untilGone(() => screen.queryByText(/the game is on/i));
+      await untilGone(() => screen.queryByText(/^playing with/i));
     });
 
     it('keeps the words that were answered on the board and spells out no others', async () => {
@@ -1687,7 +1700,7 @@ describe('RoomPage', () => {
       await openRoom(room);
 
       expect(gridLetters()).toBe('CATAR');
-      expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/you did it/i)).not.toBeInTheDocument();
     });
 
     it('spells nothing out in a room ended before a single word was answered', async () => {
@@ -1725,21 +1738,28 @@ describe('RoomPage', () => {
     ];
 
     it.each(withoutTheControl)('offers no way to end a game when %s', async (_name, room) => {
-      await openRoom(room());
+      await openRoom(room(), true);
 
       expect(screen.queryByRole('button', { name: /end the game/i })).not.toBeInTheDocument();
     });
 
     it('says so when the room would not take the ending', async () => {
       const reported = failEveryWriteWith(REFUSED_BY_RULES);
-      await openRoom(gameInProgress());
+      await openRoom(gameInProgress(), true);
 
       await endTheGame();
 
+      // The dialog says so itself, with "Try again" in the quiet place.
       expect(await screen.findByRole('alert')).toHaveTextContent(/could not be ended/i);
+      expect(
+        within(confirmation()).getByRole('button', { name: /^try again$/i }),
+      ).toBeInTheDocument();
       // Nothing is reported about a game that did not end.
       expect(reportedActions()).toEqual([]);
-      // And the button is offered again: the room is still on this screen.
+      // And the control is offered again once the dialog is put away: the room
+      // is still on this screen.
+      fireEvent.click(within(confirmation()).getByRole('button', { name: /^keep playing$/i }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
       expect(endButton()).toBeEnabled();
       expect(reported).toHaveBeenCalled();
     });
@@ -2032,12 +2052,12 @@ describe('RoomPage', () => {
     });
 
     it('stands still through the snapshots a game is full of', async () => {
-      await openRoom(dealtRoom());
+      await openRoom(dealtRoom(), true);
 
       // The room arriving over the spinner is itself a shift, so it is waited
       // out before the thing this test is about begins.
       await untilGone(() => screen.queryByText(/connecting to the game/i));
-      expect(screen.getAllByText(/the game is on/i)).toHaveLength(1);
+      expect(screen.getAllByText(/^playing with/i)).toHaveLength(1);
 
       // Two minutes of a game as it really behaves: each client rewrites its own
       // presence mark every fifteen seconds and every write is a snapshot for
@@ -2050,7 +2070,7 @@ describe('RoomPage', () => {
         await emit(dealtRoom());
       }
 
-      expect(screen.getAllByText(/the game is on/i)).toHaveLength(1);
+      expect(screen.getAllByText(/^playing with/i)).toHaveLength(1);
       expect(screen.getAllByRole('heading', { level: 1, hidden: true })).toHaveLength(1);
     });
   });

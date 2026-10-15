@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box';
 import { wordAssignmentRefusal } from 'shared';
 
-import { inRem } from '../scale';
+import { lobbyTightStackSx } from './lobby-styles';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
 
@@ -62,19 +62,21 @@ export const StartGamePanel = ({
   }
 
   return (
-    // 9px, the template's `.stack-tight` (issue #199): the message and the
-    // button it is about stand closer than the blocks of the zone do, and 9 is
-    // not a step of the spacing row.
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: inRem(9) }}>
+    // `.stack-tight`: the message and the button it is about stand closer than
+    // the blocks of the column do. The button sits in a box of its own, as the
+    // template has it, so that it keeps its own width.
+    <Box sx={lobbyTightStackSx}>
       {errorMessage !== undefined && (
         <Message kind="error" heading="Could not start the game">
           {errorMessage}
         </Message>
       )}
 
-      <PillButton onClick={onStart} loading={isStarting} disabled={refusal !== null}>
-        {isStarting ? 'Starting the game' : 'Start the game'}
-      </PillButton>
+      <Box>
+        <PillButton onClick={onStart} loading={isStarting} disabled={refusal !== null}>
+          {isStarting ? 'Dealing the words' : 'Start the game'}
+        </PillButton>
+      </Box>
     </Box>
   );
 };

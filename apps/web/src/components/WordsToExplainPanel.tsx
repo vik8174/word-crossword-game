@@ -1,12 +1,14 @@
-import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 
 import type { ExplainedWord, WordLocation } from '../rooms/word-visibility';
+import { gateHintSx } from './gate-panel-styles';
+import { lobbyHeadingSx } from './lobby-styles';
 import { nameOf, type WordEntry } from './word-entry';
 import { WordEntryList } from './WordEntryList';
 
 /** Said over the words this player explains out loud. */
 const EXPLAIN_HINT =
-  'These are written into the grid for you alone, in italics on the dashed squares. Explain each one out loud — say anything except the word itself. The ones already answered are crossed out. Tap one to find it in the grid. A lit dot means it has been answered.';
+  'These are written into the grid for you alone, in italics on the dashed squares. Explain each one out loud: say anything except the word itself. Tap one to find it in the grid.';
 
 interface WordsToExplainPanelProps {
   /** The words hidden from the other player — this one reads them and says them. */
@@ -36,7 +38,8 @@ interface WordsToExplainPanelProps {
  * Not a word list so much as an index — the grid holds the words now
  * (`docs/decisions/0015-explained-words-in-the-grid.md`). What this adds is a
  * way to name one out loud, "explain seven across again" rather than a
- * description of which squares are meant, and a way to get to it.
+ * description of which squares are meant, and a way to get to it. It is drawn
+ * as the template's `You explain` block (`state-tree.html`, `wordRows`).
  *
  * @param props.words - The `toExplain` half of the `dealt` view {@link wordViewFor} worked out
  * @param props.onSelectWord - Called with where a tapped word runs
@@ -48,20 +51,21 @@ export const WordsToExplainPanel = ({ words, onSelectWord }: WordsToExplainPanel
   const entries: readonly WordEntry[] = words.map((word) => ({
     id: word.id,
     reference: nameOf(word),
-    word: word.word,
-    name: `${nameOf(word)} — ${word.word}${word.isSolved ? ' — answered' : ''}`,
+    shown: word.word,
+    look: 'word',
+    name: `${nameOf(word)}, ${word.word}${word.isSolved ? ', answered' : ''}`,
     location: { cells: word.cells, orientation: word.orientation },
     isSolved: word.isSolved,
   }));
 
   return (
     <section aria-labelledby="to-explain-heading">
-      <Typography id="to-explain-heading" variant="h2" component="h2" sx={{ mb: 1 }}>
-        Yours to explain
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+      <Box component="h2" id="to-explain-heading" sx={lobbyHeadingSx}>
+        You explain
+      </Box>
+      <Box component="p" sx={gateHintSx}>
         {EXPLAIN_HINT}
-      </Typography>
+      </Box>
 
       <WordEntryList
         labelledBy="to-explain-heading"

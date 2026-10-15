@@ -24,7 +24,7 @@ describe('RoomInvitePanel', () => {
   it('shows the whole link, so it can be copied by hand as well', () => {
     renderPanel();
 
-    expect(screen.getByLabelText(/room link/i)).toHaveValue(ROOM_URL);
+    expect(screen.getByLabelText('Invite link')).toHaveValue(ROOM_URL);
   });
 
   it('puts the link on the clipboard and says so', async () => {
@@ -32,7 +32,7 @@ describe('RoomInvitePanel', () => {
     stubClipboard(writeText);
     renderPanel();
 
-    fireEvent.click(screen.getByRole('button', { name: /copy the link/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
 
     expect(await screen.findByText(/link copied/i)).toBeInTheDocument();
     expect(writeText).toHaveBeenCalledWith(ROOM_URL);
@@ -42,7 +42,7 @@ describe('RoomInvitePanel', () => {
     stubClipboard(vi.fn().mockRejectedValue(new Error('Write permission denied.')));
     renderPanel();
 
-    fireEvent.click(screen.getByRole('button', { name: /copy the link/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy link' }));
 
     expect(await screen.findByText(/copy it by hand/i)).toBeInTheDocument();
   });
@@ -50,17 +50,16 @@ describe('RoomInvitePanel', () => {
   it('names the block, so somebody moving through the page by headings finds it', () => {
     renderPanel();
 
-    expect(screen.getByRole('region', { name: 'The link into this room' })).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Invite' })).toBeInTheDocument();
   });
 
-  it('shows the whole link in a control that grows with it instead of scrolling', () => {
+  it('shows the link in one line that clips, in a control that can be selected', () => {
     renderPanel();
 
-    // The copy of the value the control's height is taken from: without it a
-    // link longer than the field is tall would be cut off, not wrapped.
-    expect(screen.getByLabelText(/room link/i).parentElement).toHaveAttribute(
-      'data-value',
-      ROOM_URL,
-    );
+    const link = screen.getByLabelText('Invite link');
+
+    expect(link.tagName).toBe('INPUT');
+    expect(link).toHaveValue(ROOM_URL);
+    expect(link).toHaveAttribute('readonly');
   });
 });

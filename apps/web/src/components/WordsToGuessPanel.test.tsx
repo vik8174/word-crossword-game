@@ -32,29 +32,47 @@ beforeEach(() => {
 });
 
 describe('WordsToGuessPanel', () => {
-  it('numbers the words this player guesses without naming them or their length', () => {
+  it('numbers the words this player guesses and shows one blank for each letter, never the word', () => {
     renderPanel([guessable('w1', 4, 'cheese')]);
 
     expect(screen.getByText('4 down')).toBeInTheDocument();
-    // Neither the word nor its length: working the spelling out is their game,
-    // and the squares in the grid are the only thing that measures it.
+    // The count of letters is the drawing's own (`.slots`); the letters are
+    // what working the spelling out is for, and the grid is the only thing that
+    // measures them.
+    expect(screen.getByText('___')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/cheese/i);
-    expect(document.body.textContent).not.toMatch(/\b3 letters\b/i);
   });
 
-  it('says a word is done in words, not only by striking it through', () => {
-    renderPanel([guessable('w1', 4, 'cheese', true)]);
-
-    // Said outright in the row's accessible name, whatever the eye is given —
-    // and struck through as well, so the mark beside it is never the only cue.
-    expect(screen.getByRole('button', { name: '4 down — answered' })).toBeInTheDocument();
-    expect(screen.getByText('4 down')).toHaveStyle({ textDecoration: 'line-through' });
-  });
-
-  it('explains the mark in its hint', () => {
+  it('does not mirror what is typed into the grid', () => {
+    // The letters being typed live in the grid, and lifting them out is not
+    // this list's to do (issue #228; the drawing's "ap___" is the one allowed
+    // difference).
     renderPanel([guessable('w1', 4, 'cheese')]);
 
-    expect(screen.getByText(/A lit dot means it has been answered\./)).toBeInTheDocument();
+    expect(screen.getByText('___')).toBeInTheDocument();
+  });
+
+  it('shows the word itself once it has been answered, as the board spells it', () => {
+    renderPanel([guessable('w1', 4, 'cat', true)]);
+    const { unmount } = render(
+      <WordsToGuessPanel
+        words={[guessable('w1', 4, 'cat', true)]}
+        onSelectWord={onSelectWord}
+        spellings={new Map([['w1', 'cat']])}
+      />,
+    );
+
+    expect(screen.getAllByText('cat')).toHaveLength(1);
+    unmount();
+  });
+
+  it('says a word is done in words, with a tick, not only by colour', () => {
+    renderPanel([guessable('w1', 4, 'cheese', true)]);
+
+    const row = screen.getByRole('button', { name: '4 down, 3 letters, answered' });
+
+    expect(row).toBeInTheDocument();
+    expect(row).toHaveTextContent('✓ answered');
   });
 
   it('reports how far this player has got with their own words', () => {
@@ -66,14 +84,15 @@ describe('WordsToGuessPanel', () => {
   it('reports where a tapped word runs, exactly as the other half does', () => {
     renderPanel([guessable('w1', 4, 'cheese')]);
 
-    fireEvent.click(screen.getByRole('button', { name: '4 down — still to answer' }));
+    fireEvent.click(screen.getByRole('button', { name: '4 down, 3 letters, still to answer' }));
 
     expect(onSelectWord).toHaveBeenCalledExactlyOnceWith({ orientation: 'down', cells: CELLS });
   });
 
   it('reports the same word again when its entry is tapped again', () => {
     renderPanel([guessable('w1', 4, 'cheese')]);
-    const wordEntry = () => screen.getByRole('button', { name: '4 down — still to answer' });
+    const wordEntry = () =>
+      screen.getByRole('button', { name: '4 down, 3 letters, still to answer' });
 
     fireEvent.click(wordEntry());
     fireEvent.click(wordEntry());
@@ -84,7 +103,7 @@ describe('WordsToGuessPanel', () => {
   it('names its list by the half of the game it holds', () => {
     renderPanel([guessable('w1', 4, 'cheese')]);
 
-    expect(screen.getByRole('list')).toHaveAccessibleName(/yours to guess/i);
+    expect(screen.getByRole('list')).toHaveAccessibleName('You guess');
   });
 
   it('sets its heading in the text family at the bold weight', () => {
@@ -97,7 +116,7 @@ describe('WordsToGuessPanel', () => {
       </ThemeProvider>,
     );
 
-    const style = getComputedStyle(screen.getByRole('heading', { name: /yours to guess/i }));
+    const style = getComputedStyle(screen.getByRole('heading', { name: 'You guess' }));
 
     expect(style.fontFamily).toMatch(/Alegreya Sans/);
     expect(style.fontWeight).toBe('700');

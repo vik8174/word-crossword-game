@@ -19,13 +19,14 @@
  * moving, not a scene settling, and a control that darkens the same way it
  * lightens reads as one thing rather than as two habits sewn together.
  *
- * The screen shift, the petal layer's fade and the page spinner are not on
- * this row and are not folded onto it. Each already carries its own measured
- * number, decided and tested on its own terms (`components/screen-shift.ts`,
- * `garden/canvas-layer.ts`, `garden/cloth.ts`, `pages/PageLoading.tsx`) —
+ * The screen shift and the page spinner are not on this row and are not folded
+ * onto it. Each already carries its own measured number, decided and tested on
+ * its own terms (`components/screen-shift.ts`, `pages/PageLoading.tsx`) —
  * moving one of those numbers onto a shared row would let a change meant for
- * a button move the weather with it. This ticket is about the motion nobody
- * had chosen, not about the motion that was already chosen carefully.
+ * a button move a screen with it. This ticket is about the motion nobody had
+ * chosen, not about the motion that was already chosen carefully. (The petal
+ * layer and the greeting cloth were two more, and went with the garden in
+ * issue #222.)
  */
 
 /** How long a control takes to change in place: a button darkening, a field's label lifting. */

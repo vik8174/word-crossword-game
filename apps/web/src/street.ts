@@ -6,10 +6,11 @@ import { inRem, TEXT_FONT_FAMILY } from './scale';
  * The colours of Across the Street (design v2), by the names the drawing gives
  * them in `design/templates/state-tree.html`, lines 50-56.
  *
- * They sit beside the old tokens: nothing reads them yet, and the screens move
- * onto them in #222 and in their own issues. The four derived values are the
- * ones the drawing computes rather than names (its contrast table, lines
- * 27-43).
+ * They are the colours of the app: the garden's are gone (#222), and every
+ * module that draws in a colour reads one of these, through `theme.palette`
+ * or by import from here. The four derived values are the ones the drawing
+ * computes rather than names (its contrast table, lines 27-43). The board's
+ * squares read these tokens too (`theme.ts`, issue #228).
  */
 export interface StreetPalette {
   /** The ground. */
@@ -70,6 +71,22 @@ export const STREET: StreetPalette = {
   disabledLabel: '#3E5058',
   disabledRule: '#8A9997',
 };
+
+/**
+ * The ring a focused field is drawn with: a halo, a glow and a lift, in the
+ * action's own colour.
+ *
+ * A focus indicator is not drawn for the picture, so it stays when the picture
+ * goes (#222), with the three layers it always had, in the shape it had them.
+ * Their colours are the street's: the two layers round the field are spruce,
+ * thinned, and the lift under it is ink, thinned. Written here with the tokens
+ * it is made of, so that no component declares a colour of its own.
+ */
+export const FOCUS_RING = [
+  `0 0 0 3px color-mix(in srgb, ${STREET.spruce} 28%, transparent)`,
+  `0 0 18px -2px color-mix(in srgb, ${STREET.spruce} 55%, transparent)`,
+  `0 8px 22px -12px color-mix(in srgb, ${STREET.ink} 75%, transparent)`,
+].join(', ');
 
 /** A variant, which may carry media queries beside its plain properties. */
 type StreetStyle = CSSProperties & Record<string, unknown>;

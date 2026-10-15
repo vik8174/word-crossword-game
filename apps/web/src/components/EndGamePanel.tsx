@@ -1,14 +1,11 @@
-import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import Stack from '@mui/material/Stack';
-import { useState } from 'react';
+import { useId, useState } from 'react';
 
-import { Message } from './Message';
+import { inRem, TEXT_FONT_FAMILY } from '../scale';
+import { STREET } from '../street';
 import { PillButton } from './PillButton';
+import { OUTLINE_WIDTH } from './surface-styles';
 
 /** The question the confirmation asks, and the accessible name of the dialog. */
 const CONFIRM_TITLE = 'End the game?';
@@ -18,14 +15,32 @@ const CONFIRM_TITLE = 'End the game?';
  *
  * It does not branch on whether the other player looks present. Every client in
  * a room writes a mark every fifteen seconds, so that reading can change while
- * this dialog is open — and a warning that rewrote itself under somebody's
+ * this dialog is open, and a warning that rewrote itself under somebody's
  * finger would be worse than one that claims a little more than it has to. What
  * is said is true in both cases: whoever else is in this room loses the game
  * too, and nothing brings it back
  * (`docs/decisions/0027-a-game-a-player-can-end.md`).
  */
 const CONFIRM_MESSAGE =
-  'This ends the game for both of you, straight away. The room cannot be reopened afterwards and the crossword cannot be finished in it, so there is no way back from here.';
+  'The room closes for both of you and the words nobody guessed stay unguessed. This cannot be undone, and the game cannot be restarted from here.';
+
+/**
+ * The dialog's card (`.dialog`, `design/templates/state-tree.html` line 262): a
+ * tile 440px wide at most, 16px round, ringed in ink with a hard shadow. The
+ * veil behind it is `rgba(27, 45, 56, 0.45)` (`.modal-veil`, line 261).
+ */
+const DIALOG_PAPER_SX = {
+  width: 'min(440px, 100%)',
+  maxWidth: 'none',
+  margin: inRem(16),
+  padding: `${inRem(24)} ${inRem(24)} ${inRem(20)}`,
+  borderRadius: inRem(16),
+  backgroundColor: STREET.tile,
+  backgroundImage: 'none',
+  // Named, because the dialog stands in a portal outside the app's own ground.
+  fontFamily: TEXT_FONT_FAMILY,
+  boxShadow: `0 0 0 ${OUTLINE_WIDTH}px ${STREET.ink}, 4px 4px 0 0 ${STREET.ink}`,
+} as const;
 
 interface EndGamePanelProps {
   /** Ends the game; called once the player has confirmed. */
@@ -55,60 +70,90 @@ interface EndGamePanelProps {
  *
  * The confirmation is the panel's own state rather than the caller's: what is
  * being decided is whether to ask for the write, which nothing outside this
- * component acts on.
+ * component acts on. The dialog is the template's `playing/confirm`: "End it" is
+ * the quiet button and "Keep playing" the loud one, because the irreversible
+ * thing is never the loud one (issue #212). When the write is refused the same
+ * dialog says so, with "Try again" in the quiet place (`playing/endfail`).
+ *
+ * The control is in the frame's header (`useFrameSlot`), so this renders the
+ * control and the dialog and nothing around them.
  *
  * @param props.onEnd - Called once the player has confirmed the ending
  * @param props.isEnding - Whether the ending is on its way to the room
- * @param props.errorMessage - Message about an ending that was refused
+ * @param props.errorMessage - What the dialog says when the ending was refused
  *
  * @example
  * <EndGamePanel onEnd={endGame} isEnding={false} />
  */
 export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProps) => {
   const [isConfirming, setIsConfirming] = useState(false);
+  // The failure the player has already read and put away with "Keep playing".
+  const [dismissedError, setDismissedError] = useState<string | null>(null);
+  const titleId = useId();
 
-  const stopConfirming = () => {
-    setIsConfirming(false);
+  const hasFailed = errorMessage !== undefined && errorMessage !== dismissedError;
+
+  const ask = () => {
+    setDismissedError(null);
+    setIsConfirming(true);
   };
 
-  const confirm = () => {
+  const keepPlaying = () => {
     setIsConfirming(false);
+    setDismissedError(errorMessage ?? null);
+  };
+
+  const end = () => {
+    setIsConfirming(false);
+    setDismissedError(null);
     onEnd();
   };
 
   return (
-    <Stack spacing={4} sx={{ alignItems: 'flex-start' }}>
-      {errorMessage !== undefined && (
-        <Message kind="error" heading="The game could not be ended">
-          {errorMessage}
-        </Message>
-      )}
-
-      <PillButton
-        kind="quiet"
-        danger
-        onClick={() => {
-          setIsConfirming(true);
-        }}
-        loading={isEnding}
-      >
-        {isEnding ? 'Ending the game...' : 'End the game'}
+    <>
+      <PillButton kind="link" onClick={ask} loading={isEnding}>
+        {isEnding ? 'Ending the game' : 'End the game'}
       </PillButton>
 
-      <Dialog open={isConfirming} onClose={stopConfirming} aria-labelledby="end-game-title">
-        <DialogTitle id="end-game-title">{CONFIRM_TITLE}</DialogTitle>
+      <Dialog
+        open={isConfirming || hasFailed}
+        onClose={keepPlaying}
+        aria-labelledby={titleId}
+        slotProps={{
+          paper: { sx: DIALOG_PAPER_SX },
+          backdrop: { sx: { backgroundColor: 'rgba(27, 45, 56, 0.45)' } },
+        }}
+      >
+        <Box component="h2" id={titleId} sx={{ margin: 0, fontSize: inRem(24), fontWeight: 700 }}>
+          {CONFIRM_TITLE}
+        </Box>
 
-        <DialogContent>
-          <DialogContentText>{CONFIRM_MESSAGE}</DialogContentText>
-        </DialogContent>
+        {/* The failure takes the place of the question: the game could not be
+          ended, so there is nothing left to confirm, and "Try again" is the
+          same press as "End it" (`playing/endfail`, template line 985). */}
+        <Box
+          component="p"
+          role={hasFailed ? 'alert' : undefined}
+          sx={{ margin: `${inRem(8)} 0 0`, fontSize: inRem(17), color: STREET.ink }}
+        >
+          {hasFailed ? errorMessage : CONFIRM_MESSAGE}
+        </Box>
 
-        <DialogActions>
-          <Button onClick={stopConfirming}>Keep playing</Button>
-          <Button onClick={confirm} color="error" variant="contained">
-            End the game
-          </Button>
-        </DialogActions>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            flexWrap: 'wrap',
+            gap: inRem(10),
+            marginTop: inRem(20),
+          }}
+        >
+          <PillButton kind="quiet" onClick={end}>
+            {hasFailed ? 'Try again' : 'End it'}
+          </PillButton>
+          <PillButton onClick={keepPlaying}>Keep playing</PillButton>
+        </Box>
       </Dialog>
-    </Stack>
+    </>
   );
 };

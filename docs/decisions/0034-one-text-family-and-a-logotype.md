@@ -1,6 +1,6 @@
 # 0034. One text family, and a logotype of its own
 
-Status: Accepted
+Status: Superseded by [0038](0038-across-the-street-replaces-the-garden.md)
 
 ## Context
 

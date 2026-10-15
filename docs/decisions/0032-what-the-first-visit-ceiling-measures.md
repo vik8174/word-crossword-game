@@ -2,11 +2,12 @@
 
 Status: Accepted
 
-**Split in two by [0033](0033-a-second-ceiling-for-a-picture.md).** This
-ceiling still measures exactly what it measures here — the HTML, the chunks
-and the typefaces — but it is no longer the only one: a raster scene image is
-weighed against a ceiling of its own, because a painting and a script are not
-the same kind of cost.
+**Split in two by [0033](0033-a-second-ceiling-for-a-picture.md), and whole
+again by [0038](0038-across-the-street-replaces-the-garden.md).** This ceiling
+still measures exactly what it measures here — the HTML, the chunks and the
+typefaces. For a time it was not the only one: a raster scene image was weighed
+against a ceiling of its own, because a painting and a script are not the same
+kind of cost. The pictures are gone, and so is that ceiling.
 
 ## Context
 

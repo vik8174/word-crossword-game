@@ -3,8 +3,8 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { HomePage } from './HomePage';
 
 /**
- * The gate, on its own — the base every later story in this project stands
- * on (`.storybook/preview.tsx`'s `decorators`, applied here without change).
+ * Home, on its own (`?state=home` of the state tree), on the ground every story
+ * stands on (`.storybook/preview.tsx`'s `decorators`).
  */
 const meta: Meta<typeof HomePage> = {
   title: 'Pages/HomePage',

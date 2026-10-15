@@ -1,14 +1,18 @@
 import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
 import { useState } from 'react';
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
 import { readRememberedNickname } from '../rooms/nickname-store';
 import { Field } from './Field';
-import { gateStackSx, middleLedeSx } from './gate-panel-styles';
+import { gateButtonRowSx, gateLedeSx, gateStackSx } from './gate-panel-styles';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
+import { stepTitleSx } from './surface-styles';
 
 interface JoinRoomFormProps {
+  /** The name the owner of the room goes by, for the sentence that says who invited the visitor. */
+  readonly ownerNickname: string;
   /** Called with the raw nickname once it is worth submitting. */
   readonly onJoin: (nickname: string) => void;
   /** `true` while the join is being written — the form freezes but stays readable. */
@@ -28,20 +32,26 @@ interface JoinRoomFormProps {
  * the field: offered, not imposed, since the field is theirs to rewrite and
  * what they leave in it is what gets remembered next (issue #75).
  *
- * The sentence and the blocks under it are the template's `.middle-column`
- * contents (`p.lede` and `.stack`): the lede 16px above the field, and the field,
- * the message and the button 14px apart, the button as wide as the panel. While
- * the join is written the button says so in the template's words, without the
- * three full stops it used to (issue #198, after #184 deferred that wording to
- * this screen).
+ * The title, the sentence and the blocks under them are one `.stack` of the
+ * template's `joinScreen` (`design/templates/state-tree.html`, lines 898-910),
+ * 18px apart. The sentence names the owner by the nickname they chose and uses
+ * no pronoun for them, because the app does not know anybody's pronouns (the
+ * one difference from the template, which says "he"). While the join is written
+ * the button says so in the template's words (issues #198 and #226).
  *
+ * @param props.ownerNickname - Who invited the visitor
  * @param props.onJoin - Receives the nickname when the player submits a valid one
  * @param props.errorMessage - Message about a join that was refused
  *
  * @example
  * <JoinRoomForm onJoin={join} isJoining={false} />
  */
-export const JoinRoomForm = ({ onJoin, isJoining, errorMessage }: JoinRoomFormProps) => {
+export const JoinRoomForm = ({
+  ownerNickname,
+  onJoin,
+  isJoining,
+  errorMessage,
+}: JoinRoomFormProps) => {
   // Read once, and only once: this form lives inside a room that is rebuilt on
   // every snapshot, and a live room produces one every fifteen seconds from
   // each client marking itself present. The lazy form of `useState` is what
@@ -57,28 +67,33 @@ export const JoinRoomForm = ({ onJoin, isJoining, errorMessage }: JoinRoomFormPr
         onJoin(nickname);
       }}
       noValidate
+      sx={gateStackSx}
     >
-      <Box component="p" sx={middleLedeSx}>
-        You have been invited to a game. Pick a name the other players will know you by.
+      <Typography component="h1" variant="stepTitle" sx={{ ...stepTitleSx(), margin: 0 }}>
+        Join the game
+      </Typography>
+
+      <Box component="p" sx={gateLedeSx}>
+        {ownerNickname} has invited you to a game. Pick a name they will know you by.
       </Box>
 
-      <Box sx={gateStackSx}>
-        <Field
-          id="nickname"
-          label="Your nickname"
-          value={nickname}
-          onChange={setNickname}
-          disabled={isJoining}
-          maxLength={MAX_NICKNAME_LENGTH}
-          autoFocus
-        />
+      <Field
+        id="nickname"
+        label="Your nickname"
+        value={nickname}
+        onChange={setNickname}
+        disabled={isJoining}
+        maxLength={MAX_NICKNAME_LENGTH}
+        autoFocus
+      />
 
-        {errorMessage !== undefined && (
-          <Message kind="error" heading="Could not join the game">
-            {errorMessage}
-          </Message>
-        )}
+      {errorMessage !== undefined && (
+        <Message kind="error" heading="Could not join the game">
+          {errorMessage}
+        </Message>
+      )}
 
+      <Box sx={gateButtonRowSx}>
         <PillButton type="submit" loading={isJoining} disabled={!isValidNickname(nickname)}>
           {isJoining ? 'Joining the game' : 'Join the game'}
         </PillButton>

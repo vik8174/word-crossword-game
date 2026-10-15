@@ -1,6 +1,6 @@
 # 0031. One camera, and what starting it promised
 
-Status: Accepted
+Status: Superseded by [0038](0038-across-the-street-replaces-the-garden.md)
 
 **Rewritten by [#152](https://github.com/vik8174/word-crossword-game/issues/152). There is no camera any more.** This record used to describe one rectangle of a painted world, 3200 by 1400, moving between four points of it. That world is gone: `apps/web/src/garden/` no longer has a `camera.ts`, a `world.ts`, or a `paint-*` module that draws anything but the greeting cloth. What replaced it, what promise the camera made that still has to be kept, and what the original record got right and wrong, are below. The history of how the camera worked is kept at the end, in its own section, because a decision that vanished leaves the next reader wondering whether it was ever made.
 

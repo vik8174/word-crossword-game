@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Amended by [0041](0041-an-ending-offers-a-new-game.md), which supersedes the line about the win screen offering no button: an ending now offers a new game, at `/`.
+
 ## Context
 
 The win condition ([issue #8](https://github.com/vik8174/word-crossword-game/issues/8)) is the last piece of the game loop: when every word of the crossword has been answered, the room must say so and every screen must show it.

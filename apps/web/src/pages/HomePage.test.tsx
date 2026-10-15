@@ -1,11 +1,9 @@
 import { ThemeProvider } from '@mui/material/styles';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { logEvent } from 'firebase/analytics';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Garden } from '../garden/Garden';
-import { GardenControlsContext } from '../garden/garden-controls';
 import { theme } from '../theme';
 import { HomePage } from './HomePage';
 
@@ -22,23 +20,12 @@ vi.mock('firebase/analytics', () => ({
 const reportedEvents = () =>
   vi.mocked(logEvent).mock.calls.map(([, name, params]) => ({ name, params }));
 
-/**
- * Renders the page the way `App.tsx` actually does: inside the same `Garden`
- * every other route shares (issue #166), with the app's own theme around it —
- * `Garden` now always mounts `PetalLayer`, which reads `theme.palette.sakura`
- * (`PetalLayer.tsx`), a token this app's theme adds and MUI's default theme
- * does not carry. The picture behind this page is `GardenScene`'s now rather
- * than a component of its own, so a render with no `Garden` around it would
- * see no picture at all — a fixture that stopped meaning what these tests
- * need it to.
- */
+/** Renders the page the way `App.tsx` actually does: in the app's own theme and a router. */
 const renderHomePage = () =>
   render(
     <ThemeProvider theme={theme}>
       <MemoryRouter>
-        <Garden>
-          <HomePage />
-        </Garden>
+        <HomePage />
       </MemoryRouter>
     </ThemeProvider>,
   );
@@ -48,51 +35,62 @@ beforeEach(() => {
 });
 
 describe('HomePage', () => {
-  it('renders the game title', () => {
+  it('names the game as the template does: Across the Street, in bold ink', () => {
     renderHomePage();
 
-    const heading = screen.getByRole('heading', { name: /word garden/i });
-
-    expect(heading).toBeInTheDocument();
-    // No dot, mark or rule after the name (settled in PRD #145) — a regexp
-    // anchored on both ends catches trailing punctuation a substring match
-    // would miss.
-    expect(heading).toHaveTextContent(/^WORD GARDEN$/i);
-  });
-
-  it('sets the name in Alegreya Sans at its bold, keeping its capitals and tracking', () => {
-    // There is no logotype face any more (issue #244): the name is the one
-    // face at 700, with the capitals and the tracking it had until the screen
-    // is redrawn (#224). Checked on the rendered element's computed style, as
-    // a test on a constant would pass whether or not this component reached
-    // for it.
-    renderHomePage();
-
-    const heading = screen.getByRole('heading', { name: /word garden/i });
+    const heading = screen.getByRole('heading', { name: /across the street/i });
     const style = getComputedStyle(heading);
 
+    expect(heading).toHaveTextContent(/^Across the Street$/);
     expect(style.fontFamily).toContain('Alegreya Sans');
     expect(style.fontWeight).toBe('700');
-    expect(style.textTransform).toBe('uppercase');
-    // 0.34em of the computed size, which jsdom resolves to pixels.
-    expect(parseFloat(style.letterSpacing)).toBeCloseTo(parseFloat(style.fontSize) * 0.34, 3);
+    expect(style.color).toBe('rgb(27, 45, 56)');
+    expect(style.textTransform).not.toBe('uppercase');
   });
 
-  it('renders the tagline in capitals, in the text face, with no number', () => {
+  it('says in one sentence what the game is', () => {
     renderHomePage();
 
-    const tagline = screen.getByText(/cooperative crossword/i);
-
-    expect(tagline).toHaveTextContent(/^A COOPERATIVE CROSSWORD$/i);
-    expect(getComputedStyle(tagline).fontFamily).toContain('Alegreya Sans');
-    expect(getComputedStyle(tagline).textTransform).toBe('uppercase');
-    expect(tagline).not.toHaveTextContent(/\d/);
+    expect(
+      screen.getByText(
+        'A cooperative crossword. You explain your words out loud, your friend guesses them, and the board fills up between you.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('offers the way into a new game', () => {
     renderHomePage();
 
-    expect(screen.getByRole('link', { name: /create a game/i })).toHaveAttribute('href', '/create');
+    expect(screen.getByRole('link', { name: 'Create a game' })).toHaveAttribute('href', '/create');
+  });
+
+  it('draws the street, named for a reader who cannot see it', () => {
+    renderHomePage();
+
+    expect(
+      screen.getByRole('img', {
+        name: 'Two neighbours on facing balconies in a white Andalusian street, with a line strung between them',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('lists the three steps of a game in order', () => {
+    renderHomePage();
+
+    const steps = within(screen.getByRole('list')).getAllByRole('listitem');
+
+    expect(steps.map((step) => step.textContent)).toEqual([
+      '1Type 10 to 20 words',
+      '2Send the link to one person',
+      '3Explain and guess out loud',
+    ]);
+  });
+
+  it('does not mention a language, and builds no lesson hint yet', () => {
+    const { container } = renderHomePage();
+
+    expect(container.textContent).not.toMatch(/english/i);
+    expect(container.textContent).not.toMatch(/teaching a language/i);
   });
 
   it('reports that the first screen of the funnel was reached', async () => {
@@ -101,72 +99,5 @@ describe('HomePage', () => {
     await waitFor(() => {
       expect(reportedEvents()).toEqual([{ name: 'screen_reached', params: { screen: 'home' } }]);
     });
-  });
-
-  it('claims the gate as its own picture on mount, rather than trusting a default', () => {
-    // The scene `Garden` starts on is `null`, not a guess (issue #152's second
-    // finding): a screen that never says which picture it wants is left with
-    // none. `/` has to claim it itself now that `Garden` is mounted here too
-    // (issue #166), the same way `CreateRoomPage` claims its own.
-    const showScene = vi.fn();
-
-    render(
-      <MemoryRouter>
-        <GardenControlsContext value={{ showAir: vi.fn(), showScene }}>
-          <HomePage />
-        </GardenControlsContext>
-      </MemoryRouter>,
-    );
-
-    expect(showScene).toHaveBeenCalledWith('gate');
-  });
-
-  it('draws the gate as an image with a decoding fallback', () => {
-    const { container } = renderHomePage();
-
-    // A screen reader has nothing to read off a picture that is entirely
-    // lettering and one button already on the page, so the image itself is
-    // decorative (`alt=""`) rather than described a second time.
-    const img = container.querySelector('img');
-
-    expect(img).toHaveAttribute('src', '/scenes/gate.jpg');
-    expect(img).toHaveAttribute('alt', '');
-    expect(container.querySelector('source[type="image/avif"]')).toHaveAttribute(
-      'srcset',
-      '/scenes/gate.avif',
-    );
-  });
-
-  it('renders the name in sumi, not the cream a descendant rule would otherwise win with', () => {
-    // `GATE_INK === '#1C1A1A'` is true regardless of what actually reaches the
-    // screen — `gate-chrome.test.ts` already asserts that constant and cannot
-    // catch this. `ON_SCENE_SX` on this page's own `<main>` carries `'&
-    // .MuiTypography-root': { color: 'inherit' }` (`garden/scene-surface.ts`),
-    // a descendant rule at specificity (0,2,0); a plain one-class `sx` rule on
-    // the heading itself is only (0,1,0), so cream from `<main>` won
-    // regardless of source order until the heading's own rule was written as
-    // `&&&` (0,3,0). Checked on the rendered element's computed style, the way
-    // a screen actually resolves it, rather than on the value handed to `sx`.
-    renderHomePage();
-
-    const heading = screen.getByRole('heading', { name: /word garden/i });
-
-    expect(getComputedStyle(heading).color).toBe('rgb(28, 26, 26)');
-  });
-
-  it('carries the cream offset behind the sumi name, down and right by 0.05em', () => {
-    // PRD #145's own reference lockup sets this in the same direction:
-    // `text-shadow: 0.05em 0.05em 0 #F3ECD9`. It carries no contrast duty of
-    // its own — measured over the scene's real pixels plus its veil, the
-    // name is median 3.41:1 against the sky whether or not this shadow is
-    // there. It reads against the sumi letter it sits behind instead, which
-    // is where PRD #145 says an offset is supposed to read.
-    renderHomePage();
-
-    const heading = screen.getByRole('heading', { name: /word garden/i });
-    const shadow = getComputedStyle(heading).textShadow;
-
-    expect(shadow).toMatch(/#F3ECD9|rgb\(243,\s*236,\s*217\)/i);
-    expect(shadow).toMatch(/0\.05em 0\.05em/);
   });
 });

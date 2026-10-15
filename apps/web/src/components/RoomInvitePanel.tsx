@@ -1,11 +1,12 @@
 import Box from '@mui/material/Box';
 import { useState } from 'react';
 
-import { inRem } from '../scale';
 import { roomUrl } from '../rooms/room-link';
+import { STREET } from '../street';
 import { ReadOnlyField } from './Field';
+import { gateButtonRowSx, gateHintSx } from './gate-panel-styles';
+import { inlineStatusSx, lobbyHeadingSx, lobbyTightStackSx } from './lobby-styles';
 import { PillButton } from './PillButton';
-import { zoneHeadingSx, zoneHintSx } from './zone-styles';
 
 interface RoomInvitePanelProps {
   /** Id of the room this screen is showing, as it stands in the address. */
@@ -16,16 +17,6 @@ interface RoomInvitePanelProps {
 
 /** What the block is named by. */
 const INVITE_HEADING_ID = 'invite-heading';
-
-/**
- * The line beside the copy button that says how the copy went
- * (`.inline-status`, `design/templates/state-tree.html` lines 392-394): 11px,
- * and no surface of its own, so it is read off the zone. Green when it worked,
- * and a pale red when the browser refused, the template's own two.
- */
-const INLINE_STATUS_SX = { fontSize: inRem(11), lineHeight: 1.5 } as const;
-const COPIED_INK = '#A9D147';
-const REFUSED_INK = '#FFC7AE';
 
 /** Outcome of the last copy attempt — nothing tried yet, copied, or the browser refused. */
 type CopyState = 'idle' | 'copied' | 'failed';
@@ -70,45 +61,45 @@ export const RoomInvitePanel = ({ roomId, origin }: RoomInvitePanelProps) => {
   };
 
   return (
-    <section aria-labelledby={INVITE_HEADING_ID}>
-      <Box component="h2" id={INVITE_HEADING_ID} sx={zoneHeadingSx}>
-        The link into this room
+    <Box component="section" aria-labelledby={INVITE_HEADING_ID} sx={lobbyTightStackSx}>
+      <Box component="h2" id={INVITE_HEADING_ID} sx={lobbyHeadingSx}>
+        Invite
       </Box>
-      <Box component="p" sx={zoneHintSx}>
-        Send this link to the other players — they join with a nickname, no sign-up.
+      <Box component="p" sx={gateHintSx}>
+        Send this link to the person you will play with. They join with a nickname, no sign-up.
       </Box>
 
-      {/* Wrapped rather than scrolled sideways inside its own box: the panel
-          stands in a zone beside the board rather than across the page (issue
-          #101), and a link shown as its first thirty characters is not the link
-          shown in full that the sentence above promises. */}
-      <ReadOnlyField label="Room link" value={url} />
+      {/* One line that clips, as the template draws it (issue #225): the link is
+          still selectable, so a browser that refuses the clipboard leaves it to
+          be copied by hand (issue #101). */}
+      <ReadOnlyField label="Invite link" value={url} />
 
-      <Box
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          gap: '10px',
-          width: '100%',
-          marginTop: inRem(9),
-        }}
-      >
-        <PillButton kind="quiet" small onClick={() => void handleCopy()}>
-          Copy the link
+      <Box sx={gateButtonRowSx}>
+        <PillButton kind="quiet" onClick={() => void handleCopy()}>
+          Copy link
         </PillButton>
 
         {copyState === 'copied' && (
-          <Box component="span" role="status" sx={{ ...INLINE_STATUS_SX, color: COPIED_INK }}>
+          <Box
+            component="span"
+            role="status"
+            sx={{
+              ...inlineStatusSx,
+              color: STREET.spruce,
+              fontWeight: 700,
+              // The tick is drawn, not typed, so the sentence a reader is told is "Link copied".
+              '&::before': { content: '"✓ "' },
+            }}
+          >
             Link copied
           </Box>
         )}
         {copyState === 'failed' && (
-          <Box component="span" role="status" sx={{ ...INLINE_STATUS_SX, color: REFUSED_INK }}>
-            Could not copy automatically — select the link and copy it by hand.
+          <Box component="span" role="status" sx={{ ...inlineStatusSx, color: STREET.brick }}>
+            Could not copy automatically. Select the link and copy it by hand.
           </Box>
         )}
       </Box>
-    </section>
+    </Box>
   );
 };

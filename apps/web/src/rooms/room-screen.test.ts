@@ -159,11 +159,21 @@ describe('roomScreenFor', () => {
   });
 
   describe('a room with a free seat', () => {
-    it('asks a newcomer for a nickname, and hands over nothing of the room', () => {
+    it('asks a newcomer for a nickname, and hands over only the name of who invited them', () => {
       expect(roomScreenFor(ready(roomWith()), NOW)).toEqual({
         kind: 'join',
         playerId: 'guest-uid',
+        ownerNickname: 'Vik',
         seatToRelease: null,
+      });
+    });
+
+    it('calls the owner Somebody when the document holds no entry for them', () => {
+      const room = roomWith({ players: {} });
+
+      expect(roomScreenFor(ready(room), NOW)).toMatchObject({
+        kind: 'join',
+        ownerNickname: 'Somebody',
       });
     });
 
@@ -178,6 +188,7 @@ describe('roomScreenFor', () => {
       expect(roomScreenFor(ready(room), NOW)).toEqual({
         kind: 'join',
         playerId: 'guest-uid',
+        ownerNickname: 'Vik',
         seatToRelease: 'ghost-uid',
       });
     });
@@ -263,7 +274,12 @@ describe('roomScreenFor', () => {
 describe('screenAfterRefusedJoin', () => {
   const room = roomWith({ players: bothPlayers });
   const viewerId = 'guest-uid';
-  const nicknameForm: RoomScreen = { kind: 'join', playerId: viewerId, seatToRelease: null };
+  const nicknameForm: RoomScreen = {
+    kind: 'join',
+    playerId: viewerId,
+    ownerNickname: 'Vik',
+    seatToRelease: null,
+  };
 
   it('takes away the form the refusal proved wrong', () => {
     expect(screenAfterRefusedJoin(nicknameForm, true)).toEqual({
@@ -337,7 +353,7 @@ describe('hasSomebodyToInvite', () => {
     ['nobody has read the room yet', { kind: 'connecting' }],
     [
       'a newcomer is being asked for a nickname',
-      { kind: 'join', playerId: guestId, seatToRelease: null },
+      { kind: 'join', playerId: guestId, ownerNickname: 'Vik', seatToRelease: null },
     ],
     ['the words are dealt out', { kind: 'playing', room: fullRoom, viewerId: ownerId }],
     ['the crossword is filled in', { kind: 'finished', room: fullRoom, viewerId: ownerId }],

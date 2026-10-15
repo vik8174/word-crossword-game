@@ -58,12 +58,12 @@ describe('lobbyStatusMessage', () => {
     it('says that the people a game needs are already in', () => {
       const message = messageFor(false, MIN_PLAYERS);
 
-      expect(message).toMatch(/already here/i);
+      expect(message).toMatch(/everybody a game needs is here/i);
       expect(message).not.toMatch(SAYS_SOMETHING_IS_MISSING);
     });
 
     it('says the host is the one who starts it', () => {
-      expect(messageFor(false, MIN_PLAYERS)).toMatch(/the host is the one who starts it/i);
+      expect(messageFor(false, MIN_PLAYERS)).toMatch(/the host starts it/i);
     });
   });
 
@@ -81,6 +81,29 @@ describe('lobbyStatusMessage', () => {
 
       expect(message).toMatch(/the host cannot start this game/i);
       expect(message).not.toMatch(/needs \d+ more/i);
+    });
+  });
+
+  describe("the template's words", () => {
+    it('counts the crossword in words, and says one word as one word', () => {
+      expect(messageFor(true, 2, 1)).toBe(
+        'This crossword holds 1 word and the room holds 2 players, so somebody would have nothing to guess. This game cannot start. Create a new room from a longer word list.',
+      );
+      expect(messageFor(false, 4, 3)).toBe(
+        'This crossword holds 3 words and the room holds 4 players, so somebody would have nothing to guess. The host cannot start this game; ask for a link to a new one.',
+      );
+    });
+
+    it('uses no em dash anywhere', () => {
+      for (const isOwner of [true, false]) {
+        for (const [playerCount, wordCount] of [
+          [1, 12],
+          [2, 12],
+          [2, 1],
+        ] as const) {
+          expect(messageFor(isOwner, playerCount, wordCount)).not.toContain('—');
+        }
+      }
     });
   });
 

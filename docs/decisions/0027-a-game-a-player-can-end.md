@@ -2,6 +2,8 @@
 
 Status: Accepted
 
+Amended by [0041](0041-an-ending-offers-a-new-game.md), which supersedes the line about the closed screen offering no way onward: an ending now offers a new game, at `/`.
+
 Amends [0025](0025-what-happens-to-the-seat-of-a-player-who-left.md).
 
 ## Context

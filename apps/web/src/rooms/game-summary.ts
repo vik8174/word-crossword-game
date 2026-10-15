@@ -1,10 +1,11 @@
 /**
  * The one line a finished game has to say for itself.
  *
- * Two things say it, in two very different places: the panel beside the
- * finished board, and the cloth the room lays over the table at the moment the
- * game ends ({@link RewardCloth}). It is one sentence and not two, because it
- * is one fact — and because a sentence written twice is a sentence that will be
+ * It is said by the panel beside the finished board. It used to be said twice,
+ * in two very different places: the second was a cloth the room laid over the
+ * table at the moment the game ended, and it went with the garden (issue #222).
+ * It stays one sentence in one place for the reason it was one sentence in two:
+ * it is one fact, and a sentence written twice is a sentence that will be
  * written two ways within a release.
  *
  * What it deliberately does not carry is a score. The game is cooperative in
@@ -23,7 +24,7 @@
  * @returns The sentence
  *
  * @example
- * finishedGameSummary(12, 2); // 'You finished the crossword together — all 12 ...'
+ * finishedGameSummary(12, 2); // 'You finished the crossword together: all 12 of its words, between the 2 of you.'
  */
 export const finishedGameSummary = (wordCount: number, playerCount: number): string =>
-  `You finished the crossword together — all ${wordCount} of its words, between the ${playerCount} of you.`;
+  `You finished the crossword together: all ${wordCount} of its words, between the ${playerCount} of you.`;

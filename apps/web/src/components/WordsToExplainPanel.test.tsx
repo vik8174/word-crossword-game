@@ -39,25 +39,39 @@ describe('WordsToExplainPanel', () => {
     expect(screen.getByText('bread')).toBeInTheDocument();
   });
 
-  it('says a word is done in words, not only by striking it through', () => {
+  it('says a word is done in words, with a tick, not only by colour', () => {
     renderPanel([explained('w0', 3, 'apple', true)]);
 
-    // Said outright in the row's accessible name, whatever the eye is given —
-    // and struck through as well, so the mark beside it is never the only cue.
-    expect(screen.getByRole('button', { name: '3 across — apple — answered' })).toBeInTheDocument();
-    expect(screen.getByText('apple')).toHaveStyle({ textDecoration: 'line-through' });
+    // Said outright in the row's accessible name, whatever the eye is given,
+    // and ticked in the row's last track, so no one cue carries it alone.
+    const row = screen.getByRole('button', { name: '3 across, apple, answered' });
+
+    expect(row).toBeInTheDocument();
+    expect(row).toHaveTextContent('✓ answered');
   });
 
-  it('explains the mark in its hint', () => {
+  it('leaves a word that is not answered with nothing in its last track', () => {
     renderPanel([explained('w0', 3, 'apple')]);
 
-    expect(screen.getByText(/A lit dot means it has been answered\./)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '3 across, apple' })).not.toHaveTextContent(
+      'answered',
+    );
+  });
+
+  it('says what the player does with the list, in the drawing’s words', () => {
+    renderPanel([explained('w0', 3, 'apple')]);
+
+    expect(
+      screen.getByText(
+        'These are written into the grid for you alone, in italics on the dashed squares. Explain each one out loud: say anything except the word itself. Tap one to find it in the grid.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('reports where a tapped word runs, and nothing that could be spelled out', () => {
     renderPanel([explained('w0', 3, 'apple')]);
 
-    fireEvent.click(screen.getByRole('button', { name: '3 across — apple' }));
+    fireEvent.click(screen.getByRole('button', { name: '3 across, apple' }));
 
     // This is the half of the game that has words to leak: they are on this
     // player's own screen, and they stop at this call all the same.
@@ -68,7 +82,7 @@ describe('WordsToExplainPanel', () => {
     // A player who taps a word, wanders off across the grid and taps it again
     // is asking to be taken back, not asking for nothing.
     renderPanel([explained('w0', 3, 'apple')]);
-    const wordEntry = () => screen.getByRole('button', { name: '3 across — apple' });
+    const wordEntry = () => screen.getByRole('button', { name: '3 across, apple' });
 
     fireEvent.click(wordEntry());
     fireEvent.click(wordEntry());
@@ -79,6 +93,6 @@ describe('WordsToExplainPanel', () => {
   it('names its list by the half of the game it holds', () => {
     renderPanel([explained('w0', 3, 'apple')]);
 
-    expect(screen.getByRole('list')).toHaveAccessibleName(/yours to explain/i);
+    expect(screen.getByRole('list')).toHaveAccessibleName('You explain');
   });
 });

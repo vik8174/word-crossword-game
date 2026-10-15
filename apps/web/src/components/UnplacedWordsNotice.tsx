@@ -4,6 +4,7 @@ import type { CrosswordLayout } from 'shared';
 import { gateButtonRowSx, gateStackSx } from './gate-panel-styles';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
+import { unplacedSentence } from './unplaced-sentence';
 
 interface UnplacedWordsNoticeProps {
   /** Layout the room would be created from, holding both the kept and the dropped words. */
@@ -20,12 +21,10 @@ interface UnplacedWordsNoticeProps {
  * the owner decides: create the room anyway, or go back and change the list
  * (user story 17).
  *
- * The two answers stand in a row, right-aligned, the quiet one first and the
- * primary one last, the way the template draws the fork (`create/unplaced`).
- * They are called "Back" and "Build it anyway" there, and short enough for one
- * row of the create panel's 416px: the earlier "Edit the word list" and
- * "Create room anyway" do not fit beside each other in it, and squeezed to fit
- * they wrap to two lines each (issue #197).
+ * The two answers stand in a row from the left, the loud one first and the
+ * quiet one after it, as the template draws the fork (`create/unplaced`, lines
+ * 885-886). It is a fork and not an error, so it keeps its card and has no
+ * field.
  *
  * @param props.layout - The generated layout, including `unplacedWords`
  * @param props.onConfirm - Create the room from the words that did fit
@@ -39,14 +38,14 @@ export const UnplacedWordsNotice = ({ layout, onConfirm, onBack }: UnplacedWords
         heading="Some words did not fit into the crossword"
         items={layout.unplacedWords}
       >
-        {`These words cross none of the others and will be left out. The room will be created with the remaining ${layout.placedWords.length} words.`}
+        {unplacedSentence(layout.unplacedWords.length)}
       </Message>
 
       <Box sx={gateButtonRowSx}>
+        <PillButton onClick={onConfirm}>Build it anyway</PillButton>
         <PillButton kind="quiet" onClick={onBack}>
           Back
         </PillButton>
-        <PillButton onClick={onConfirm}>Build it anyway</PillButton>
       </Box>
     </Box>
   );

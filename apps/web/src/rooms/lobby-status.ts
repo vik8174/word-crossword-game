@@ -1,5 +1,7 @@
 import { MIN_PLAYERS, wordAssignmentRefusal, type WordAssignmentRefusal } from 'shared';
 
+import { wordsLabel } from './grid-caption';
+
 /**
  * What a room waiting in the lobby says to the player reading it.
  *
@@ -26,12 +28,11 @@ export interface LobbyStatusInput {
 }
 
 /** Said to the owner of a room whose words can be dealt out right now. */
-const OWNER_READY_MESSAGE =
-  'The game can start now. Nobody else is needed for it — start it as soon as everybody you invited is in.';
+const OWNER_READY_MESSAGE = 'The game can start now. Nobody else is needed for it.';
 
 /** Said to everybody else in that room: what they wait for is a person, not a player count. */
 const GUEST_READY_MESSAGE =
-  'Everybody a game needs is already here. The host is the one who starts it, and the game begins on this screen the moment they do.';
+  'Everybody a game needs is here. The host starts it, and the game begins on this screen the moment they do.';
 
 /** Why a game cannot be dealt yet, said to whoever is reading. */
 const refusalMessage = (
@@ -44,18 +45,18 @@ const refusalMessage = (
     const missing = `A game takes ${MIN_PLAYERS} players, so this room needs ${MIN_PLAYERS - playerCount} more`;
 
     return isOwner
-      ? `${missing} before you can start it — share the room link.`
+      ? `${missing} before you can start it. Share the room link.`
       : `${missing}. The host starts the game once they are in.`;
   }
 
   // A crossword shorter than the room is not a wait: no arrival fixes it, and
   // nothing in the app takes a player back out of a room, so neither role is
   // pointed at something to wait for.
-  const crowded = `This crossword holds ${wordCount} words and the room holds ${playerCount} players, so somebody would have nothing to guess.`;
+  const crowded = `This crossword holds ${wordsLabel(wordCount)} and the room holds ${playerCount} players, so somebody would have nothing to guess.`;
 
   return isOwner
-    ? `${crowded} This game cannot start — create a new room from a longer word list.`
-    : `${crowded} The host cannot start this game; ask them for a link to a new one, built from a longer word list.`;
+    ? `${crowded} This game cannot start. Create a new room from a longer word list.`
+    : `${crowded} The host cannot start this game; ask for a link to a new one.`;
 };
 
 /**
@@ -66,7 +67,7 @@ const refusalMessage = (
  *
  * @example
  * lobbyStatusMessage({ isOwner: false, playerCount: 2, wordCount: 12 });
- * // 'Everybody a game needs is already here. The host is the one who starts it, ...'
+ * // 'Everybody a game needs is here. The host starts it, ...'
  */
 export const lobbyStatusMessage = (input: LobbyStatusInput): string => {
   const refusal = wordAssignmentRefusal({

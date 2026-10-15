@@ -7,19 +7,28 @@ import type { GuessEntryCell } from '../rooms/guess-board';
 import { isArrowKey, useGridCursor } from '../rooms/use-grid-cursor';
 import { useGuessEntry } from '../rooms/use-guess-entry';
 import { cellKey, type GridView, type WordLocation } from '../rooms/word-visibility';
+import { inRem } from '../scale';
+import { STREET } from '../street';
 import {
-  BOARD_HEIGHT_CSS,
+  type BandAbove,
+  boardHeightsFor,
   boardVariables,
   CELL_GAP,
   CELL_SIDE,
   cellSizeVariable,
   GRID_COLUMNS_CSS,
-  WIDE_BOARD_HEIGHT_CSS,
 } from './board-geometry';
-import { SCENE, SCENE_INK_DIM } from '../garden/scene-palette';
-import { SENTENCE_BAND_SX } from '../garden/scene-surface';
 import { GridSquare } from './GridSquare';
-import { THREE_ZONES } from './room-layout';
+import { APP_SHELL, THREE_ZONES } from './room-layout';
+
+/** One line under the board (`.board-note`): 15px, slate, centred. */
+const NOTE_SX = {
+  margin: 0,
+  fontSize: inRem(15),
+  lineHeight: 1.6,
+  color: STREET.slate,
+  textAlign: 'center',
+} as const;
 
 /** Text that is read out but not drawn — for what the grid says in colour alone. */
 const SPOKEN_ONLY: SxProps<Theme> = {
@@ -32,7 +41,7 @@ const SPOKEN_ONLY: SxProps<Theme> = {
 };
 
 const REFUSAL_MESSAGE =
-  'That is not the word — the letters clear in a moment. Try again as often as you like.';
+  'That is not the word. The letters clear in a moment. Try again as often as you like.';
 
 /** Said only to a player who actually has two words of their own crossing. */
 const CROSSING_HINT =
@@ -56,6 +65,12 @@ interface CrosswordGridProps {
    * again to come back.
    */
   readonly wordToReach?: WordLocation | null;
+  /**
+   * What the room draws above the board, so the board is given the share of the
+   * window that is left once the drawing has taken its height (see
+   * `board-geometry.ts`).
+   */
+  readonly bandAbove?: BandAbove;
 }
 
 /**
@@ -90,11 +105,18 @@ interface CrosswordGridProps {
  * @param props.view - What this player's screen may draw, from `gridViewFor`
  * @param props.onSolved - Called once a word of theirs has been answered
  * @param props.wordToReach - A word the player asked to be taken to
+ * @param props.bandAbove - What the room draws above the board, if anything
  *
  * @example
  * <CrosswordGrid view={gridViewFor(room, viewerId)} onSolved={submitGuess} />
  */
-export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProps) => {
+export const CrosswordGrid = ({
+  view,
+  onSolved,
+  wordToReach,
+  bandAbove = 'none',
+}: CrosswordGridProps) => {
+  const heights = boardHeightsFor(bandAbove);
   const entry = useGuessEntry(view, onSolved);
   const cursor = useGridCursor(entry, view);
   // Held in a ref rather than watched as a dependency: what asks for a word is
@@ -242,9 +264,10 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
         sx={{
           ...boardVariables(view),
           containerType: 'size',
-          height: BOARD_HEIGHT_CSS,
+          height: heights.phone,
           overflow: 'auto',
-          [THREE_ZONES]: { height: WIDE_BOARD_HEIGHT_CSS },
+          [APP_SHELL]: { height: heights.appShell },
+          [THREE_ZONES]: { height: heights.wide },
         }}
       >
         <Box
@@ -262,20 +285,6 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
             // than what holds it come out as nothing, so the scroll still starts
             // at the first column rather than in the middle of the board.
             mx: 'auto',
-            // The squares are objects standing in front of the wall behind
-            // them, not part of it.
-            //
-            // A filter makes a containing block of its own, exactly as a
-            // transform does (`garden/Garden.tsx`), so nothing inside this grid
-            // may ever be positioned against the window. Nothing is today, and
-            // a square is a box in a grid rather than anything that floats. A shadow is what says so, and it is cast by
-            // the board as a shape rather than square by square: the shape has
-            // holes in it where no word runs, and the light falls into those
-            // too. A square is still opaque and still exactly the colour the
-            // theme gives it — a board made translucent to show the room
-            // through it would lose the difference between one state and the
-            // next (`docs/decisions/0015-explained-words-in-the-grid.md`).
-            filter: 'drop-shadow(0 5px 8px rgba(6, 20, 16, 0.6))',
           }}
         >
           {rows.map((row) => cols.map((col) => renderCell(row, col)))}
@@ -293,51 +302,44 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
         {entry.activeDirection === null ? '' : `Now filling ${entry.activeDirection}.`}
       </Typography>
 
-      {hasSquaresToFill && (
-        <Typography variant="body2" sx={{ mt: 2, color: SCENE_INK_DIM, ...SENTENCE_BAND_SX }}>
-          {KEYBOARD_HINT}
-        </Typography>
-      )}
-
-      {entry.hasCrossings && (
-        <Typography variant="body2" sx={{ mt: 2, color: SCENE_INK_DIM, ...SENTENCE_BAND_SX }}>
-          {CROSSING_HINT}
-        </Typography>
-      )}
-
       {/*
-        Kept under the board rather than moved to a zone beside it: it is the
-        only word a player gets about an answer that was not accepted, and it has
-        to be where they were looking when they typed it.
+        The board's notes (`.board-notes`, `state-tree.html` lines 806-811): at
+        most 560px wide, centred, 16px under the board and 6px apart, the word
+        about a refused answer first.
 
-        It reserves no height while there is nothing to say. It used to — a line
-        of it, so the board would not shift when a wrong answer came back — but
-        the height it was holding is the height a square is measured out of, and
-        paying for it on every screen of every game to save one shift is the
-        wrong way round. What it cannot do is stop existing between refusals: a
-        live region only speaks when the text inside one that was already there
-        changes, so this is an empty line and never an absent one.
+        That word is kept under the board rather than moved to a zone beside it:
+        it is the only word a player gets about an answer that was not accepted,
+        and it has to be where they were looking when they typed it. It is a
+        live region, which only speaks when the text inside one that was already
+        there changes, so it is an empty line and never an absent one. While it
+        is empty it takes back the gap it would have opened, so a board with
+        nothing to say under it has no space under it for nothing.
       */}
-      {/* Cream on the band with the temple's red beside it, rather than red
-        letters: this line is read off a room and not off paper, and vermilion
-        is a middling lightness — the one colour in the palette that cannot be
-        read on either a lit sheet or a dark wall. The red carries the alarm and
-        the cream carries the words. The band and the rule come and go with the
-        message, so an empty live region is an empty line and not a strip. */}
-      <Typography
-        variant="body2"
-        role="status"
+      <Box
         sx={{
-          mt: entry.hasRefusal ? 2 : 0,
-          color: SCENE.cream,
-          ...(entry.hasRefusal && {
-            ...SENTENCE_BAND_SX,
-            borderLeft: `2px solid ${SCENE.vermilionLit}`,
-          }),
+          display: 'flex',
+          flexDirection: 'column',
+          gap: inRem(6),
+          maxWidth: inRem(560),
+          margin: `${inRem(16)} auto 0`,
         }}
       >
-        {entry.hasRefusal ? REFUSAL_MESSAGE : ''}
-      </Typography>
+        <Typography
+          role="status"
+          sx={{
+            ...NOTE_SX,
+            ...(entry.hasRefusal
+              ? { color: STREET.brick, fontWeight: 700, fontSize: inRem(17) }
+              : { marginBottom: inRem(-6) }),
+          }}
+        >
+          {entry.hasRefusal ? REFUSAL_MESSAGE : ''}
+        </Typography>
+
+        {hasSquaresToFill && <Typography sx={NOTE_SX}>{KEYBOARD_HINT}</Typography>}
+
+        {entry.hasCrossings && <Typography sx={NOTE_SX}>{CROSSING_HINT}</Typography>}
+      </Box>
     </Box>
   );
 };

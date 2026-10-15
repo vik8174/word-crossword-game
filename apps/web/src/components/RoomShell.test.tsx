@@ -1,8 +1,8 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { RoomShell } from './RoomShell';
-import { ShiftRoleContext } from './screen-shift';
+import { RoomShell, ZONE_RING_ROOM_PX } from './RoomShell';
+import { OUTLINE_WIDTH } from './surface-styles';
 
 describe('RoomShell', () => {
   it('names the room once, whatever the room is doing', () => {
@@ -15,17 +15,13 @@ describe('RoomShell', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Game room');
   });
 
-  it('keeps what the room is doing, and the one thing to do about it, in the header', () => {
-    render(
-      <RoomShell status={<p>The game is on.</p>} action={<button>End the game</button>}>
-        the board
-      </RoomShell>,
-    );
+  it('draws no header of its own: the status and the action are the frame’s', () => {
+    render(<RoomShell>the board</RoomShell>);
 
-    const header = within(screen.getByRole('banner'));
-
-    expect(header.getByText('The game is on.')).toBeInTheDocument();
-    expect(header.getByRole('button', { name: 'End the game' })).toBeInTheDocument();
+    // The header is drawn once by the frame, for every screen
+    // (`useFrameSlot`); a second one here would be a banner inside a page that
+    // already has one.
+    expect(screen.queryByRole('banner')).toBeNull();
   });
 
   it('reads left to right the way the screen does — what is given, the board, what comes back', () => {
@@ -41,6 +37,24 @@ describe('RoomShell', () => {
     expect(screen.getByRole('main').textContent).toBe('yours to explainthe boardyours to guess');
   });
 
+  it('lays a zone on the ground, with no tile behind it', () => {
+    render(
+      <RoomShell left={<p>yours to explain</p>}>
+        <p>the board</p>
+      </RoomShell>,
+    );
+
+    // The drawing sets no surface behind a zone: `.zone` has no rule of its
+    // own, only `.zones` lays the three out.
+    const style = getComputedStyle(
+      screen.getByText('yours to explain').parentElement as HTMLElement,
+    );
+
+    expect(style.backgroundColor).not.toBe('rgb(250, 251, 250)');
+    expect(style.outline).not.toMatch(/solid/);
+    expect(style.borderTopWidth).not.toBe('1.5px');
+  });
+
   it('leaves a zone this screen has nothing for empty rather than filling it', () => {
     // A lobby has dealt no words out, so the side that holds them has nothing
     // to say — and says nothing, instead of the board sliding across to take
@@ -50,71 +64,71 @@ describe('RoomShell', () => {
     expect(screen.getByRole('main').textContent).toBe('the boardwho is here');
   });
 
-  it('gives up its header to the screen replacing it', () => {
-    render(
-      <ShiftRoleContext value="leaving">
-        <RoomShell status={<p>The game is on.</p>}>the board</RoomShell>
-      </ShiftRoleContext>,
-    );
-
-    // While a shift runs there are two of these on the page, one over the
-    // other. Two headers in the same place would print over each other, and the
-    // header is the part that is meant to stand still — so the screen on its
-    // way out lets the arriving one's stand (issue #93).
-    expect(screen.queryByRole('banner')).toBeNull();
-    expect(screen.getByRole('banner', { hidden: true })).not.toBeVisible();
-    expect(screen.getByRole('main')).toBeVisible();
-  });
-
-  describe('standing one thing alone in the middle', () => {
-    it('draws no zone, and puts what it is given straight in the main', () => {
-      render(
-        <RoomShell title="Join the game" solo>
-          <p>the one thing</p>
-        </RoomShell>,
-      );
-
-      expect(screen.getByRole('main').children).toHaveLength(1);
-      expect(screen.getByRole('main').textContent).toBe('the one thing');
-    });
-
-    it('centres it across and down, as tall as it is on a phone', () => {
-      render(
-        <RoomShell solo>
-          <p>the one thing</p>
-        </RoomShell>,
-      );
-
-      expect(screen.getByRole('main')).toHaveStyle({
-        display: 'grid',
-        placeItems: 'center',
-        alignContent: 'center',
-        flex: 'none',
-      });
-    });
-
-    it('still names the page, once, when it has no title of its own', () => {
-      render(
-        <RoomShell solo>
-          <p>the one thing</p>
-        </RoomShell>,
-      );
-
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Game room');
-    });
-  });
-
-  it('stands the frame the way the template draws it, on a phone: 20 above, 24 below, 16 apart', () => {
+  it('stands the frame the way the template draws it, on a phone: 24 above, 40 below, 18 either side', () => {
     render(<RoomShell>the board</RoomShell>);
 
     const frame = screen.getByRole('main').parentElement;
 
-    expect(frame).toHaveStyle({ padding: '20px 16px 24px', gap: '1rem' });
+    expect(frame).toHaveStyle({ padding: '24px 18px 40px' });
   });
 
-  it('is at least a window tall on a phone whatever it holds', () => {
+  it('is at least what the frame’s header leaves of a window on a phone whatever it holds', () => {
     render(<RoomShell>the board</RoomShell>);
 
-    expect(screen.getByRole('main').parentElement).toHaveStyle({ minHeight: '100dvh' });
+    expect(screen.getByRole('main').parentElement).toHaveStyle({
+      minHeight: 'calc(100dvh - var(--frame-header-height, 64px))',
+    });
+  });
+
+  describe('where a zone scrolls, from a tablet up', () => {
+    /** What the stylesheet declares for an element inside the app shell's media query. */
+    const declaredInAppShell = (element: Element): string => {
+      const sheet = [...document.querySelectorAll('style')]
+        .map((style) => style.textContent ?? '')
+        .join('\n');
+
+      return [...element.classList]
+        .map((name) =>
+          new RegExp(
+            `@media \\(min-width: 768px\\) and \\(min-height: 600px\\)\\{\\.${name}\\{([^}]*)\\}`,
+          ).exec(sheet),
+        )
+        .map((match) => match?.[1] ?? '')
+        .join(';');
+    };
+
+    it('leaves room round what stands at its edge for the ring a message draws outside its box', () => {
+      // A message's ring is an outer shadow, and a scroll container clips
+      // whatever is outside its padding box. With no padding on the zone every
+      // message at its edge lost the top, left and right of its ring (issue
+      // #228, round 1), so the scroll box is padded by more than the ring is
+      // thick and pulled out by the same amount, which leaves the content where
+      // the drawing puts it.
+      render(
+        <RoomShell left={<p>a message at the zone’s edge</p>} right={<p>and one on the right</p>}>
+          <p>the board</p>
+        </RoomShell>,
+      );
+
+      expect(ZONE_RING_ROOM_PX).toBeGreaterThanOrEqual(OUTLINE_WIDTH);
+
+      for (const text of ['a message at the zone’s edge', 'and one on the right', 'the board']) {
+        const scrollBox = screen.getByText(text).parentElement as HTMLElement;
+        const rules = declaredInAppShell(scrollBox);
+
+        expect(rules).toContain('overflow-y:auto');
+        expect(rules).toContain(`padding:${ZONE_RING_ROOM_PX}px`);
+        expect(rules).toContain(`margin:-${ZONE_RING_ROOM_PX}px`);
+      }
+    });
+
+    it('keeps the cell the zone stands in free of any clipping, so the ring has somewhere to go', () => {
+      render(<RoomShell left={<p>yours to explain</p>}>the board</RoomShell>);
+
+      const cell = screen.getByText('yours to explain').parentElement?.parentElement as HTMLElement;
+
+      expect(declaredInAppShell(cell)).not.toMatch(/overflow/);
+      expect(getComputedStyle(cell).overflow).not.toMatch(/auto|hidden|scroll/);
+    });
   });
 });

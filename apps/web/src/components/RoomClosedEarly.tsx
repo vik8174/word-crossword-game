@@ -1,12 +1,29 @@
-import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import { useMemo } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 
-import { SCENE_LINE } from '../garden/scene-palette';
+import { answeredWordsOf } from '../rooms/answered-words';
 import { closedGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
-import { PlayerList } from './PlayerList';
+import { gridViewFor, wordViewFor } from '../rooms/word-visibility';
+import { useFrameSlot } from './frame-slot';
+import { LobbyPlayers } from './LobbyPlayers';
+import { Message } from './Message';
+import { PillButton } from './PillButton';
 import { RoomCrossword } from './RoomCrossword';
 import { RoomShell } from './RoomShell';
+import { Street } from './Street';
+
+/** What the drawing above the board is called to a reader who cannot see it. */
+const SAGGING_LINE_LABEL =
+  'A sagging line between the balconies, holding only the words that were answered';
+
+/** The room's own line about the game, in the frame's header; the screen has no action. */
+const STATUS = <span role="status">The game was ended</span>;
+
+/** Nobody is away on an ending: the room's presence stopped being read with the game. */
+const NOBODY_AWAY = {};
 
 /**
  * Said in a room that ended without its crossword having been finished.
@@ -16,8 +33,8 @@ import { RoomShell } from './RoomShell';
  * ordinary one is a game a player ended: a crossword that cannot be finished
  * has a way out, and this screen is where it comes out
  * (`docs/decisions/0027-a-game-a-player-can-end.md`). The other is a room whose
- * `completed` no board backs up, which the security rules cannot refuse — they
- * cannot walk the `words` map — so any client that knows the room id can write
+ * `completed` no board backs up, which the security rules cannot refuse: they
+ * cannot walk the `words` map, so any client that knows the room id can write
  * it over a game nobody played
  * (`docs/decisions/0012-ending-a-game-from-the-received-state.md`). Either way
  * the room is finished with its players, and either way the words nobody
@@ -32,11 +49,13 @@ import { RoomShell } from './RoomShell';
  * reader to notice: the words *they* were explaining are still written into
  * their own grid, as they were all game
  * (`docs/decisions/0015-explained-words-in-the-grid.md`). Those were never
- * theirs to guess, so nothing is given away — but a message promising a blank
+ * theirs to guess, so nothing is given away, but a message promising a blank
  * board over a board that is not blank would simply be untrue.
+ *
+ * The template's own text (`state-tree.html`, line 1060).
  */
 const CLOSED_UNFINISHED_MESSAGE =
-  'This game was ended before every word had been answered, and the room is closed for good. The words nobody guessed are not spelled out, apart from the ones that were yours to explain, which were on your screen all along.';
+  'It was ended before every word had been answered, and the room is closed for good. The words nobody guessed are not spelled out, apart from the ones that were yours to explain.';
 
 interface RoomClosedEarlyProps {
   /** The room, closed with words still unanswered. */
@@ -48,12 +67,14 @@ interface RoomClosedEarlyProps {
 /**
  * A room shut before its crossword was filled in.
  *
- * Like the finished screen it takes no callbacks, and for the same reason: the
- * status is terminal, so there is nothing to start, nothing to answer and
- * nothing left to end. It offers no way onward either, which is the same
- * silence `RoomFinished` keeps — a new game is a new room, and neither ending
- * pretends otherwise. What it must not do is spell the crossword out — the
- * board is the only half a client cannot fake, and this board is not full.
+ * Calm where the finished screen is a fiesta: the neighbours rest, the line
+ * between the balconies sags, and it holds only the words that were answered.
+ * It is never celebrated, and a quiet button offers a new game at `/`
+ * (`docs/decisions/0041-an-ending-offers-a-new-game.md`). Like the finished
+ * screen it takes no callbacks, for the same reason: the status is terminal, so
+ * there is nothing to start, answer or end. What it must not do is spell the
+ * crossword out. The board is the only half a client cannot fake, and this
+ * board is not full.
  *
  * @param props.room - The room document
  * @param props.viewerId - Which player is reading, so the list marks them
@@ -63,30 +84,57 @@ interface RoomClosedEarlyProps {
  */
 export const RoomClosedEarly = ({ room, viewerId }: RoomClosedEarlyProps) => {
   const players = playersInJoinOrder(room);
+  const caption = closedGridCaption(room.layout.placedWords.length);
+  // The words this player may name: the ones that were answered, the ones they
+  // explained and the ones they guessed, and no other.
+  const answeredWords = useMemo(
+    () => answeredWordsOf(wordViewFor(room, viewerId), gridViewFor(room, viewerId)),
+    [room, viewerId],
+  );
+
+  useFrameSlot({ status: STATUS });
 
   return (
     <RoomShell
       title="Game ended"
       left={
-        // Said on the band with a quiet rule beside it rather than on a pale
-        // sheet of its own. A sheet is the brightest thing on a screen, and this
-        // is the one screen in the app that is never celebrated: a game was
-        // ended with words nobody answered on it
-        // (`docs/decisions/0027-a-game-a-player-can-end.md`).
-        <Typography
-          variant="body1"
-          role="status"
-          sx={{ borderLeft: `2px solid ${SCENE_LINE}`, pl: 4 }}
-        >
-          {CLOSED_UNFINISHED_MESSAGE}
-        </Typography>
+        <>
+          <Message kind="info" heading="This game was ended early" role="status">
+            {CLOSED_UNFINISHED_MESSAGE}
+          </Message>
+
+          <Box>
+            <PillButton kind="quiet" component={RouterLink} to="/">
+              Start a new game
+            </PillButton>
+          </Box>
+        </>
       }
-      right={<PlayerList players={players} ownerId={room.ownerId} viewerId={viewerId} />}
+      right={
+        <LobbyPlayers
+          players={players}
+          ownerId={room.ownerId}
+          viewerId={viewerId}
+          awayDurations={NOBODY_AWAY}
+        />
+      }
     >
       <RoomCrossword
         room={room}
         viewerId={viewerId}
-        caption={closedGridCaption(room.layout.placedWords.length)}
+        caption={caption}
+        hasVisibleHeading={false}
+        bandRule="always"
+        bandNote={caption}
+        band={
+          <Street
+            crop="band"
+            line="slack"
+            mood="calm"
+            cards={answeredWords}
+            label={SAGGING_LINE_LABEL}
+          />
+        }
       />
     </RoomShell>
   );

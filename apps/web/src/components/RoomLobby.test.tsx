@@ -1,9 +1,12 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { updateDoc } from 'firebase/firestore';
+import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AWAY_AFTER_MS, PRESENCE_TICK_MS } from '../rooms/presence';
 import type { RoomDocument } from '../rooms/room-document';
+import { Frame } from './Frame';
+import { FrameSlotProvider } from './FrameSlotProvider';
 import { RoomLobby } from './RoomLobby';
 
 const ORDER = Node.DOCUMENT_POSITION_FOLLOWING;
@@ -86,15 +89,21 @@ const lobbyRoom = ({
     expiresAt: at(1_000_000),
   }) as unknown as RoomDocument;
 
-const renderLobby = (viewerId: string, room: RoomDocument) =>
-  render(<RoomLobby roomId="room-1" room={room} viewerId={viewerId} />);
-
 /**
- * The room's own line about what it is doing, which the lobby renders above
- * everything else — the grid below keeps a live region of its own, so the role
- * alone does not name one element.
+ * The lobby under the frame it is drawn in: the status line is the frame's
+ * header, filled by the lobby through `useFrameSlot`.
  */
-const statusLine = (): string => screen.getAllByRole('status')[0]?.textContent ?? '';
+const renderLobby = (viewerId: string, room: RoomDocument, invitation?: ReactNode) =>
+  render(
+    <FrameSlotProvider>
+      <Frame />
+      <RoomLobby roomId="room-1" room={room} viewerId={viewerId} invitation={invitation} />
+    </FrameSlotProvider>,
+  );
+
+/** The room's own line about what it is doing, which the header carries. */
+const statusLine = (): string =>
+  within(screen.getByRole('banner')).getByRole('status').textContent ?? '';
 
 const startButton = () => screen.queryByRole('button', { name: /start the game/i });
 
@@ -102,8 +111,9 @@ describe('RoomLobby', () => {
   it('tells the owner of a room that cannot start yet what is missing, and offers no start', () => {
     renderLobby(OWNER_ID, lobbyRoom({ playerCount: 1 }));
 
-    expect(statusLine()).toMatch(/needs 1 more\b/);
-    expect(statusLine()).toMatch(/share the room link/i);
+    expect(statusLine()).toBe(
+      'A game takes 2 players, so this room needs 1 more before you can start it. Share the room link.',
+    );
     // Changed on Viktor's ruling of 2026-09-30 (issue #199): this asserted a
     // start button that was there and disabled. The drawing gives a room one
     // action at a time, copying the link while it waits and starting the game
@@ -132,9 +142,10 @@ describe('RoomLobby', () => {
   it('tells a guest who starts the game, since they have no control of their own', () => {
     renderLobby(GUEST_ID, lobbyRoom({ playerCount: 2 }));
 
-    expect(statusLine()).toMatch(/the host is the one who starts it/i);
+    expect(statusLine()).toMatch(/the host starts it/i);
     expect(statusLine()).not.toMatch(/needs \d+ more/i);
     expect(startButton()).toBeNull();
+    expect(screen.getByText('Waiting for Player 1 to start the game.')).toBeInTheDocument();
   });
 
   it('tells a guest of a room that cannot start why, rather than leaving them counting', () => {
@@ -145,18 +156,75 @@ describe('RoomLobby', () => {
 
     expect(statusLine()).toMatch(/the host cannot start this game/i);
     expect(startButton()).toBeNull();
+    // Nobody is going to start it, so nobody is told to wait for it.
+    expect(screen.queryByText(/waiting for/i)).toBeNull();
   });
 
   it('counts the words that are in the grid, not the words that were typed in', () => {
     // Nine words went into this room and three of them did not fit, so six are
-    // on the board. Nothing on the board says so — an unplaced word is drawn
-    // nowhere — which is the whole reason this line still counts out loud.
+    // on the board. Nothing says so but this line: an unplaced word is drawn
+    // nowhere, and the lobby draws no board.
     renderLobby(GUEST_ID, lobbyRoom({ playerCount: 2, wordCount: 6, unplacedCount: 3 }));
 
-    const crossword = within(screen.getByRole('region', { name: /the crossword/i }));
+    expect(
+      screen.getByText('The crossword: 6 words, half of them for each of you.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/9 words/)).toBeNull();
+  });
 
-    expect(crossword.getByText(/^6 words/)).toBeInTheDocument();
-    expect(crossword.queryByText(/^9 words/)).toBeNull();
+  it('counts a crossword of one word without a half', () => {
+    renderLobby(GUEST_ID, lobbyRoom({ playerCount: 2, wordCount: 1 }));
+
+    expect(screen.getByText('The crossword: 1 word.')).toBeInTheDocument();
+    expect(statusLine()).toMatch(/holds 1 word and the room holds 2 players/);
+  });
+
+  it('keeps the page named "Lobby" for a reader, without showing the word', () => {
+    renderLobby(OWNER_ID, lobbyRoom({ playerCount: 2 }));
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Lobby' })).toBeInTheDocument();
+  });
+
+  describe('the drawing', () => {
+    it('says the host is alone while nobody has joined', () => {
+      renderLobby(OWNER_ID, lobbyRoom({ playerCount: 1 }));
+
+      expect(
+        screen.getByRole('img', {
+          name: 'Your balcony, and the one across the street still empty',
+        }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('A free seat. Waiting for the second player')).toBeInTheDocument();
+    });
+
+    it('says both are in once the second player has joined', () => {
+      renderLobby(OWNER_ID, lobbyRoom({ playerCount: 2 }));
+
+      expect(
+        screen.getByRole('img', { name: 'Both balconies taken, the line strung between them' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/a free seat/i)).toBeNull();
+    });
+
+    it('draws the curtains across the street for a seat freed by silence, and still offers the start', () => {
+      // `invitation` is handed down only while a seat is free: here the guest is
+      // in the room, and so is the link.
+      renderLobby(
+        OWNER_ID,
+        lobbyRoom({ playerCount: 2, silentFor: { [GUEST_ID]: 125_000 } }),
+        <h2>Invite</h2>,
+      );
+
+      expect(
+        screen.getByRole('img', {
+          name: 'Both balconies taken, the curtains drawn across the street',
+        }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('away for 2 min')).toBeInTheDocument();
+      expect(statusLine()).toMatch(/can start now/i);
+      expect(screen.getByRole('heading', { name: 'Invite' })).toBeInTheDocument();
+      expect(startButton()).toBeEnabled();
+    });
   });
 
   describe('presence', () => {
@@ -228,24 +296,15 @@ describe('RoomLobby', () => {
     expect(screen.queryByText(/up to|of 4/i)).not.toBeInTheDocument();
   });
 
-  it("lays the zone out in the template's order: who is in, the link, the start, the crossword", () => {
-    render(
-      <RoomLobby
-        roomId="room-1"
-        room={lobbyRoom({ playerCount: 2 })}
-        viewerId={OWNER_ID}
-        invitation={<h2>The link into this room</h2>}
-      />,
-    );
+  it("lays the column out in the template's order: who is in, the link, the start", () => {
+    renderLobby(OWNER_ID, lobbyRoom({ playerCount: 2 }), <h2>Invite</h2>);
 
     const players = screen.getByRole('heading', { name: 'In the room' });
-    const link = screen.getByRole('heading', { name: 'The link into this room' });
+    const link = screen.getByRole('heading', { name: 'Invite' });
     const start = screen.getByRole('button', { name: /start the game/i });
-    const crossword = screen.getByRole('heading', { name: 'The crossword' });
 
     expect(players.compareDocumentPosition(link) & ORDER).toBeTruthy();
     expect(link.compareDocumentPosition(start) & ORDER).toBeTruthy();
-    expect(start.compareDocumentPosition(crossword) & ORDER).toBeTruthy();
   });
 
   it('puts the notice about the reader first in the zone, above who is in', () => {
@@ -265,6 +324,6 @@ describe('RoomLobby', () => {
 
     fireEvent.click(startButton()!);
 
-    expect(screen.getByRole('button', { name: 'Starting the game' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Dealing the words' })).toBeDisabled();
   });
 });

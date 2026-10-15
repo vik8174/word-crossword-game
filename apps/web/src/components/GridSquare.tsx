@@ -3,20 +3,19 @@ import { type SxProps, type Theme } from '@mui/material/styles';
 import { type ChangeEvent, type FocusEvent, useLayoutEffect, useRef } from 'react';
 
 import type { GuessEntryCell } from '../rooms/guess-board';
+import { STREET } from '../street';
 import { type GridSurfaces, TEXT_FONT_FAMILY } from '../theme';
 import { CELL_SIDE } from './board-geometry';
 
 /**
  * The crossword number of a square, in its top-left corner, as a crossword
- * prints it: small enough to leave the middle of the square to the letter, and
- * in the same dark ink whatever the square is doing underneath — a number has to
- * stay readable on a square being typed into and on one showing a wrong answer
- * in red. It takes no clicks: the square below it is the thing to press, and it
- * is said in the square's own label rather than read off the screen.
- *
- * It is sized from the square rather than from the page, so it keeps its share
- * of a square that shrinks — down to a floor, because a number that went on
- * scaling would stop being a number and become a smudge in a corner.
+ * prints it (`.cell .num`, `design/templates/state-tree.html` line 197): 3px
+ * down and 4px in, 700, in `slate`, at a quarter of the square with a floor of
+ * 9px so that it keeps its share of a square that shrinks and never becomes a
+ * smudge. Slate on sage is 5.03:1 and on the other surfaces more, so it reads
+ * on every kind of square. It takes no clicks: the square below it is the thing
+ * to press, and it is said in the square's own label rather than read off the
+ * screen.
  *
  * The family is named rather than left to inherit it, even though it would
  * resolve to the same text face either way: a square this player types into
@@ -26,15 +25,21 @@ import { CELL_SIDE } from './board-geometry';
  */
 const NUMBER_SX: SxProps<Theme> = {
   position: 'absolute',
-  top: '1px',
-  left: '2px',
+  top: '3px',
+  left: '4px',
   fontFamily: TEXT_FONT_FAMILY,
-  fontSize: `max(8px, calc(${CELL_SIDE} * 0.3))`,
+  fontSize: `max(9px, calc(${CELL_SIDE} * 0.25))`,
   fontWeight: 700,
   lineHeight: 1,
-  color: 'text.primary',
+  color: STREET.slate,
   pointerEvents: 'none',
 };
+
+/** The soft shadow every square of the drawing stands on, two pixels down and to the right. */
+const SQUARE_SHADOW = '2px 2px 0 0 rgba(27, 45, 56, 0.22)';
+
+/** The outline of an ordinary square: 1.5px of ink, drawn inside the box. */
+const INK_OUTLINE = `inset 0 0 0 1.5px ${STREET.ink}`;
 
 /**
  * How a square holding a word this player explains is drawn.
@@ -50,31 +55,79 @@ const NUMBER_SX: SxProps<Theme> = {
  * It is drawn in ink rather than in an accent of its own, and that is the same
  * decision: the board carries one accent, which belongs to the squares this
  * player types in, so a square they merely read is a tone of the paper it is on
- * (see `theme.ts`). The tone stays light enough for the crossword number to
- * keep its dark ink on top of it.
+ * (see `theme.ts`). The outline is `ink` and not `line`, so ADR 0015's cue
+ * survives the move to the street's colours. The tone stays light enough for
+ * the crossword number to keep its dark ink on top of it.
  */
 const EXPLAINED_SQUARE_SX: SxProps<Theme> = {
-  borderStyle: 'dashed',
-  borderColor: 'sumi.light',
+  boxShadow: SQUARE_SHADOW,
+  outline: `1.5px dashed ${STREET.ink}`,
+  outlineOffset: '-1.5px',
   fontStyle: 'italic',
 };
 
 /**
- * How the square the next letter will land in is marked.
- *
- * A ring drawn inside the square, and deliberately not another tint: the word
- * being filled is already marked by its background, and a cursor that differed
- * from it only in shade would be the thing this ticket set out to fix. Drawn
- * from the cursor rather than from `:focus`, so it stays on the board when the
- * player's focus is somewhere else entirely — a phone keyboard, another window
+ * How an answered square is drawn: a 2px outline in spruce where the others
+ * have 1.5px of ink, letters in 700, and a tick in the lower right
+ * ({@link TICK_SX}). Three cues, so that the answered square is told from an
+ * explained one (dashed, italic) and from an empty one with the colour removed.
+ */
+const ANSWERED_SQUARE_SX: SxProps<Theme> = {
+  boxShadow: `inset 0 0 0 2px ${STREET.spruce}, ${SQUARE_SHADOW}`,
+  fontWeight: 700,
+};
+
+/** The tick of an answered square, `.cell.guessed::after`: a rotated corner in spruce. */
+const TICK_SX = {
+  content: '""',
+  position: 'absolute',
+  right: '12%',
+  bottom: '14%',
+  width: '18%',
+  height: '9%',
+  borderLeft: `2px solid ${STREET.spruce}`,
+  borderBottom: `2px solid ${STREET.spruce}`,
+  transform: 'rotate(-45deg)',
+  pointerEvents: 'none',
+} as const;
+
+/** The stroke through a refused answer, `.cell.refused::after`: brick, a little off level. */
+const STRIKE_SX = {
+  content: '""',
+  position: 'absolute',
+  left: '18%',
+  right: '18%',
+  top: '50%',
+  height: '2px',
+  backgroundColor: STREET.brick,
+  transform: 'rotate(-14deg)',
+  pointerEvents: 'none',
+} as const;
+
+/**
+ * How the square the next letter will land in is marked (`.cell.cursor`): a 3px
+ * ring of spruce drawn inside the square with the shadow in ink, and a bar of
+ * spruce under the letter ({@link CURSOR_BAR_SX}). Drawn from the cursor rather
+ * than from `:focus`, so it stays on the board when the player's focus is
+ * somewhere else entirely — a phone keyboard, another window
  * (`docs/decisions/0016-the-cursor-lives-in-the-grid.md`).
  */
 const CURSOR_SX: SxProps<Theme> = {
-  outlineStyle: 'solid',
-  outlineWidth: '3px',
-  outlineOffset: '-3px',
-  outlineColor: (theme) => theme.palette.secondary.dark,
+  boxShadow: `inset 0 0 0 3px ${STREET.spruce}, 2px 2px 0 0 ${STREET.ink}`,
 };
+
+/** The bar under the letter of the cursor square, `.cell.cursor::before`. */
+const CURSOR_BAR_SX = {
+  content: '""',
+  position: 'absolute',
+  left: '30%',
+  right: '30%',
+  bottom: '15%',
+  height: '2.5px',
+  borderRadius: '2px',
+  backgroundColor: STREET.spruce,
+  pointerEvents: 'none',
+} as const;
 
 /**
  * What a square says to a reader who cannot see it: where it is, what it holds,
@@ -213,12 +266,27 @@ export const GridSquare = ({
   const label = labelFor(cell, number);
   const tabIndex = isCursor || isTabStop ? 0 : -1;
 
+  // The kinds of square, one outline or mark each, so none of them is told
+  // apart by its fill alone (sage and paper are 1.28 apart in lightness). A
+  // refused answer keeps the outline of the square it replaced.
+  const kindSx: SxProps<Theme> = cell.isRefused
+    ? { fontWeight: 700 }
+    : cell.source === 'solved'
+      ? ANSWERED_SQUARE_SX
+      : cell.source === 'explained'
+        ? EXPLAINED_SQUARE_SX
+        : {};
+
   const square = {
     height: CELL_SIDE,
     width: CELL_SIDE,
-    borderRadius: '2px',
-    border: '1px solid',
-    borderColor: cell.isRefused ? 'error.dark' : 'grid.rule',
+    boxSizing: 'border-box',
+    borderRadius: '5px',
+    border: 0,
+    // The browser's focus ring is the cursor's ring below, drawn once.
+    outline: 'none',
+    boxShadow: `${INK_OUTLINE}, ${SQUARE_SHADOW}`,
+    color: STREET.ink,
     backgroundColor: (theme: Theme) => theme.palette.grid[squareSurface(cell)],
     display: 'grid',
     placeItems: 'center',
@@ -231,11 +299,18 @@ export const GridSquare = ({
     // to go (`scale.ts`).
     fontFamily: TEXT_FONT_FAMILY,
     // The letter keeps its share of the square rather than a size of its own,
-    // so a board drawn small stays a board of letters rather than of dots.
-    fontSize: `calc(${CELL_SIDE} * 0.55)`,
+    // so a board drawn small stays a board of letters rather than of dots. The
+    // drawing's 58 %, lifted a little by `paddingBottom` as it lifts it.
+    fontSize: `calc(${CELL_SIDE} * 0.58)`,
     fontWeight: 400,
+    lineHeight: 1,
+    padding: 0,
+    paddingBottom: '6%',
+    // Upper-case as the board has always been and as #232 decides; the drawing
+    // sets them lower-case, and this is its one allowed difference.
     textTransform: 'uppercase',
-    ...(isCursor ? CURSOR_SX : {}),
+    ...(kindSx as object),
+    ...(isCursor ? (CURSOR_SX as object) : {}),
   } as const;
 
   // The number goes over the square rather than in it: a square this player
@@ -252,7 +327,22 @@ export const GridSquare = ({
   };
 
   return (
-    <Box sx={{ position: 'relative', height: CELL_SIDE, width: CELL_SIDE }}>
+    <Box
+      sx={{
+        position: 'relative',
+        height: CELL_SIDE,
+        width: CELL_SIDE,
+        // The marks that sit over a square are on the box round it: an `input`
+        // can have no pseudo-element of its own.
+        zIndex: isCursor ? 1 : undefined,
+        ...(cell.isRefused
+          ? { '&::after': STRIKE_SX }
+          : cell.source === 'solved'
+            ? { '&::after': TICK_SX }
+            : {}),
+        ...(isCursor ? { '&::before': CURSOR_BAR_SX } : {}),
+      }}
+    >
       {cell.source === 'own' ? (
         <Box
           component="input"
@@ -271,20 +361,17 @@ export const GridSquare = ({
           ref={takeSquareUp}
           sx={{
             ...square,
-            // A square this player fills in is marked out from the ones that are
-            // somebody else's to answer: the grid is shared, the typing is not.
-            // The word being filled is marked out again within that, so which way
-            // the next letter will go is on screen rather than guessed at.
-            borderColor: cell.isRefused ? 'error.dark' : 'secondary.main',
-            padding: 0,
+            // A square this player fills in is a tile with the word being
+            // filled in a wash, so which way the next letter will go is on
+            // screen rather than guessed at.
             textAlign: 'center',
             // Said again rather than left to the spread above: an input takes
             // none of the page's typography on its own, and restating it here
             // is what keeps this square's family tied to `square`'s rather
             // than to whichever family happens to surround the board.
             fontFamily: TEXT_FONT_FAMILY,
-            fontWeight: 400,
-            color: 'text.primary',
+            fontWeight: cell.isRefused ? 700 : 400,
+            color: STREET.ink,
           }}
         />
       ) : (
