@@ -10,7 +10,6 @@ import { finishedWordsOf } from '../rooms/word-visibility';
 import { inRem } from '../scale';
 import { FiestaCard } from './FiestaCard';
 import { useFrameSlot } from './frame-slot';
-import { gateStackSx } from './gate-panel-styles';
 import { LessonSummary } from './LessonSummary';
 import { LobbyPlayers } from './LobbyPlayers';
 import { PillButton } from './PillButton';
@@ -89,7 +88,7 @@ export const RoomFinished = ({ room, viewerId }: RoomFinishedProps) => {
       isTeachers={isTeacher}
       left={
         isTeacher ? (
-          <Box sx={gateStackSx}>
+          <>
             <FiestaCard headline="They did it!" words={[]}>
               {`Your players finished the crossword together: all ${words.length} of its words.`}
             </FiestaCard>
@@ -103,7 +102,7 @@ export const RoomFinished = ({ room, viewerId }: RoomFinishedProps) => {
                 Start a new lesson
               </PillButton>
             </Box>
-          </Box>
+          </>
         ) : (
           <>
             <FiestaCard headline="You did it!" words={words}>
