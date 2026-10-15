@@ -70,16 +70,19 @@ Worth knowing:
 
 A production build minifies the whole app into one bundle, so a stack trace out of it names a column in that bundle rather than a line of source. Sentry translates it back only when it holds the source maps for the build the error came from, which is what `@sentry/vite-plugin` uploads.
 
-The plugin runs only when `SENTRY_AUTH_TOKEN` is set and the build could name itself:
+The plugin runs only when **both** `SENTRY_UPLOAD=1` and `SENTRY_AUTH_TOKEN` are set, and the build could name itself. A token alone uploads nothing: a checkout whose `apps/web/.env` holds the token builds exactly like one without it, so `pnpm build` is safe to run anywhere.
 
-- **With a token** the build generates maps, uploads them, and deletes them from `apps/web/dist` again. They are for Sentry, not for players — Firebase Hosting publishes `dist` whole, so a map left behind would serve everyone the unminified source. `apps/web/scripts/assert-no-source-maps.mjs` runs at the end of every build and fails it if any `.map` survived.
-- **Without a token** — a fresh clone, or CI on a pull request — no maps are generated in the first place and nothing is uploaded. The build succeeds, in the same way the app runs without a DSN.
+- **With the switch and a token** the build generates maps, uploads them, and deletes them from `apps/web/dist` again. They are for Sentry, not for players — Firebase Hosting publishes `dist` whole, so a map left behind would serve everyone the unminified source. `apps/web/scripts/assert-no-source-maps.mjs` runs at the end of every build and fails it if any `.map` survived.
+- **Without the switch** — a fresh clone, a local build, or CI on a pull request — no maps are generated in the first place and nothing is uploaded, token or no token. The build succeeds, in the same way the app runs without a DSN.
+- **With the switch and no token** (or an empty one) the build fails, and the message names both variables. A build that was asked to upload and cannot stops rather than shipping without maps unnoticed.
+
+Only `.github/workflows/deploy.yml` sets `SENTRY_UPLOAD`. A person who wants to upload from their own machine types it on the command line; it is not kept in `.env`.
 
 Both halves agree on one release name, and that name is the product's version joined to the commit the build came from — `1.0.0+700f8a8b3c9d`. `vite.config.ts` resolves it once, files the uploaded maps under it, and puts the same value into `import.meta.env.VITE_SENTRY_RELEASE`, which is where `initializeErrorReporting` reads it. Two names, and Sentry ends up holding maps and events with no way to match them — the trace stays minified and nothing says why.
 
 The version comes from the `version` field of the **root `package.json`**, which is the one place it lives: the git tag and `CHANGELOG.md` describe the same repository, so all three sit together. `apps/web` and `packages/shared` keep a placeholder `0.0.0` — they are private, never published, and nothing reads their version. Outside a git checkout — a source archive — the release is the version alone, which is still a name both halves agree on, so such a build uploads maps like any other. See [ADR 0019](docs/decisions/0019-a-release-is-a-version-and-a-commit.md).
 
-Every deploy builds with the token, so the maps of whatever is live are always in Sentry; a deploy whose environment holds no token fails before it builds rather than publishing a bundle nothing can read. Stage and production share one Sentry project and are told apart by the environment tag, so they also share the release name whenever a tag sits on a commit stage already has — the same build, in two places. See [ADR 0018](docs/decisions/0018-source-maps-for-sentry-only.md) and [ADR 0020](docs/decisions/0020-two-environments-and-a-deploy-that-runs-itself.md).
+Every deploy builds with the switch and the token, so the maps of whatever is live are always in Sentry; a deploy whose environment holds no token fails before it builds rather than publishing a bundle nothing can read. Stage and production share one Sentry project and are told apart by the environment tag, so they also share the release name whenever a tag sits on a commit stage already has — the same build, in two places. See [ADR 0018](docs/decisions/0018-source-maps-for-sentry-only.md) and [ADR 0020](docs/decisions/0020-two-environments-and-a-deploy-that-runs-itself.md).
 
 ## Firestore
 
@@ -120,9 +123,11 @@ An invite link points straight at `/room/<id>`, a route that exists only in the 
 `.firebaserc` names both projects and deliberately has **no `default` alias**, so there is no such thing as a command that deploys wherever the CLI last happened to point:
 
 ```bash
-pnpm build
+SENTRY_UPLOAD=1 pnpm build
 pnpm exec firebase deploy --only hosting,firestore:rules --project stage
 ```
+
+`SENTRY_UPLOAD=1` makes the build upload its source maps to Sentry, with the token from your own `apps/web/.env`, so a hand deploy still puts its maps in Sentry like every other deploy. Without it the build uploads nothing and the bundle you deploy has no maps anywhere ([Source maps](#source-maps)). With it and no token, the build fails.
 
 Leave `--project` out and the CLI refuses to do anything, which is the point. Note that `firebase use <alias>` records an active project outside this repository and would bring the default back for you alone — pass the flag rather than relying on it.
 

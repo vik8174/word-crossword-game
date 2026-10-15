@@ -240,7 +240,7 @@ export default defineConfig(({ mode }) => {
   // the client bundle in plain text, and this bundle is served from public
   // hosting out of a public repository — a `VITE_SENTRY_AUTH_TOKEN` would be a
   // published Sentry token. Read here on the Node side and nowhere else.
-  const { SENTRY_AUTH_TOKEN } = loadEnv(mode, import.meta.dirname, 'SENTRY_');
+  const { SENTRY_AUTH_TOKEN, SENTRY_UPLOAD } = loadEnv(mode, import.meta.dirname, 'SENTRY_');
 
   // Resolved once and handed to both sides: the upload files the maps under
   // this name, and the bundle reports its errors under it. Two names would
@@ -248,9 +248,14 @@ export default defineConfig(({ mode }) => {
   // version comes from a file, so there is no build that cannot say what it is.
   const release = resolveReleaseName(readPackageVersion, readGitRevision);
 
-  // Either the build writes maps and sends them, or it writes none at all. A
-  // build without a token still succeeds, exactly as the app runs without a DSN.
-  const uploadsSourceMaps = shouldUploadSourceMaps(SENTRY_AUTH_TOKEN);
+  // Either the build writes maps and sends them, or it writes none at all. It
+  // sends them only when asked to (`SENTRY_UPLOAD=1`) and given a token: a token
+  // alone, from a shell or from `.env`, builds exactly as no token does. Asked
+  // to without a token, it throws (ADR 0018, addendum).
+  const uploadsSourceMaps = shouldUploadSourceMaps({
+    authToken: SENTRY_AUTH_TOKEN,
+    uploadSwitch: SENTRY_UPLOAD,
+  });
 
   return {
     plugins: [
