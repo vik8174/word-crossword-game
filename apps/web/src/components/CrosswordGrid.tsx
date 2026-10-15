@@ -9,6 +9,7 @@ import { useGuessEntry } from '../rooms/use-guess-entry';
 import { cellKey, type GridView, type WordLocation } from '../rooms/word-visibility';
 import { STREET } from '../street';
 import {
+  APP_SHELL_BOARD_HEIGHT_CSS,
   BOARD_HEIGHT_CSS,
   boardVariables,
   CELL_GAP,
@@ -18,7 +19,7 @@ import {
   WIDE_BOARD_HEIGHT_CSS,
 } from './board-geometry';
 import { GridSquare } from './GridSquare';
-import { THREE_ZONES } from './room-layout';
+import { APP_SHELL, THREE_ZONES } from './room-layout';
 import { SENTENCE_BAND_SX } from './surface-styles';
 
 /** Text that is read out but not drawn — for what the grid says in colour alone. */
@@ -244,6 +245,7 @@ export const CrosswordGrid = ({ view, onSolved, wordToReach }: CrosswordGridProp
           containerType: 'size',
           height: BOARD_HEIGHT_CSS,
           overflow: 'auto',
+          [APP_SHELL]: { height: APP_SHELL_BOARD_HEIGHT_CSS },
           [THREE_ZONES]: { height: WIDE_BOARD_HEIGHT_CSS },
         }}
       >

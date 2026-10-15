@@ -2,6 +2,7 @@ import type { CSSObject } from '@mui/material/styles';
 
 import { inRem } from '../scale';
 import { STREET } from '../street';
+import { belowFrame } from './frame-height';
 import { TILE_SX } from './surface-styles';
 
 /**
@@ -21,11 +22,12 @@ import { TILE_SX } from './surface-styles';
  */
 
 /**
- * The screen a panel stands in: the whole window, the panel centred in it.
+ * The screen a panel stands in: what the frame's header leaves of the window,
+ * the panel centred in it.
  * `/create` stands in it, and so do `connecting` and every `unavailable` at the
  * doors (`pages/RoomPage.tsx`'s `Waiting`, issue #198).
  *
- * Exactly a window tall rather than at least one, because the panel scrolls
+ * Exactly that tall rather than at least that, because the panel scrolls
  * inside itself ({@link createPanelSx}) instead of the page growing — a screen
  * that grew with its content would be a screen the panel's `max-height: 100%`
  * has nothing to be a hundred percent of. `overflow-y: auto` stays on it all
@@ -34,7 +36,7 @@ import { TILE_SX } from './surface-styles';
  */
 export const gateScreenSx: CSSObject = {
   position: 'relative',
-  height: '100dvh',
+  height: belowFrame('100dvh'),
   display: 'grid',
   placeItems: 'center',
   padding: inRem(22),

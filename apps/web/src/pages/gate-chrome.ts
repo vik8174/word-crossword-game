@@ -1,5 +1,6 @@
 import type { CSSObject } from '@mui/material/styles';
 
+import { belowFrame } from '../components/frame-height';
 import { STREET } from '../street';
 
 /**
@@ -13,8 +14,8 @@ import { STREET } from '../street';
  * landing page is redrawn on its own issue (#224), and these are replaced there.
  * What is new is only the colour, which is `ink` of the street's palette.
  *
- * Everything here is a percentage of the stage, the fixed, full-viewport box
- * `HomePage.tsx` sizes to the window. The stage is exactly the viewport, and a
+ * Everything here is a percentage of the stage, the box `HomePage.tsx` sizes to
+ * the window less the frame's header. The stage is exactly that, and a
  * percentage of it is a percentage a `getBoundingClientRect` reading can be
  * checked against directly.
  */
@@ -23,19 +24,21 @@ import { STREET } from '../street';
 const LOCKUP_TOP = 5;
 
 /**
- * The block's width when the window is at least as wide as 16:9: a flat
- * share of the stage, the same at every window in that range.
+ * The block's width, as one formula for every window.
+ *
+ * A stage as wide as 16:9 or wider gets 52% of its width. A narrower one gets
+ * 0.52 of the width a 16:9 stage as tall as this one would have, that is
+ * `(100vh less the frame's header) * 16 / 9 * 0.52` (the stage is the window
+ * less the header, issue #245), capped at 92% of the stage so the block never
+ * touches the edges of a very narrow one. The old rule said the first with a
+ * media query on the window's aspect ratio and the second as its answer. Once
+ * the stage is shorter than the window, the stage's aspect ratio and the
+ * window's are not the same number, and a query on the window switched between
+ * the two at the wrong width, a step of about 60px at 1920 by 1080. The two
+ * agree exactly where the stage is 16:9, so the larger of them is the right one
+ * on both sides of it, and no query is needed.
  */
-const LOCKUP_WIDE_WIDTH = '52%';
-
-/**
- * The block's width on a window narrower than 16:9: `100vh * 16 / 9` is the
- * width of a 16:9 window as tall as this one, and 0.52 of that is the same
- * share `LOCKUP_WIDE_WIDTH` reads off the window directly at 16:9 and wider.
- * Capped at 92% of the window so the block never touches the edges of a very
- * narrow one.
- */
-const LOCKUP_NARROW_WIDTH = 'min(92%, calc(100vh * 16 / 9 * 0.52))';
+const LOCKUP_WIDTH = `min(92%, max(52%, calc(${belowFrame('100vh')} * 16 / 9 * 0.52)))`;
 
 /**
  * The name's and the rule's shared size, both driving off the same `clamp`
@@ -73,12 +76,9 @@ export const GATE_LOCKUP_SX: CSSObject = {
   left: '50%',
   top: pct(LOCKUP_TOP),
   transform: 'translateX(-50%)',
-  width: LOCKUP_WIDE_WIDTH,
+  width: LOCKUP_WIDTH,
   textAlign: 'center',
   pointerEvents: 'none',
-  '@media (max-aspect-ratio: 16/9)': {
-    width: LOCKUP_NARROW_WIDTH,
-  },
 };
 
 /**

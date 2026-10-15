@@ -1,6 +1,7 @@
 import { alpha, createTheme } from '@mui/material/styles';
 import { LOADING_DOT_CLASS } from './components/button-styles';
 import { WAIT_RING_CLASS } from './components/waiting-mark-styles';
+import { FRAME_HEADER_HEIGHT } from './components/frame-height';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
 import { inRem, SPACING_STEPS } from './scale';
 import { STREET, STREET_TYPOGRAPHY } from './street';
@@ -264,6 +265,9 @@ export const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: { fontSize: inRem(18), lineHeight: 1.5 },
+        // A square the keyboard moves to is scrolled into view below the frame's
+        // sticky header and not under it (issue #245).
+        html: { scrollPaddingTop: FRAME_HEADER_HEIGHT },
         [REDUCED_MOTION_MEDIA]: {
           [`*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle):not(.${LOADING_DOT_CLASS}):not(.${WAIT_RING_CLASS}), *::before, *::after`]:
             {

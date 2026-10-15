@@ -2,15 +2,20 @@ import { generateCrossword, MAX_WORDS, MIN_WORDS } from 'shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  APP_SHELL_BOARD_HEIGHT_CSS,
+  BOARD_HEIGHT_CSS,
   BOARD_HEIGHT_PERCENT,
   type BoardBox,
   type BoardShape,
+  CELL_GAP,
   cellSizeIn,
   fitsIn,
   MAX_CELL_SIZE,
   MIN_CELL_SIZE,
+  WIDE_BOARD_HEIGHT_CSS,
   WIDE_BOARD_HEIGHT_PERCENT,
 } from './board-geometry';
+import { FRAME_HEADER_FALLBACK } from './frame-height';
 
 /**
  * Words a game is played with, in the proportions a real list has: most of them
@@ -114,7 +119,7 @@ interface Screen {
  * The desktop's promise is 0.8, which is what the release undertook and what
  * issue #100 could not reach from inside this module at any setting of the
  * bounds or of the height budget, because the width was not the board's to
- * give. It is a floor with a great deal under it: at 915 by 702 every one of
+ * give. It is a floor with a great deal under it: at 915 by 638 (702 before issue #245's frame) every one of
  * these 45 games fits whole, and it takes the board back to about 660 pixels
  * across before 0.8 is in danger.
  */
@@ -135,9 +140,17 @@ const SCREENS: readonly Screen[] = [
   },
 ];
 
+/**
+ * The box the board is drawn into on a screen: its share of the window less the
+ * frame's header, which both of these screens have, because the room is one
+ * window on both (issue #245). The header is 64px (`frame-height.ts`'s
+ * fallback, and the template's `min-height`), so the budgets are 638 and 625.4
+ * where they were 702 and 689.4. The share is on the board's own box, whose
+ * width the header does not change.
+ */
 const boardBoxOn = ({ windowHeight, boardWidth, heightPercent }: Screen): BoardBox => ({
   width: boardWidth,
-  height: (windowHeight * heightPercent) / 100,
+  height: (windowHeight * heightPercent) / 100 - FRAME_HEADER_FALLBACK,
 });
 
 /** A small deterministic source of randomness — mulberry32. */
@@ -235,7 +248,7 @@ afterEach(() => {
  * change that is not measured is a promise nobody checked.
  *
  * What the margins are, since they decide how much of the above is a warning
- * and how much is a wall. A desktop fits all 45 of these games at 915 by 702,
+ * and how much is a wall. A desktop fits all 45 of these games at 915 by 638 (702 before issue #245's frame, with the same rate),
  * and it goes on fitting all of them down to about 660 pixels across; the
  * promise of 0.8 breaks somewhere under 570. A square that may not go below 22
  * pixels rather than 20 costs neither screen anything at these sizes, which it
@@ -290,5 +303,33 @@ describe('whether a board fits', () => {
 
     expect(fitsIn(box, { cols: 25, rows: 25 })).toBe(true);
     expect(fitsIn(box, { cols: 26, rows: 26 })).toBe(false);
+  });
+});
+
+/**
+ * Which boards leave room for the frame's header (issue #245).
+ *
+ * Where the room is one window, from 768 by 600 up, the header is part of that
+ * window and the board takes its share of what the header leaves. On a phone the
+ * room is a page that scrolls and the header only adds to the page, so the board
+ * keeps its share of the whole window, and no board scrolls inside a scrolling
+ * page (ADR 0029). The stylesheet is the only place this can be held: jsdom
+ * lays nothing out.
+ */
+describe('the board and the frame’s header', () => {
+  it('keeps 62% of the whole window on a phone, whatever the header is', () => {
+    expect(BOARD_HEIGHT_CSS).toBe(
+      `min(${BOARD_HEIGHT_PERCENT}dvh, calc(var(--board-rows) * ${MAX_CELL_SIZE + CELL_GAP}px - ${CELL_GAP}px))`,
+    );
+    expect(BOARD_HEIGHT_CSS).not.toContain('--frame-header-height');
+  });
+
+  it('takes its share of what the header leaves wherever the room is one window', () => {
+    expect(APP_SHELL_BOARD_HEIGHT_CSS).toContain(
+      `calc(${BOARD_HEIGHT_PERCENT}dvh - var(--frame-header-height, 64px))`,
+    );
+    expect(WIDE_BOARD_HEIGHT_CSS).toContain(
+      `calc(${WIDE_BOARD_HEIGHT_PERCENT}dvh - var(--frame-header-height, 64px))`,
+    );
   });
 });

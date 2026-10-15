@@ -139,9 +139,11 @@ describe('RoomShell', () => {
     expect(frame).toHaveStyle({ padding: '20px 16px 24px', gap: '1rem' });
   });
 
-  it('is at least a window tall on a phone whatever it holds', () => {
+  it('is at least what the frame’s header leaves of a window on a phone whatever it holds', () => {
     render(<RoomShell>the board</RoomShell>);
 
-    expect(screen.getByRole('main').parentElement).toHaveStyle({ minHeight: '100dvh' });
+    expect(screen.getByRole('main').parentElement).toHaveStyle({
+      minHeight: 'calc(100dvh - var(--frame-header-height, 64px))',
+    });
   });
 });
