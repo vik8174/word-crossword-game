@@ -345,7 +345,7 @@ describe('CreateRoomPage', () => {
 
       await waitFor(() => {
         expect(reportedActions()).toEqual([
-          { name: 'room_created', params: { word_count: expect.any(Number) } },
+          { name: 'room_created', params: { word_count: expect.any(Number), mode: 'pair' } },
         ]);
       });
       // The two things this screen knows and must not tell: which room it is,

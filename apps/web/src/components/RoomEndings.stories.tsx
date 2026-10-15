@@ -1,7 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
 import type { RoomDocument } from '../rooms/room-document';
-import { type DrawnWord, FEW, gameRoom, GUEST_ID, MANY, OWNER_ID } from './drawn-room';
+import {
+  type DrawnWord,
+  FEW,
+  gameRoom,
+  GUEST_ID,
+  lessonRoom,
+  MANY,
+  OLENA_ID,
+  OWNER_ID,
+  TEACHER_ID,
+} from './drawn-room';
 import { Frame } from './Frame';
 import { FrameSlotProvider } from './FrameSlotProvider';
 import { RoomClosedEarly } from './RoomClosedEarly';
@@ -83,4 +93,42 @@ export const EndedEarlyMany: Story = {
 /** `closed-early`, the guest's view. */
 export const EndedEarlyAsGuest: Story = {
   args: { ending: 'closed-early', room: closedRoom(FEW, 7, 9), viewerId: GUEST_ID },
+};
+
+/** `finished` with `mode=lesson`: `completed`, every word answered, Carmen teaching Olena and Taras. */
+const finishedLesson = (words: readonly DrawnWord[], rows: number, cols: number): RoomDocument =>
+  lessonRoom(allAnswered(words), rows, cols, { status: 'completed' });
+
+/** `closed-early` with `mode=lesson`: `closed`, only the words that were answered. */
+const closedLesson = (words: readonly DrawnWord[], rows: number, cols: number): RoomDocument =>
+  lessonRoom(words, rows, cols, { status: 'closed' });
+
+/** `finished`, `mode=lesson`, as the teacher: "They did it!" over the lesson summary, and "Start a new lesson". */
+export const LessonFinishedAsTeacher: Story = {
+  args: { room: finishedLesson(FEW, 7, 9), viewerId: TEACHER_ID },
+};
+
+/** `finished`, `mode=lesson`, `size=many`, as the teacher. */
+export const LessonFinishedAsTeacherMany: Story = {
+  args: { room: finishedLesson(MANY, 11, 11), viewerId: TEACHER_ID },
+};
+
+/** `finished`, `mode=lesson`, as a student: the pair game's fiesta, "The lesson is finished". */
+export const LessonFinishedAsStudent: Story = {
+  args: { room: finishedLesson(FEW, 7, 9), viewerId: OLENA_ID },
+};
+
+/** `closed-early`, `mode=lesson`, as the teacher: the summary says which words were not answered. */
+export const LessonEndedEarlyAsTeacher: Story = {
+  args: { ending: 'closed-early', room: closedLesson(FEW, 7, 9), viewerId: TEACHER_ID },
+};
+
+/** `closed-early`, `mode=lesson`, `size=many`, as the teacher. */
+export const LessonEndedEarlyAsTeacherMany: Story = {
+  args: { ending: 'closed-early', room: closedLesson(MANY, 11, 11), viewerId: TEACHER_ID },
+};
+
+/** `closed-early`, `mode=lesson`, as a student: "Carmen ended the lesson". */
+export const LessonEndedEarlyAsStudent: Story = {
+  args: { ending: 'closed-early', room: closedLesson(FEW, 7, 9), viewerId: OLENA_ID },
 };

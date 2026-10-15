@@ -2,13 +2,12 @@ import Box from '@mui/material/Box';
 import { useId } from 'react';
 
 import { answeredByLine, answeredCountOf, type ExplainedWord } from '../rooms/word-visibility';
-import { inRem, TEXT_FONT_FAMILY } from '../scale';
+import { inRem } from '../scale';
 import { STREET } from '../street';
 import { gateHintSx } from './gate-panel-styles';
 import { lobbyHeadingSx } from './lobby-styles';
 import { Swatch } from './Swatch';
-import { nameOf } from './word-entry';
-import { REFERENCE_SX, ROW_LAYOUT_SX, stateSx, WORD_RULE } from './word-row-styles';
+import { WatchedWordList } from './WatchedWordList';
 
 interface TeacherWordsPanelProps {
   /** Which of the two colours the student's words are drawn in on the board. */
@@ -62,55 +61,7 @@ export const TeacherWordsPanel = ({
         {`${guesserName} guesses these. You see every word in full; each player sees only the ones they explain.`}
       </Box>
 
-      <Box
-        component="ul"
-        aria-labelledby={headingId}
-        sx={{ listStyle: 'none', margin: `${inRem(10)} 0 0`, padding: 0 }}
-      >
-        {words.map((word) => (
-          <Box
-            component="li"
-            key={word.id}
-            sx={{ borderTop: WORD_RULE, '&:last-child': { borderBottom: WORD_RULE } }}
-          >
-            <Box sx={ROW_LAYOUT_SX}>
-              <Box component="span" sx={REFERENCE_SX}>
-                {nameOf(word)}
-              </Box>
-
-              <Box
-                component="span"
-                sx={{
-                  minWidth: 0,
-                  fontFamily: TEXT_FONT_FAMILY,
-                  overflowWrap: 'anywhere',
-                  fontStyle: 'italic',
-                  fontSize: inRem(22),
-                }}
-              >
-                {word.word}
-              </Box>
-
-              <Box
-                component="span"
-                sx={
-                  word.isSolved
-                    ? stateSx(true)
-                    : { ...stateSx(false), color: STREET.ink, fontStyle: 'italic' }
-                }
-              >
-                {word.isSolved ? (
-                  <>
-                    <span aria-hidden="true">✓ </span>answered
-                  </>
-                ) : (
-                  'not yet'
-                )}
-              </Box>
-            </Box>
-          </Box>
-        ))}
-      </Box>
+      <WatchedWordList labelledBy={headingId} words={words} kind="playing" />
 
       <Box
         component="p"

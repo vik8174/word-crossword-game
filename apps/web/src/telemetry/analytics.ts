@@ -10,6 +10,7 @@ import {
 import { firebaseApp } from '../firebase/config';
 import { internalTrafficParams } from './internal-traffic';
 import type { PageView } from './page-view';
+import type { RoomMode } from '../rooms/room-document';
 import type { Redacted } from './redaction';
 
 /**
@@ -55,9 +56,15 @@ export type GameEvent =
  * Counts are welcome: how many words a room has and how many players are in it
  * say something about the product without saying anything about the room.
  *
+ * So is the room's mode, `pair` or `lesson`, which is a {@link RoomMode}: two
+ * literals fixed at compile time, handed over as `logScreenReached` hands over
+ * its `FunnelScreen`. It is how a lesson is told from a pair game in every
+ * event; a string a person typed is not one of the two and does not compile
+ * (`docs/decisions/0037-a-lesson-is-run-by-a-teacher-who-does-not-play.md`).
+ *
  * See `docs/decisions/0023-a-screen-name-is-text-that-has-been-redacted.md`.
  */
-export type GameEventParams = Readonly<Record<string, number | Redacted>>;
+export type GameEventParams = Readonly<Record<string, number | Redacted | RoomMode>>;
 
 /**
  * Analytics as it is initialized, or `null` where it cannot be.

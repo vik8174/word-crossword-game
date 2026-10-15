@@ -3,16 +3,21 @@ import { Link as RouterLink } from 'react-router-dom';
 
 import { finishedGridCaption } from '../rooms/grid-caption';
 import { finishedGameSummary } from '../rooms/game-summary';
-import { playersInJoinOrder } from '../rooms/room-access';
-import type { RoomDocument } from '../rooms/room-document';
+import { ownerNicknameOf, playersInJoinOrder } from '../rooms/room-access';
+import { isTeacherOf, type RoomDocument, roomModeOf } from '../rooms/room-document';
+import { NEW_LESSON_PATH } from '../rooms/room-link';
 import { finishedWordsOf } from '../rooms/word-visibility';
+import { inRem } from '../scale';
 import { FiestaCard } from './FiestaCard';
 import { useFrameSlot } from './frame-slot';
+import { gateStackSx } from './gate-panel-styles';
+import { LessonSummary } from './LessonSummary';
 import { LobbyPlayers } from './LobbyPlayers';
 import { PillButton } from './PillButton';
 import { RoomCrossword } from './RoomCrossword';
 import { RoomShell } from './RoomShell';
 import { Street } from './Street';
+import { endingStreetLabel } from './street-labels';
 
 /** What the drawing above the board is called to a reader who cannot see it. */
 const FIESTA_LABEL =
@@ -20,6 +25,9 @@ const FIESTA_LABEL =
 
 /** The room's own line about the game, in the frame's header; the screen has no action. */
 const STATUS = <span role="status">The game is finished</span>;
+
+/** The same line in a lesson, for the teacher and for the students alike. */
+const LESSON_STATUS = <span role="status">The lesson is finished</span>;
 
 /** Nobody is away on an ending: the room's presence stopped being read with the game. */
 const NOBODY_AWAY = {};
@@ -51,6 +59,15 @@ interface RoomFinishedProps {
  * thing offered is a new game, at `/`
  * (`docs/decisions/0041-an-ending-offers-a-new-game.md`).
  *
+ * A lesson ends the same way, with three differences. The teacher is at the end
+ * of the street and in the list, always, for everybody: marks stop being read
+ * when a game ends, so they are not asked about. The status says "The lesson is
+ * finished". And the teacher, who played nothing, is not told "You did it!"
+ * but "They did it!", over the lesson summary (`LessonSummary`) in place of the
+ * tiles, with "Start a new lesson" at `/create` with a lesson chosen
+ * (`NEW_LESSON_PATH`). A student's screen is the pair game's with the first two
+ * differences.
+ *
  * @param props.room - The room document
  * @param props.viewerId - Which player is reading, so the list marks them
  *
@@ -60,24 +77,46 @@ interface RoomFinishedProps {
 export const RoomFinished = ({ room, viewerId }: RoomFinishedProps) => {
   const players = playersInJoinOrder(room);
   const words = finishedWordsOf(room);
+  const isLesson = roomModeOf(room) === 'lesson';
+  const isTeacher = isTeacherOf(room, viewerId);
+  const teacher = isLesson ? { id: room.ownerId, nickname: ownerNicknameOf(room) } : undefined;
 
-  useFrameSlot({ status: STATUS });
+  useFrameSlot({ status: isLesson ? LESSON_STATUS : STATUS });
 
   return (
     <RoomShell
       title="Finished"
+      isTeachers={isTeacher}
       left={
-        <>
-          <FiestaCard headline="You did it!" words={words}>
-            {finishedGameSummary(words.length, players.length)}
-          </FiestaCard>
+        isTeacher ? (
+          <Box sx={gateStackSx}>
+            <FiestaCard headline="They did it!" words={[]}>
+              {`Your players finished the crossword together: all ${words.length} of its words.`}
+            </FiestaCard>
 
-          <Box>
-            <PillButton component={RouterLink} to="/">
-              Start a new game
-            </PillButton>
+            <Box sx={{ marginTop: inRem(4) }}>
+              <LessonSummary room={room} viewerId={viewerId} />
+            </Box>
+
+            <Box>
+              <PillButton component={RouterLink} to={NEW_LESSON_PATH}>
+                Start a new lesson
+              </PillButton>
+            </Box>
           </Box>
-        </>
+        ) : (
+          <>
+            <FiestaCard headline="You did it!" words={words}>
+              {finishedGameSummary(words.length, players.length)}
+            </FiestaCard>
+
+            <Box>
+              <PillButton component={RouterLink} to="/">
+                Start a new game
+              </PillButton>
+            </Box>
+          </>
+        )
       }
       right={
         <LobbyPlayers
@@ -85,6 +124,7 @@ export const RoomFinished = ({ room, viewerId }: RoomFinishedProps) => {
           ownerId={room.ownerId}
           viewerId={viewerId}
           awayDurations={NOBODY_AWAY}
+          teacher={teacher}
         />
       }
     >
@@ -94,7 +134,16 @@ export const RoomFinished = ({ room, viewerId }: RoomFinishedProps) => {
         caption={finishedGridCaption(room.layout.placedWords.length)}
         hasVisibleHeading={false}
         bandRule="always"
-        band={<Street crop="band" mood="cheer" fiesta cards={words} label={FIESTA_LABEL} />}
+        band={
+          <Street
+            crop="band"
+            mood="cheer"
+            fiesta
+            cards={words}
+            teacher={isLesson ? 'here' : undefined}
+            label={endingStreetLabel(FIESTA_LABEL, isLesson)}
+          />
+        }
       />
     </RoomShell>
   );

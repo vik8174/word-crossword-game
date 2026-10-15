@@ -4,12 +4,14 @@ import { useCallback, useMemo } from 'react';
 import { answeredWordsOfWatched } from '../rooms/answered-words';
 import { watchedGridCaption } from '../rooms/grid-caption';
 import { ownerNicknameOf, playersInJoinOrder } from '../rooms/room-access';
+import { roomModeOf } from '../rooms/room-document';
 import { endGameEarly as endTheGame, recordGuess as recordTheGuess } from '../rooms/room-service';
 import { useEnding } from '../rooms/use-ending';
 import { useGameCompletion } from '../rooms/use-game-completion';
 import { useJustAnswered } from '../rooms/use-just-answered';
 import { useRoomPresence } from '../rooms/use-room-presence';
 import { wordViewFor } from '../rooms/word-visibility';
+import { logGameEvent } from '../telemetry/analytics';
 import { EndGamePanel } from './EndGamePanel';
 import { useFrameSlot } from './frame-slot';
 import { gateStackSx } from './gate-panel-styles';
@@ -47,9 +49,8 @@ const WATCHING_ONLY = 'You are watching.';
  * Two writes are made from here and no others. The room's finish is watched for,
  * as on every screen that holds a game, since whoever sees a full board writes
  * the same `completed` (`docs/decisions/0012-ending-a-game-from-the-received-state.md`).
- * The other is the ending the teacher asks for. It is **not reported** the way
- * a player's is: `game_closed` carries the mode and what a lesson's end counts
- * is #236's to decide, so no event is sent from here.
+ * The other is the ending the teacher asks for, which is reported as
+ * `game_closed` with the mode `lesson`, once the write has come back.
  *
  * @param props.roomId - Id of the room being watched
  * @param props.room - The room document
@@ -78,7 +79,21 @@ export const TeacherGame = ({
 
   useGameCompletion(roomId, room);
 
-  const end = useCallback(() => endGameEarly(roomId), [endGameEarly, roomId]);
+  // Reported as a player's ending is, with the same two counts and the mode of a
+  // lesson: the teacher alone ends one, so this is the only place a lesson's
+  // `game_closed` can come from. After the write came back, so an ending that
+  // was refused is not counted.
+  const placedCount = room.layout.placedWords.length;
+  const playerCount = Object.keys(room.players).length;
+  const mode = roomModeOf(room);
+  const end = useCallback(async () => {
+    await endGameEarly(roomId);
+    void logGameEvent('game_closed', {
+      word_count: placedCount,
+      player_count: playerCount,
+      mode,
+    });
+  }, [endGameEarly, roomId, placedCount, playerCount, mode]);
   const { isEnding, endError, endGame } = useEnding(end);
 
   const status = useMemo(

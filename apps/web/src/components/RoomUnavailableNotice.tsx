@@ -96,7 +96,8 @@ interface RoomUnavailableNoticeProps {
  * <RoomUnavailableNotice reason="full" mode="lesson" />
  */
 export const RoomUnavailableNotice = ({ reason, mode = 'pair' }: RoomUnavailableNoticeProps) => {
-  const notice = (mode === 'lesson' ? LESSON_MESSAGES[reason] : undefined) ?? MESSAGES[reason];
+  const lessonNotice = mode === 'lesson' ? LESSON_MESSAGES[reason] : undefined;
+  const notice = lessonNotice ?? MESSAGES[reason];
 
   return (
     <DoorColumn picture={<RefusalStreet />} unseenHeading="Game room">
@@ -106,7 +107,7 @@ export const RoomUnavailableNotice = ({ reason, mode = 'pair' }: RoomUnavailable
 
       <Box>
         <PillButton component={RouterLink} to="/">
-          Start a new game
+          {lessonNotice === undefined ? 'Start a new game' : 'Go to the home page'}
         </PillButton>
       </Box>
     </DoorColumn>

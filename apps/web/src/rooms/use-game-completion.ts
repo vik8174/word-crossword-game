@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import { logGameEvent } from '../telemetry/analytics';
 import { awaitsCompletion } from './room-completion';
-import type { RoomDocument } from './room-document';
+import { type RoomDocument, roomModeOf } from './room-document';
 import { completeGame } from './room-service';
 
 /**
@@ -54,6 +54,7 @@ export const useGameCompletion = (roomId: string, room: RoomDocument | null): vo
         void logGameEvent('game_completed', {
           word_count: room.layout.placedWords.length,
           player_count: Object.keys(room.players).length,
+          mode: roomModeOf(room),
         });
       })
       .catch((error: unknown) => {

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { logEvent } from 'firebase/analytics';
 import { signInAnonymously } from 'firebase/auth';
 import { addDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes, useParams } from 'react-router-dom';
@@ -34,9 +35,9 @@ const TEN_WORDS = 'apple, bread, cheese, dinner, engine, flower, garden, hunter,
 
 const RoomStub = () => <p>You are in room {useParams().roomId}</p>;
 
-const renderPage = () =>
+const renderPage = (address = '/create') =>
   render(
-    <MemoryRouter initialEntries={['/create']}>
+    <MemoryRouter initialEntries={[address]}>
       <Routes>
         <Route path="/create" element={<CreateRoomPage />} />
         <Route path={ROOM_ROUTE_PATTERN} element={<RoomStub />} />
@@ -86,6 +87,26 @@ describe('the mode, on /create', () => {
     ).toBeInTheDocument();
   });
 
+  it('opens on a lesson when the address says so, and the owner can still change it', () => {
+    renderPage('/create?mode=lesson');
+
+    expect(lessonCard()).toBeChecked();
+    expect(title()).toHaveTextContent('New lesson');
+
+    fireEvent.click(screen.getByRole('radio', { name: /Play with a friend/ }));
+
+    expect(title()).toHaveTextContent('New game');
+  });
+
+  it.each(['/create', '/create?mode=pair', '/create?mode=nonsense'])(
+    'opens on a game with a friend at %s',
+    (address) => {
+      renderPage(address);
+
+      expect(screen.getByRole('radio', { name: /Play with a friend/ })).toBeChecked();
+    },
+  );
+
   it('turns into "New lesson" and says the teacher does not play once a lesson is chosen', () => {
     renderPage();
 
@@ -126,6 +147,40 @@ describe('the mode, on /create', () => {
       ownerId: 'owner-uid',
       players: {},
       teacher: { nickname: 'Carmen' },
+    });
+  });
+
+  it('reports the room it created as a lesson, with its size and no word of it', async () => {
+    renderPage();
+    fireEvent.click(lessonCard());
+    fillIn(/nickname/i, 'Carmen');
+    fillIn(/words/i, TEN_WORDS);
+
+    fireEvent.click(screen.getByRole('button', { name: /create room/i }));
+    await screen.findByText(/you are in room room-1/i);
+
+    await waitFor(() => {
+      expect(logEvent).toHaveBeenCalledWith(expect.anything(), 'room_created', {
+        word_count: expect.any(Number),
+        mode: 'lesson',
+      });
+    });
+    expect(JSON.stringify(vi.mocked(logEvent).mock.calls)).not.toContain('Carmen');
+  });
+
+  it('reports the room it created as a pair game when the choice was left alone', async () => {
+    renderPage();
+    fillIn(/nickname/i, 'Vik');
+    fillIn(/words/i, TEN_WORDS);
+
+    fireEvent.click(screen.getByRole('button', { name: /create room/i }));
+    await screen.findByText(/you are in room room-1/i);
+
+    await waitFor(() => {
+      expect(logEvent).toHaveBeenCalledWith(expect.anything(), 'room_created', {
+        word_count: expect.any(Number),
+        mode: 'pair',
+      });
     });
   });
 

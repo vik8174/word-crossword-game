@@ -45,7 +45,7 @@ interface JoinRoomFormProps {
  * In a lesson the title is "Join the lesson", and the sentence names the teacher
  * and says the visitor is invited to a lesson (template line 899, `lesson()`).
  * The button says "Join the lesson" and, while the join is written, "Joining the
- * game": the template words the second state the same for both modes.
+ * lesson" (the template's `join/joining` with `mode=lesson`, #276).
  *
  * @param props.ownerNickname - Who invited the visitor
  * @param props.mode - What the room is for
@@ -70,6 +70,7 @@ export const JoinRoomForm = ({
   const [nickname, setNickname] = useState(readRememberedNickname);
   const isLesson = mode === 'lesson';
   const joinLabel = isLesson ? 'Join the lesson' : 'Join the game';
+  const joiningLabel = isLesson ? 'Joining the lesson' : 'Joining the game';
 
   return (
     <Box
@@ -109,7 +110,7 @@ export const JoinRoomForm = ({
 
       <Box sx={gateButtonRowSx}>
         <PillButton type="submit" loading={isJoining} disabled={!isValidNickname(nickname)}>
-          {isJoining ? 'Joining the game' : joinLabel}
+          {isJoining ? joiningLabel : joinLabel}
         </PillButton>
       </Box>
     </Box>

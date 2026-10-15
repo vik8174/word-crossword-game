@@ -129,3 +129,22 @@ const JOIN_LABEL =
  */
 export const joinStreetLabel = (teacher?: 'here' | 'away'): string =>
   teacher === 'here' ? JOIN_LABEL + TEACHER_CLAUSE : JOIN_LABEL;
+
+/**
+ * What the drawing of an ending is called, in a lesson or out of one.
+ *
+ * Both endings of a lesson draw the teacher at the end of the street, always, for
+ * every viewer: a presence mark stops being read when a game ends
+ * (`awaitsPresenceFrom`), so what the teacher is doing is no longer known and
+ * they are shown at their window. The clause is therefore added exactly once,
+ * unconditionally on a lesson, as the template's `scene()` does.
+ *
+ * @param label - What the drawing is called without a teacher
+ * @param isLesson - Whether the room is a lesson
+ * @returns The label, with the teacher clause when the room is a lesson
+ *
+ * @example
+ * endingStreetLabel('A sagging line between the balconies', true); // '… between the balconies, and the teacher watching from the house at the end of the street'
+ */
+export const endingStreetLabel = (label: string, isLesson: boolean): string =>
+  isLesson ? label + TEACHER_CLAUSE : label;

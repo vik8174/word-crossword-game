@@ -20,4 +20,4 @@ The room itself is unchanged. It is closed for good, nothing on the screen write
 
 - The consequence of 0012 that said the win screen offers no button, and the one of 0027 that said the closed screen offers no way onward, no longer hold. What they said about the room stays true: a new game is a new room, and the button says so by going to the page that makes one, not by restarting this one.
 - Neither ending has a callback, so neither can write. The button is a link and not an action.
-- A lesson's endings have their own button, "Start a new lesson", to the page that creates a lesson. They are [#236](https://github.com/vik8174/word-crossword-game/issues/236)'s.
+- A lesson's teacher has a button of their own on both endings, "Start a new lesson", and it goes to `/create?mode=lesson`, the page that makes a room with "Run a lesson" already chosen ([#236](https://github.com/vik8174/word-crossword-game/issues/236)); `/create` alone, as Home's "Create a game" opens it, still starts on "Play with a friend". A lesson's students keep "Start a new game" to `/`: they did not run the lesson, and a lesson of their own is not what they were offered.

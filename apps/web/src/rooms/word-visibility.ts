@@ -156,7 +156,7 @@ export interface AnsweredCount {
  * How many of these words have been answered.
  *
  * One answer, asked by every screen that counts: the teacher's lists say it as
- * "N of M answered by {guesser}", and the lesson summary (#236) is built from
+ * "N of M answered by {guesser}", and the lesson summary is built from
  * the same two numbers. Never from the squares of the board, since a word
  * completed through its crossings is answered with nothing typed into it.
  *
@@ -174,6 +174,23 @@ export const answeredCountOf = (
 });
 
 /**
+ * What is said of one student's words: how many were answered, and by whom.
+ *
+ * The teacher's line under a list is this with a full stop
+ * ({@link answeredByLine}), and the lesson summary says it bare, in its heading
+ * (`design/templates/state-tree.html`, lines 726 and 724).
+ *
+ * @param count - From {@link answeredCountOf}
+ * @param guesserName - The nickname of the student the words are hidden from
+ * @returns A phrase, without a full stop
+ *
+ * @example
+ * answeredByPhrase({ answered: 1, total: 3 }, 'Taras'); // '1 of 3 answered by Taras'
+ */
+export const answeredByPhrase = ({ answered, total }: AnsweredCount, guesserName: string): string =>
+  `${answered} of ${total} answered by ${guesserName}`;
+
+/**
  * The teacher's line under one student's words.
  *
  * @param count - From {@link answeredCountOf}
@@ -183,8 +200,8 @@ export const answeredCountOf = (
  * @example
  * answeredByLine({ answered: 1, total: 3 }, 'Taras'); // '1 of 3 answered by Taras.'
  */
-export const answeredByLine = ({ answered, total }: AnsweredCount, guesserName: string): string =>
-  `${answered} of ${total} answered by ${guesserName}.`;
+export const answeredByLine = (count: AnsweredCount, guesserName: string): string =>
+  `${answeredByPhrase(count, guesserName)}.`;
 
 /**
  * What a square holds, and why it holds it.

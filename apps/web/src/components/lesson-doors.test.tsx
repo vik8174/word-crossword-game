@@ -56,10 +56,10 @@ describe('JoinRoomForm, in a lesson', () => {
     expect(screen.getByRole('button', { name: 'Join the lesson' })).toBeInTheDocument();
   });
 
-  it('says "Joining the game" while the join is written, as the template does for both modes', () => {
+  it('says "Joining the lesson" while the join is written', () => {
     render(<JoinRoomForm ownerNickname="Carmen" mode="lesson" onJoin={() => {}} isJoining />);
 
-    expect(screen.getByRole('button', { name: 'Joining the game' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Joining the lesson' })).toBeDisabled();
   });
 
   it('keeps the pair game’s words when no mode is given', () => {
@@ -105,13 +105,31 @@ describe('RoomUnavailableNotice, in a lesson', () => {
     },
   );
 
-  it('still draws the shuttered balcony and leads on to a game of their own', () => {
+  it.each(['full', 'started'] as const)(
+    'sends a student back to the home page on %s, not to a game of their own',
+    (reason) => {
+      renderNotice(reason);
+
+      expect(screen.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute(
+        'href',
+        '/',
+      );
+      expect(screen.queryByRole('link', { name: 'Start a new game' })).toBeNull();
+    },
+  );
+
+  it('keeps "Start a new game" on the refusals a lesson shares with the pair game', () => {
+    renderNotice('expired');
+
+    expect(screen.getByRole('link', { name: 'Start a new game' })).toHaveAttribute('href', '/');
+  });
+
+  it('still draws the shuttered balcony', () => {
     renderNotice('full');
 
     expect(
       screen.getByRole('img', { name: 'A balcony across the street with its shutters closed' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Start a new game' })).toHaveAttribute('href', '/');
   });
 });
 

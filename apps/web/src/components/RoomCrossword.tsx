@@ -28,6 +28,15 @@ import { useBandShown } from './use-band-shown';
  */
 const TAKES_NO_ANSWERS = () => Promise.resolve();
 
+/** The space under the drawing before the board's own 8px: 10 by default (the template's 18), 4 for its 12, none under a note. */
+const bandMarginOf = (hasNote: boolean, hasTightBoard: boolean): string => {
+  if (hasNote) {
+    return '0';
+  }
+
+  return hasTightBoard ? '4px' : '10px';
+};
+
 /** What stands above the board, from whether the drawing is shown and whether it has a line under it. */
 const bandAboveOf = (isBandShown: boolean, hasNote: boolean): BandAbove => {
   if (!isBandShown) {
@@ -72,12 +81,20 @@ interface RoomCrosswordProps {
    */
   readonly bandNote?: string;
   /**
+   * The board stands 12px under the drawing instead of 18. Only the teacher's
+   * Ended early has it so (`state-tree.html`, line 1064: its board's
+   * `margin-top` is 12, where the game room and both fiestas use 18), and it
+   * has no line between the two to carry the difference.
+   */
+  readonly hasTightBoard?: boolean;
+  /**
    * The board is the teacher's: a lesson's teacher watches the crossword and does
    * not play on it, so they are shown every word on a board nothing can be typed
    * into (`TeacherGrid`) instead of the board a player gets. Given by the one
    * screen that is the teacher's room, with the names of the two students the
-   * board's colours are for. Absent everywhere else, the teacher's endings
-   * included, which are another issue's.
+   * board's colours are for. Absent everywhere else, but for the teacher's Ended
+   * early, which keeps the marking; the teacher's Finished has nothing left to
+   * mark, and draws the full board a player gets.
    */
   readonly watching?: {
     readonly leftName: string;
@@ -108,6 +125,7 @@ interface RoomCrosswordProps {
  * @param props.band - The drawing above the board, when it fits
  * @param props.bandRule - `when-it-fits` (the default) or `always`
  * @param props.bandNote - A line between the drawing and the board
+ * @param props.hasTightBoard - The board stands 12px under the drawing, not 18
  * @param props.watching - The teacher's board, with whose colours are whose, in place of a player's
  * @param props.hasVisibleHeading - Whether the heading and its caption are drawn (the default) or only read
  *
@@ -124,6 +142,7 @@ export const RoomCrossword = ({
   band,
   bandRule = 'when-it-fits',
   bandNote,
+  hasTightBoard = false,
   watching,
   hasVisibleHeading = true,
 }: RoomCrosswordProps) => {
@@ -161,7 +180,7 @@ export const RoomCrossword = ({
 
       {/* 10px of margin and the 8px the board's own box keeps above it make the
         template's 18px between the band and the board. */}
-      {isBandShown && <Box sx={{ marginBottom: hasNote ? 0 : '10px' }}>{band}</Box>}
+      {isBandShown && <Box sx={{ marginBottom: bandMarginOf(hasNote, hasTightBoard) }}>{band}</Box>}
 
       {hasNote && (
         // 14 above, one line of 16px text, and the 12 above the board less the 8

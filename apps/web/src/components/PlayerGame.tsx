@@ -6,6 +6,7 @@ import { answeredWordsOf } from '../rooms/answered-words';
 import { useJustAnswered } from '../rooms/use-just-answered';
 import { openGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
+import { roomModeOf } from '../rooms/room-document';
 import { endGameEarly as endTheGame, recordGuess as recordTheGuess } from '../rooms/room-service';
 import { useEnding } from '../rooms/use-ending';
 import { useGameCompletion } from '../rooms/use-game-completion';
@@ -124,6 +125,7 @@ export const PlayerGame = ({
   const wordView = wordViewFor(room, viewerId);
   const placedCount = room.layout.placedWords.length;
   const playerCount = Object.keys(room.players).length;
+  const mode = roomModeOf(room);
   const otherName = players.find((player) => player.id !== viewerId)?.nickname;
   const isLeftOut = wordView.kind === 'left-out';
   // The teacher of a lesson stands outside `players`, so the list, the header and
@@ -162,8 +164,9 @@ export const PlayerGame = ({
     void logGameEvent('game_closed', {
       word_count: placedCount,
       player_count: playerCount,
+      mode,
     });
-  }, [endGameEarly, roomId, placedCount, playerCount]);
+  }, [endGameEarly, roomId, placedCount, playerCount, mode]);
   const { isEnding, endError, endGame } = useEnding(end);
 
   // The header is the frame's: what the room is doing, and the one thing this
