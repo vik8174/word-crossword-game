@@ -85,8 +85,7 @@ export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProp
       )}
 
       <PillButton
-        kind="quiet"
-        danger
+        kind="link"
         onClick={() => {
           setIsConfirming(true);
         }}

@@ -95,7 +95,7 @@ export const RoomInvitePanel = ({ roomId, origin }: RoomInvitePanelProps) => {
           marginTop: inRem(9),
         }}
       >
-        <PillButton kind="quiet" small onClick={() => void handleCopy()}>
+        <PillButton kind="quiet" onClick={() => void handleCopy()}>
           Copy the link
         </PillButton>
 

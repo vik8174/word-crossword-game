@@ -22,17 +22,13 @@ const Stage = ({ children }: { readonly children: ReactNode }) => (
 );
 
 /**
- * Every kind and prop-driven state `PillButton` carries in this app — one
- * story per row of issue #184's "What to build" table.
+ * Every look `PillButton` has, each beside the template state that draws it
+ * (`design/templates/state-tree.html`): loud with `home`, quiet with
+ * `create/unplaced`, link with `playing`, disabled with `create/errors`,
+ * loading with `create/creating`.
  *
- * `resting`, `hover`, `focus-visible` and `active` are not each a story of
- * their own: no pseudo-state addon is installed here on purpose
- * (`.storybook/main.ts`), and all three are CSS pseudo-classes any of the
- * stories below already carries — reachable by hovering, tabbing to, or
- * pressing the rendered control directly, the way an Inspector
- * drives a real browser rather than a frozen snapshot. `disabled`, `loading`
- * and `small` are prop-driven and cannot be reached that way, so each gets
- * its own story.
+ * Hover, focus and press are CSS pseudo-classes any story carries and are not
+ * stories of their own; `disabled` and `loading` are prop-driven and are.
  */
 const meta: Meta<typeof PillButton> = {
   title: 'Components/PillButton',
@@ -50,37 +46,27 @@ export default meta;
 
 type Story = StoryObj<typeof PillButton>;
 
-export const Primary: Story = {
-  name: 'Primary (create room)',
-  args: { children: 'Create room' },
-};
-
-export const PrimaryDisabled: Story = {
-  name: 'Primary, disabled (create/errors)',
-  args: { children: 'Create room', disabled: true },
-};
-
-export const PrimaryLoading: Story = {
-  name: 'Primary, loading (create/creating)',
-  args: { children: 'Creating the room...', loading: true },
+export const Loud: Story = {
+  name: 'Loud (home: Create a game)',
+  args: { children: 'Create a game' },
 };
 
 export const Quiet: Story = {
-  name: 'Quiet (edit the word list)',
-  args: { kind: 'quiet', children: 'Edit the word list' },
+  name: 'Quiet (create/unplaced: Back)',
+  args: { kind: 'quiet', children: 'Back' },
 };
 
-export const QuietSmall: Story = {
-  name: 'Quiet, small (copy link)',
-  args: { kind: 'quiet', small: true, children: 'Copy link' },
+export const Link: Story = {
+  name: 'Link (playing: End the game)',
+  args: { kind: 'link', children: 'End the game' },
 };
 
-export const Danger: Story = {
-  name: 'Quiet danger (end the game)',
-  args: { kind: 'quiet', danger: true, children: 'End the game' },
+export const Disabled: Story = {
+  name: 'Disabled (create/errors: Create room)',
+  args: { children: 'Create room', disabled: true },
 };
 
-export const DangerLoading: Story = {
-  name: 'Quiet danger, loading (playing/ending)',
-  args: { kind: 'quiet', danger: true, loading: true, children: 'Ending the game...' },
+export const Loading: Story = {
+  name: 'Loading (create/creating)',
+  args: { children: 'Creating the room...', loading: true },
 };

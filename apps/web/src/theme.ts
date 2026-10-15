@@ -1,5 +1,4 @@
 import { alpha, createTheme } from '@mui/material/styles';
-import { LOADING_DOT_CLASS } from './components/button-styles';
 import { WAIT_RING_CLASS } from './components/waiting-mark-styles';
 import { FRAME_HEADER_HEIGHT } from './components/frame-height';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
@@ -248,13 +247,9 @@ export const theme = createTheme({
     // stops being true. So it keeps spinning under reduced motion; nothing
     // else does.
     //
-    // `Button`'s own loading dot (`components/button-styles.ts`,
-    // `LOADING_DOT_CLASS`) is named out for the identical reason (issue #184):
-    // `design/templates/state-tree.html` line 738 keeps it beating on purpose,
-    // and a loading mark that freezes reads as a stalled screen the same way a
-    // stopped spinner would. The button's own hover and press transitions are
-    // not exempted — only the dot's `animation` is — so the control itself
-    // still stops moving.
+    // The button's loading dot (`components/button-styles.ts`) is not named
+    // out: `design/templates/state-tree.html` line 95 stops it under reduced
+    // motion, so it stands still and says "busy" by being there (issue #224).
     //
     // The waiting mark's three rings (`components/waiting-mark-styles.ts`,
     // `WAIT_RING_CLASS`) are named out for the same reason (issue #198): they
@@ -269,7 +264,7 @@ export const theme = createTheme({
         // sticky header and not under it (issue #245).
         html: { scrollPaddingTop: FRAME_HEADER_HEIGHT },
         [REDUCED_MOTION_MEDIA]: {
-          [`*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle):not(.${LOADING_DOT_CLASS}):not(.${WAIT_RING_CLASS}), *::before, *::after`]:
+          [`*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle):not(.${WAIT_RING_CLASS}), *::before, *::after`]:
             {
               animationDuration: '0.01ms !important',
               animationIterationCount: '1 !important',
