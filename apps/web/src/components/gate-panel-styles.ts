@@ -2,105 +2,87 @@ import type { CSSObject } from '@mui/material/styles';
 
 import { inRem } from '../scale';
 import { STREET } from '../street';
-import { belowFrame } from './frame-height';
 import { TILE_SX } from './surface-styles';
 
 /**
- * The surfaces the create panel and the doors' panel are drawn on, the way the
- * template draws them (`design/templates/state-tree.html`'s `.gate-screen`,
- * `.create-band`, `.middle-column` and `.stack`, lines 413, 460-466, 402-410
- * and 398).
+ * The column a form stands in at the doors, the way the template draws it
+ * (`design/templates/state-tree.html`'s `.column`, `.stack`, `.row-btns` and
+ * `.hint`, lines 113-116 and 253-254), and the doors' panel (`.middle-column`).
  *
  * None of the numbers here is a step of `scale.ts`'s spacing row or one of its
- * four text levels, the same way `field-styles.ts`'s 13.5px and
- * `button-styles.ts`'s 11.5px are not: they are the template's own values,
- * written once here rather than turned into steps nothing else is drawn at.
- * Lengths are in `rem` (through {@link inRem}) so that a reader who has made
- * their text larger gets a panel that grows with it, the reason
- * `GATE_BAND_WIDTH` is in `rem`; on a browser left at sixteen pixels they come
+ * four text levels: they are the template's own values, written once here
+ * rather than turned into steps nothing else is drawn at. Lengths are in `rem`
+ * (through {@link inRem}) so that a reader who has made their text larger gets
+ * a column that grows with it; on a browser left at sixteen pixels they come
  * out as the template's pixels.
  */
 
+/** From the template's tablet layout up the side padding is 32px, 48px from wide (`--pad`, lines 221-223). */
+const FROM_TABLET = '@media (min-width: 768px)';
+const FROM_WIDE = '@media (min-width: 1200px)';
+
 /**
- * The screen a panel stands in: what the frame's header leaves of the window,
- * the panel centred in it.
- * `/create` stands in it, and so do `connecting` and every `unavailable` at the
- * doors (`pages/RoomPage.tsx`'s `Waiting`, issue #198).
+ * The screen a form or a notice stands in: `.column`
+ * (`design/templates/state-tree.html`, lines 253-254).
  *
- * Exactly that tall rather than at least that, because the panel scrolls
- * inside itself ({@link createPanelSx}) instead of the page growing — a screen
- * that grew with its content would be a screen the panel's `max-height: 100%`
- * has nothing to be a hundred percent of. `overflow-y: auto` stays on it all
- * the same, as the template has it, for a window so short the panel's own
- * padding cannot fit.
+ * At most 560px wide and centred, with 48px above it (24px on a phone) and
+ * 48px below, and the side padding the layout has (18, 32 and 48px). It starts
+ * at the top, under the frame's header, and it is not centred in what the
+ * header leaves: where a title stands does not depend on how much stands under
+ * it, so it does not move between the states of a screen (issue #225).
+ *
+ * `/create` stands in it, and so do `connecting` and every `unavailable` at the
+ * doors (`pages/RoomPage.tsx`'s `Waiting`). Those two moved to the top with it,
+ * ahead of the doors' own issue (#226), and that was accepted.
  */
 export const gateScreenSx: CSSObject = {
   position: 'relative',
-  height: belowFrame('100dvh'),
-  display: 'grid',
-  placeItems: 'center',
-  padding: inRem(22),
-  overflowY: 'auto',
+  maxWidth: inRem(560),
+  marginInline: 'auto',
+  padding: `${inRem(24)} ${inRem(18)} ${inRem(48)}`,
+  [FROM_TABLET]: { paddingInline: inRem(32), paddingTop: inRem(48) },
+  [FROM_WIDE]: { paddingInline: inRem(48) },
 };
 
-/**
- * The panel itself, as tall as what stands on it.
- *
- * Centred by the grid it stands in rather than by margins, which is what
- * `CreateRoomPage.tsx` used `m: 'auto'` for: a centred box taller than its
- * frame pushes its own top off the page, and the answer here is that it never
- * becomes taller than the frame — `max-height: 100%` with its own scroll — so
- * there is no overflowing centre to keep the top of.
- *
- * A tile with the street's hairline round it. It was a translucent band of
- * the garden's shadow, blurred over the picture, until issue #222.
- */
-export const createPanelSx: CSSObject = {
-  width: `min(${inRem(460)}, 94%)`,
-  ...TILE_SX,
-  padding: `${inRem(20)} ${inRem(22)} ${inRem(24)}`,
-  borderRadius: '2px',
-  maxHeight: '100%',
-  overflowY: 'auto',
-  // The template's page sets 1.6 on its body and everything in the panel
-  // inherits it; this app's body is 1.5. Nothing here sets its own line except
-  // the lines that say so (the help under a field, the button, the message's
-  // paragraph), but `Message`'s heading and its list do not, and they come out
-  // 3.4px short in the panel without this (issue #197, `create/errors`).
-  lineHeight: 1.6,
-};
-
-/** `.stack`: the blocks of a form in one column, 14px apart. */
+/** `.stack`: the blocks of a form in one column, 18px apart. */
 export const gateStackSx: CSSObject = {
   display: 'flex',
   flexDirection: 'column',
-  gap: inRem(14),
+  gap: inRem(18),
 };
 
 /**
- * The fork's two buttons: right-aligned, 10px apart — `.field-row` with
- * `justify-content: flex-end`.
+ * `.row-btns`: a screen's buttons, and the sentence that stands beside them,
+ * in one row from the left, 12px apart, wrapping when the row is full.
  */
 export const gateButtonRowSx: CSSObject = {
   display: 'flex',
-  justifyContent: 'flex-end',
+  flexWrap: 'wrap',
   alignItems: 'center',
-  gap: inRem(10),
+  gap: inRem(12),
+};
+
+/**
+ * The sentence beside a button: `.hint`, slate 16px
+ * (`design/templates/state-tree.html`, line 114).
+ */
+export const gateHintSx: CSSObject = {
+  margin: 0,
+  fontSize: inRem(16),
+  color: STREET.slate,
 };
 
 /**
  * The doors' panel: `.middle-column`, the one surface `connecting`, `join` and
  * every `unavailable` stand on (issue #198).
  *
- * The same tile as the create panel's. It is as wide as the template's 430px or
+ * A tile with the street's hairline round it, as every surface is. It is as wide as the template's 430px or
  * 92% of what it stands in, whichever is less, and as tall as what is on it, so
  * it needs no `max-height` of its own: the frame or screen it stands in scrolls
- * instead. Lengths are in `rem` for the reason the create panel's are.
+ * instead. Lengths are in `rem` so that it grows with the reader's own text size.
  *
  * `line-height: 1.6` is the template's page-wide value, which its panel
- * inherits and this app's body (1.5) does not: `Message`'s heading and list set
- * none of their own and come out short without it, exactly as they did on the
- * create panel.
+ * inherits and this app's body (1.5) does not.
  */
 export const middlePanelSx: CSSObject = {
   width: `min(${inRem(430)}, 92%)`,

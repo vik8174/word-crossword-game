@@ -120,7 +120,7 @@ afterEach(() => {
 });
 
 describe('CreateRoomPage', () => {
-  it('names the step in its only h1, inside the panel the form stands on', () => {
+  it('names the step in its only h1, at the top of the column the form stands in', () => {
     renderPage();
 
     // `getByRole` throws unless there is exactly one match.
@@ -143,56 +143,107 @@ describe('CreateRoomPage', () => {
       expect(createButton()).toBeEnabled();
     });
 
-    it('says what is wrong with the list while the owner is still typing', () => {
+    it('says a wrong word inside the field, in the voice of the sentences', () => {
       renderPage();
 
-      fillIn(/words/i, 'apple, ox, apple');
-
-      expect(screen.getByText(/at least 10 words/i)).toBeInTheDocument();
-      expect(screen.getByText(/"ox" is shorter than 3 letters/i)).toBeInTheDocument();
-      expect(screen.getByText(/"apple" is listed more than once/i)).toBeInTheDocument();
-    });
-
-    it('gives the rules and the count on the one help line while nothing is wrong', () => {
-      renderPage();
-
-      fillIn(/words/i, TEN_WORDS);
-
-      // One line, not the rules and the count on two (issue #197). The numbers
-      // are the validator's own rather than ones typed here.
-      const help = screen.getByText(/words entered/i);
-      expect(help).toHaveTextContent(
-        `${MIN_WORDS}\u2013${MAX_WORDS} English words, ${MIN_WORD_LENGTH}\u2013${MAX_WORD_LENGTH} letters each, no repeats. 10 words entered.`,
-      );
-      expect(screen.getAllByText(/words entered/i)).toHaveLength(1);
-    });
-
-    it('counts the faults and the words on the one help line, and they are not the same number', () => {
-      renderPage();
-
-      // Twelve words, of which one repeats and one is too short: two faults.
       fillIn(/words/i, `${TEN_WORDS}, apple, ox`);
 
-      expect(screen.getAllByText(/words entered/i)).toHaveLength(1);
-      expect(screen.getByText(/words entered/i)).toHaveTextContent(
-        '2 problems with this list. 12 words entered.',
-      );
+      const words = screen.getByLabelText(/words/i);
+      const strip = document.getElementById(words.getAttribute('aria-describedby') ?? '');
+
+      expect(words).toHaveAttribute('aria-invalid', 'true');
+      expect(strip).toHaveTextContent('“apple” is in the list twice. Keep one of them.');
+      expect(strip).toHaveTextContent('“ox” is too short. A word needs 3 letters or more.');
+      expect(strip?.closest('span')).toContainElement(words);
+      expect(screen.getByText('Change the 2 words above to go on.')).toBeInTheDocument();
+      // A card is for a failure of the wire, not for a wrong list.
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
-    it('says "1 problem" for a list with a single fault', () => {
+    it('says "the word" for a strip that names one word', () => {
       renderPage();
 
       fillIn(/words/i, `${TEN_WORDS}, ox`);
 
-      expect(screen.getByText(/words entered/i)).toHaveTextContent(
-        '1 problem with this list. 11 words entered.',
-      );
+      expect(screen.getByText('Change the word above to go on.')).toBeInTheDocument();
     });
 
-    it('says nothing about a form nobody has typed into yet', () => {
+    it('counts the distinct words the strip names, not its lines', () => {
       renderPage();
 
-      expect(screen.queryByText(/at least 10 words/i)).not.toBeInTheDocument();
+      fillIn(/words/i, `${TEN_WORDS}, ox, OX`);
+
+      expect(screen.getByText('Change the word above to go on.')).toBeInTheDocument();
+    });
+
+    it('keeps a fault about the count out of the strip and beside the disabled button', () => {
+      renderPage();
+      fillIn(/nickname/i, 'Vik');
+
+      expect(screen.getByText('Add at least 10 words to go on.')).toBeInTheDocument();
+      expect(screen.getByLabelText(/words/i)).not.toHaveAttribute('aria-invalid');
+
+      fillIn(
+        /words/i,
+        `${TEN_WORDS}, kitchen, lantern, morning, needle, orchard, pattern, quarter, ribbon, stream, tunnel, valley`,
+      );
+
+      expect(screen.getByText('Remove words to go on: at most 20.')).toBeInTheDocument();
+      expect(screen.getByLabelText(/words/i)).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('asks for a nickname beside the button while the list is fine', () => {
+      renderPage();
+
+      fillIn(/words/i, TEN_WORDS);
+
+      expect(screen.getByText('Type a nickname to go on.')).toBeInTheDocument();
+
+      fillIn(/nickname/i, 'Vik');
+
+      expect(screen.queryByText(/to go on\./)).not.toBeInTheDocument();
+    });
+
+    it('judges a word only once it is finished: not while it is being typed', () => {
+      renderPage();
+      const words = screen.getByLabelText(/words/i);
+
+      fireEvent.focus(words);
+      fireEvent.change(words, { target: { value: `${TEN_WORDS}, ox` } });
+
+      expect(words).not.toHaveAttribute('aria-invalid');
+
+      fireEvent.change(words, { target: { value: `${TEN_WORDS}, ox,` } });
+
+      expect(words).toHaveAttribute('aria-invalid', 'true');
+
+      fireEvent.change(words, { target: { value: `${TEN_WORDS}, ox, ab` } });
+
+      expect(screen.getByText(/“ox” is too short/)).toBeInTheDocument();
+      expect(screen.queryByText(/“ab”/)).not.toBeInTheDocument();
+
+      fireEvent.blur(words);
+
+      expect(screen.getByText(/“ab” is too short/)).toBeInTheDocument();
+    });
+
+    it('gives the rules and the count on the one help line, whatever is wrong', () => {
+      renderPage();
+
+      fillIn(/words/i, `${TEN_WORDS}, ox`);
+
+      const help = screen.getByText(/words entered/i);
+      expect(help).toHaveTextContent(
+        `${MIN_WORDS} to ${MAX_WORDS} words, ${MIN_WORD_LENGTH} to ${MAX_WORD_LENGTH} letters each, no repeats. 11 words entered.`,
+      );
+      expect(screen.getAllByText(/words entered/i)).toHaveLength(1);
+    });
+
+    it('shows no strip for a form nobody has typed into yet', () => {
+      renderPage();
+
+      expect(screen.getByLabelText(/words/i)).not.toHaveAttribute('aria-invalid');
+      expect(screen.getByText('Add at least 10 words to go on.')).toBeInTheDocument();
     });
   });
 
@@ -251,12 +302,8 @@ describe('CreateRoomPage', () => {
       expect(await screen.findByText(/could not be created/i)).toBeInTheDocument();
       expect(screen.queryByText(/you are in room/i)).not.toBeInTheDocument();
       expect(screen.getByLabelText(/words/i)).toHaveValue(TEN_WORDS);
-      // A write that failed is an error, not a warning — brick, the error's
-      // role (`Message.tsx`'s `ACCENT.error`), told apart from the word list's
-      // own problems below (issue #185).
-      expect(await screen.findByRole('alert')).toHaveStyle({
-        borderLeftColor: 'rgb(163, 58, 44)',
-      });
+      // A write that failed is an error, a card: no field owns it (issue #225).
+      expect(await screen.findByRole('alert')).toHaveTextContent('×');
     });
   });
 
@@ -342,6 +389,23 @@ describe('CreateRoomPage', () => {
       expect(addDoc).not.toHaveBeenCalled();
     });
 
+    it("says it in the template's words, with the loud answer first and the quiet one after it", () => {
+      renderPage();
+      fillInValidGame(WORDS_WITH_ONE_THAT_CANNOT_FIT);
+
+      fireEvent.click(createButton());
+
+      expect(
+        screen.getByText(
+          'This one crosses nothing, so it is not in the grid. You can build the game without it, or go back and change the list.',
+        ),
+      ).toBeInTheDocument();
+
+      const [first, second] = screen.getAllByRole('button');
+      expect(first).toHaveTextContent('Build it anyway');
+      expect(second).toHaveTextContent('Back');
+    });
+
     it('creates the room once the owner accepts the loss', async () => {
       renderPage();
       fillInValidGame(WORDS_WITH_ONE_THAT_CANNOT_FIT);
@@ -373,12 +437,14 @@ describe('CreateRoomPage', () => {
 
       fireEvent.click(createButton());
 
-      expect(screen.getByText(/none of these words cross each other/i)).toBeInTheDocument();
+      // No crossword to build is the list's own problem, so it is said inside
+      // the field like the other faults of the list, and no card appears.
+      expect(screen.getByLabelText(/words/i)).toHaveAttribute('aria-invalid', 'true');
+      expect(screen.getByText(/none of these words share a letter/i)).toBeInTheDocument();
+      expect(screen.getByText('Change the list to go on.')).toBeInTheDocument();
+      expect(createButton()).toBeDisabled();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
       expect(addDoc).not.toHaveBeenCalled();
-      // No crossword to build is the list's own problem — a warning, ochre,
-      // not the error a failed write gets (`Message.tsx`'s `ACCENT.warning`,
-      // issue #185).
-      expect(screen.getByRole('alert')).toHaveStyle({ borderLeftColor: 'rgb(242, 199, 102)' });
     });
 
     it('drops the complaint as soon as the owner edits the list', async () => {
@@ -390,7 +456,7 @@ describe('CreateRoomPage', () => {
       fillIn(/words/i, `${TEN_WORDS}, kitchen`);
 
       await waitFor(() => {
-        expect(screen.queryByText(/none of these words cross each other/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/none of these words share a letter/i)).not.toBeInTheDocument();
       });
     });
   });

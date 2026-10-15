@@ -42,7 +42,7 @@ vi.mock('firebase/analytics', () => ({
 const INK = 'rgb(27, 45, 56)';
 
 /** What each site's `h1` is set in, read the way a browser resolves it. */
-const expectAStepTitle = (heading: HTMLElement) => {
+const expectAStepTitle = (heading: HTMLElement, margin = '0px 0px 6px') => {
   const style = getComputedStyle(heading);
 
   expect(style.fontSize).toBe('34px');
@@ -55,7 +55,7 @@ const expectAStepTitle = (heading: HTMLElement) => {
   // A shadow has an offset in it; the absence of one computes to `none`, to
   // nothing, or to a transparent black, depending on the engine.
   expect(style.textShadow).not.toMatch(/\d(px|em)/);
-  expect(style.margin).toBe('0px 0px 6px');
+  expect(style.margin).toBe(margin);
 };
 
 describe('the name of a step', () => {
@@ -90,7 +90,8 @@ describe('the name of a step', () => {
 
     const heading = screen.getByRole('heading', { level: 1, name: 'New game' });
 
-    expectAStepTitle(heading);
+    // The column's own 18px gap sets it apart from what follows (issue #225).
+    expectAStepTitle(heading, '0px');
     expect(heading.tagName).toBe('H1');
   });
 

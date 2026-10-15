@@ -4,35 +4,16 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword, validateWordList } from 'shared';
 
-import { createPanelSx, gateScreenSx } from '../components/gate-panel-styles';
+import { gateScreenSx, gateStackSx } from '../components/gate-panel-styles';
 import { stepTitleSx } from '../components/surface-styles';
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
-import { WordListForm, type WordListFormNotice } from '../components/WordListForm';
+import { WordListForm } from '../components/WordListForm';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
 import { roomPath } from '../rooms/room-link';
 import { createRoom } from '../rooms/room-service';
 import { logGameEvent } from '../telemetry/analytics';
 import { useScreenReached } from '../telemetry/use-screen-reached';
-
-/**
- * Shown when no two words share a letter. Different from words being dropped:
- * there is no grid at all, so there is no game to create — the owner has to
- * change the list (see `docs/decisions/0008`, last consequence). A warning
- * rather than an error: this is the list's own problem, the same kind as the
- * list's other validation failures, not a write that was refused.
- */
-const NO_GRID_NOTICE: WordListFormNotice = {
-  kind: 'warning',
-  heading: 'No crossword can be built',
-  text: 'None of these words cross each other. Add or change a few words — words that share letters can cross.',
-};
-
-const CREATION_FAILED_NOTICE: WordListFormNotice = {
-  kind: 'error',
-  heading: 'The room could not be created',
-  text: 'Check your connection and try again.',
-};
 
 /**
  * Where the owner is in the creation flow.
@@ -42,7 +23,13 @@ const CREATION_FAILED_NOTICE: WordListFormNotice = {
  * a freshly generated, different one (layouts are not deterministic).
  */
 type CreationPhase =
-  | { readonly phase: 'editing'; readonly notice?: WordListFormNotice }
+  | {
+      readonly phase: 'editing';
+      /** The generator found no crossing, so there is no grid and no game to create. */
+      readonly noCrossing?: boolean;
+      /** The write was refused. */
+      readonly writeFailed?: boolean;
+    }
   | { readonly phase: 'confirming'; readonly layout: CrosswordLayout }
   | { readonly phase: 'creating' };
 
@@ -104,7 +91,7 @@ export const CreateRoomPage = () => {
       // to a player, so the owner gets a plain one and the details go to the
       // console for whoever is debugging.
       console.error('Creating the room failed', error);
-      setCreation({ phase: 'editing', notice: CREATION_FAILED_NOTICE });
+      setCreation({ phase: 'editing', writeFailed: true });
     }
   };
 
@@ -112,7 +99,7 @@ export const CreateRoomPage = () => {
     const layout = generateCrossword(validation.words);
 
     if (layout.placedWords.length === 0) {
-      setCreation({ phase: 'editing', notice: NO_GRID_NOTICE });
+      setCreation({ phase: 'editing', noCrossing: true });
       return;
     }
 
@@ -148,7 +135,8 @@ export const CreateRoomPage = () => {
         rawWords={rawWords}
         onWordsChange={handleWordsChange}
         validation={validation}
-        notice={creation.phase === 'editing' ? creation.notice : undefined}
+        noCrossing={creation.phase === 'editing' && creation.noCrossing === true}
+        writeFailed={creation.phase === 'editing' && creation.writeFailed === true}
         isCreating={creation.phase === 'creating'}
         onSubmit={handleSubmit}
       />
@@ -156,11 +144,12 @@ export const CreateRoomPage = () => {
   };
 
   return (
-    // The step is named inside a panel down the middle of the window, as tall
-    // as its own content, the way the template draws it (issue #197).
+    // The step is named at the top of a column that starts under the header, as
+    // the template's `.column` does, so its title stands where it stands in
+    // every state of the screen (issue #225).
     <Box component="main" sx={gateScreenSx}>
-      <Box sx={createPanelSx}>
-        <Typography component="h1" variant="stepTitle" sx={stepTitleSx()}>
+      <Box sx={gateStackSx}>
+        <Typography component="h1" variant="stepTitle" sx={{ ...stepTitleSx(), margin: 0 }}>
           New game
         </Typography>
 

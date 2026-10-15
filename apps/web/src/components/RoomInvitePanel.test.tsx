@@ -53,14 +53,13 @@ describe('RoomInvitePanel', () => {
     expect(screen.getByRole('region', { name: 'The link into this room' })).toBeInTheDocument();
   });
 
-  it('shows the whole link in a control that grows with it instead of scrolling', () => {
+  it('shows the link in one line that clips, in a control that can be selected', () => {
     renderPanel();
 
-    // The copy of the value the control's height is taken from: without it a
-    // link longer than the field is tall would be cut off, not wrapped.
-    expect(screen.getByLabelText(/room link/i).parentElement).toHaveAttribute(
-      'data-value',
-      ROOM_URL,
-    );
+    const link = screen.getByLabelText(/room link/i);
+
+    expect(link.tagName).toBe('INPUT');
+    expect(link).toHaveValue(ROOM_URL);
+    expect(link).toHaveAttribute('readonly');
   });
 });

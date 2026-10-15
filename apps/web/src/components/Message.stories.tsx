@@ -14,8 +14,8 @@ const GATE_PADDING = gapAt(4);
 const GATE_COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${GATE_PADDING} - ${GATE_PADDING})`;
 
 /**
- * A tile down the middle of the window. `WordListForm`'s warning stands on
- * `/create`'s panel (`components/gate-panel-styles.ts`) and `JoinRoomForm`'s
+ * A tile down the middle of the window. `UnplacedWordsNotice`'s warning stands in
+ * `/create`'s column (`components/gate-panel-styles.ts`) and `JoinRoomForm`'s
  * error on the doors' panel (`components/MiddlePanel.tsx`, issue #198), both a
  * tile, so the band is still a fair place to read a message off; it is kept
  * here rather than redrawn as either panel.
@@ -93,27 +93,27 @@ export default meta;
 type Story = StoryObj<typeof Message>;
 
 export const WarningOnGate: Story = {
-  name: 'Warning · create panel (no crossword)',
+  name: 'Warning · a notice with no list',
   render: () => (
     <GateSurface>
-      <Message kind="warning" heading="No crossword can be built">
-        None of these words cross each other. Add or change a few words — words that share letters
-        can cross.
+      <Message kind="warning" heading="The room has not heard from you">
+        Check your connection. This notice goes the moment the room hears from you again.
       </Message>
     </GateSurface>
   ),
 };
 
 export const WarningOnGateWithList: Story = {
-  name: 'Warning · create panel, with a list (the list needs a change)',
+  name: 'Warning · with a list (create/unplaced, some words did not fit)',
   render: () => (
     <GateSurface>
       <Message
         kind="warning"
-        heading="The list needs a change"
-        items={['"apple" appears twice', '"a" is shorter than three letters']}
+        heading="Some words did not fit into the crossword"
+        items={['rhythm', 'quartz', 'jukebox']}
       >
-        Fix these before the game can be built:
+        These three cross nothing, so they are not in the grid. You can build the game without them,
+        or go back and change the list.
       </Message>
     </GateSurface>
   ),

@@ -62,11 +62,11 @@ const UNSEEN_HEADING = {
  * times (issue #132). This has none for either to draw, so there is nothing
  * to see twice.
  *
- * Centred in the window: a visitor waiting to learn whether a room will let
- * them in. What stands there is the same panel `join` stands on
- * ({@link MiddlePanel}), and this is only the centring: the screen the create
- * panel is centred in, with the template's 22px of air round it
- * (`gateScreenSx`).
+ * At the top of the template's column (`gateScreenSx`, the one `/create`
+ * stands in): a visitor waiting to learn whether a room will let them in. What
+ * stands there is the same panel `join` stands on ({@link MiddlePanel}). It
+ * was centred in the window until `/create` moved to the top (issue #225); the
+ * doors are redrawn on their own issue (#226).
  *
  * Named the same page a real room screen is, unseen for the same reason
  * `RoomShell` says it unseen on the screen a game is played on — a reader
