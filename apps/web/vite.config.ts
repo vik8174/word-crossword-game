@@ -10,6 +10,7 @@ import {
   type FetchedFile,
   FIRST_VISIT_CEILING_BYTES,
   firstVisitWeight,
+  notCountedHrefs,
   tooHeavyReport,
 } from './build/first-visit-weight.ts';
 import { readGitRevision, readPackageVersion, resolveReleaseName } from './build/release-name.ts';
@@ -175,9 +176,9 @@ const capFirstVisit = (): Plugin => {
 
       const page =
         typeof html.source === 'string' ? html.source : Buffer.from(html.source).toString('utf8');
-      const asked = assetHrefs(page).map((href) =>
-        href.startsWith(base) ? href.slice(base.length) : href.replace(/^\//, ''),
-      );
+      const withoutBase = (href: string): string =>
+        href.startsWith(base) ? href.slice(base.length) : href.replace(/^\//, '');
+      const asked = assetHrefs(page).map(withoutBase);
       const files: readonly FetchedFile[] = [
         { fileName: HTML_FILE, gzipBytes: gzipSync(page).length },
         ...reachableChunks(chunks, entry.fileName).map(weigh),
@@ -196,6 +197,12 @@ const capFirstVisit = (): Plugin => {
           FIRST_VISIT_CEILING_BYTES / 1024
         ).toFixed(1)} KiB allowed.`,
       );
+
+      for (const { fileName, gzipBytes } of notCountedHrefs(page).map(withoutBase).map(weigh)) {
+        console.log(
+          `Not on the first visit: ${fileName} ${(gzipBytes / 1024).toFixed(1)} KiB gzipped, counted against no ceiling.`,
+        );
+      }
     },
   };
 };

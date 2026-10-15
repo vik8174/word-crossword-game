@@ -41,13 +41,18 @@ describe.each(DECLARATIONS)('the face as $name declares it', ({ path }) => {
     }
   });
 
-  it('preloads every file as a woff2 font', () => {
+  it('preloads the 400 and the 700 as woff2 fonts, and the italic not at all', () => {
     for (const file of FONT_FILES) {
-      expect(html).toMatch(
-        new RegExp(
-          `<link\\s+rel="preload"\\s+href="${file.href}"\\s+as="font"\\s+type="font/woff2"\\s+crossorigin\\s*/>`,
-        ),
+      const preload = new RegExp(
+        `<link\\s+rel="preload"\\s+href="${file.href}"\\s+as="font"\\s+type="font/woff2"\\s+crossorigin\\s*/>`,
       );
+
+      if (file.preloaded) {
+        expect(html).toMatch(preload);
+      } else {
+        expect(html).not.toMatch(preload);
+        expect(html).not.toMatch(new RegExp(`rel="preload"[^>]*${file.href}`));
+      }
     }
   });
 

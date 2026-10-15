@@ -3,8 +3,8 @@
   `iframe.html` and only ever includes files listed here. Without this, every
   story falls back to a system face, which the template comparison for
   #184/#185 exists to catch: the three `@font-face` blocks below, and the
-  `<link rel="preload">` declarations ahead of them, are copied from
-  `index.html` unchanged. Kept as a second copy rather than a shared
+  two `<link rel="preload">` declarations ahead of them (the italic is declared
+  and not preloaded, #263), are copied from `index.html` unchanged. Kept as a second copy rather than a shared
   include because Storybook's head is a static HTML file with no templating
   of its own. `src/font-faces.test.ts` fails when either copy stops declaring
   the same files with the same `unicode-range` (`LATIN_RANGE`).
@@ -19,13 +19,6 @@
 <link
   rel="preload"
   href="/fonts/alegreya-sans-v28-latin-700.woff2"
-  as="font"
-  type="font/woff2"
-  crossorigin
-/>
-<link
-  rel="preload"
-  href="/fonts/alegreya-sans-v28-latin-400italic.woff2"
   as="font"
   type="font/woff2"
   crossorigin

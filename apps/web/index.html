@@ -9,18 +9,23 @@
       400 italic, latin only. Which role each plays, and why the face is worth
       its bytes, is in src/scale.ts.
 
-      All three are preloaded. The text face (400, 700) is read on every screen
-      after the landing page, and a face that lands after that screen has been
-      laid out moves what somebody has already begun reading (issue #124); on
-      the landing page itself the name of the game is set in the 700, so a
-      request that only started after first paint would swap it out from under
-      somebody reading it (issue #115). The italic is preloaded with them so
-      that none of the three arrives late.
+      Two of them are preloaded: the 400 and the 700. The text face is read on
+      every screen after the landing page, and a face that lands after that
+      screen has been laid out moves what somebody has already begun reading
+      (issue #124); on the landing page itself the name of the game is set in
+      the 700, so a request that only started after first paint would swap it
+      out from under somebody reading it (issue #115). The italic is declared
+      and not preloaded: the landing page draws none, so it arrives when a
+      screen first draws italic text (the explained squares, the lobby, the
+      endings, street cards, the info glyph of a message), and that text may
+      show in a system face for a moment first (issue #263).
 
-      Every file here is counted against the ceiling a first visit may not go
-      over, preloaded or not (apps/web/build/first-visit-weight.ts). Every
-      unicode-range below is LATIN_RANGE (src/font-faces.ts); the test beside it
-      fails when they differ. -->
+      Every declared face is counted against the ceiling a first visit may not
+      go over, except the ones named in NOT_ON_FIRST_VISIT, which is the italic
+      alone, and only while it is not preloaded
+      (apps/web/build/first-visit-weight.ts). Every unicode-range below is
+      LATIN_RANGE (src/font-faces.ts); the test beside it fails when they
+      differ. -->
     <link
       rel="preload"
       href="/fonts/alegreya-sans-v28-latin-400.woff2"
@@ -31,13 +36,6 @@
     <link
       rel="preload"
       href="/fonts/alegreya-sans-v28-latin-700.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
-    <link
-      rel="preload"
-      href="/fonts/alegreya-sans-v28-latin-400italic.woff2"
       as="font"
       type="font/woff2"
       crossorigin

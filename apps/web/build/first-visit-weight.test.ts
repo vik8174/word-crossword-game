@@ -1,9 +1,14 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
   assetHrefs,
   FIRST_VISIT_CEILING_BYTES,
   firstVisitWeight,
+  NOT_ON_FIRST_VISIT,
+  notCountedHrefs,
   tooHeavyReport,
 } from './first-visit-weight';
 
@@ -71,6 +76,73 @@ describe('assetHrefs', () => {
 
   it('finds nothing in an HTML that asks for nothing', () => {
     expect(assetHrefs('<html><body></body></html>')).toEqual([]);
+  });
+});
+
+/** One face the way index.html writes it: declared, and preloaded or not. */
+const face = (href: string, preloaded: boolean): string => `
+  ${preloaded ? `<link rel="preload" href="${href}" as="font" type="font/woff2" crossorigin />` : ''}
+  <style>@font-face { src: url('${href}') format('woff2'); }</style>
+`;
+
+describe('the faces a first visit does not count', () => {
+  const LISTED = '/fonts/listed.woff2';
+  const OTHER = '/fonts/other.woff2';
+  const list = [LISTED];
+
+  it('counts a preloaded face', () => {
+    const html = face(OTHER, true);
+
+    expect(assetHrefs(html, list)).toEqual([OTHER]);
+    expect(notCountedHrefs(html, list)).toEqual([]);
+  });
+
+  it('counts a declared face that is not preloaded and is not on the list', () => {
+    // The old guard: a face does not become free by having its <link> deleted.
+    const html = face(OTHER, false);
+
+    expect(assetHrefs(html, list)).toEqual([OTHER]);
+    expect(notCountedHrefs(html, list)).toEqual([]);
+  });
+
+  it('counts a face on the list that is still preloaded', () => {
+    // The list never excuses a preload: the browser fetches the file at once.
+    const html = face(LISTED, true);
+
+    expect(assetHrefs(html, list)).toEqual([LISTED]);
+    expect(notCountedHrefs(html, list)).toEqual([]);
+  });
+
+  it('reports a face on the list that is not preloaded, and does not count it', () => {
+    const html = face(LISTED, false) + face(OTHER, true);
+
+    expect(assetHrefs(html, list)).toEqual([OTHER]);
+    expect(notCountedHrefs(html, list)).toEqual([LISTED]);
+  });
+
+  it('reports a listed face once however often it is declared', () => {
+    const html = face(LISTED, false) + face(LISTED, false);
+
+    expect(notCountedHrefs(html, list)).toEqual([LISTED]);
+  });
+
+  it('says nothing of a listed face the HTML does not declare', () => {
+    expect(assetHrefs('<html></html>', list)).toEqual([]);
+    expect(notCountedHrefs('<html></html>', list)).toEqual([]);
+  });
+
+  it('holds the latin italic alone', () => {
+    expect(NOT_ON_FIRST_VISIT).toEqual(['/fonts/alegreya-sans-v28-latin-400italic.woff2']);
+  });
+
+  it('leaves the latin italic of the shipped index.html out of the count and in the report', () => {
+    const html = readFileSync(resolve(__dirname, '../index.html'), 'utf8');
+
+    expect(assetHrefs(html)).toEqual([
+      '/fonts/alegreya-sans-v28-latin-400.woff2',
+      '/fonts/alegreya-sans-v28-latin-700.woff2',
+    ]);
+    expect(notCountedHrefs(html)).toEqual(['/fonts/alegreya-sans-v28-latin-400italic.woff2']);
   });
 });
 
