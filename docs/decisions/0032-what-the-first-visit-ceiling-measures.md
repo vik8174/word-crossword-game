@@ -45,3 +45,21 @@ Text wants two weights and no face worth having offers two for the twelve kibiby
 **Three faces are now fetched on a page that reads none of them.** The landing page is lettering only: the name over the gate and the one button are the sign face. The text face is preloaded all the same, because `/create` is the screen after it, and a face arriving once that screen is laid out moves a paragraph somebody has begun reading — measured at 19.5 pixels. That is a real cost paid by everyone who opens the landing page and goes no further, accepted knowingly.
 
 **178 was never a ceiling.** The comment in `first-visit-weight.ts` reads as though the number has been raised twice, from 178 to 210 to 218. There was no such constant before [#118](https://github.com/vik8174/word-crossword-game/issues/118): 178 was what a first visit weighed before the garden, not a limit anything was held to. The comment is corrected alongside this record, because a decision log that inherits a wrong history is worse than none.
+
+## Addendum (2026-10-15, [#263](https://github.com/vik8174/word-crossword-game/issues/263)): the latin italic is no longer part of the first visit
+
+**What changed.** The latin italic face (`alegreya-sans-v28-latin-400italic.woff2`) is no longer preloaded, and the first-visit check no longer counts it. The check still weighs it and prints it on a line of its own ("Not on the first visit: ..."), so its cost stays visible. The ceiling stays at 218 KiB. Viktor chose this way on 2026-10-15, with two others turned down: raising the ceiling, and deferring Sentry.
+
+**Why.** The landing page draws no italic. Italic text is drawn by the explained squares, the lobby, the endings, the street cards and the info glyph of a message, and each of those fetches the file when it first draws it. The first visit was at 215.1 KiB of 218.0 when the lesson issues ([#234](https://github.com/vik8174/word-crossword-game/issues/234) to [#236](https://github.com/vik8174/word-crossword-game/issues/236)) had not started, and the italic is 17.3 KiB of it. The cost moves to the moment a screen draws italic text, which may show in the regular face for a moment before the italic arrives.
+
+**The rule, and its order.** The check reads a list, `NOT_ON_FIRST_VISIT`, exported from `apps/web/build/first-visit-weight.ts`. It holds the latin italic alone. For each face the HTML declares:
+
+1. A face that the HTML preloads counts against the first visit, whatever the list says.
+2. A face that is on the list and is not preloaded is weighed and reported on its own line, and counts against no ceiling.
+3. Every other declared face counts, as before.
+
+**The guard holds.** This ADR said that every declared face counts "whether or not it is preloaded", so that a typeface does not become free by having its `<link>` deleted. That is still true for every face that is not on the list. Deleting a preload without adding the face to the list leaves the face counted. A face on the list that someone preloads again counts again, because a preload fetches the file with the first visit. Adding a face to the list is a pull request that changes this file and its test, and so is a decision made on purpose.
+
+**How this sits beside the second ceiling.** [#232](https://github.com/vik8174/word-crossword-game/issues/232) counts the latin-ext faces against a second ceiling of 60 KiB, by their unicode range. A face on `NOT_ON_FIRST_VISIT` is outside both ceilings, and #232 inherits this rule in the same order. The latin-ext italic is not on the list, so it is counted by its range.
+
+**The figures.** Measured by `SENTRY_AUTH_TOKEN= pnpm exec vite build` in `apps/web`, with `apps/web/.env` present: **215.1 KiB** on `295c78e` before this change and **198.0 KiB** after it (the CI build, which has no token). A production build is about 1.7 KiB heavier (the debug ids of the source-map upload), so **216.8** before and about **199.7** after.
