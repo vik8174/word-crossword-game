@@ -142,37 +142,39 @@ export const FiestaCard = ({ headline, children, words }: FiestaCardProps) => {
         {children}
       </Box>
 
-      <Box
-        component="ul"
-        sx={{
-          listStyle: 'none',
-          padding: 0,
-          margin: `${inRem(14)} 0 0`,
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: inRem(8),
-        }}
-      >
-        {words.map((word, index) => (
-          <Box
-            // A word listed twice is refused by the list's validator; the position
-            // keeps the key honest without relying on that from another module.
-            key={`${word}-${index}`}
-            component="li"
-            sx={{
-              fontStyle: 'italic',
-              fontSize: inRem(17),
-              padding: `${inRem(2)} ${inRem(10)}`,
-              borderRadius: inRem(6),
-              backgroundColor: STREET.tile,
-              color: STREET.ink,
-              boxShadow: `inset 0 0 0 ${OUTLINE_WIDTH}px ${STREET.ink}`,
-            }}
-          >
-            {word}
-          </Box>
-        ))}
-      </Box>
+      {words.length > 0 && (
+        <Box
+          component="ul"
+          sx={{
+            listStyle: 'none',
+            padding: 0,
+            margin: `${inRem(14)} 0 0`,
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: inRem(8),
+          }}
+        >
+          {words.map((word, index) => (
+            <Box
+              // A word listed twice is refused by the list's validator; the position
+              // keeps the key honest without relying on that from another module.
+              key={`${word}-${index}`}
+              component="li"
+              sx={{
+                fontStyle: 'italic',
+                fontSize: inRem(17),
+                padding: `${inRem(2)} ${inRem(10)}`,
+                borderRadius: inRem(6),
+                backgroundColor: STREET.tile,
+                color: STREET.ink,
+                boxShadow: `inset 0 0 0 ${OUTLINE_WIDTH}px ${STREET.ink}`,
+              }}
+            >
+              {word}
+            </Box>
+          ))}
+        </Box>
+      )}
     </Box>
   );
 };

@@ -35,3 +35,27 @@ export const roomPath = (roomId: string): string => `/room/${roomId}`;
  * roomUrl('abc123', 'https://example.com'); // 'https://example.com/room/abc123'
  */
 export const roomUrl = (roomId: string, origin: string): string => `${origin}${roomPath(roomId)}`;
+
+/**
+ * The address of `/create` with a lesson already chosen, which is where a
+ * teacher's ending leads ("Start a new lesson", `design/templates/state-tree.html`
+ * lines 1047 and 1062). `/create` alone still opens on a game with a friend, as
+ * Home's "Create a game" has it.
+ */
+export const NEW_LESSON_PATH = '/create?mode=lesson';
+
+/**
+ * What `/create` opens with chosen, from the address it was reached by.
+ *
+ * Only the one spelling `?mode=lesson` chooses a lesson; anything else, or
+ * nothing, is a game with a friend. The owner can still change the choice on the
+ * screen, and the address is read once, when the screen opens.
+ *
+ * @param search - The address's query, as `useSearchParams` hands it over
+ * @returns `lesson` for `?mode=lesson`, otherwise `pair`
+ *
+ * @example
+ * openingModeOf(new URLSearchParams('mode=lesson')); // 'lesson'
+ */
+export const openingModeOf = (search: URLSearchParams): 'pair' | 'lesson' =>
+  search.get('mode') === 'lesson' ? 'lesson' : 'pair';

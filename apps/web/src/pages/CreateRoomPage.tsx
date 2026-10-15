@@ -1,6 +1,6 @@
 import GlobalStyles from '@mui/material/GlobalStyles';
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword, validateWordList } from 'shared';
 
 import { NewRoomColumn } from '../components/NewRoomColumn';
@@ -11,7 +11,7 @@ import { MOTION_PLAY_CSS } from '../motion-play-styles';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
 import type { RoomMode } from '../rooms/room-document';
-import { roomPath } from '../rooms/room-link';
+import { openingModeOf, roomPath } from '../rooms/room-link';
 import { createRoom } from '../rooms/room-service';
 import { logGameEvent } from '../telemetry/analytics';
 import { useScreenReached } from '../telemetry/use-screen-reached';
@@ -64,9 +64,10 @@ export const CreateRoomPage = () => {
   // asked again on every render of a form that re-renders as its owner types.
   const [nickname, setNickname] = useState(readRememberedNickname);
   // What the room is for, chosen first: a pair game unless the owner says they
-  // are running a lesson. It cannot change once the room exists, so it is the
+  // are running a lesson, or arrived by `?mode=lesson` (a teacher's ending). It cannot change once the room exists, so it is the
   // owner's to settle here (ADR 0037).
-  const [mode, setMode] = useState<RoomMode>('pair');
+  const [searchParams] = useSearchParams();
+  const [mode, setMode] = useState<RoomMode>(() => openingModeOf(searchParams));
   const [rawWords, setRawWords] = useState('');
   const [creation, setCreation] = useState<CreationPhase>({ phase: 'editing' });
 
@@ -89,7 +90,7 @@ export const CreateRoomPage = () => {
       // After the write came back, so a room that was never created is never
       // counted as one. The size of the crossword travels with it; the id and
       // the words do not, and could not — see `telemetry/analytics.ts`.
-      void logGameEvent('room_created', { word_count: layout.placedWords.length });
+      void logGameEvent('room_created', { word_count: layout.placedWords.length, mode });
 
       // Replaced, not pushed: Back from a room leads out of the flow rather
       // than to a filled-in word list, which invites creating a second room

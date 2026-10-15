@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   BAND_LABEL,
+  endingStreetLabel,
   type LessonView,
   lobbyStreetLabel,
   joinStreetLabel,
@@ -171,5 +172,18 @@ describe('the label of the band over the game’s board (#228, and #235 for a le
 
   it('is the same clause the lobby and the door use, so the three cannot drift', () => {
     expect(roomStreetLabel(TEACHER).endsWith(TEACHER_CLAUSE)).toBe(true);
+  });
+});
+
+describe('endingStreetLabel', () => {
+  it('adds the teacher once on a lesson’s ending, whatever any mark says', () => {
+    const label = endingStreetLabel('A sagging line', true);
+
+    expect(label).toBe(`A sagging line${TEACHER_CLAUSE}`);
+    expect(countOf(label, 'teacher')).toBe(1);
+  });
+
+  it('leaves a pair game’s ending as it was', () => {
+    expect(endingStreetLabel('A sagging line', false)).toBe('A sagging line');
   });
 });

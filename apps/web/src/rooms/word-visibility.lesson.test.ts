@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import type { ReadableRoom } from './room-access';
 import {
   answeredByLine,
+  answeredByPhrase,
   answeredCountOf,
   gridViewFor,
   type PlayerWordView,
@@ -294,6 +295,12 @@ describe('answeredCountOf', () => {
       answered: 3,
       total: 3,
     });
+  });
+});
+
+describe('answeredByPhrase', () => {
+  it('is the line without its full stop, which the lesson summary says in its heading', () => {
+    expect(answeredByPhrase({ answered: 1, total: 3 }, 'Taras')).toBe('1 of 3 answered by Taras');
   });
 });
 

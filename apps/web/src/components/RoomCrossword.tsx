@@ -76,8 +76,9 @@ interface RoomCrosswordProps {
    * not play on it, so they are shown every word on a board nothing can be typed
    * into (`TeacherGrid`) instead of the board a player gets. Given by the one
    * screen that is the teacher's room, with the names of the two students the
-   * board's colours are for. Absent everywhere else, the teacher's endings
-   * included, which are another issue's.
+   * board's colours are for. Absent everywhere else, but for the teacher's Ended
+   * early, which keeps the marking; the teacher's Finished has nothing left to
+   * mark, and draws the full board a player gets.
    */
   readonly watching?: {
     readonly leftName: string;
