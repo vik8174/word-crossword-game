@@ -37,6 +37,21 @@ export const openGridCaption = (wordCount: number): string =>
   `${wordCount} words are hidden in this grid.`;
 
 /**
+ * Said over the crossword a lesson's teacher watches: every word is on it, and
+ * none is theirs to guess. It is read and not shown (the game room draws no
+ * visible heading), so it says what the board is to somebody who cannot see
+ * which squares are whose.
+ *
+ * @param wordCount - How many words made it into the grid
+ * @returns The caption for the teacher's board
+ *
+ * @example
+ * watchedGridCaption(6); // '6 words are in this grid, and every one of them is shown to you.'
+ */
+export const watchedGridCaption = (wordCount: number): string =>
+  `${wordsLabel(wordCount)} ${wordCount === 1 ? 'is' : 'are'} in this grid, and every one of them is shown to you.`;
+
+/**
  * Said over a crossword that really was finished — every word is on the board.
  *
  * @param wordCount - How many words made it into the grid

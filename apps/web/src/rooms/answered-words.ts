@@ -43,3 +43,31 @@ export const answeredWordsOf = (
     .sort((one, other) => one.number - other.number)
     .map((entry) => entry.word);
 };
+
+/**
+ * Every word that has been answered, as a lesson's teacher may name it, in the
+ * order the board numbers them.
+ *
+ * The teacher is shown every word of the crossword, so every answered one is
+ * theirs to hang on the line, whoever explained it and whoever answered it. A
+ * word that shares its number with another (an across and a down from the same
+ * square) goes by its place in the layout, as the board orders them. For any
+ * other viewer there is nothing here: a player's cards are
+ * {@link answeredWordsOf}'s, and they hold only what that player may read.
+ *
+ * @param wordView - The viewer's words, from `wordViewFor`
+ * @returns The answered words of a teacher's `watched` view, and none for any other
+ *
+ * @example
+ * answeredWordsOfWatched(wordViewFor(room, teacherId)); // ['bread', 'apple']
+ */
+export const answeredWordsOfWatched = (wordView: PlayerWordView): readonly string[] =>
+  wordView.kind === 'watched'
+    ? [...wordView.left.words, ...wordView.right.words]
+        .filter((word) => word.isSolved)
+        .sort(
+          (one, other) =>
+            one.number - other.number || one.id.localeCompare(other.id, 'en', { numeric: true }),
+        )
+        .map((word) => word.word)
+    : [];
