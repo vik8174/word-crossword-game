@@ -168,29 +168,33 @@ because a permission rule matches a command by its prefix: one name is one rule.
 
 ### Budgets an issue may cite
 
-| ceiling                            | where it is enforced                                        | measured on `bc02ded`                          |
-| ---------------------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
-| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **190.7 KiB** without a token, ~192.4 with one |
+| ceiling                            | where it is enforced                                        | measured on `195c4bb`         |
+| ---------------------------------- | ----------------------------------------------------------- | ----------------------------- |
+| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **208.3 KiB** without a token |
 
-**CI weighs a lighter bundle than the one that reaches a player**, by roughly
-1.7 KiB — 190.7 against PR #208's 192.4: a production build carries a Sentry
-token that a CI build does not. The
+Measured by the Architect on `195c4bb` (#222 merged, the garden gone, Alegreya
+Sans latin in place) in a clean worktree with no `apps/web/.env`, by
+`SENTRY_AUTH_TOKEN= pnpm exec vite build` in `apps/web`. The Worker and the
+Inspector of #222 measured the same 208.3 on its head `37ea425`, and 211.8 on
+`e8a03cb` before it. The scene-image ceiling went with the garden in #222.
+
+**CI weighs a lighter bundle than the one that reaches a player**: a production
+build carries a Sentry token that a CI build does not, and that adds roughly
+1.7 KiB (measured on #244: 211.8 in CI's build, 213.5 with `.env`). The
 difference is in the artefact, not in the moment of measuring, so a pull request
 sitting 1 KiB under the ceiling in CI is not under it in production. Say which
-build produced any figure quoted in an issue.
+build produced any figure quoted in an issue, and quote the command and the
+commit with it, never the row alone.
 
-**So the first-visit row is two numbers, not one, and neither is "the" weight.**
-The 190.7 was measured on `bc02ded` in a clean worktree with no `apps/web/.env`,
-by `SENTRY_AUTH_TOKEN= pnpm exec vite build` in `apps/web`; the ~192.4 is what
-PR #208 reports for the same code built with `.env` in place, and is **not** a
-figure this section measured. Quote the command and the commit with any weight,
-never the row alone.
+**A second ceiling is coming with #232**: the latin-ext faces, counted apart
+under 60.0 KiB gzipped (Viktor, 2026-10-14). It is not enforced until #232 merges.
 
-**This row goes stale faster than anything else here.** It said 192.2 on
-`c71439c` until PR #208 landed, and that stale figure was quoted into two issues
-before an inspector caught it by building the branch rather than by reading it.
-A weight is a measurement of one commit by one command: if the commit you are on
-is not the commit in the heading, **run the command** rather than cite the row.
+**This row goes stale faster than anything else here.** It said 190.7 on
+`bc02ded` for two releases' worth of issues, and a stale figure has been quoted
+into issues before an inspector caught it by building the branch rather than by
+reading it. A weight is a measurement of one commit by one command: if the
+commit you are on is not the commit in the heading, **run the command** rather
+than cite the row.
 
 ### Default level
 
