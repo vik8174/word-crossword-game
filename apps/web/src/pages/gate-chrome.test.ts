@@ -26,17 +26,13 @@ describe('GATE_LOCKUP_SX', () => {
     expect(GATE_LOCKUP_SX.textAlign).toBe('center');
   });
 
-  it('is 52% of the window when the window is at least as wide as 16:9', () => {
-    expect(GATE_LOCKUP_SX.width).toBe('52%');
-  });
-
-  it('follows the height instead on a window narrower than 16:9', () => {
-    const narrow = GATE_LOCKUP_SX['@media (max-aspect-ratio: 16/9)'] as {
-      width: string;
-    };
-
-    expect(narrow.width).toBe(
-      'min(92%, calc(calc(100vh - var(--frame-header-height, 64px)) * 16 / 9 * 0.52))',
+  it('is one formula at every window, with no query on the window’s aspect ratio', () => {
+    // A query on the window switched at the wrong width once the stage became
+    // the window less the frame's header (issue #245); the formula below is
+    // continuous where it would have switched.
+    expect(Object.keys(GATE_LOCKUP_SX).filter((key) => key.startsWith('@media'))).toEqual([]);
+    expect(GATE_LOCKUP_SX.width).toBe(
+      'min(92%, max(52%, calc(calc(100vh - var(--frame-header-height, 64px)) * 16 / 9 * 0.52)))',
     );
   });
 });

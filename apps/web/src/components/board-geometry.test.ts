@@ -2,13 +2,17 @@ import { generateCrossword, MAX_WORDS, MIN_WORDS } from 'shared';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  APP_SHELL_BOARD_HEIGHT_CSS,
+  BOARD_HEIGHT_CSS,
   BOARD_HEIGHT_PERCENT,
   type BoardBox,
   type BoardShape,
+  CELL_GAP,
   cellSizeIn,
   fitsIn,
   MAX_CELL_SIZE,
   MIN_CELL_SIZE,
+  WIDE_BOARD_HEIGHT_CSS,
   WIDE_BOARD_HEIGHT_PERCENT,
 } from './board-geometry';
 import { FRAME_HEADER_FALLBACK } from './frame-height';
@@ -299,5 +303,33 @@ describe('whether a board fits', () => {
 
     expect(fitsIn(box, { cols: 25, rows: 25 })).toBe(true);
     expect(fitsIn(box, { cols: 26, rows: 26 })).toBe(false);
+  });
+});
+
+/**
+ * Which boards leave room for the frame's header (issue #245).
+ *
+ * Where the room is one window, from 768 by 600 up, the header is part of that
+ * window and the board takes its share of what the header leaves. On a phone the
+ * room is a page that scrolls and the header only adds to the page, so the board
+ * keeps its share of the whole window, and no board scrolls inside a scrolling
+ * page (ADR 0029). The stylesheet is the only place this can be held: jsdom
+ * lays nothing out.
+ */
+describe('the board and the frame’s header', () => {
+  it('keeps 62% of the whole window on a phone, whatever the header is', () => {
+    expect(BOARD_HEIGHT_CSS).toBe(
+      `min(${BOARD_HEIGHT_PERCENT}dvh, calc(var(--board-rows) * ${MAX_CELL_SIZE + CELL_GAP}px - ${CELL_GAP}px))`,
+    );
+    expect(BOARD_HEIGHT_CSS).not.toContain('--frame-header-height');
+  });
+
+  it('takes its share of what the header leaves wherever the room is one window', () => {
+    expect(APP_SHELL_BOARD_HEIGHT_CSS).toContain(
+      `calc(${BOARD_HEIGHT_PERCENT}dvh - var(--frame-header-height, 64px))`,
+    );
+    expect(WIDE_BOARD_HEIGHT_CSS).toContain(
+      `calc(${WIDE_BOARD_HEIGHT_PERCENT}dvh - var(--frame-header-height, 64px))`,
+    );
   });
 });
