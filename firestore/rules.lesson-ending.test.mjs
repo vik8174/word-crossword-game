@@ -6,7 +6,7 @@ import {
   assertSucceeds,
   initializeTestEnvironment,
 } from '@firebase/rules-unit-testing';
-import { doc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
+import { deleteField, doc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 
 /**
  * Behaviour tests for the half of `firestore.rules` that says what a lesson's
@@ -247,6 +247,22 @@ describe('the teacher dealing the words of a lesson', () => {
       update(TEACHER, {
         ...deal({ w0: STUDENT_A, w1: STUDENT_B, w2: STUDENT_A }),
         'words.w3': { hiddenFromPlayerId: STUDENT_A, guessedByPlayerId: null },
+      }),
+    );
+  });
+
+  it('is refused when it renames a word key, which keeps the count of words', async () => {
+    // The size of `words` is unchanged, so `keepsRoomIdentity` lets it through.
+    // Only the key check of the deal refuses it.
+    await seed(lesson());
+
+    await assertFails(
+      update(TEACHER, {
+        status: 'playing',
+        'words.w0.hiddenFromPlayerId': STUDENT_A,
+        'words.w1.hiddenFromPlayerId': STUDENT_B,
+        'words.w2': deleteField(),
+        'words.w9': { hiddenFromPlayerId: STUDENT_A, guessedByPlayerId: null },
       }),
     );
   });
