@@ -168,15 +168,17 @@ because a permission rule matches a command by its prefix: one name is one rule.
 
 ### Budgets an issue may cite
 
-| ceiling                            | where it is enforced                                        | measured on `195c4bb`         |
+| ceiling                            | where it is enforced                                        | measured on `cd0fb44`         |
 | ---------------------------------- | ----------------------------------------------------------- | ----------------------------- |
-| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **208.3 KiB** without a token |
+| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **213.6 KiB** without a token |
 
-Measured by the Architect on `195c4bb` (#222 merged, the garden gone, Alegreya
-Sans latin in place) in a clean worktree with no `apps/web/.env`, by
-`SENTRY_AUTH_TOKEN= pnpm exec vite build` in `apps/web`. The Worker and the
-Inspector of #222 measured the same 208.3 on its head `37ea425`, and 211.8 on
-`e8a03cb` before it. The scene-image ceiling went with the garden in #222.
+Measured by the Architect on `cd0fb44` (#224 merged: Home rebuilt, the `Street`
+drawing now on the first visit) in a clean worktree with no `apps/web/.env`, by
+`SENTRY_AUTH_TOKEN= pnpm exec vite build` in `apps/web`. It was 208.3 on
+`195c4bb` before #245, #223 and #224. #224's Inspector read **215.8 KiB for the
+production build** (with `.env` and its Sentry token) on the same code: **2.2 KiB
+are left** for the screens still to come. The scene-image ceiling went with the
+garden in #222.
 
 **CI weighs a lighter bundle than the one that reaches a player**: a production
 build carries a Sentry token that a CI build does not, and that adds roughly
