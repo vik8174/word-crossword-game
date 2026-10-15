@@ -314,13 +314,23 @@ export const wordViewFor = (room: ReadableRoom, viewerId: string): PlayerWordVie
  * be the thing deciding whether the game is over.
  *
  * @param room - The room document as read from Firestore
- * @returns The words in grid order, or nothing at all unless the crossword is full
+ * @returns The words in the order the board numbers them, or nothing at all unless the crossword is full
  *
  * @example
  * finishedWordsOf(room); // ['cat', 'car', 'rat']
  */
-export const finishedWordsOf = (room: ReadableRoom): readonly string[] =>
-  isGameFinished(room) ? room.layout.placedWords.map(({ word }) => word) : [];
+export const finishedWordsOf = (room: ReadableRoom): readonly string[] => {
+  if (!isGameFinished(room)) {
+    return [];
+  }
+
+  // The order the board numbers them in, which is the order of the line between
+  // the balconies and of the tiles in the card. `numberCrossword` lists a word
+  // that shares its first square with another one by its place in the layout.
+  return [...numberCrossword(room.layout.placedWords)]
+    .sort((one, other) => one.number - other.number || one.wordIndex - other.wordIndex)
+    .flatMap(({ wordIndex }) => room.layout.placedWords[wordIndex]?.word ?? []);
+};
 
 /**
  * The squares of the words the group has already answered.

@@ -42,18 +42,20 @@ export const CROSSWORD_HEADING_ID = 'grid-heading';
  * moving through the page by headings with a gap in the outline. It is drawn
  * as the template draws the `h3`.
  *
- * @param props.caption - What the squares are for right now — see `rooms/grid-caption.ts`
+ * @param props.caption - What the squares are for right now (see `rooms/grid-caption.ts`); left out where the screen says it under its drawing instead
  *
  * @example
  * <CrosswordHeading caption={openGridCaption(6)} />
  */
-export const CrosswordHeading = ({ caption }: { readonly caption: string }) => (
+export const CrosswordHeading = ({ caption }: { readonly caption?: string }) => (
   <>
     <Box component="h2" id={CROSSWORD_HEADING_ID} sx={zoneHeadingSx}>
       The crossword
     </Box>
-    <Box component="p" sx={{ ...zoneHintSx, margin: 0 }}>
-      {caption}
-    </Box>
+    {caption !== undefined && (
+      <Box component="p" sx={{ ...zoneHintSx, margin: 0 }}>
+        {caption}
+      </Box>
+    )}
   </>
 );

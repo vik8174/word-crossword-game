@@ -842,7 +842,7 @@ describe('RoomPage', () => {
         }),
       );
 
-      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.getByText(/you did it/i)).toBeInTheDocument();
       expect(screen.queryByLabelText(/nickname/i)).not.toBeInTheDocument();
     });
 
@@ -1443,12 +1443,12 @@ describe('RoomPage', () => {
 
     it('shows the finished game to a player who answered nothing, without a reload', async () => {
       await openRoom(withWords({ w0: open, w1: carOpen }));
-      expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/you did it/i)).not.toBeInTheDocument();
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
-      // Said once, by the panel beside the board. It was said a second time by a
+      expect(screen.getByText(/you did it/i)).toBeInTheDocument();
+      // Said once, by the card beside the board. It was said a second time by a
       // cloth laid over the table at the moment the game ended (issue #116), and
       // that went with the garden (issue #222).
       expect(screen.getAllByText(/all 2 of its words, between the 2 of you/i)).toHaveLength(1);
@@ -1459,7 +1459,7 @@ describe('RoomPage', () => {
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      // A finished game is answered by its panel alone: no greeting, and no
+      // A finished game is answered by its card alone: no greeting, and no
       // second control that leaves the room.
       expect(screen.queryByRole('heading', { name: /congratulations/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: /back to the gate/i })).not.toBeInTheDocument();
@@ -1468,7 +1468,7 @@ describe('RoomPage', () => {
     it('shows a finished room opened in a fresh tab the same way', async () => {
       await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.getByText(/you did it/i)).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: /congratulations/i })).not.toBeInTheDocument();
     });
 
@@ -1479,12 +1479,12 @@ describe('RoomPage', () => {
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      // Scoped to the finished panel itself rather than the whole page: the
+      // Scoped to the fiesta card itself rather than the whole page: the
       // leaving screen still has `car` in its own words-to-explain index while
       // the shift is running, and a bare `getByText` would pass on that alone
-      // — this is the one place the whole crossword, secrets included, is
-      // meant to be spelled out (`GameCompletedPanel.tsx`).
-      const finishedPanel = screen.getByRole('region', { name: /every word is in/i });
+      // (this is the one place the whole crossword, secrets included, is
+      // meant to be spelled out, `FiestaCard.tsx`).
+      const finishedPanel = screen.getByRole('status', { name: /you did it/i });
       expect(within(finishedPanel).getByText('cat')).toBeInTheDocument();
       expect(within(finishedPanel).getByText('car')).toBeInTheDocument();
     });
@@ -1492,7 +1492,7 @@ describe('RoomPage', () => {
     it('gives a player who comes back to the link their finished game, not a refusal', async () => {
       await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.getByText(/you did it/i)).toBeInTheDocument();
       expect(screen.queryByText(/this game is over/i)).not.toBeInTheDocument();
     });
 
@@ -1521,7 +1521,7 @@ describe('RoomPage', () => {
       await openRoom(room);
 
       expectNoHiddenWordOnScreen(room);
-      expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/you did it/i)).not.toBeInTheDocument();
       expect(screen.getByText(/ended before every word had been answered/i)).toBeInTheDocument();
     });
 
@@ -1537,7 +1537,6 @@ describe('RoomPage', () => {
       expect(
         screen.getByText(/apart from the ones that were yours to explain/i),
       ).toBeInTheDocument();
-      expect(screen.getByText(/apart from any that were yours to explain/i)).toBeInTheDocument();
     });
 
     it('stops taking answers in a closed room, whatever it says about its words', async () => {
@@ -1552,7 +1551,7 @@ describe('RoomPage', () => {
     it('keeps the celebration for a room that really did finish its crossword', async () => {
       await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
+      expect(screen.getByText(/you did it/i)).toBeInTheDocument();
       expect(
         screen.queryByText(/ended before every word had been answered/i),
       ).not.toBeInTheDocument();
@@ -1701,7 +1700,7 @@ describe('RoomPage', () => {
       await openRoom(room);
 
       expect(gridLetters()).toBe('CATAR');
-      expect(screen.queryByText(/every word is in/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/you did it/i)).not.toBeInTheDocument();
     });
 
     it('spells nothing out in a room ended before a single word was answered', async () => {

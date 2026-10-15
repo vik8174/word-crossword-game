@@ -10,15 +10,13 @@ import { cellKey, type GridView, type WordLocation } from '../rooms/word-visibil
 import { inRem } from '../scale';
 import { STREET } from '../street';
 import {
-  APP_SHELL_BOARD_HEIGHT_CSS,
-  BOARD_HEIGHT_CSS,
+  type BandAbove,
+  boardHeightsFor,
   boardVariables,
   CELL_GAP,
   CELL_SIDE,
   cellSizeVariable,
   GRID_COLUMNS_CSS,
-  WIDE_BOARD_HEIGHT_BELOW_BAND_CSS,
-  WIDE_BOARD_HEIGHT_CSS,
 } from './board-geometry';
 import { GridSquare } from './GridSquare';
 import { APP_SHELL, THREE_ZONES } from './room-layout';
@@ -68,11 +66,11 @@ interface CrosswordGridProps {
    */
   readonly wordToReach?: WordLocation | null;
   /**
-   * Whether the room's drawing stands above the board, so the board is given
-   * the share of the window that is left once the drawing has taken its height
-   * (see `board-geometry.ts`).
+   * What the room draws above the board, so the board is given the share of the
+   * window that is left once the drawing has taken its height (see
+   * `board-geometry.ts`).
    */
-  readonly belowBand?: boolean;
+  readonly bandAbove?: BandAbove;
 }
 
 /**
@@ -107,7 +105,7 @@ interface CrosswordGridProps {
  * @param props.view - What this player's screen may draw, from `gridViewFor`
  * @param props.onSolved - Called once a word of theirs has been answered
  * @param props.wordToReach - A word the player asked to be taken to
- * @param props.belowBand - Whether the room's drawing stands above the board
+ * @param props.bandAbove - What the room draws above the board, if anything
  *
  * @example
  * <CrosswordGrid view={gridViewFor(room, viewerId)} onSolved={submitGuess} />
@@ -116,8 +114,9 @@ export const CrosswordGrid = ({
   view,
   onSolved,
   wordToReach,
-  belowBand = false,
+  bandAbove = 'none',
 }: CrosswordGridProps) => {
+  const heights = boardHeightsFor(bandAbove);
   const entry = useGuessEntry(view, onSolved);
   const cursor = useGridCursor(entry, view);
   // Held in a ref rather than watched as a dependency: what asks for a word is
@@ -265,12 +264,10 @@ export const CrosswordGrid = ({
         sx={{
           ...boardVariables(view),
           containerType: 'size',
-          height: BOARD_HEIGHT_CSS,
+          height: heights.phone,
           overflow: 'auto',
-          [APP_SHELL]: { height: APP_SHELL_BOARD_HEIGHT_CSS },
-          [THREE_ZONES]: {
-            height: belowBand ? WIDE_BOARD_HEIGHT_BELOW_BAND_CSS : WIDE_BOARD_HEIGHT_CSS,
-          },
+          [APP_SHELL]: { height: heights.appShell },
+          [THREE_ZONES]: { height: heights.wide },
         }}
       >
         <Box

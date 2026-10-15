@@ -24,7 +24,7 @@
  * @returns The sentence
  *
  * @example
- * finishedGameSummary(12, 2); // 'You finished the crossword together — all 12 ...'
+ * finishedGameSummary(12, 2); // 'You finished the crossword together: all 12 of its words, between the 2 of you.'
  */
 export const finishedGameSummary = (wordCount: number, playerCount: number): string =>
-  `You finished the crossword together — all ${wordCount} of its words, between the ${playerCount} of you.`;
+  `You finished the crossword together: all ${wordCount} of its words, between the ${playerCount} of you.`;

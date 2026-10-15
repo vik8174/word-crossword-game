@@ -4,7 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   APP_SHELL_BOARD_HEIGHT_CSS,
   BAND_MIN_CELL_SIZE,
+  BAND_NOTE_GAP,
   bandIsShown,
+  boardBoxIn,
+  boardHeightsFor,
   BOARD_HEIGHT_CSS,
   BOARD_HEIGHT_PERCENT,
   type BoardBox,
@@ -405,4 +408,103 @@ describe('the band above the board', () => {
     // At 1200 the middle zone is 444 wide: fourteen columns cannot be 36px there.
     expect(bandIsShown({ width: 1200, height: 4000 }, SHORT_LIST)).toBe(false);
   });
+});
+
+describe('the board under the band on the endings', () => {
+  /** The drawing's `size=few` board: six words on 9 by 7. */
+  const FEW_BOARD: BoardShape = { cols: 9, rows: 7 };
+  /** The drawing's `size=many` board: eight words on 11 by 11. */
+  const MANY_BOARD: BoardShape = { cols: 11, rows: 11 };
+  const WIDE = { width: 1440, height: 900 };
+  const PHONE = { width: 375, height: 812 };
+
+  it('leaves a board with nothing above it exactly as it was', () => {
+    expect(boardHeightsFor('none')).toEqual({
+      phone: BOARD_HEIGHT_CSS,
+      appShell: APP_SHELL_BOARD_HEIGHT_CSS,
+      wide: WIDE_BOARD_HEIGHT_CSS,
+    });
+  });
+
+  it('takes the band off the board from a tablet up and never on a phone', () => {
+    const heights = boardHeightsFor('band');
+
+    // A phone is a page that scrolls: the drawing costs the board nothing there.
+    expect(heights.phone).toBe(BOARD_HEIGHT_CSS);
+    expect(heights.appShell).toContain('100cqw * 226 / 640 + 18px');
+    expect(heights.wide).toContain('100cqw * 226 / 640 + 18px');
+  });
+
+  it('takes the line under the band off as well on Ended early', () => {
+    expect(boardHeightsFor('band-with-note').wide).toContain(
+      `100cqw * 226 / 640 + ${BAND_NOTE_GAP}px`,
+    );
+  });
+
+  it('gives the eight-word board squares of 32.6px at 1440 by 900, under the band', () => {
+    // 78% of the 900 less the 64 of the header is 638, the band is 684 × 226/640
+    // = 241.5 and 18 under it, which leaves 378.5. The drawing's own square is
+    // 32 here.
+    const box = boardBoxIn(WIDE, MANY_BOARD, 'band');
+
+    expect(box.width).toBe(684);
+    expect(box.height).toBeCloseTo(378.5, 1);
+    expect(cellSizeIn(box, MANY_BOARD)).toBeCloseTo(32.6, 1);
+  });
+
+  it('lets the six-word board stay at its largest square at 1440 by 900', () => {
+    const box = boardBoxIn(WIDE, FEW_BOARD, 'band');
+
+    expect(box.height).toBe(7 * (MAX_CELL_SIZE + CELL_GAP) - CELL_GAP);
+    expect(cellSizeIn(box, FEW_BOARD)).toBe(MAX_CELL_SIZE);
+  });
+
+  it('gives up the line under the band on Ended early too', () => {
+    const box = boardBoxIn(WIDE, MANY_BOARD, 'band-with-note');
+
+    expect(box.height).toBeCloseTo(638 - 241.5 - BAND_NOTE_GAP, 1);
+  });
+
+  it('takes nothing off the board on a phone at 375 by 812, where the page scrolls', () => {
+    const withBand = boardBoxIn(PHONE, MANY_BOARD, 'band');
+
+    expect(withBand).toEqual(boardBoxIn(PHONE, MANY_BOARD, 'none'));
+    expect(withBand.width).toBe(375 - 36);
+    expect(cellSizeIn(withBand, MANY_BOARD)).toBeCloseTo(29, 0);
+  });
+
+  it('takes the band off the board on a tablet, where the room is one window', () => {
+    const box = boardBoxIn({ width: 834, height: 1112 }, MANY_BOARD, 'band');
+
+    // 62% of 1112 less 64 is 625.4; the band is 770 × 226/640 and 18 under it.
+    expect(box.width).toBe(834 - 64);
+    expect(box.height).toBeCloseTo(0.62 * 1112 - 64 - (770 * (226 / 640) + 18), 6);
+  });
+
+  it('never squeezes the board below squares of 20px: past that the zone scrolls', () => {
+    // A window so wide that the band alone is taller than the board's share.
+    const box = boardBoxIn({ width: 2560, height: 900 }, MANY_BOARD, 'band');
+
+    expect(box.height).toBe(11 * (MIN_CELL_SIZE + CELL_GAP) - CELL_GAP);
+    expect(boardHeightsFor('band').wide).toContain(
+      `calc(var(--board-rows) * ${MIN_CELL_SIZE + CELL_GAP}px - ${CELL_GAP}px)`,
+    );
+  });
+
+  it(
+    'keeps every 10- and 20-word board at 1440 by 900 at squares of 20px or more',
+    () => {
+      for (const words of [MIN_WORDS, MAX_WORDS]) {
+        for (const shape of layoutsOf(words)) {
+          const box = boardBoxIn(WIDE, shape, 'band');
+
+          expect(box.height).toBeGreaterThanOrEqual(
+            shape.rows * (MIN_CELL_SIZE + CELL_GAP) - CELL_GAP,
+          );
+          expect(cellSizeIn(box, shape)).toBeGreaterThanOrEqual(MIN_CELL_SIZE);
+        }
+      }
+    },
+    MEASUREMENT_TIMEOUT_MS,
+  );
 });

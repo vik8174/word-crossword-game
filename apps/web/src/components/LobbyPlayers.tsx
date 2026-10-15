@@ -61,9 +61,9 @@ interface LobbyPlayersProps {
  * "away for 2 min" at the far end of an away player's row, and a row for the
  * seat that is still free.
  *
- * The game room draws the same block (the template's `playing` calls the same
- * `players`, issue #228). The endings keep `PlayerList` until they are redrawn
- * (#229).
+ * The game room and both endings draw the same block (the template's `playing`,
+ * `finished` and `closed-early` all call the same `players`, issues #228 and
+ * #229).
  *
  * @param props.players - Players in join order
  * @param props.ownerId - The player who is the host

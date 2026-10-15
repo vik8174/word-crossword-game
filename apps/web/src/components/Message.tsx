@@ -37,8 +37,7 @@ interface MessageProps {
   readonly heading: string;
   /**
    * `id` put on the heading, for a caller whose own heading this message
-   * stands in for and that already has an `aria-labelledby` pointing at one
-   * (`GameCompletedPanel`, carried over from its `AlertTitle`).
+   * stands in for and that already has an `aria-labelledby` pointing at one.
    */
   readonly headingId?: string;
   /**
@@ -54,9 +53,9 @@ interface MessageProps {
   /**
    * How this message announces itself to a screen reader.
    *
-   * `alert` everywhere except `GameCompletedPanel`, which keeps the `status`
-   * its `Alert` carried — a decision this component only carries out, not one
-   * it makes (issue #185, "Decided, not to reopen").
+   * `alert` unless the caller says `status`: Ended early does, because it
+   * reports what happened rather than interrupting (issue #185, "Decided, not to
+   * reopen"; a decision this component only carries out, not one it makes).
    */
   readonly role?: 'alert' | 'status';
 }
@@ -77,7 +76,7 @@ interface MessageProps {
  * @param props.headingLevel - Makes the heading an `h1` or `h2`; a `span` otherwise
  * @param props.children - The sentence itself
  * @param props.items - Further detail as a list, if there is any
- * @param props.role - `alert` unless the caller is `GameCompletedPanel`
+ * @param props.role - `alert` unless the caller says `status`
  *
  * @example
  * <Message kind="error" heading="The room could not be created">

@@ -40,7 +40,7 @@ const DoorsSurface = ({ children }: { readonly children: ReactNode }) => (
 );
 
 /**
- * A room's own side zone — the tile `GameCompletedPanel`'s success stands in,
+ * A room's own side zone — the tile a success would stand in,
  * inside `RoomShell` (`components/RoomShell.tsx`'s `zoneSx`, reused at the same
  * width via `room-layout.ts`'s `SIDE_ZONE_WIDTH` rather than copied).
  */
@@ -64,7 +64,7 @@ const HallSurface = ({ children }: { readonly children: ReactNode }) => (
  * (issue #185), each kind shown on the surface it first appears on — warning
  * and error on a tile down the middle (the surface `WordListForm` and
  * `JoinRoomForm` stand on), info in the doors' column (`RoomUnavailableNotice`),
- * success in a room's side zone (`GameCompletedPanel`).
+ * success in a room's side zone (no screen says one today).
  *
  * Warning is the one kind that really appears both with a list and without
  * one in this app (`WordListForm`'s validation errors and unfit words versus
@@ -136,7 +136,7 @@ export const SuccessOnHall: Story = {
   render: () => (
     <HallSurface>
       <Message kind="success" heading="Every word is in" role="status">
-        You finished the crossword together — all 12 of its words, between the 2 of you.
+        You finished the crossword together: all 12 of its words, between the 2 of you.
       </Message>
     </HallSurface>
   ),

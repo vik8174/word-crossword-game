@@ -49,20 +49,21 @@ export const finishedGridCaption = (wordCount: number): string =>
   `All ${wordCount} words of this grid are in place.`;
 
 /**
- * Said over a crossword whose room was closed with words still unanswered.
+ * Said under the drawing on a crossword whose room was closed with words still
+ * unanswered (`state-tree.html`, line 1058).
  *
  * The words this reader was explaining are still written in for them, as they
- * were all game — their own words, never anybody's to guess — so the caption
- * says so rather than promising a blank board it does not show.
+ * were all game. They were never theirs to guess, and the card beside the board
+ * says so, so this line says only what was answered and what was not.
  *
  * @param wordCount - How many words made it into the grid
- * @returns The caption for a board that will stay half empty
+ * @returns The line for a board that will stay half empty
  *
  * @example
- * closedGridCaption(6); // 'Of the 6 words of this grid, the ones that were answered ...'
+ * closedGridCaption(6); // 'Of the 6 words, the ones that were answered are in place; the rest stay blank.'
  */
 export const closedGridCaption = (wordCount: number): string =>
-  `Of the ${wordCount} words of this grid, the ones that were answered are in place; the rest stay blank, apart from any that were yours to explain.`;
+  `Of the ${wordCount} words, the ones that were answered are in place; the rest stay blank.`;
 
 /**
  * A number of words, counted the way a sentence needs it.
