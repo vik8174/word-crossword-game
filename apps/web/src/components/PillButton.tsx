@@ -2,27 +2,17 @@ import Box from '@mui/material/Box';
 import type { SxProps, Theme } from '@mui/material/styles';
 import type { ElementType, ReactNode } from 'react';
 
-import { buttonSx, dotSx, LOADING_DOT_CLASS, type ButtonKind } from './button-styles';
+import { buttonSx, dotSx, type ButtonKind } from './button-styles';
 
 export interface PillButtonProps {
-  /** `primary`, the action in spruce, or `quiet`, a tile with an ink edge. */
+  /** `loud`, the one action of a screen; `quiet`, a tile; or `link`, an underlined word. */
   readonly kind?: ButtonKind;
   /**
-   * The `danger` modifier — meaningful on a `quiet` button only
-   * (`design/templates/state-tree.html`'s `.btn.danger` is always paired with
-   * `.btn.quiet` in the app, `EndGamePanel.tsx`'s "End the game"), so it is a
-   * flag on this button rather than a third `kind`.
-   */
-  readonly danger?: boolean;
-  /** The small pill — `.btn.sm` — `RoomInvitePanel.tsx`'s one use of it. */
-  readonly small?: boolean;
-  /**
-   * Busy: the sun dot pulses, the surface turns to the loading fill regardless
-   * of `kind`, and the pointer becomes `progress`. A button loading is also a
-   * button that cannot be pressed twice, so this sets the native `disabled`
-   * attribute the same way the `disabled` prop does — the two are kept apart
-   * because they read differently (a hollow dot and no shadow versus a
-   * beating one), not because only one of them should stop a press.
+   * Busy: the ochre dot beats and the pointer becomes `progress`. A button
+   * loading is also a button that cannot be pressed twice, so this sets the
+   * native `disabled` attribute the same way the `disabled` prop does. The two
+   * read differently (a beating dot on the action's own colour, or the
+   * disabled surface), not because only one of them should stop a press.
    */
   readonly loading?: boolean;
   readonly disabled?: boolean;
@@ -67,28 +57,21 @@ export interface PillButtonProps {
  * still needs — `:focus-visible`, a native `disabled` attribute, and the
  * `component` prop for the four call sites that navigate rather than act.
  *
- * The sun dot is a real `<span>`, aria-hidden, not a pseudo-element: only a
- * real element can be named out of `theme.ts`'s reduced-motion freeze by
- * class, and `design/templates/state-tree.html` line 738 keeps this one
- * beating on purpose while every other animation and transition in the app
- * stops.
+ * The ochre dot is a real `<span>`, aria-hidden, and exists only while the
+ * button is loading.
  *
- * @param props.kind - `primary` (the default) or `quiet`
- * @param props.danger - The `danger` modifier, meaningful on `quiet` only
- * @param props.small - The small pill
+ * @param props.kind - `loud` (the default), `quiet` or `link`
  * @param props.loading - Busy: the dot beats, the button cannot be pressed again
  * @param props.disabled - Cannot be pressed, and says nothing about why
  * @param props.component - What to render as; `RouterLink` for a navigating button
  *
  * @example
- * <PillButton kind="quiet" danger loading={isEnding}>
+ * <PillButton kind="link" loading={isEnding}>
  *   {isEnding ? 'Ending the game...' : 'End the game'}
  * </PillButton>
  */
 export const PillButton = ({
-  kind = 'primary',
-  danger = false,
-  small = false,
+  kind = 'loud',
   loading = false,
   disabled = false,
   type = 'button',
@@ -99,7 +82,7 @@ export const PillButton = ({
 }: PillButtonProps) => {
   const Component = component ?? 'button';
   const isNativeButton = Component === 'button';
-  const state = { kind, danger, small, loading, disabled };
+  const state = { kind, loading, disabled };
 
   return (
     <Box
@@ -110,7 +93,7 @@ export const PillButton = ({
       sx={[buttonSx(state), ...(Array.isArray(sx) ? sx : [sx])]}
       {...rest}
     >
-      <Box component="span" aria-hidden className={LOADING_DOT_CLASS} sx={dotSx(state)} />
+      {loading && <Box component="span" aria-hidden sx={dotSx()} />}
       {children}
     </Box>
   );

@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@mui/material/styles';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { logEvent } from 'firebase/analytics';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -35,52 +35,62 @@ beforeEach(() => {
 });
 
 describe('HomePage', () => {
-  it('renders the game title', () => {
-    renderHomePage();
-
-    const heading = screen.getByRole('heading', { name: /across the street/i });
-
-    expect(heading).toBeInTheDocument();
-    // No dot, mark or rule after the name (settled in PRD #145) — a regexp
-    // anchored on both ends catches trailing punctuation a substring match
-    // would miss. The name is "Across the Street" in the text; the capitals
-    // are the page's own lettering.
-    expect(heading).toHaveTextContent(/^Across the Street$/);
-  });
-
-  it('sets the name in Alegreya Sans at its bold, keeping its capitals and tracking', () => {
-    // There is no logotype face any more (issue #244): the name is the one
-    // face at 700, with the capitals and the tracking it had until the screen
-    // is redrawn (#224). Checked on the rendered element's computed style, as
-    // a test on a constant would pass whether or not this component reached
-    // for it.
+  it('names the game as the template does: Across the Street, in bold ink', () => {
     renderHomePage();
 
     const heading = screen.getByRole('heading', { name: /across the street/i });
     const style = getComputedStyle(heading);
 
+    expect(heading).toHaveTextContent(/^Across the Street$/);
     expect(style.fontFamily).toContain('Alegreya Sans');
     expect(style.fontWeight).toBe('700');
-    expect(style.textTransform).toBe('uppercase');
-    // 0.34em of the computed size, which jsdom resolves to pixels.
-    expect(parseFloat(style.letterSpacing)).toBeCloseTo(parseFloat(style.fontSize) * 0.34, 3);
+    expect(style.color).toBe('rgb(27, 45, 56)');
+    expect(style.textTransform).not.toBe('uppercase');
   });
 
-  it('renders the tagline in capitals, in the text face, with no number', () => {
+  it('says in one sentence what the game is', () => {
     renderHomePage();
 
-    const tagline = screen.getByText(/cooperative crossword/i);
-
-    expect(tagline).toHaveTextContent(/^A COOPERATIVE CROSSWORD$/i);
-    expect(getComputedStyle(tagline).fontFamily).toContain('Alegreya Sans');
-    expect(getComputedStyle(tagline).textTransform).toBe('uppercase');
-    expect(tagline).not.toHaveTextContent(/\d/);
+    expect(
+      screen.getByText(
+        'A cooperative crossword. You explain your words out loud, your friend guesses them, and the board fills up between you.',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('offers the way into a new game', () => {
     renderHomePage();
 
-    expect(screen.getByRole('link', { name: /create a game/i })).toHaveAttribute('href', '/create');
+    expect(screen.getByRole('link', { name: 'Create a game' })).toHaveAttribute('href', '/create');
+  });
+
+  it('draws the street, named for a reader who cannot see it', () => {
+    renderHomePage();
+
+    expect(
+      screen.getByRole('img', {
+        name: 'Two neighbours on facing balconies in a white Andalusian street, with a line strung between them',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('lists the three steps of a game in order', () => {
+    renderHomePage();
+
+    const steps = within(screen.getByRole('list')).getAllByRole('listitem');
+
+    expect(steps.map((step) => step.textContent)).toEqual([
+      '1Type 10 to 20 words',
+      '2Send the link to one person',
+      '3Explain and guess out loud',
+    ]);
+  });
+
+  it('does not mention a language, and builds no lesson hint yet', () => {
+    const { container } = renderHomePage();
+
+    expect(container.textContent).not.toMatch(/english/i);
+    expect(container.textContent).not.toMatch(/teaching a language/i);
   });
 
   it('reports that the first screen of the funnel was reached', async () => {
@@ -89,41 +99,5 @@ describe('HomePage', () => {
     await waitFor(() => {
       expect(reportedEvents()).toEqual([{ name: 'screen_reached', params: { screen: 'home' } }]);
     });
-  });
-
-  it('draws no picture: the page stands on the ground the theme paints', () => {
-    const { container } = renderHomePage();
-
-    expect(container.querySelector('img')).toBeNull();
-    expect(container.querySelector('picture')).toBeNull();
-    expect(container.querySelector('canvas')).toBeNull();
-  });
-
-  it('renders the name in ink from the theme', () => {
-    // Checked on the rendered element's computed style, the way a screen
-    // actually resolves it, rather than on the value handed to `sx`.
-    renderHomePage();
-
-    const heading = screen.getByRole('heading', { name: /across the street/i });
-
-    expect(getComputedStyle(heading).color).toBe('rgb(27, 45, 56)');
-  });
-
-  it('draws no shadow behind the name: it was a cream offset for the picture', () => {
-    renderHomePage();
-
-    const heading = screen.getByRole('heading', { name: /across the street/i });
-
-    // A shadow has an offset in it; the absence of one computes to `none`, to
-    // nothing, or to a transparent black, depending on the engine.
-    expect(getComputedStyle(heading).textShadow).not.toMatch(/\d(px|em)/);
-  });
-
-  it('is called Across the Street, and nothing on it says anything else', () => {
-    const { container } = renderHomePage();
-
-    // The old name is spelled as a pattern so that no file of the app carries it
-    // as text, which is what a search for it checks.
-    expect(container.textContent).not.toMatch(/word\s+garden/i);
   });
 });
