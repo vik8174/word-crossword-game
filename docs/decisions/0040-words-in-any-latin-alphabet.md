@@ -14,7 +14,7 @@ Three facts made it more than a regex. The library upper-cases the words it is g
 
 **The alphabet is the two ranges Alegreya Sans is declared for.** A letter is accepted when it is a Latin letter (`\p{Script=Latin}` and `\p{L}`) and lies in `LATIN_RANGE` or `LATIN_EXT_RANGE`. Both are written once, in `packages/shared/src/font-ranges/font-ranges.ts`: the validator, the app, the build's weight check and the two static HTML files read them. Everything else is refused: most of the Vietnamese block (U+1EA0 to U+1EF1), fullwidth letters, astral letters, Cyrillic, Greek.
 
-**A letter inside the ranges that the face does not draw is accepted and drawn in the face the reader's system falls back to.** The two ranges hold 1,136 Latin letters, most of them phonetic or medievalist (U+1D00 to U+1DBF, U+A720 to U+A7FF). Checking each file's glyph table would need a font tool this project does not have, and the letter is a letter. Ɐ (U+2C6F) is one. Viktor confirmed this on 2026-10-15.
+**A letter inside the ranges that the face does not draw is accepted and drawn in the face the reader's system falls back to.** The two ranges hold 1,136 Latin letters, of which 1,129 are accepted (the seven that cannot fill one square are refused), most of them phonetic or medievalist (U+1D00 to U+1DBF, U+A720 to U+A7FF). Checking each file's glyph table would need a font tool this project does not have, and the letter is a letter. Ɐ (U+2C6F) is one. Viktor confirmed this on 2026-10-15.
 
 **Words are NFC.** The validator composes each word to NFC and returns the composed words, and those are what reach the generator and the room. A decomposed _café_ and a precomposed one are one word of four letters. Length is counted in letters after NFC: _straße_ is 6, _ñandú_ is 5.
 
@@ -34,7 +34,7 @@ Three facts made it more than a regex. The library upper-cases the words it is g
 
 - **The guesser's card lower-cases the grid's spelling** (`answered-words.ts`), so a guessed _kapı_ reads "kapi" on the card: the guesser's view holds the board's letters and not the word. Only letters whose upper case is a different base letter lose by it (ı, ſ, ẛ). Accepted.
 - **The board no longer tells ı from i.** A Turkish word with a dotless ı is drawn with an I, and a player may type ı or i. This follows from comparing words in the board's form and is the price of "a guess ignores accents".
-- **ß is not ss.** A player who types two s into the fifth square of _straße_ is wrong, as the board draws it. That is deliberate and is what the test pins.
+- **ß is not ss.** A player who types an s into the fifth square of _straße_, where the board draws ẞ, is wrong, and "strasse" does not answer the word. That is deliberate and is what the test pins.
 - **A word the face partly draws is drawn in two faces.** A letter in the ranges that Alegreya Sans lacks shows in a fallback face, and the letters around it do not change.
 - **A page that draws a latin-ext letter fetches the latin-ext file of each weight and style it draws it in**, up to 46 KiB gzipped for all three. The landing page draws none and fetches none. The rule is checked in the workshop (`Screens/RoomGame` › `BoardDiacritics`).
 - **Nothing changes in `firestore.rules`.** It limits `placedWords` to 20 and checks no letters.
