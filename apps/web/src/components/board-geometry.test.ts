@@ -424,6 +424,7 @@ describe('the board under the band on the endings', () => {
       phone: BOARD_HEIGHT_CSS,
       narrow: NARROW_BOARD_HEIGHT_CSS,
       appShell: APP_SHELL_BOARD_HEIGHT_CSS,
+      tablet: expect.stringContaining(APP_SHELL_BOARD_HEIGHT_CSS),
       wide: WIDE_BOARD_HEIGHT_CSS,
     });
   });
@@ -555,14 +556,22 @@ describe('the board on a phone held upright', () => {
     expect(box.height).toBeCloseTo(0.62 * 375, 6);
   });
 
-  it('caps the box at 767 wide and leaves it at 768, where the room is one window', () => {
+  it('caps the box at the grid’s height at 767 and at 768, a tablet being as narrow a column', () => {
     // 20 columns in 731 leave 34.65 a square, which is not 44: the width binds.
     const wide: BoardShape = { cols: 20, rows: 12 };
     const phone = boardBoxIn({ width: 767, height: 1024 }, wide, 'none');
     const tablet = boardBoxIn({ width: 768, height: 1024 }, wide, 'none');
 
     expect(phone.height).toBeCloseTo(12 * ((731 - 19 * CELL_GAP) / 20) + 11 * CELL_GAP, 6);
-    expect(tablet.height).toBe(12 * (MAX_CELL_SIZE + CELL_GAP) - CELL_GAP);
+    // 20 columns in 704 leave 33.5 a square.
+    expect(tablet.height).toBeCloseTo(12 * ((704 - 19 * CELL_GAP) / 20) + 11 * CELL_GAP, 6);
+  });
+
+  it('leaves the three-zone window at 1200 as it was: its own column', () => {
+    const box = boardBoxIn({ width: 1200, height: 900 }, MANY_BOARD, 'none');
+
+    // Not capped at its grid: 1200 is where the board has a column of its own.
+    expect(box.height).toBe(11 * (MAX_CELL_SIZE + CELL_GAP) - CELL_GAP);
   });
 
   it(

@@ -61,6 +61,22 @@ export const THREE_ZONE_MIN_WIDTH = 1200;
  */
 export const NARROW_WINDOW = `@media (max-width: ${APP_SHELL_MIN_WIDTH - 1}px)`;
 
+/**
+ * When the window is a tablet: the application layout, narrower than three zones
+ * (768 to 1199 wide, 600 or more high).
+ *
+ * The board stands under the drawing there, in a column of its own, and the
+ * template draws its box no taller than its grid (issue #267).
+ */
+export const TABLET_WINDOW = `@media (min-width: ${APP_SHELL_MIN_WIDTH}px) and (max-width: ${THREE_ZONE_MIN_WIDTH - 1}px) and (min-height: ${APP_SHELL_MIN_HEIGHT}px)`;
+
+/**
+ * Where the board's box is no taller than its grid: a phone held upright and a
+ * tablet, the two windows that are one column wide. Both media queries in one
+ * list, so a rule written for it holds in either.
+ */
+export const BOX_AT_ITS_GRID = `${NARROW_WINDOW}, ${TABLET_WINDOW.replace('@media ', '')}`;
+
 /** When the room is an application: a fixed height with no page scroll. */
 export const APP_SHELL = `@media (min-width: ${APP_SHELL_MIN_WIDTH}px) and (min-height: ${APP_SHELL_MIN_HEIGHT}px)`;
 

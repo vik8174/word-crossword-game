@@ -287,6 +287,8 @@ export interface BoardHeights {
   /** A window narrower than a tablet, which takes the place of `phone` there. */
   readonly narrow: string;
   readonly appShell: string;
+  /** A tablet: its share of the window, and never more than its grid takes. */
+  readonly tablet: string;
   readonly wide: string;
 }
 
@@ -310,12 +312,14 @@ export const boardHeightsFor = (above: BandAbove): BoardHeights =>
         phone: BOARD_HEIGHT_CSS,
         narrow: NARROW_BOARD_HEIGHT_CSS,
         appShell: APP_SHELL_BOARD_HEIGHT_CSS,
+        tablet: `min(${APP_SHELL_BOARD_HEIGHT_CSS}, ${GRID_HEIGHT_AT_WIDTH_CSS})`,
         wide: WIDE_BOARD_HEIGHT_CSS,
       }
     : {
         phone: BOARD_HEIGHT_CSS,
         narrow: NARROW_BOARD_HEIGHT_CSS,
         appShell: heightBelowBand(belowFrame(`${BOARD_HEIGHT_PERCENT}dvh`), above),
+        tablet: `min(${heightBelowBand(belowFrame(`${BOARD_HEIGHT_PERCENT}dvh`), above)}, ${GRID_HEIGHT_AT_WIDTH_CSS})`,
         wide: heightBelowBand(belowFrame(`${WIDE_BOARD_HEIGHT_PERCENT}dvh`), above),
       };
 
@@ -336,8 +340,8 @@ const gridHeightAtWidth = (width: number, { cols, rows }: BoardShape): number =>
 
 /**
  * The rectangle a board is drawn into, in pixels, in a window of this size with
- * the band above it. On a phone held upright (under 768 wide) the box is no
- * taller than its grid. The same arithmetic as {@link boardHeightsFor}, done in
+ * the band above it. On a phone held upright (under 768 wide) and on a tablet
+ * the box is no taller than its grid. The same arithmetic as {@link boardHeightsFor}, done in
  * numbers so a test can pin it without a browser to lay anything out.
  *
  * The middle zone is the window less the room's padding on a phone and a
@@ -377,7 +381,14 @@ export const boardBoxIn = (window: BoardBox, shape: BoardShape, above: BandAbove
   const share = (percent / 100) * window.height - FRAME_HEADER_FALLBACK;
   const band = above === 'none' ? 0 : width * BAND_ASPECT + gapUnderBand(above);
 
-  return { width, height: Math.max(lowest, Math.min(share - band, tallest)) };
+  const height = Math.max(lowest, Math.min(share - band, tallest));
+
+  // A tablet: no taller than its grid at the side the width allows (issue #267).
+  if (!isWide) {
+    return { width, height: Math.min(height, gridHeightAtWidth(width, shape)) };
+  }
+
+  return { width, height };
 };
 
 /** The custom property the side of a square is published as. */
