@@ -168,3 +168,24 @@ export const stepTitleSx = (): CSSObject => ({
   margin: `0 0 ${inRem(6)}`,
   color: STREET.ink,
 });
+
+/**
+ * A heading that is there to be read aloud and not to be looked at.
+ *
+ * Written out rather than taken from `visuallyHidden`: that lives in
+ * `@mui/utils`, which this app does not depend on and would have to start
+ * depending on for six properties of CSS. Used by the screens that show no
+ * title of their own (the game room, the screens at a room's door) and by the
+ * lobby, whose visible "Lobby" is gone but whose page keeps its `h1`.
+ */
+export const UNSEEN_HEADING: CSSObject = {
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  padding: 0,
+  margin: '-1px',
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
+};

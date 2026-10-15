@@ -94,9 +94,11 @@ export const Frame = () => {
           {status}
         </Typography>
       )}
-      {action === undefined ? null : (
-        <Box sx={{ flex: 'none', marginInlineStart: 'auto' }}>{action}</Box>
-      )}
+      {/* Always there, empty or not, as the template's `.action` is: the gap
+          either side of the status line is then the same whether or not the
+          screen has an action, and the status stays centred between the
+          wordmark and the edge of the header. */}
+      <Box sx={{ flex: 'none', marginInlineStart: 'auto' }}>{action}</Box>
     </Box>
   );
 };

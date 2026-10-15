@@ -119,7 +119,7 @@ describe('the owner of a room', () => {
     expect(window.location.pathname).toBe(roomPath('room-1'));
     // Not yet: nothing has been read, and a link nobody has been recognised as
     // the host of would be a link shown to whoever opened the address.
-    expect(screen.queryByLabelText(/room link/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/invite link/i)).not.toBeInTheDocument();
 
     await act(async () => {
       emitRoom({ exists: () => true, data: () => asStoredRoom(writtenRoom()) });
@@ -127,7 +127,7 @@ describe('the owner of a room', () => {
 
     // The room says who made it, so the link is theirs to send, and the seat it
     // leads to is still empty.
-    expect(screen.getByLabelText(/room link/i)).toHaveValue(
+    expect(screen.getByLabelText(/invite link/i)).toHaveValue(
       roomUrl('room-1', window.location.origin),
     );
 
@@ -148,14 +148,14 @@ describe('the owner of a room', () => {
     });
 
     expect(window.location.pathname).toBe(roomPath('room-1'));
-    expect(screen.getByLabelText(/room link/i)).toHaveValue(
+    expect(screen.getByLabelText(/invite link/i)).toHaveValue(
       roomUrl('room-1', window.location.origin),
     );
     expect(screen.getAllByRole('listitem')[0]).toHaveTextContent('Vik');
     // The room, and the room it is: the crossword is named on the lobby rather
     // than drawn there, the board being on the other side of the doorway this
     // screen stands at (issue #115).
-    expect(screen.getByRole('heading', { name: /the crossword/i })).toBeInTheDocument();
+    expect(screen.getByText(/^The crossword: /)).toBeInTheDocument();
   });
 
   it('is not taken back to the word list by the Back button', async () => {

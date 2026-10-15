@@ -41,7 +41,7 @@ export const OwnPresenceNotice = ({ awayDuration }: OwnPresenceNoticeProps) => {
 
   return (
     <Message kind="warning" heading="The room has not heard from you" role="status">
-      {`Not for ${awayDuration}. What is on this screen is what your browser last received, and nothing you do here is reaching anybody else — check your connection. This notice goes the moment the room hears from you again.`}
+      {`Not for ${awayDuration}. What is on this screen is what your browser last received, and nothing you do here is reaching anybody else. Check your connection. This notice goes the moment the room hears from you again.`}
     </Message>
   );
 };

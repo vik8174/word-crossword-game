@@ -48,7 +48,12 @@ describe('Frame', () => {
       </FrameSlotProvider>,
     );
 
-    expect(screen.getByRole('banner').children).toHaveLength(1);
+    const header = screen.getByRole('banner');
+
+    // The name, and the empty place the action would stand in, as the
+    // template's header has it: the status line is centred between them.
+    expect(header.children).toHaveLength(2);
+    expect(header.children[1]).toBeEmptyDOMElement();
   });
 
   it('sets the name 700, 20px, after a tile mark turned 6 degrees back', () => {

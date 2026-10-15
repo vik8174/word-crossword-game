@@ -6,9 +6,10 @@ import type { ReactNode } from 'react';
 import { inRem } from '../scale';
 import { STREET } from '../street';
 import { belowFrame } from './frame-height';
+import { LobbyArrangement } from './LobbyArrangement';
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES, ZONES_GAP } from './room-layout';
 import { useShiftRole } from './screen-shift';
-import { OUTLINE_WIDTH, stepTitleSx, TILE_SX } from './surface-styles';
+import { OUTLINE_WIDTH, stepTitleSx, TILE_SX, UNSEEN_HEADING } from './surface-styles';
 import { ZONE_PADDING } from './zone-styles';
 
 /** What the page is, said once for every phase the room goes through. */
@@ -65,32 +66,6 @@ const NO_ZONE_SURFACE = {
   backgroundColor: 'transparent',
   outline: 'none',
   borderTop: 0,
-} as const;
-
-/**
- * A heading that is there to be read aloud and not to be looked at.
- *
- * The screen a game is played on carries no title, because the letters in the
- * squares say what it is and the strip a title would take is height the board
- * has none of (`docs/decisions/0029-a-board-that-fits-the-screen-it-is-played-on.md`).
- * A page with no heading at all is a different thing, though — somebody moving
- * through it by headings would find nothing — so the name is still said, and
- * takes no pixels to say it.
- *
- * Written out rather than taken from `visuallyHidden`: that lives in
- * `@mui/utils`, which this app does not depend on and would have to start
- * depending on for six properties of CSS.
- */
-const UNSEEN_HEADING = {
-  position: 'absolute',
-  width: '1px',
-  height: '1px',
-  padding: 0,
-  margin: '-1px',
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-  border: 0,
 } as const;
 
 /**
@@ -152,6 +127,14 @@ interface RoomZonesProps extends RoomShellBaseProps {
   readonly left?: ReactNode;
   /** What they get back from them, and who is in the room. */
   readonly right?: ReactNode;
+  /**
+   * The lobby's drawing. Giving one selects the lobby's own arrangement
+   * (`LobbyArrangement`, the template's `.lobby-grid`): `left` is then the
+   * column beside it, `title` is read aloud and not shown, and `status`,
+   * `action`, `right` and the children are not used. The status line of that
+   * screen is the frame's.
+   */
+  readonly picture?: ReactNode;
 }
 
 type RoomShellProps = RoomZonesProps;
@@ -201,6 +184,7 @@ type RoomShellProps = RoomZonesProps;
  * @param props.action - The screen's one control, offered in the header
  * @param props.left - The zone on the board's left; an empty one is left empty
  * @param props.right - The zone on its right
+ * @param props.picture - The lobby's drawing; selects the lobby's arrangement
  * @param props.children - The middle zone: the board, or nothing at all
  *
  * @example
@@ -208,8 +192,20 @@ type RoomShellProps = RoomZonesProps;
  *   <RoomCrossword room={room} viewerId={viewerId} caption={caption} />
  * </RoomShell>
  */
-export const RoomShell = ({ title, status, action, left, right, children }: RoomShellProps) => {
+export const RoomShell = ({
+  title,
+  status,
+  action,
+  left,
+  right,
+  picture,
+  children,
+}: RoomShellProps) => {
   const isLeaving = useShiftRole() === 'leaving';
+
+  if (picture !== undefined) {
+    return <LobbyArrangement title={title ?? ROOM_HEADING} column={left} picture={picture} />;
+  }
 
   return (
     <Box

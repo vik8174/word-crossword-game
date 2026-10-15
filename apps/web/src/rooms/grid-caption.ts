@@ -63,3 +63,33 @@ export const finishedGridCaption = (wordCount: number): string =>
  */
 export const closedGridCaption = (wordCount: number): string =>
   `Of the ${wordCount} words of this grid, the ones that were answered are in place; the rest stay blank, apart from any that were yours to explain.`;
+
+/**
+ * A number of words, counted the way a sentence needs it.
+ *
+ * @param wordCount - How many words
+ * @returns `1 word`, `6 words`
+ *
+ * @example
+ * wordsLabel(1); // '1 word'
+ */
+export const wordsLabel = (wordCount: number): string =>
+  wordCount === 1 ? '1 word' : `${wordCount} words`;
+
+/**
+ * Said under the lobby's drawing: what the crossword is, since the lobby shows
+ * no board (the template's caption under `lobby`, line 947 of
+ * `design/templates/state-tree.html`).
+ *
+ * With one word nobody can share it, so the sentence stops before the half.
+ *
+ * @param wordCount - How many words made it into the grid
+ * @returns The caption for the drawing
+ *
+ * @example
+ * lobbyCaption(6); // 'The crossword: 6 words, half of them for each of you.'
+ */
+export const lobbyCaption = (wordCount: number): string =>
+  wordCount === 1
+    ? 'The crossword: 1 word.'
+    : `The crossword: ${wordCount} words, half of them for each of you.`;
