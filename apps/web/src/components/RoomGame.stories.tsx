@@ -3,7 +3,17 @@ import { type ReactNode, useEffect, useRef } from 'react';
 import { generateCrossword } from 'shared';
 
 import type { RoomDocument } from '../rooms/room-document';
-import { FEW, gameRoom, GUEST_ID, MANY, OWNER_ID, STRANGER_ID } from './drawn-room';
+import {
+  FEW,
+  gameRoom,
+  GUEST_ID,
+  lessonRoom,
+  MANY,
+  OLENA_ID,
+  OWNER_ID,
+  STRANGER_ID,
+  TEACHER_ID,
+} from './drawn-room';
 import { Frame } from './Frame';
 import { FrameSlotProvider } from './FrameSlotProvider';
 import { RoomGame } from './RoomGame';
@@ -222,6 +232,73 @@ export const EndingRefused: Story = {
   args: { writes: { recordGuess: neverSettles, endGameEarly: refused } },
   render: (args) => (
     <DoOnMount press={['End the game', 'End it']}>
+      <RoomGame {...args} />
+    </DoOnMount>
+  ),
+};
+
+/**
+ * A lesson, on the same six words: Carmen teaches, Olena and Taras play
+ * (`?mode=lesson`). The three of them are the three variants the street with the
+ * teacher is captured at 1440 by 1000, where the band shows.
+ */
+const lesson = lessonRoom(FEW, 7, 9);
+
+/** `playing` as a student in a lesson, the teacher at their window: no "End the game", the teacher at the end of the street. */
+export const LessonStudent: Story = {
+  args: { viewerId: OLENA_ID, room: lesson },
+};
+
+/** `playing/teacheraway` as a student: the curtains are drawn, and the room says the game goes on without the teacher. */
+export const LessonStudentTeacherAway: Story = {
+  args: {
+    viewerId: OLENA_ID,
+    room: lessonRoom(FEW, 7, 9, { silentFor: { [TEACHER_ID]: 150_000 } }),
+  },
+};
+
+/** `playing` as the lesson's teacher: every word, marked by who explains it, and "End the lesson". */
+export const LessonTeacher: Story = {
+  args: { viewerId: TEACHER_ID, room: lesson },
+};
+
+/** `playing/away` as the teacher: the room has not heard from them, and they are still at their window. */
+export const LessonTeacherAway: Story = {
+  args: {
+    viewerId: TEACHER_ID,
+    room: lessonRoom(FEW, 7, 9, { silentFor: { [TEACHER_ID]: 150_000 } }),
+  },
+};
+
+/** `playing/confirm` as the teacher: "End the lesson" pressed and the question on the page. */
+export const LessonTeacherConfirm: Story = {
+  args: { viewerId: TEACHER_ID, room: lesson },
+  render: (args) => (
+    <DoOnMount press={['End the lesson']}>
+      <RoomGame {...args} />
+    </DoOnMount>
+  ),
+};
+
+/** `playing/ending` as the teacher: "End it" pressed and the write under way. */
+export const LessonTeacherEnding: Story = {
+  args: { viewerId: TEACHER_ID, room: lesson },
+  render: (args) => (
+    <DoOnMount press={['End the lesson', 'End it']}>
+      <RoomGame {...args} />
+    </DoOnMount>
+  ),
+};
+
+/** `playing/endfail` as the teacher: "End it" pressed and the database refuses. */
+export const LessonTeacherEndingRefused: Story = {
+  args: {
+    viewerId: TEACHER_ID,
+    room: lesson,
+    writes: { recordGuess: neverSettles, endGameEarly: refused },
+  },
+  render: (args) => (
+    <DoOnMount press={['End the lesson', 'End it']}>
       <RoomGame {...args} />
     </DoOnMount>
   ),

@@ -104,8 +104,9 @@ export const awaitsCompletion = (room: ReadableRoom): boolean =>
  *
  * Both halves are needed, and the second is the one that is easy to forget.
  * `status` is written by a client and the security rules cannot check it
- * against the `words` map — they cannot walk it (see
- * `docs/decisions/0009-room-document-schema.md`), so nothing stops any client
+ * against the `words` map — they do not walk it for a player's write (see
+ * `docs/decisions/0009-room-document-schema.md`; a lesson's rules walk it only
+ * for the deal its teacher writes), so nothing stops any client
  * that knows the room id from writing `completed` over a lobby. A screen that
  * showed the crossword on the strength of that field alone would hand the whole
  * word list to whoever asked, which is why anything that reveals words asks

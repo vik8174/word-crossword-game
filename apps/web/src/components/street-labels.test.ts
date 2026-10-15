@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  BAND_LABEL,
   type LessonView,
   lobbyStreetLabel,
   joinStreetLabel,
+  roomStreetLabel,
   TEACHER_CLAUSE,
   teacherDrawnFor,
 } from './street-labels';
@@ -139,5 +141,35 @@ describe('the label of the door (#226)', () => {
 
   it('leaves the clause out while the teacher is away', () => {
     expect(joinStreetLabel('away')).toBe(DOOR);
+  });
+});
+
+describe('the label of the band over the game’s board (#228, and #235 for a lesson)', () => {
+  it('is #228’s own for a pair game, with no teacher in it', () => {
+    expect(roomStreetLabel()).toBe(BAND_LABEL);
+    expect(roomStreetLabel()).toBe(
+      'The answered words hanging on the line between the two balconies',
+    );
+    expect(roomStreetLabel()).not.toMatch(/teacher/i);
+  });
+
+  it('adds the clause once for the teacher, who is always drawn at their window', () => {
+    expect(roomStreetLabel(TEACHER)).toBe(`${BAND_LABEL}${CLAUSE}`);
+    expect(countOf(roomStreetLabel(TEACHER), 'teacher')).toBe(1);
+    expect(countOf(roomStreetLabel(TEACHER), CLAUSE)).toBe(1);
+  });
+
+  it('adds the clause once for a student while the teacher is present', () => {
+    expect(roomStreetLabel(STUDENT_WITH_TEACHER_HERE)).toBe(`${BAND_LABEL}${CLAUSE}`);
+    expect(countOf(roomStreetLabel(STUDENT_WITH_TEACHER_HERE), 'teacher')).toBe(1);
+  });
+
+  it('leaves the clause out for a student while the teacher is away: the curtains are drawn', () => {
+    expect(roomStreetLabel(STUDENT_WITH_TEACHER_AWAY)).toBe(BAND_LABEL);
+    expect(countOf(roomStreetLabel(STUDENT_WITH_TEACHER_AWAY), 'teacher')).toBe(0);
+  });
+
+  it('is the same clause the lobby and the door use, so the three cannot drift', () => {
+    expect(roomStreetLabel(TEACHER).endsWith(TEACHER_CLAUSE)).toBe(true);
   });
 });

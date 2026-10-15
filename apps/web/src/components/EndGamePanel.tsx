@@ -8,22 +8,40 @@ import { STREET } from '../street';
 import { PillButton } from './PillButton';
 import { OUTLINE_WIDTH } from './surface-styles';
 
-/** The question the confirmation asks, and the accessible name of the dialog. */
-const CONFIRM_TITLE = 'End the game?';
-
 /**
- * Said before the game is ended, and said the same way every time.
+ * What the control and its dialog say, for a game and for a lesson.
  *
- * It does not branch on whether the other player looks present. Every client in
- * a room writes a mark every fifteen seconds, so that reading can change while
- * this dialog is open, and a warning that rewrote itself under somebody's
- * finger would be worse than one that claims a little more than it has to. What
- * is said is true in both cases: whoever else is in this room loses the game
- * too, and nothing brings it back
+ * The question is the dialog's accessible name. It does not branch on whether
+ * the other player looks present. Every client in a room writes a mark every
+ * fifteen seconds, so that reading can change while this dialog is open, and a
+ * warning that rewrote itself under somebody's finger would be worse than one
+ * that claims a little more than it has to. What is said is true in both cases:
+ * whoever else is in this room loses the game too, and nothing brings it back
  * (`docs/decisions/0027-a-game-a-player-can-end.md`).
+ *
+ * A lesson is ended by its teacher alone and words it for them: both players
+ * lose it, and the summary the teacher is promised is the lesson's
+ * (`design/templates/state-tree.html`, `endDialog`, lines 981-994). The promise
+ * is kept by #236, which builds every ending of a lesson.
  */
-const CONFIRM_MESSAGE =
-  'The room closes for both of you and the words nobody guessed stay unguessed. This cannot be undone, and the game cannot be restarted from here.';
+const COPY = {
+  game: {
+    control: 'End the game',
+    controlBusy: 'Ending the game',
+    title: 'End the game?',
+    message:
+      'The room closes for both of you and the words nobody guessed stay unguessed. This cannot be undone, and the game cannot be restarted from here.',
+    keep: 'Keep playing',
+  },
+  lesson: {
+    control: 'End the lesson',
+    controlBusy: 'Ending the lesson',
+    title: 'End the lesson?',
+    message:
+      'The room closes for both players and the words nobody guessed stay unguessed. You will see the lesson summary. This cannot be undone.',
+    keep: 'Keep watching',
+  },
+} as const;
 
 /**
  * The dialog's card (`.dialog`, `design/templates/state-tree.html` line 262): a
@@ -50,12 +68,19 @@ interface EndGamePanelProps {
   readonly isEnding: boolean;
   /** Why the last attempt did not go through, if it did not. */
   readonly errorMessage?: string;
+  /**
+   * Whether it is a lesson that is ended, by its teacher: the control and the
+   * dialog are worded for them. A game by default.
+   */
+  readonly isLesson?: boolean;
 }
 
 /**
  * The way out of a game that cannot be finished.
  *
- * Both players are offered it, not the host alone. The player who needs it is
+ * In a pair game both players are offered it, not the host alone. In a lesson
+ * only the teacher is, and the students are offered nothing: the rules refuse
+ * a student's ending, and the screen does not offer what is refused. The player who needs it is
  * whoever was left on their own, and that is as often the guest as the host:
  * after the deal, the words hidden from the host can be answered by nobody
  * else, so a host who walks away strands their guest exactly as a guest who
@@ -82,11 +107,18 @@ interface EndGamePanelProps {
  * @param props.onEnd - Called once the player has confirmed the ending
  * @param props.isEnding - Whether the ending is on its way to the room
  * @param props.errorMessage - What the dialog says when the ending was refused
+ * @param props.isLesson - Whether the one pressing it is a lesson's teacher
  *
  * @example
  * <EndGamePanel onEnd={endGame} isEnding={false} />
  */
-export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProps) => {
+export const EndGamePanel = ({
+  onEnd,
+  isEnding,
+  errorMessage,
+  isLesson = false,
+}: EndGamePanelProps) => {
+  const copy = COPY[isLesson ? 'lesson' : 'game'];
   const [isConfirming, setIsConfirming] = useState(false);
   // The failure the player has already read and put away with "Keep playing".
   const [dismissedError, setDismissedError] = useState<string | null>(null);
@@ -113,7 +145,7 @@ export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProp
   return (
     <>
       <PillButton kind="link" onClick={ask} loading={isEnding}>
-        {isEnding ? 'Ending the game' : 'End the game'}
+        {isEnding ? copy.controlBusy : copy.control}
       </PillButton>
 
       <Dialog
@@ -134,7 +166,7 @@ export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProp
         }}
       >
         <Box component="h2" id={titleId} sx={{ margin: 0, fontSize: inRem(24), fontWeight: 700 }}>
-          {CONFIRM_TITLE}
+          {copy.title}
         </Box>
 
         {/* The failure takes the place of the question: the game could not be
@@ -145,7 +177,7 @@ export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProp
           role={hasFailed ? 'alert' : undefined}
           sx={{ margin: `${inRem(8)} 0 0`, fontSize: inRem(17), color: STREET.ink }}
         >
-          {hasFailed ? errorMessage : CONFIRM_MESSAGE}
+          {hasFailed ? errorMessage : copy.message}
         </Box>
 
         <Box
@@ -160,7 +192,7 @@ export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProp
           <PillButton kind="quiet" onClick={end}>
             {hasFailed ? 'Try again' : 'End it'}
           </PillButton>
-          <PillButton onClick={keepPlaying}>Keep playing</PillButton>
+          <PillButton onClick={keepPlaying}>{copy.keep}</PillButton>
         </Box>
       </Dialog>
     </>

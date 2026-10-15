@@ -143,6 +143,14 @@ interface RoomZonesProps extends RoomShellBaseProps {
   /** What they get back from them, and who is in the room. */
   readonly right?: ReactNode;
   /**
+   * The room is a lesson's teacher's. On a phone their two zones stand left
+   * first and right second, as they are read (`.zones.teacher`, template lines
+   * 235-236); a player's stand right first, because what they get back is what
+   * they are waiting on. From a tablet up the two stand in their places and this
+   * changes nothing.
+   */
+  readonly isTeachers?: boolean;
+  /**
    * The lobby's drawing. Giving one selects the lobby's own arrangement
    * (`LobbyArrangement`, the template's `.lobby-grid`): `left` is then the
    * column beside it, and `right` and the children are not used.
@@ -195,6 +203,7 @@ type RoomShellProps = RoomZonesProps;
  * @param props.left - The zone on the board's left; an empty one is left empty
  * @param props.right - The zone on its right
  * @param props.picture - The lobby's drawing; selects the lobby's arrangement
+ * @param props.isTeachers - The teacher's room, whose zones read left then right on a phone
  * @param props.children - The middle zone: the board, or nothing at all
  *
  * @example
@@ -202,7 +211,14 @@ type RoomShellProps = RoomZonesProps;
  *   <RoomCrossword room={room} viewerId={viewerId} caption={caption} />
  * </RoomShell>
  */
-export const RoomShell = ({ title, left, right, picture, children }: RoomShellProps) => {
+export const RoomShell = ({
+  title,
+  left,
+  right,
+  picture,
+  isTeachers = false,
+  children,
+}: RoomShellProps) => {
   if (picture !== undefined) {
     return <LobbyArrangement title={title ?? ROOM_HEADING} column={left} picture={picture} />;
   }
@@ -252,7 +268,7 @@ export const RoomShell = ({ title, left, right, picture, children }: RoomShellPr
           },
         }}
       >
-        <Zone area="left" phoneOrder={2} isEmpty={left === undefined} isColumn>
+        <Zone area="left" phoneOrder={isTeachers ? 1 : 2} isEmpty={left === undefined} isColumn>
           {left}
         </Zone>
 
@@ -270,7 +286,7 @@ export const RoomShell = ({ title, left, right, picture, children }: RoomShellPr
           {children}
         </Zone>
 
-        <Zone area="right" phoneOrder={1} isEmpty={right === undefined} isColumn>
+        <Zone area="right" phoneOrder={isTeachers ? 2 : 1} isEmpty={right === undefined} isColumn>
           {right}
         </Zone>
       </Box>
