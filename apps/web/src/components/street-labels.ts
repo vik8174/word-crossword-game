@@ -7,7 +7,8 @@
  * rendering a street. The pair game's labels are those of #227 (`LobbyStreet`)
  * and #226 (`JoinStreet`), unchanged. A lesson's are the same words for the
  * balconies, reworded where the teacher is the one reading, with one clause at
- * the end for the house at the end of the street.
+ * the end for the house at the end of the street. The game room's is #228's
+ * label of the band over the board, with the same clause (`roomStreetLabel`).
  */
 
 /**
@@ -89,6 +90,31 @@ const balconies = ({ players, seatFreedBySilence, lesson }: LobbyLabelInput): st
 export const lobbyStreetLabel = (input: LobbyLabelInput): string =>
   balconies(input) +
   (input.lesson !== undefined && teacherDrawnFor(input.lesson) === 'here' ? TEACHER_CLAUSE : '');
+
+/** What the band over the game's board is called: #228's label, for every game. */
+export const BAND_LABEL = 'The answered words hanging on the line between the two balconies';
+
+/**
+ * The label of the band over the game's board.
+ *
+ * #228's label for a pair game. For a lesson it is the same words and, **once**,
+ * the teacher's clause, while the teacher is drawn at their window: for a
+ * student whose teacher's mark is fresh, and always for the teacher on their own
+ * screen. With the curtains drawn the clause is left out, as the template does
+ * (lines 605, 615 and 1018). The template's own label for the teacher's room
+ * (line 1002) says the teacher twice, because the drawing adds the clause to a
+ * label that already holds it; that repeat is not built.
+ *
+ * @param lesson - Who is reading, in a lesson; absent for a pair game
+ * @returns The whole label, to be handed to `Street` as it is
+ *
+ * @example
+ * roomStreetLabel(); // 'The answered words hanging on the line between the two balconies'
+ * roomStreetLabel({ viewer: 'teacher' });
+ * // 'The answered words hanging on the line between the two balconies, and the teacher watching from the house at the end of the street'
+ */
+export const roomStreetLabel = (lesson?: LessonView): string =>
+  BAND_LABEL + (lesson !== undefined && teacherDrawnFor(lesson) === 'here' ? TEACHER_CLAUSE : '');
 
 /** The neighbour at the door, in every room: #226's label. */
 const JOIN_LABEL =

@@ -2,7 +2,12 @@ import Box from '@mui/material/Box';
 import { type ReactNode, useMemo } from 'react';
 
 import type { RoomDocument } from '../rooms/room-document';
-import { answeredWordCellKeys, gridViewFor, type WordLocation } from '../rooms/word-visibility';
+import {
+  answeredWordCellKeys,
+  gridViewFor,
+  watchedGridFor,
+  type WordLocation,
+} from '../rooms/word-visibility';
 import { inRem } from '../scale';
 import { STREET } from '../street';
 import type { BandAbove } from './board-geometry';
@@ -10,6 +15,7 @@ import { CrosswordGrid } from './CrosswordGrid';
 import { CROSSWORD_HEADING_ID, CrosswordHeading } from './CrosswordHeading';
 import { Message } from './Message';
 import { SENTENCE_BAND_SX, UNSEEN_HEADING } from './surface-styles';
+import { TeacherGrid } from './TeacherGrid';
 import { useBandShown } from './use-band-shown';
 
 /**
@@ -66,6 +72,18 @@ interface RoomCrosswordProps {
    */
   readonly bandNote?: string;
   /**
+   * The board is the teacher's: a lesson's teacher watches the crossword and does
+   * not play on it, so they are shown every word on a board nothing can be typed
+   * into (`TeacherGrid`) instead of the board a player gets. Given by the one
+   * screen that is the teacher's room, with the names of the two students the
+   * board's colours are for. Absent everywhere else, the teacher's endings
+   * included, which are another issue's.
+   */
+  readonly watching?: {
+    readonly leftName: string;
+    readonly rightName: string;
+  };
+  /**
    * Whether the heading and the line under it are drawn. The game room draws
    * neither (the letters in the squares say what the screen is), and the
    * section is still named by them for a reader who cannot see.
@@ -90,6 +108,7 @@ interface RoomCrosswordProps {
  * @param props.band - The drawing above the board, when it fits
  * @param props.bandRule - `when-it-fits` (the default) or `always`
  * @param props.bandNote - A line between the drawing and the board
+ * @param props.watching - The teacher's board, with whose colours are whose, in place of a player's
  * @param props.hasVisibleHeading - Whether the heading and its caption are drawn (the default) or only read
  *
  * @example
@@ -105,6 +124,7 @@ export const RoomCrossword = ({
   band,
   bandRule = 'when-it-fits',
   bandNote,
+  watching,
   hasVisibleHeading = true,
 }: RoomCrosswordProps) => {
   // Kept across renders the room did not change in, so the grid's own state —
@@ -114,6 +134,11 @@ export const RoomCrossword = ({
   // The answered words by their squares, for the board to turn over the ones
   // that are answered while it is on the screen.
   const answeredWords = useMemo(() => answeredWordCellKeys(room), [room]);
+  // Asked of the word view, so only the lesson's teacher is ever handed one.
+  const watchedView = useMemo(
+    () => (watching === undefined ? null : watchedGridFor(room, viewerId)),
+    [room, viewerId, watching],
+  );
   const fits = useBandShown(view);
   const isBandShown = band !== undefined && (bandRule === 'always' || fits);
   const hasNote = isBandShown && bandNote !== undefined;
@@ -155,13 +180,23 @@ export const RoomCrossword = ({
         </Box>
       )}
 
-      <CrosswordGrid
-        view={view}
-        onSolved={onSolved ?? TAKES_NO_ANSWERS}
-        wordToReach={wordToReach}
-        bandAbove={bandAbove}
-        answeredWords={answeredWords}
-      />
+      {watching !== undefined && watchedView !== null ? (
+        <TeacherGrid
+          view={watchedView}
+          leftName={watching.leftName}
+          rightName={watching.rightName}
+          answeredWords={answeredWords}
+          bandAbove={bandAbove}
+        />
+      ) : (
+        <CrosswordGrid
+          view={view}
+          onSolved={onSolved ?? TAKES_NO_ANSWERS}
+          wordToReach={wordToReach}
+          bandAbove={bandAbove}
+          answeredWords={answeredWords}
+        />
+      )}
 
       {errorMessage !== undefined && (
         <Message kind="error" heading="Your answer was not saved">
