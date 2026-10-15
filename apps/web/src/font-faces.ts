@@ -15,11 +15,32 @@ export const LATIN_RANGE =
 export const FONT_FAMILY_NAME = 'Alegreya Sans';
 
 /**
- * The three files behind the face: what each is, and where it is served from.
- * Alegreya Sans (SIL OFL, `public/fonts/OFL.txt`), latin subset, woff2.
+ * The three files behind the face: what each is, where it is served from, and
+ * whether `index.html` preloads it. Alegreya Sans (SIL OFL,
+ * `public/fonts/OFL.txt`), latin subset, woff2.
+ *
+ * The italic is declared and not preloaded: `/` draws no italic, so it is
+ * fetched when a screen first draws italic text, and the first-visit check
+ * does not count it (`NOT_ON_FIRST_VISIT` in `build/first-visit-weight.ts`,
+ * #263).
  */
 export const FONT_FILES = [
-  { weight: 400, style: 'normal', href: '/fonts/alegreya-sans-v28-latin-400.woff2' },
-  { weight: 700, style: 'normal', href: '/fonts/alegreya-sans-v28-latin-700.woff2' },
-  { weight: 400, style: 'italic', href: '/fonts/alegreya-sans-v28-latin-400italic.woff2' },
+  {
+    weight: 400,
+    style: 'normal',
+    href: '/fonts/alegreya-sans-v28-latin-400.woff2',
+    preloaded: true,
+  },
+  {
+    weight: 700,
+    style: 'normal',
+    href: '/fonts/alegreya-sans-v28-latin-700.woff2',
+    preloaded: true,
+  },
+  {
+    weight: 400,
+    style: 'italic',
+    href: '/fonts/alegreya-sans-v28-latin-400italic.woff2',
+    preloaded: false,
+  },
 ] as const;

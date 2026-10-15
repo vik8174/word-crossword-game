@@ -17,8 +17,9 @@
  * What counts as a first visit is everything a browser fetches to draw `/`
  * before anybody has done anything: the HTML, every chunk reachable from the
  * entry by static import, and every file the HTML asks for on its own account —
- * which is the typefaces, preloaded or merely declared. Chunks behind a lazy
- * route are not on it and neither is anything a click causes.
+ * which is the typefaces, preloaded or merely declared, bar the ones named in
+ * {@link NOT_ON_FIRST_VISIT}. Chunks behind a lazy route are not on it and
+ * neither is anything a click causes.
  *
  * There used to be a second ceiling beside this one, for the garden's pictures
  * (`docs/decisions/0033-a-second-ceiling-for-a-picture.md`). The pictures went
@@ -78,6 +79,24 @@ export interface FetchedFile {
 }
 
 /**
+ * The faces a first visit declares but does not count: weighed and reported by
+ * the build, counted against no ceiling.
+ *
+ * Each entry is the path of a font file as written in `index.html`. The list
+ * holds the latin italic alone: `/` draws no italic, and a screen that does
+ * (the explained squares, the lobby, the endings) fetches it on demand.
+ * `docs/decisions/0032-what-the-first-visit-ceiling-measures.md` has the
+ * reasoning and the guard below.
+ *
+ * Being on the list is not enough on its own. A face that is still preloaded is
+ * fetched with the first visit whatever this list says, so it counts. Deleting
+ * a preload without adding the face here changes nothing: it is still counted.
+ */
+export const NOT_ON_FIRST_VISIT: readonly string[] = [
+  '/fonts/alegreya-sans-v28-latin-400italic.woff2',
+];
+
+/**
  * What the HTML preloads a typeface for: the font files it tells a browser to
  * fetch at once.
  *
@@ -105,7 +124,8 @@ const preloadedHrefs = (html: string): readonly string[] =>
  * whether anything asks for it is a line of CSS in a component, which no build
  * step can see. A face declared here is a face the app may use, so it is a cost
  * the ceiling is measured against; the alternative is a font that becomes free
- * by having its `<link>` deleted.
+ * by having its `<link>` deleted. The one exception is a face on
+ * {@link NOT_ON_FIRST_VISIT}, applied in {@link assetHrefs}.
  *
  * @param html - The built `index.html`
  * @returns The files behind every face it declares
@@ -116,21 +136,62 @@ const declaredFontHrefs = (html: string): readonly string[] =>
     .filter((href): href is string => href !== undefined);
 
 /**
- * Everything the HTML itself asks for, before a byte of the app has run.
+ * Everything the HTML itself asks for, before a byte of the app has run, that
+ * counts against the ceiling.
  *
  * These are the files a bundler never sees: they are copied out of `public/`
  * and named by hand, so a measurement taken off the bundle alone would miss
  * twenty-five kilobytes of typeface that every first visit pays for.
  *
+ * The rule, in this order. A face the HTML preloads counts, whatever
+ * `notOnFirstVisit` says. A face that is declared, is not preloaded and is on
+ * the list is left out here and returned by {@link notCountedHrefs}. Every
+ * other declared face counts.
+ *
  * @param html - The built `index.html`
+ * @param notOnFirstVisit - The list of faces not counted; the exported one unless a test says otherwise
  * @returns Each of them once, as the paths written in it
  *
  * @example
- * assetHrefs(html); // ['/fonts/zen-kaku-gothic-new-v18-latin-400.woff2', ...]
+ * assetHrefs(html); // ['/fonts/alegreya-sans-v28-latin-400.woff2', ...]
  */
-export const assetHrefs = (html: string): readonly string[] => [
-  ...new Set([...preloadedHrefs(html), ...declaredFontHrefs(html)]),
-];
+export const assetHrefs = (
+  html: string,
+  notOnFirstVisit: readonly string[] = NOT_ON_FIRST_VISIT,
+): readonly string[] => {
+  const preloaded = preloadedHrefs(html);
+
+  return [
+    ...new Set([
+      ...preloaded,
+      ...declaredFontHrefs(html).filter((href) => !notOnFirstVisit.includes(href)),
+    ]),
+  ];
+};
+
+/**
+ * The faces the HTML declares that the first visit does not count: declared,
+ * not preloaded, and on {@link NOT_ON_FIRST_VISIT}. The build weighs them and
+ * says so, on a line of their own.
+ *
+ * @param html - The built `index.html`
+ * @param notOnFirstVisit - The list of faces not counted; the exported one unless a test says otherwise
+ * @returns Each of them once, as the paths written in it
+ */
+export const notCountedHrefs = (
+  html: string,
+  notOnFirstVisit: readonly string[] = NOT_ON_FIRST_VISIT,
+): readonly string[] => {
+  const preloaded = preloadedHrefs(html);
+
+  return [
+    ...new Set(
+      declaredFontHrefs(html).filter(
+        (href) => notOnFirstVisit.includes(href) && !preloaded.includes(href),
+      ),
+    ),
+  ];
+};
 
 /**
  * What the whole of a first visit weighs.
