@@ -4,10 +4,10 @@ import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
 import { inRem } from '../scale';
-import { BAND_EDGE, BAND_EDGE_WIDTH } from '../garden/scene-palette';
-import { BAND_SX, ON_SCENE_SX, stepTitleSx } from '../garden/scene-surface';
+import { STREET } from '../street';
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES, ZONES_GAP } from './room-layout';
 import { useShiftRole } from './screen-shift';
+import { OUTLINE_WIDTH, stepTitleSx, TILE_SX } from './surface-styles';
 import { ZONE_PADDING } from './zone-styles';
 
 /** What the page is, said once for every phase the room goes through. */
@@ -31,8 +31,7 @@ const FRAME_PADDING = {
 /**
  * The size of the room's status line, in the template's own pixels
  * (`.room-status`, `design/templates/state-tree.html` line 296): 12.5, with its
- * line 1.5 and a shadow that lets it be read off a lit roof as well as off a
- * shadow.
+ * line 1.5.
  *
  * Twelve and a half is not one of the four levels `context.md`'s **Level**
  * entry closes (31, 23, 17, 13). The status line is granted the exception here,
@@ -43,28 +42,27 @@ const FRAME_PADDING = {
  * it move together and a third that does never has to remember to.
  */
 const STATUS_SX = {
-  textShadow: '0 1px 7px rgba(6, 12, 10, 0.92)',
   '& .MuiTypography-root': { fontSize: inRem(12.5), lineHeight: 1.5 },
 } as const;
 
 /**
- * The surface a zone is: the band, blurred a little, with the temple's red run
- * along its top edge. `.zone` in the template (line 306), and the whole of what
- * a zone looks like. There is no box drawn behind it and running to the edge of
- * the window, so nothing stacks over it and the zone stops where the frame does.
+ * The surface a zone is: a tile with the street's hairline round it.
+ * `.zone` in the template (line 306), and the whole of what a zone looks like.
+ * There is no box drawn behind it and running to the edge of the window, so
+ * nothing stacks over it and the zone stops where the frame does.
+ *
+ * The 1.5px rule along its top edge is kept as a border, in `line`, so that the
+ * zone's content stands exactly where it did when the rule was red. The rest of the outline is `TILE_SX`'s, drawn inside the box.
  */
 const ZONE_SURFACE = {
-  ...BAND_SX,
-  backdropFilter: 'blur(2px)',
-  WebkitBackdropFilter: 'blur(2px)',
-  borderTop: `${BAND_EDGE_WIDTH}px solid ${BAND_EDGE}`,
+  ...TILE_SX,
+  borderTop: `${OUTLINE_WIDTH}px solid ${STREET.line}`,
 } as const;
 
 /** A zone with the surface switched off: what a side with nothing on it is from a tablet up. */
 const NO_ZONE_SURFACE = {
   backgroundColor: 'transparent',
-  backdropFilter: 'none',
-  WebkitBackdropFilter: 'none',
+  outline: 'none',
   borderTop: 0,
 } as const;
 
@@ -98,14 +96,14 @@ const UNSEEN_HEADING = {
  * The zone a side of the room is given, and what it does when it is empty.
  *
  * A zone with anything in it is a surface of its own ({@link ZONE_SURFACE}),
- * at every width, and everything inside it is written in the forest's cream.
+ * at every width, and everything inside it is written in ink.
  *
  * An empty zone is a column with nothing in it while the room is an
  * application — that is what keeps the board in the middle of the screen when
  * only one side has anything to say. In a document it is nothing at all, since
  * a stack would otherwise put a gap where a lobby has no words yet. What an
  * empty column looks like changes with the window, on purpose and as drawn: bare
- * picture on a tablet, where the two zones share a row and an empty one is a
+ * ground on a tablet, where the two zones share a row and an empty one is a
  * hole in it, and the surface it was drawn with from three zones up
  * (`state-tree.html` lines 329 and 342), where it is one of the columns either
  * side of the doorway and the frame would look lopsided without it.
@@ -114,7 +112,7 @@ const UNSEEN_HEADING = {
  * @param isEmpty - Whether this screen handed the zone anything
  */
 const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
-  ...(isEmpty ? { display: 'none' } : { ...ON_SCENE_SX, ...ZONE_SURFACE, padding: ZONE_PADDING }),
+  ...(isEmpty ? { display: 'none' } : { ...ZONE_SURFACE, padding: ZONE_PADDING }),
   [APP_SHELL]: {
     display: 'block',
     gridArea: area,
@@ -150,8 +148,7 @@ const SOLO_SX = {
 
 interface RoomShellBaseProps {
   /**
-   * The name of this step of the room, shown top left with the temple's red
-   * run under it.
+   * The name of this step of the room, shown top left.
    *
    * A screen that gives none is named to a reader and to nobody else, which is
    * the game's own case: the letters in the squares say what that screen is,
@@ -165,12 +162,8 @@ interface RoomShellBaseProps {
   /**
    * The middle of the screen, which is the board on every screen that has one.
    *
-   * A screen may have none, and the lobby is that screen: it stands at the doors
-   * of the temple, and the doorway is what fills the middle of the window — the
-   * hall behind it is visible through that same opening in the picture (issue
-   * #115; a camera used to travel through it when the game began, a mechanism
-   * issue #152 removed without changing what stands in the middle). What that
-   * screen puts there is nothing.
+   * A screen may have none, and the lobby is that screen: what it puts in the
+   * middle is nothing.
    *
    * On a `solo` screen it is the one thing that stands alone.
    */
@@ -234,14 +227,11 @@ type RoomShellProps = RoomZonesProps | RoomSoloProps;
  * stand in the same place: the header is the part that does not move, and two
  * of them printed over each other would be the page redrawing after all.
  *
- * The interface stands on the picture the whole app is drawn in front of, so
- * two things about it are settled here rather than screen by screen. A zone
- * with anything in it is a surface of its own, the shadow under the canopy with
- * the temple's red along its top edge, and it stops where the frame does
- * rather than running out to the edge of the window (issue #199; it was a
- * separate box behind the zone, with the red down its inner side). And
- * everything inside a zone or the header is written in the forest's own cream
- * instead of in ink meant for paper (see `scene-surface.ts`).
+ * A zone with anything in it is a surface of its own, a tile with the street's
+ * hairline round it, and it stops where the frame does rather than running out
+ * to the edge of the window (issue #199; it was a separate box behind the zone).
+ * Everything inside a zone or the header is written in ink on the ground or on
+ * that tile (see `surface-styles.ts`).
  *
  * @param props.title - The name of this step, or nothing on the screen a game is played on
  * @param props.status - The room's own line about what it is doing
@@ -300,7 +290,6 @@ export const RoomShell = ({
           columnGap: 4,
           rowGap: 2,
           visibility: isLeaving ? 'hidden' : undefined,
-          ...ON_SCENE_SX,
           [APP_SHELL]: { flexShrink: 0 },
         }}
       >

@@ -1,16 +1,19 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { BAND_SOLID } from '../garden/scene-palette';
+import { theme } from '../theme';
 import { MiddlePanel } from './MiddlePanel';
 
 describe('MiddlePanel', () => {
-  it("holds what a screen at the doors has to say, on the template's opaque band", () => {
+  it('holds what a screen at the doors has to say, on a tile with a line outline', () => {
     render(<MiddlePanel>What is there</MiddlePanel>);
 
     const panel = screen.getByText('What is there');
+    const { tile, line } = theme.palette.street;
 
-    expect(panel).toHaveStyle({ backgroundColor: BAND_SOLID, borderRadius: '2px' });
+    expect(panel).toHaveStyle({ backgroundColor: tile, borderRadius: '2px' });
+    expect(getComputedStyle(panel).outline.toLowerCase()).toBe(`1.5px solid ${line}`.toLowerCase());
+    expect(getComputedStyle(panel).boxShadow).toBe('');
     expect(getComputedStyle(panel).padding).toBe('24px 24px 26px');
   });
 

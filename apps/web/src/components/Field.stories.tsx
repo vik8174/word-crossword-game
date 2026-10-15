@@ -2,24 +2,23 @@ import Box from '@mui/material/Box';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 
-import { fullHeightBandSx, GATE_BAND_WIDTH, ON_SCENE_SX } from '../garden/scene-surface';
 import { gapAt } from '../scale';
 import { Field, FieldHelp, FieldSet } from './Field';
+import { fullHeightBandSx, GATE_BAND_WIDTH } from './surface-styles';
 
-/** How far the gate's own column keeps from the edge of the band (`pages/NotFoundPage.tsx`). */
+/** How far the column keeps from the edge of the band (`pages/NotFoundPage.tsx`). */
 const GATE_PADDING = gapAt(4);
 const GATE_COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${GATE_PADDING} - ${GATE_PADDING})`;
 
 /**
- * The gate's own band, which is the same colour as `/create`'s panel
- * (`components/gate-panel-styles.ts`, issue #197) and as the panel `join` stands
- * on at the doors (`components/MiddlePanel.tsx`, issue #198 — a shade more
- * opaque there): a dark surface with a field on it, which is what every story
- * here needs. `MiddlePanel.stories.tsx` and `JoinRoomForm.stories.tsx` show the
- * form on the panel it really stands on.
+ * A tile down the middle of the window, which is the same surface as `/create`'s
+ * panel (`components/gate-panel-styles.ts`, issue #197) and as the panel `join`
+ * stands on (`components/MiddlePanel.tsx`, issue #198): a tile with a field on
+ * it, which is what every story here needs. `MiddlePanel.stories.tsx` and
+ * `JoinRoomForm.stories.tsx` show the form on the panel it really stands on.
  */
 const GateSurface = ({ children }: { readonly children: React.ReactNode }) => (
-  <Box sx={{ position: 'relative', minHeight: '100dvh', ...ON_SCENE_SX }}>
+  <Box sx={{ position: 'relative', minHeight: '100dvh' }}>
     <Box aria-hidden sx={fullHeightBandSx('centre', GATE_BAND_WIDTH)} />
     <Box
       sx={{ position: 'relative', width: '100%', maxWidth: GATE_COLUMN_WIDTH, mx: 'auto', pt: 5 }}
@@ -55,7 +54,6 @@ const Controlled = (props: Omit<Parameters<typeof Field>[0], 'value' | 'onChange
 const meta: Meta<typeof Field> = {
   title: 'Components/Field',
   component: Field,
-  parameters: { scene: 'gate' },
   decorators: [
     (Story) => (
       <GateSurface>

@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
+import { theme } from '../theme';
 import { RoomShell } from './RoomShell';
 import { ShiftRoleContext } from './screen-shift';
 
@@ -39,6 +40,32 @@ describe('RoomShell', () => {
     // order they are read in: a reader who cannot see the three zones is walked
     // through the game in the same direction as one who can.
     expect(screen.getByRole('main').textContent).toBe('yours to explainthe boardyours to guess');
+  });
+
+  it('lays a zone with something in it on a tile, outlined inside its own box', () => {
+    render(
+      <RoomShell left={<p>yours to explain</p>}>
+        <p>the board</p>
+      </RoomShell>,
+    );
+
+    const zone = screen.getByText('yours to explain').parentElement as HTMLElement;
+    const style = getComputedStyle(zone);
+
+    expect(style.backgroundColor).toBe('rgb(250, 251, 250)');
+    expect(theme.palette.street.tile).toBe('#FAFBFA');
+    // The 1.5px rule along its top edge is kept as a border, so the content of
+    // the zone stands where it did when the rule was red; the rest of the
+    // outline is drawn inside the box.
+    expect(style.borderTopWidth).toBe('1.5px');
+    expect(style.borderTopColor).toBe('rgb(195, 208, 205)');
+    expect(theme.palette.street.line).toBe('#C3D0CD');
+    expect(style.outline.toLowerCase()).toBe(
+      `1.5px solid ${theme.palette.street.line}`.toLowerCase(),
+    );
+    // No blur over a picture, and no shadow under the zone.
+    expect(['', 'none']).toContain(style.backdropFilter);
+    expect(['', 'none']).toContain(style.boxShadow);
   });
 
   it('leaves a zone this screen has nothing for empty rather than filling it', () => {

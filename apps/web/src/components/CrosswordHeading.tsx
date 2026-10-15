@@ -6,15 +6,14 @@ import { zoneHeadingSx, zoneHintSx } from './zone-styles';
  * What the crossword is called, wherever it is named.
  *
  * It is a component of its own because two screens say it and they say it in
- * different places. In the hall the board is on the screen and this stands over
- * it; at the doors of the temple there is no board yet — the middle of that
- * screen is the doorway, visible in the picture itself, so nothing of the
- * interface may stand in it — and this is all there is of the crossword, in the
- * zone at the side (issue #115).
+ * different places. In a game the board is on the screen and this stands over
+ * it; in the lobby there is no board yet, the middle of that screen is left
+ * empty, and this is all there is of the crossword, in the zone at the side
+ * (issue #115).
  *
  * It carries no surface of its own, which is the difference between the two
  * places. In the zone at the side there is already one and a second would
- * simply be the same darkness twice; in the middle of the window there is none,
+ * simply be the same tile twice; in the middle of the window there is none,
  * so the screen that puts it there gives it one (see {@link RoomCrossword}).
  *
  * The id is exported with it so that neither of them writes the string down a

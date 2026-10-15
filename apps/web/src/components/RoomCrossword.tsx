@@ -1,12 +1,12 @@
 import Box from '@mui/material/Box';
 import { useMemo } from 'react';
 
-import { SENTENCE_BAND_SX } from '../garden/scene-surface';
 import type { RoomDocument } from '../rooms/room-document';
 import { gridViewFor, type WordLocation } from '../rooms/word-visibility';
 import { CrosswordGrid } from './CrosswordGrid';
 import { CROSSWORD_HEADING_ID, CrosswordHeading } from './CrosswordHeading';
 import { Message } from './Message';
+import { SENTENCE_BAND_SX } from './surface-styles';
 
 /**
  * Stands in for a board that takes no answers.
@@ -69,9 +69,8 @@ export const RoomCrossword = ({
 
   return (
     <section aria-labelledby={CROSSWORD_HEADING_ID}>
-      {/* The middle of the window is the one part of the room with no band of
-        its own — the board stands on the temple's own doors there — so the line
-        that names it is given one. */}
+      {/* The middle of the window is the one part of the room with no zone of
+        its own, so the line that names the board is given a tile. */}
       <Box sx={SENTENCE_BAND_SX}>
         <CrosswordHeading caption={caption} />
       </Box>

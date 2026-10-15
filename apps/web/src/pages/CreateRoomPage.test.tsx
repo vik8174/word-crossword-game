@@ -13,7 +13,6 @@ import {
 } from 'shared';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { GardenControlsContext } from '../garden/garden-controls';
 import { ROOM_ROUTE_PATTERN } from '../rooms/room-link';
 import { CreateRoomPage } from './CreateRoomPage';
 
@@ -121,29 +120,6 @@ afterEach(() => {
 });
 
 describe('CreateRoomPage', () => {
-  it('claims the gate as its own picture on mount, rather than trusting a default', () => {
-    // The scene `Garden` starts on is `null`, not a guess (issue #152's second
-    // finding): a screen that never says which picture it wants is left with
-    // none, which is a silent failure a green CI run would not otherwise
-    // catch — nothing here renders visibly differently either way. `/create`
-    // claims `gate` for itself rather than trusting a shared default, the same
-    // way `HomePage` and the catch-all route do (issue #170) — each says its
-    // own picture because none of them may assume one without saying so.
-    const showScene = vi.fn();
-
-    render(
-      <GardenControlsContext value={{ showAir: vi.fn(), showScene }}>
-        <MemoryRouter initialEntries={['/create']}>
-          <Routes>
-            <Route path="/create" element={<CreateRoomPage />} />
-          </Routes>
-        </MemoryRouter>
-      </GardenControlsContext>,
-    );
-
-    expect(showScene).toHaveBeenCalledWith('gate');
-  });
-
   it('names the step in its only h1, inside the panel the form stands on', () => {
     renderPage();
 
@@ -275,11 +251,11 @@ describe('CreateRoomPage', () => {
       expect(await screen.findByText(/could not be created/i)).toBeInTheDocument();
       expect(screen.queryByText(/you are in room/i)).not.toBeInTheDocument();
       expect(screen.getByLabelText(/words/i)).toHaveValue(TEN_WORDS);
-      // A write that failed is an error, not a warning — the template's own
-      // rule colour for it (`Message.tsx`'s `ACCENT.error`), told apart from
-      // the word list's own problems below (issue #185).
+      // A write that failed is an error, not a warning — brick, the error's
+      // role (`Message.tsx`'s `ACCENT.error`), told apart from the word list's
+      // own problems below (issue #185).
       expect(await screen.findByRole('alert')).toHaveStyle({
-        borderLeftColor: 'rgb(218, 70, 32)',
+        borderLeftColor: 'rgb(163, 58, 44)',
       });
     });
   });
@@ -399,9 +375,10 @@ describe('CreateRoomPage', () => {
 
       expect(screen.getByText(/none of these words cross each other/i)).toBeInTheDocument();
       expect(addDoc).not.toHaveBeenCalled();
-      // No crossword to build is the list's own problem — a warning, not the
-      // error a failed write gets (`Message.tsx`'s `ACCENT.warning`, issue #185).
-      expect(screen.getByRole('alert')).toHaveStyle({ borderLeftColor: 'rgb(201, 162, 39)' });
+      // No crossword to build is the list's own problem — a warning, ochre,
+      // not the error a failed write gets (`Message.tsx`'s `ACCENT.warning`,
+      // issue #185).
+      expect(screen.getByRole('alert')).toHaveStyle({ borderLeftColor: 'rgb(242, 199, 102)' });
     });
 
     it('drops the complaint as soon as the owner edits the list', async () => {

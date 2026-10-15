@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { CONTROL } from './garden/scene-palette';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
 import { WAIT_RING_CLASS } from './components/waiting-mark-styles';
 import { theme } from './theme';
@@ -129,81 +128,54 @@ describe('theme', () => {
     expect(theme.palette.mode).toBe('light');
   });
 
-  it('reads ink on paper', () => {
+  it('reads ink on the ground and on a tile', () => {
     // The one figure everything else on the page rests on: body text, the
     // letters of the crossword, and the numbers printed in its corners are all
-    // sumi, and all of them are on washi.
-    expect(
-      contrastBetween(theme.palette.sumi.main, theme.palette.washi.main),
-    ).toBeGreaterThanOrEqual(4.5);
+    // ink, and all of them are on duck or on a tile.
+    const { ink, duck, tile } = theme.palette.street;
+
+    expect(contrastBetween(ink, duck)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastBetween(ink, tile)).toBeGreaterThanOrEqual(4.5);
     expect(
       contrastBetween(theme.palette.text.primary, theme.palette.background.default),
     ).toBeGreaterThanOrEqual(4.5);
     expect(
       contrastBetween(theme.palette.text.secondary, theme.palette.background.default),
     ).toBeGreaterThanOrEqual(4.5);
+    expect(
+      contrastBetween(theme.palette.text.secondary, theme.palette.background.paper),
+    ).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('keeps every accent readable, both as writing and as something written on', () => {
-    const roles = [
+  it('keeps every accent readable as it is used, and ochre as a fill under ink', () => {
+    // A text accent is writing on a tile and on the ground, and the ground a
+    // word inside it is written on.
+    const textAccents = [
       theme.palette.primary,
       theme.palette.secondary,
       theme.palette.error,
-      theme.palette.warning,
-      theme.palette.info,
       theme.palette.success,
+      theme.palette.info,
     ];
 
-    for (const role of roles) {
-      // As a word on the page — an outlined button, a line saying the link was
-      // copied — and as the ground a word inside it is written on.
+    for (const role of textAccents) {
       expect(contrastBetween(role.main, theme.palette.background.default)).toBeGreaterThanOrEqual(
+        4.5,
+      );
+      expect(contrastBetween(role.main, theme.palette.background.paper)).toBeGreaterThanOrEqual(
         4.5,
       );
       expect(contrastBetween(role.contrastText, role.main)).toBeGreaterThanOrEqual(4.5);
     }
-  });
 
-  it('holds every state of the gate button to the bar its label size sets', () => {
-    // The label this control actually carries, measured live off `HomePage.tsx`
-    // (`getComputedStyle`): 17px at weight 300, not the 11.5px/700 issue #149's
-    // own PRD (#145) describes as unchanged — a mockup figure that never
-    // matched what `ON_SCENE_SX` and `theme.typography.signage` render, and
-    // this ticket does not touch label size or weight either way (issue #149's
-    // own boundary). Either figure is far under the 18.66px-bold floor WCAG
-    // calls "large text", so the bar every one of the three states is measured
-    // against is 4.5:1, the same one small text anywhere else in this app is
-    // held to.
-    //
-    // Only the resting fill clears it. That is not an oversight: `#DA4620` is
-    // the temple's own red, chosen deliberately and rejected as a colour to
-    // darken further, and the PRD accepts 3.93:1 in writing rather than
-    // resolving it here. Arithmetic makes the same true of the hover fill —
-    // `#E45926` was picked for margin over the 3:1 a decorative edge is owed,
-    // not for 4.5:1 — though the PRD's own "Open" section names only the
-    // resting state; this test holds both of the label's two accepted
-    // shortfalls to their own measured floor rather than to the bar they miss,
-    // so a further regression is still caught. The waiting state's ink was
-    // already 78% before this ticket touched anything — not 55% as the PRD's
-    // own "today" figure has it — and against an opaque `restingFill` it does
-    // clear 4.5:1 outright.
-    const SMALL_TEXT = 4.5;
-    const states = [
-      { name: 'at rest', fill: CONTROL.fill, ink: CONTROL.ink, floor: 3.9 },
-      { name: 'under a finger', fill: CONTROL.litFill, ink: CONTROL.ink, floor: 3.3 },
-      {
-        name: 'not yet pressable',
-        fill: CONTROL.restingFill,
-        ink: CONTROL.restingInk,
-        floor: SMALL_TEXT,
-      },
-    ];
+    // Ochre is not one of them. It is a fill, and what is written on it is ink:
+    // the lit window of a warning, never a warning's words.
+    const { warning } = theme.palette;
 
-    for (const state of states) {
-      expect(contrastBetween(state.ink, state.fill), state.name).toBeGreaterThanOrEqual(
-        state.floor,
-      );
-    }
+    expect(warning.main).toBe(theme.palette.street.ochre);
+    expect(warning.contrastText).toBe(theme.palette.street.ink);
+    expect(contrastBetween(warning.contrastText, warning.main)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastBetween(warning.main, theme.palette.background.default)).toBeLessThan(3);
   });
 
   it('tells the four states of a square apart with the colour taken out', () => {
@@ -258,25 +230,47 @@ describe('theme', () => {
   });
 
   it('has one source of truth for a colour: the roles point at the tokens', () => {
-    // Sakura is the room and matcha is the board, which is the split that keeps
-    // pink off the squares. Anything that let a role drift onto a value of its
-    // own would be a second palette nobody had measured.
-    expect(theme.palette.primary.main).toBe(theme.palette.sakura.main);
-    expect(theme.palette.secondary.main).toBe(theme.palette.matcha.main);
-    expect(theme.palette.background.default).toBe(theme.palette.washi.main);
-    expect(theme.palette.background.paper).toBe(theme.palette.washi.light);
-    expect(theme.palette.text.primary).toBe(theme.palette.sumi.main);
+    // MUI's roles are not a second palette. Anything that let a role drift onto
+    // a value of its own would be a colour nobody had measured.
+    const { palette } = theme;
+    const { street } = palette;
+
+    expect(palette.primary.main).toBe(street.spruce);
+    expect(palette.secondary.main).toBe(street.spruce);
+    expect(palette.success.main).toBe(street.spruce);
+    expect(palette.error.main).toBe(street.brick);
+    expect(palette.warning.main).toBe(street.ochre);
+    expect(palette.info.main).toBe(street.slate);
+    expect(palette.background.default).toBe(street.duck);
+    expect(palette.background.paper).toBe(street.tile);
+    expect(palette.text.primary).toBe(street.ink);
+    expect(palette.text.secondary).toBe(street.slate);
+    expect(palette.divider).toBe(street.line);
   });
 
-  it('keeps sakura off the board', () => {
-    // The decision this ticket turns on, asserted rather than remembered: the
-    // squares are paper, ink and the one green accent, and the accent of the
-    // room around them appears in none of them.
-    const surfaces = Object.values(theme.palette.grid);
+  it("gives an error MUI's own darker shade of brick as its `dark`", () => {
+    // Used by the refused square's outline on the board, which is why it is
+    // not brick itself: the shade is worked out, not declared.
+    const { error } = theme.palette;
 
-    expect(surfaces).not.toContain(theme.palette.sakura.light);
-    expect(surfaces).not.toContain(theme.palette.sakura.main);
-    expect(surfaces).not.toContain(theme.palette.sakura.dark);
+    expect(error.dark).not.toBe(error.main);
+    expect(contrastBetween(theme.palette.street.onAccent, error.dark)).toBeGreaterThan(
+      contrastBetween(theme.palette.street.onAccent, error.main),
+    );
+  });
+
+  it("leaves the board's surfaces as they were, as literal values", () => {
+    // #228 replaces them together with the outlines; until then the board is
+    // the one thing that has not moved onto the street's colours.
+    expect(theme.palette.grid).toEqual({
+      empty: '#FFFDF7',
+      guessed: '#F4EFE3',
+      own: '#DCE8C6',
+      explained: '#DED4BB',
+      ownFilling: '#BDC7AA',
+      refused: '#E29880',
+      rule: 'rgba(43, 38, 32, 0.55)',
+    });
   });
 
   it('reads everything in one family, headings told apart from text by weight alone', () => {
@@ -317,12 +311,10 @@ describe('theme', () => {
   });
 
   it('turns off all motion under prefers-reduced-motion, not only its own three consumers', () => {
-    // The screen shift, the petals and the garden's cloth already ask
-    // `REDUCED_MOTION_QUERY` themselves; this is the backstop for everything
-    // MUI draws, which cannot be asked the same question and could not be
-    // trusted to ask it consistently one component at a time. There used to
-    // be a fourth consumer, the camera, removed along with the rest of the
-    // painted world it flew through (issue #152).
+    // The screen shift already asks `REDUCED_MOTION_QUERY` itself; this is the
+    // backstop for everything MUI draws, which cannot be asked the same
+    // question and could not be trusted to ask it consistently one component
+    // at a time.
     const cssBaseline = theme.components?.MuiCssBaseline?.styleOverrides as
       Record<string, unknown> | undefined;
     const media = cssBaseline?.['@media (prefers-reduced-motion: reduce)'] as

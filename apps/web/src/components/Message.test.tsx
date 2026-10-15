@@ -3,31 +3,35 @@ import { describe, expect, it } from 'vitest';
 
 import { Message } from './Message';
 
-/** Every severity, and the colours the template draws it in. */
+/**
+ * Every severity, and the colour of each part by its role: the rule down the
+ * left and the mark are the kind's own (brick, ochre, slate, spruce), the head
+ * line is ink except an error's, which is brick.
+ */
 const KINDS = [
   {
     kind: 'error',
-    rule: 'rgb(218, 70, 32)',
-    mark: 'rgb(255, 144, 104)',
-    head: 'rgb(255, 144, 104)',
+    rule: 'rgb(163, 58, 44)',
+    mark: 'rgb(163, 58, 44)',
+    head: 'rgb(163, 58, 44)',
   },
   {
     kind: 'warning',
-    rule: 'rgb(201, 162, 39)',
-    mark: 'rgb(201, 162, 39)',
-    head: 'rgb(224, 188, 70)',
+    rule: 'rgb(242, 199, 102)',
+    mark: 'rgb(242, 199, 102)',
+    head: 'rgb(27, 45, 56)',
   },
-  { kind: 'info', rule: 'rgb(99, 216, 206)', mark: 'rgb(99, 216, 206)', head: 'rgb(99, 216, 206)' },
+  { kind: 'info', rule: 'rgb(76, 97, 112)', mark: 'rgb(76, 97, 112)', head: 'rgb(27, 45, 56)' },
   {
     kind: 'success',
-    rule: 'rgb(169, 209, 71)',
-    mark: 'rgb(169, 209, 71)',
-    head: 'rgb(169, 209, 71)',
+    rule: 'rgb(45, 102, 88)',
+    mark: 'rgb(45, 102, 88)',
+    head: 'rgb(27, 45, 56)',
   },
 ] as const;
 
 describe('Message', () => {
-  it.each(KINDS)("draws $kind in the template's own colours", ({ kind, rule, mark, head }) => {
+  it.each(KINDS)('draws $kind in the colours of its roles', ({ kind, rule, mark, head }) => {
     render(
       <Message kind={kind} heading="A head line">
         A sentence.
@@ -37,13 +41,15 @@ describe('Message', () => {
     const surface = screen.getByRole('alert');
     const style = getComputedStyle(surface);
 
-    // surface: rgba(6, 20, 16, .82), radius 2px, padding 12px 15px 13px, gap 12px
-    expect(style.backgroundColor).toBe('rgba(6, 20, 16, 0.82)');
+    // surface: a tile with a 1.5px line outline, radius 2px, padding 12px 15px
+    // 13px, gap 12px, and no shadow under it
+    expect(style.backgroundColor).toBe('rgb(250, 251, 250)');
+    expect(style.outline.toLowerCase()).toBe('1.5px solid #c3d0cd');
     expect(style.borderRadius).toBe('2px');
     expect(style.padding).toBe('12px 15px 13px');
     expect(style.gap).toBe('12px');
-    expect(style.boxShadow).toContain('rgba(0, 0, 0, 0.8)');
-    expect(style.backdropFilter).toContain('blur(2px)');
+    expect(['', 'none']).toContain(style.boxShadow);
+    expect(['', 'none']).toContain(style.backdropFilter);
 
     // left rule, 3px
     expect(style.borderLeftWidth).toBe('3px');
@@ -67,7 +73,7 @@ describe('Message', () => {
 
     expect(bodyStyle.fontSize).toBe('12.5px');
     expect(bodyStyle.lineHeight).toBe('1.55');
-    expect(bodyStyle.color).toBe('rgb(243, 236, 217)');
+    expect(bodyStyle.color).toBe('rgb(27, 45, 56)');
 
     const mark1 = surface.querySelector('[aria-hidden="true"]') as HTMLElement;
     const markStyle = getComputedStyle(mark1);
@@ -79,7 +85,7 @@ describe('Message', () => {
     expect(markStyle.backgroundColor).toBe(mark);
   });
 
-  it('draws its list as list items, dim cream and smaller than the body', () => {
+  it('draws its list as list items, in secondary text and smaller than the body', () => {
     render(
       <Message
         kind="warning"
@@ -99,7 +105,7 @@ describe('Message', () => {
     const style = getComputedStyle(items[0] as HTMLElement);
 
     expect(style.fontSize).toBe('12px');
-    expect(style.color).toBe('rgba(243, 236, 217, 0.78)');
+    expect(style.color).toBe('rgb(76, 97, 112)');
   });
 
   it('draws no list when none is given', () => {

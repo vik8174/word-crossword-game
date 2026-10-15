@@ -1,7 +1,6 @@
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 
-import { ON_SCENE_SX } from '../garden/scene-surface';
 import { middlePanelSx } from './gate-panel-styles';
 
 interface MiddlePanelProps {
@@ -24,12 +23,9 @@ interface MiddlePanelProps {
  * for `join` — and it is as wide as the template's 430px or 92% of that place,
  * and as tall as what is on it.
  *
- * Its own surface rather than the band the gate's full-height column used to be,
- * which is the decision this replaces: `join` stood on the gate's band (#175)
- * and before that on a card (#137), and stands on the doors inside the room
- * frame now. Everything written on it is the forest's cream
- * ({@link ON_SCENE_SX}), and the panel is opaque enough that it need not be the
- * gate's own lighter reading: nothing on these screens renders a dimmer line.
+ * A tile of its own, with the street's hairline round it, and ink on it. It
+ * stood on the gate's band (#175) and before that on a card (#137), and stands
+ * in the room's frame now.
  *
  * @param props.centred - Whether its contents are centred; left-aligned otherwise
  * @param props.children - What this screen has to say or ask
@@ -38,7 +34,5 @@ interface MiddlePanelProps {
  * <MiddlePanel centred><WaitingMark>Connecting to the game…</WaitingMark></MiddlePanel>
  */
 export const MiddlePanel = ({ centred = false, children }: MiddlePanelProps) => (
-  <Box sx={{ ...ON_SCENE_SX, ...middlePanelSx, ...(centred && { textAlign: 'center' }) }}>
-    {children}
-  </Box>
+  <Box sx={{ ...middlePanelSx, ...(centred && { textAlign: 'center' }) }}>{children}</Box>
 );

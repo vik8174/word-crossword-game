@@ -4,7 +4,6 @@ import { MiddlePanel } from './MiddlePanel';
 import { WaitingMark } from './WaitingMark';
 import { gateScreenSx } from './gate-panel-styles';
 import Box from '@mui/material/Box';
-import { ON_SCENE_SX } from '../garden/scene-surface';
 
 /**
  * The template's waiting mark, standing where it first does: on the doors'
@@ -18,10 +17,9 @@ import { ON_SCENE_SX } from '../garden/scene-surface';
 const meta: Meta<typeof WaitingMark> = {
   title: 'Components/WaitingMark',
   component: WaitingMark,
-  parameters: { scene: 'doors' },
   decorators: [
     (Story) => (
-      <Box sx={{ ...ON_SCENE_SX, ...gateScreenSx }}>
+      <Box sx={gateScreenSx}>
         <MiddlePanel centred>
           <Story />
         </MiddlePanel>

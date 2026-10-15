@@ -1,6 +1,6 @@
 # 0033. A second ceiling for a picture
 
-Status: Accepted
+Status: Superseded by [0038](0038-across-the-street-replaces-the-garden.md)
 
 ## Context
 

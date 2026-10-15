@@ -1,7 +1,7 @@
 import type { CSSObject } from '@mui/material/styles';
 
-import { SCENE } from '../garden/scene-palette';
 import { inRem } from '../scale';
+import { STREET } from '../street';
 
 /**
  * How long one ring of the waiting mark takes to grow out and fade, and how
@@ -48,7 +48,7 @@ export const waitingLineSx: CSSObject = {
   margin: '0 auto',
   alignItems: 'center',
   gap: inRem(14),
-  color: SCENE.cream,
+  color: STREET.ink,
   fontSize: inRem(13),
 };
 
@@ -65,17 +65,21 @@ export const ringSx = (delayMs: number): CSSObject => ({
   position: 'absolute',
   inset: 0,
   borderRadius: '50%',
-  border: `2px solid ${SCENE.vermilionLit}`,
+  border: `2px solid ${STREET.ochre}`,
   opacity: 0,
   animation: `sun-out ${SUN_OUT_MS}ms cubic-bezier(.2,.7,.3,1) infinite`,
   animationDelay: `${delayMs}ms`,
   '@keyframes sun-out': SUN_OUT_KEYFRAMES,
 });
 
-/** `.sun-wait .core`: the 8px sun the rings leave from. */
+/**
+ * `.sun-wait .core`: the 8px sun the rings leave from, the lit window (`ochre`)
+ * ringed in ink as the template draws its waiting dot (`.wait-line .dot`).
+ */
 export const coreSx: CSSObject = {
   position: 'absolute',
   inset: inRem(9),
   borderRadius: '50%',
-  backgroundColor: SCENE.vermilion,
+  backgroundColor: STREET.ochre,
+  border: `1.5px solid ${STREET.ink}`,
 };

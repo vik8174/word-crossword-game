@@ -140,8 +140,8 @@ export const FieldSet = ({ children }: { readonly children: ReactNode }) => (
 );
 
 /**
- * The help line under a field — `.field-help`, always in full cream on the
- * gate's own band (`field-styles.ts`'s `fieldHelpSx` explains why).
+ * The help line under a field — `.field-help`, in secondary text
+ * (`field-styles.ts`'s `fieldHelpSx` explains why it is the same for a fault).
  *
  * @param props.id - Set when a `Field` nearby points `aria-describedby` at this line
  */

@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { inRem } from '../scale';
 import { roomUrl } from '../rooms/room-link';
+import { STREET } from '../street';
 import { ReadOnlyField } from './Field';
 import { PillButton } from './PillButton';
 import { zoneHeadingSx, zoneHintSx } from './zone-styles';
@@ -20,12 +21,12 @@ const INVITE_HEADING_ID = 'invite-heading';
 /**
  * The line beside the copy button that says how the copy went
  * (`.inline-status`, `design/templates/state-tree.html` lines 392-394): 11px,
- * and no surface of its own, so it is read off the zone. Green when it worked,
- * and a pale red when the browser refused, the template's own two.
+ * and no surface of its own, so it is read off the zone's tile. Spruce when it
+ * worked and brick when the browser refused, the template's own two.
  */
 const INLINE_STATUS_SX = { fontSize: inRem(11), lineHeight: 1.5 } as const;
-const COPIED_INK = '#A9D147';
-const REFUSED_INK = '#FFC7AE';
+const COPIED_INK = STREET.spruce;
+const REFUSED_INK = STREET.brick;
 
 /** Outcome of the last copy attempt — nothing tried yet, copied, or the browser refused. */
 type CopyState = 'idle' | 'copied' | 'failed';

@@ -4,8 +4,6 @@ import { logEvent } from 'firebase/analytics';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Garden } from '../garden/Garden';
-import { GardenControlsContext } from '../garden/garden-controls';
 import { theme } from '../theme';
 import { HomePage } from './HomePage';
 
@@ -22,23 +20,12 @@ vi.mock('firebase/analytics', () => ({
 const reportedEvents = () =>
   vi.mocked(logEvent).mock.calls.map(([, name, params]) => ({ name, params }));
 
-/**
- * Renders the page the way `App.tsx` actually does: inside the same `Garden`
- * every other route shares (issue #166), with the app's own theme around it —
- * `Garden` now always mounts `PetalLayer`, which reads `theme.palette.sakura`
- * (`PetalLayer.tsx`), a token this app's theme adds and MUI's default theme
- * does not carry. The picture behind this page is `GardenScene`'s now rather
- * than a component of its own, so a render with no `Garden` around it would
- * see no picture at all — a fixture that stopped meaning what these tests
- * need it to.
- */
+/** Renders the page the way `App.tsx` actually does: in the app's own theme and a router. */
 const renderHomePage = () =>
   render(
     <ThemeProvider theme={theme}>
       <MemoryRouter>
-        <Garden>
-          <HomePage />
-        </Garden>
+        <HomePage />
       </MemoryRouter>
     </ThemeProvider>,
   );
@@ -51,13 +38,14 @@ describe('HomePage', () => {
   it('renders the game title', () => {
     renderHomePage();
 
-    const heading = screen.getByRole('heading', { name: /word garden/i });
+    const heading = screen.getByRole('heading', { name: /across the street/i });
 
     expect(heading).toBeInTheDocument();
     // No dot, mark or rule after the name (settled in PRD #145) — a regexp
     // anchored on both ends catches trailing punctuation a substring match
-    // would miss.
-    expect(heading).toHaveTextContent(/^WORD GARDEN$/i);
+    // would miss. The name is "Across the Street" in the text; the capitals
+    // are the page's own lettering.
+    expect(heading).toHaveTextContent(/^Across the Street$/);
   });
 
   it('sets the name in Alegreya Sans at its bold, keeping its capitals and tracking', () => {
@@ -68,7 +56,7 @@ describe('HomePage', () => {
     // for it.
     renderHomePage();
 
-    const heading = screen.getByRole('heading', { name: /word garden/i });
+    const heading = screen.getByRole('heading', { name: /across the street/i });
     const style = getComputedStyle(heading);
 
     expect(style.fontFamily).toContain('Alegreya Sans');
@@ -103,70 +91,39 @@ describe('HomePage', () => {
     });
   });
 
-  it('claims the gate as its own picture on mount, rather than trusting a default', () => {
-    // The scene `Garden` starts on is `null`, not a guess (issue #152's second
-    // finding): a screen that never says which picture it wants is left with
-    // none. `/` has to claim it itself now that `Garden` is mounted here too
-    // (issue #166), the same way `CreateRoomPage` claims its own.
-    const showScene = vi.fn();
-
-    render(
-      <MemoryRouter>
-        <GardenControlsContext value={{ showAir: vi.fn(), showScene }}>
-          <HomePage />
-        </GardenControlsContext>
-      </MemoryRouter>,
-    );
-
-    expect(showScene).toHaveBeenCalledWith('gate');
-  });
-
-  it('draws the gate as an image with a decoding fallback', () => {
+  it('draws no picture: the page stands on the ground the theme paints', () => {
     const { container } = renderHomePage();
 
-    // A screen reader has nothing to read off a picture that is entirely
-    // lettering and one button already on the page, so the image itself is
-    // decorative (`alt=""`) rather than described a second time.
-    const img = container.querySelector('img');
-
-    expect(img).toHaveAttribute('src', '/scenes/gate.jpg');
-    expect(img).toHaveAttribute('alt', '');
-    expect(container.querySelector('source[type="image/avif"]')).toHaveAttribute(
-      'srcset',
-      '/scenes/gate.avif',
-    );
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('picture')).toBeNull();
+    expect(container.querySelector('canvas')).toBeNull();
   });
 
-  it('renders the name in sumi, not the cream a descendant rule would otherwise win with', () => {
-    // `GATE_INK === '#1C1A1A'` is true regardless of what actually reaches the
-    // screen — `gate-chrome.test.ts` already asserts that constant and cannot
-    // catch this. `ON_SCENE_SX` on this page's own `<main>` carries `'&
-    // .MuiTypography-root': { color: 'inherit' }` (`garden/scene-surface.ts`),
-    // a descendant rule at specificity (0,2,0); a plain one-class `sx` rule on
-    // the heading itself is only (0,1,0), so cream from `<main>` won
-    // regardless of source order until the heading's own rule was written as
-    // `&&&` (0,3,0). Checked on the rendered element's computed style, the way
-    // a screen actually resolves it, rather than on the value handed to `sx`.
+  it('renders the name in ink from the theme', () => {
+    // Checked on the rendered element's computed style, the way a screen
+    // actually resolves it, rather than on the value handed to `sx`.
     renderHomePage();
 
-    const heading = screen.getByRole('heading', { name: /word garden/i });
+    const heading = screen.getByRole('heading', { name: /across the street/i });
 
-    expect(getComputedStyle(heading).color).toBe('rgb(28, 26, 26)');
+    expect(getComputedStyle(heading).color).toBe('rgb(27, 45, 56)');
   });
 
-  it('carries the cream offset behind the sumi name, down and right by 0.05em', () => {
-    // PRD #145's own reference lockup sets this in the same direction:
-    // `text-shadow: 0.05em 0.05em 0 #F3ECD9`. It carries no contrast duty of
-    // its own — measured over the scene's real pixels plus its veil, the
-    // name is median 3.41:1 against the sky whether or not this shadow is
-    // there. It reads against the sumi letter it sits behind instead, which
-    // is where PRD #145 says an offset is supposed to read.
+  it('draws no shadow behind the name: it was a cream offset for the picture', () => {
     renderHomePage();
 
-    const heading = screen.getByRole('heading', { name: /word garden/i });
-    const shadow = getComputedStyle(heading).textShadow;
+    const heading = screen.getByRole('heading', { name: /across the street/i });
 
-    expect(shadow).toMatch(/#F3ECD9|rgb\(243,\s*236,\s*217\)/i);
-    expect(shadow).toMatch(/0\.05em 0\.05em/);
+    // A shadow has an offset in it; the absence of one computes to `none`, to
+    // nothing, or to a transparent black, depending on the engine.
+    expect(getComputedStyle(heading).textShadow).not.toMatch(/\d(px|em)/);
+  });
+
+  it('is called Across the Street, and nothing on it says anything else', () => {
+    const { container } = renderHomePage();
+
+    // The old name is spelled as a pattern so that no file of the app carries it
+    // as text, which is what a search for it checks.
+    expect(container.textContent).not.toMatch(/word\s+garden/i);
   });
 });

@@ -74,6 +74,19 @@ describe('GridSquare', () => {
     expect(style.fontWeight).toBe('400');
   });
 
+  it('draws the square this player explains with a dashed outline in ink, not in a rule colour', () => {
+    // The cue ADR 0015 holds the board to: a dashed outline where every other
+    // square has a solid one. It stays `ink` when the colours move onto the
+    // street's roles; `line` would be a rule, and would not be read as a cue.
+    renderSquare({ cell: cellAt({ source: 'explained', letter: 'a' }) });
+
+    const style = getComputedStyle(screen.getByLabelText(/row 1, column 1/i));
+
+    expect(style.borderTopStyle).toBe('dashed');
+    expect(style.borderTopColor).toBe('rgb(27, 45, 56)');
+    expect(style.fontStyle).toBe('italic');
+  });
+
   it('sets a square’s number in the text family', () => {
     const { container } = renderSquare({
       cell: cellAt({ source: 'solved', letter: 'a' }),

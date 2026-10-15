@@ -1,8 +1,8 @@
-import { alpha, createTheme, darken, type PaletteColor } from '@mui/material/styles';
+import { alpha, createTheme } from '@mui/material/styles';
 import { LOADING_DOT_CLASS } from './components/button-styles';
 import { WAIT_RING_CLASS } from './components/waiting-mark-styles';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
-import { SPACING_STEPS } from './scale';
+import { inRem, SPACING_STEPS } from './scale';
 import { STREET, STREET_TYPOGRAPHY } from './street';
 import { TYPOGRAPHY } from './typography';
 
@@ -10,59 +10,15 @@ import { TYPOGRAPHY } from './typography';
  * The system setting that means no movement at all, spelled out again rather
  * than imported.
  *
- * `components/screen-shift.ts` declares the same string for the screen shift
- * and the garden's canvases to read with `useMediaQuery` — a check that runs
- * in JavaScript, once, at the moment each of those decides whether to move. A
- * style block cannot ask a hook a question; what it can do
- * is hold the same query as a CSS `@media` rule, which the browser
- * re-evaluates on its own the moment the setting changes, with nothing to
- * import and nothing to grow stale. The two are the same query written for
- * two different readers, not two sources of truth.
+ * `components/screen-shift.ts` declares the same string for the screen shift to
+ * read with `useMediaQuery` — a check that runs in JavaScript, once, at the
+ * moment the shift decides whether to move. A style block cannot ask a hook a
+ * question; what it can do is hold the same query as a CSS `@media` rule, which
+ * the browser re-evaluates on its own the moment the setting changes, with
+ * nothing to import and nothing to grow stale. The two are the same query
+ * written for two different readers, not two sources of truth.
  */
 const REDUCED_MOTION_MEDIA = '@media (prefers-reduced-motion: reduce)';
-
-/**
- * The colours the app is drawn in, and the only place any of them is written
- * down.
- *
- * Four of them are named rather than numbered, because a name is what survives
- * being read six months later: `washi` is the paper, `sumi` is the ink on it,
- * and `sakura` and `matcha` are the two accents. They are declared into the MUI
- * palette below (`theme.palette.washi`, and so on), so anything reading a
- * colour reads it from the theme with the editor completing the name — there is
- * no second table of hex values anywhere in this app.
- *
- * The other three are not brand colours but statements: something went wrong,
- * something needs care, something is worth knowing. They are muted into the
- * same family so a refused answer is an alarm on this paper rather than a
- * warning light borrowed from somewhere else.
- *
- * Every value here has been measured — see `theme.test.ts`, which fails the
- * build if the ink stops standing off the paper or if two squares of the
- * crossword stop being told apart with the colour taken out.
- */
-const TOKENS = {
-  /** Warm paper: the page, a card, a square of the crossword. */
-  washi: { light: '#FFFDF7', main: '#F4EFE3', dark: '#DED4BB' },
-  /** Ink: what is read, and the lines a crossword is ruled with. */
-  sumi: { light: '#5B534A', main: '#2B2620', dark: '#14110D' },
-  /** Cherry blossom, the accent of the room around the board. */
-  sakura: { light: '#F2D3DA', main: '#A54460', dark: '#7C2E46' },
-  /** Tea green, the one accent the board itself carries. */
-  matcha: { light: '#DCE8C6', main: '#3F5A2E', dark: '#2C3F20' },
-  /** Vermilion: an answer the room refused, and nothing else. */
-  vermilion: { light: '#E29880', main: '#B03A24', dark: '#83280F' },
-  /** Ochre: something a player should look at before it costs them. */
-  ochre: { light: '#F1DDB0', main: '#8A6113', dark: '#63450B' },
-  /** Indigo: something the room is saying, that is neither good nor bad. */
-  indigo: { light: '#CBD7E5', main: '#3D5A80', dark: '#2A3F5C' },
-} as const;
-
-/**
- * What is written on a dark accent. Paper rather than pure white, so nothing in
- * the app is a colour the rest of it does not contain.
- */
-const ON_ACCENT = TOKENS.washi.light;
 
 /**
  * The surfaces one square of the crossword can be drawn on.
@@ -74,9 +30,6 @@ const ON_ACCENT = TOKENS.washi.light;
  * (`docs/decisions/0015-explained-words-in-the-grid.md`). Written down as
  * values, they can be held to that in a test; composed inside the component out
  * of an accent and an opacity, they could not be.
- *
- * Every one of them is a step of a token or a stated derivation of one, so the
- * board cannot drift away from the rest of the app.
  */
 export interface GridSurfaces {
   /** A square nothing of this player's runs through, and nothing has been answered in. */
@@ -95,37 +48,31 @@ export interface GridSurfaces {
   readonly rule: string;
 }
 
+/**
+ * The board's surfaces, exactly as they were before the garden went.
+ *
+ * Literal values on purpose: the board is the one thing that does not move onto
+ * the street's colours in the issue that removed the garden (#222). Issue #228
+ * replaces these with the drawing's squares (`tile`, `sage`, `paper`, `wash` and
+ * `rose`) together with their outlines, and the test that tells the four states
+ * apart with the colour taken out keeps holding the new ones to the same bar.
+ */
 const GRID: GridSurfaces = {
-  // The brightest paper there is, and what a board nobody has written on yet is
-  // made of end to end.
-  empty: TOKENS.washi.light,
-  // The page's own tone, ruled into a square and holding a letter: a word the
-  // group has answered has been written in, and stops being a blank to fill.
-  guessed: TOKENS.washi.main,
-  own: TOKENS.matcha.light,
-  explained: TOKENS.washi.dark,
-  // A shade of the same wash rather than a colour of its own: the word being
-  // filled in is the same word, further along.
-  ownFilling: darken(TOKENS.matcha.light, 0.14),
-  refused: TOKENS.vermilion.light,
-  // Ink thinned until a grid of it reads as ruling rather than as eighty boxes.
-  rule: alpha(TOKENS.sumi.main, 0.55),
+  empty: '#FFFDF7',
+  guessed: '#F4EFE3',
+  own: '#DCE8C6',
+  explained: '#DED4BB',
+  ownFilling: '#BDC7AA',
+  refused: '#E29880',
+  rule: 'rgba(43, 38, 32, 0.55)',
 };
 
 declare module '@mui/material/styles' {
   interface Palette {
-    washi: PaletteColor;
-    sumi: PaletteColor;
-    sakura: PaletteColor;
-    matcha: PaletteColor;
     grid: GridSurfaces;
   }
 
   interface PaletteOptions {
-    washi?: PaletteColor;
-    sumi?: PaletteColor;
-    sakura?: PaletteColor;
-    matcha?: PaletteColor;
     grid?: GridSurfaces;
   }
 }
@@ -133,18 +80,17 @@ declare module '@mui/material/styles' {
 /**
  * The roles a face plays, the four levels and the row of gaps this app is
  * drawn with are in `scale.ts`, and the typography below is nothing but those
- * handed to MUI. Two of them leave again through this module — the crossword
+ * handed to MUI. One of them leaves again through this module: the crossword
  * reads the text face here (its letters and its numbers alike, since issue
- * #147 dropped the serif that used to set them apart), and the scene of issue
- * #115 reads the sign face out of `theme.typography.signage` — so the theme
- * stays the one thing a component asks about how the app looks
+ * #147 dropped the serif that used to set them apart), so the theme stays the
+ * one thing a component asks about how the app looks
  * (`docs/decisions/0028-a-design-system-inside-the-mui-theme.md`).
  */
-export { SIGN_FONT_FAMILY, TEXT_FONT_FAMILY } from './scale';
+export { TEXT_FONT_FAMILY } from './scale';
 
 /**
- * The app's design system: a palette of named tokens, and the typography drawn
- * with it.
+ * The app's design system: the street's palette, its roles, and the typography
+ * drawn with it.
  *
  * Declared as a colour scheme rather than as a bare palette. There is exactly
  * one scheme and no dark one in this release, and the two spellings cost the
@@ -153,17 +99,21 @@ export { SIGN_FONT_FAMILY, TEXT_FONT_FAMILY } from './scale';
  * has to say. A dark scheme, when there is one, is a second object here and
  * nothing else.
  *
- * The MUI roles are not a second palette: each of them points at a token, so
- * `Button`, `Alert`, `Chip` and `Dialog` are drawn in these colours without
- * being told about them. `primary` is sakura and lives everywhere except the
- * board; `secondary` is matcha and is the one accent the board carries. That
- * split is deliberate and is the trap this ticket was written around: a refused
- * answer is drawn in vermilion, so squares of the player's own words being pink
- * too would leave "mine" and "wrong" differing by a shade of the same colour,
- * and a player would go on believing an answer the room had already thrown out.
+ * The colours are `street.ts`'s, and this is the only other place any colour is
+ * written down. The MUI roles are not a second palette: each of them points at
+ * a token, so `Button`, `Dialog`, `Chip` and `CircularProgress` are drawn in
+ * these colours without being told about them.
+ *
+ * - `primary`, `secondary` and `success` are spruce, the action
+ * - `error` is brick, with the darker shade MUI works out from it as `dark`
+ * - `warning` is ochre, which is a fill and never a text colour, so its
+ *   `contrastText` is ink
+ * - `info` is slate
+ * - text is ink, secondary text is slate, a rule is `line`, the page is `duck`
+ *   and a card is `tile`
  *
  * @example
- * <Box sx={{ bgcolor: 'washi.main', color: 'sumi.main' }} />
+ * <Box sx={{ bgcolor: 'street.tile', color: 'street.ink' }} />
  */
 export const theme = createTheme({
   colorSchemes: {
@@ -171,41 +121,35 @@ export const theme = createTheme({
       palette: {
         mode: 'light',
 
-        washi: { ...TOKENS.washi, contrastText: TOKENS.sumi.main },
-        sumi: { ...TOKENS.sumi, contrastText: ON_ACCENT },
-        sakura: { ...TOKENS.sakura, contrastText: ON_ACCENT },
-        matcha: { ...TOKENS.matcha, contrastText: ON_ACCENT },
-        grid: GRID,
-        // Design v2, beside the tokens above; nothing reads it yet (#243).
         street: STREET,
+        grid: GRID,
 
-        primary: { ...TOKENS.sakura, contrastText: ON_ACCENT },
-        secondary: { ...TOKENS.matcha, contrastText: ON_ACCENT },
-        error: { ...TOKENS.vermilion, contrastText: ON_ACCENT },
-        warning: { ...TOKENS.ochre, contrastText: ON_ACCENT },
-        info: { ...TOKENS.indigo, contrastText: ON_ACCENT },
-        // The same green the board's own squares carry: a finished crossword and
-        // a square being filled in are the same good news at two moments.
-        success: { ...TOKENS.matcha, contrastText: ON_ACCENT },
+        primary: { main: STREET.spruce, contrastText: STREET.onAccent },
+        secondary: { main: STREET.spruce, contrastText: STREET.onAccent },
+        error: { main: STREET.brick, contrastText: STREET.onAccent },
+        // A fill under ink, never writing: ochre on the ground reads 1.4:1.
+        warning: { main: STREET.ochre, contrastText: STREET.ink },
+        info: { main: STREET.slate, contrastText: STREET.onAccent },
+        success: { main: STREET.spruce, contrastText: STREET.onAccent },
 
-        background: { default: TOKENS.washi.main, paper: TOKENS.washi.light },
+        background: { default: STREET.duck, paper: STREET.tile },
         text: {
-          primary: TOKENS.sumi.main,
-          secondary: TOKENS.sumi.light,
-          disabled: alpha(TOKENS.sumi.main, 0.38),
+          primary: STREET.ink,
+          secondary: STREET.slate,
+          disabled: STREET.disabledLabel,
         },
-        divider: alpha(TOKENS.sumi.main, 0.16),
+        divider: STREET.line,
 
         // The greys MUI reaches for on its own — a hover, a disabled control —
         // are thinned ink rather than black, so nothing in the app is a colour
-        // the paper does not have under it.
+        // the ground does not have under it.
         action: {
-          active: alpha(TOKENS.sumi.main, 0.6),
-          hover: alpha(TOKENS.sumi.main, 0.04),
-          selected: alpha(TOKENS.sumi.main, 0.08),
-          disabled: alpha(TOKENS.sumi.main, 0.26),
-          disabledBackground: alpha(TOKENS.sumi.main, 0.12),
-          focus: alpha(TOKENS.sumi.main, 0.12),
+          active: alpha(STREET.ink, 0.6),
+          hover: alpha(STREET.ink, 0.04),
+          selected: alpha(STREET.ink, 0.08),
+          disabled: STREET.disabledLabel,
+          disabledBackground: STREET.disabledSurface,
+          focus: alpha(STREET.ink, 0.12),
         },
       },
     },
@@ -217,8 +161,8 @@ export const theme = createTheme({
 
   typography: { ...TYPOGRAPHY, ...STREET_TYPOGRAPHY },
 
-  // Ink on paper has edges. Four pixels of rounding on every corner is the
-  // house style of a control panel, which is the thing this palette is not.
+  // Four pixels of rounding on every corner is the house style of a control
+  // panel; the screens that are redrawn for the street set their own.
   shape: { borderRadius: 2 },
 
   // The row this interface moves on (`motion.ts`), and every one of MUI's own
@@ -246,16 +190,16 @@ export const theme = createTheme({
   },
 
   components: {
-    // A raised button casts a shadow onto the paper, and nothing in this design
-    // is above the page.
+    // A raised button casts a shadow onto the page, and nothing in this design
+    // is above it.
     //
     // `styleOverrides.sizeLarge` used to set the large button's font size here
     // — removed by issue #184, which moved every button in the app onto
     // `components/PillButton.tsx`, a component of its own rather than MUI's
-    // `Button`. `disableElevation` stays: `garden/RewardCloth.tsx` and the two
-    // dialog buttons in `components/EndGamePanel.tsx` are still MUI's own
-    // `Button` (issue #184 leaves them out on purpose) and rely on it for
-    // their flat, shadowless look.
+    // `Button`. `disableElevation` stays: the two dialog buttons in
+    // `components/EndGamePanel.tsx` are still MUI's own `Button` (issue #184
+    // leaves them out on purpose) and rely on it for their flat, shadowless
+    // look.
     MuiButton: {
       defaultProps: { disableElevation: true },
     },
@@ -270,6 +214,14 @@ export const theme = createTheme({
     // nothing renders a `FormHelperText` any more and the override is gone
     // rather than kept for a component nothing instantiates.
 
+    // The page. `CssBaseline` paints the body in `background.default` (duck) and
+    // `text.primary` (ink) from the palette above; what it does not know is the
+    // size of the street's body text, 18px on a line of 1.5
+    // (`design/templates/state-tree.html`, lines 57-60). It is set on the body
+    // alone and not on the `body1` variant, so the text that sets its own size,
+    // which is all of it on the screens that have not been redrawn yet, does not
+    // move.
+    //
     // `prefers-reduced-motion` is answered here rather than inside each
     // component, so that nothing drawn by MUI can opt back into motion with an
     // `sx` of its own. `!important` is not decoration: an `sx` prop compiles to
@@ -280,20 +232,16 @@ export const theme = createTheme({
     // (`docs/decisions/0030-where-movement-is-allowed.md`) is about every
     // control in the app, not only the ones this file happens to style.
     //
-    // The three consumers of `REDUCED_MOTION_QUERY` — the screen shift, the
-    // petals and the greeting cloth — already ask the same question themselves
-    // and skip their own `requestAnimationFrame` loops when it is answered, so
-    // this rule and theirs never race: theirs stops a canvas from being
-    // painted, and this one stops a `transition` or `animation` CSS property
-    // from doing anything once painted. There used to be a fourth: the camera
-    // that flew between the garden's painted locations, removed along with the
-    // rest of that world when the scenes became pictures (issue #152).
+    // The screen shift already asks the same question itself and skips its own
+    // animation when it is answered, so this rule and its own never race: the
+    // shift's stops a transform from being played, and this one stops a
+    // `transition` or `animation` CSS property from doing anything once
+    // painted.
     //
     // `CircularProgress` is named out of it on purpose. ADR 0030 turns off
-    // movement that disorients — petals, a screen sliding, a scene once had a
-    // camera flying through it — and a spinner is not that: it is the one way
-    // this app says "wait" while a route's chunk arrives (`PageLoading.tsx`),
-    // where it is the only thing on the page. Frozen
+    // movement that disorients — a screen sliding — and a spinner is not that:
+    // it is the one way this app says "wait" while a route's chunk arrives
+    // (`PageLoading.tsx`), where it is the only thing on the page. Frozen
     // by `animation-iteration-count: 1`, it turns once and stops, which reads
     // as broken rather than calm — a promise of "something is happening" that
     // stops being true. So it keeps spinning under reduced motion; nothing
@@ -315,6 +263,7 @@ export const theme = createTheme({
     // duration written into a second selector.
     MuiCssBaseline: {
       styleOverrides: {
+        body: { fontSize: inRem(18), lineHeight: 1.5 },
         [REDUCED_MOTION_MEDIA]: {
           [`*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle):not(.${LOADING_DOT_CLASS}):not(.${WAIT_RING_CLASS}), *::before, *::after`]:
             {

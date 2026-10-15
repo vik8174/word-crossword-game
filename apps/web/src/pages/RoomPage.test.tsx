@@ -7,7 +7,6 @@ import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { BAND_SOLID } from '../garden/scene-palette';
 import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from '../rooms/presence';
 import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
 import { theme } from '../theme';
@@ -385,16 +384,15 @@ describe('RoomPage', () => {
       expect(unsubscribe).toHaveBeenCalledOnce();
     });
 
-    // A visitor who has not yet been told what the room is stands wherever the
-    // garden already does — the gate, for a link opened cold — and used to be
-    // handed a full room frame to stand in while they waited there: a header,
-    // three zones. That frame is what a room looks like once it exists, so a
-    // guest saw it appear at the gate and then again, moments later, in the
-    // doorway the camera had by then arrived at — the same frame twice, with
-    // nothing behind it either time (issue #132). Waiting for news of a room
-    // that has not answered yet is not a room, so it gets none of that shape —
-    // it still gets the same unseen heading every real room screen carries,
-    // since a reader moving by headings finds one on every other screen here.
+    // A visitor who has not yet been told what the room is was once handed a full
+    // room frame to stand in while they waited: a header, three zones. That
+    // frame is what a room looks like once it exists, so a guest saw it appear
+    // and then again, moments later, once the room had answered: the same frame
+    // twice, with nothing in it either time (issue #132). Waiting for news of a
+    // room that has not answered yet is not a room, so it gets none of that
+    // shape — it still gets the same unseen heading every real room screen
+    // carries, since a reader moving by headings finds one on every other
+    // screen here.
     it('shows no room frame while waiting for the first snapshot', async () => {
       renderRoomPage();
 
@@ -405,18 +403,16 @@ describe('RoomPage', () => {
       expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     });
 
-    // Cream read straight off the scene falls short of the small-text
-    // threshold (issue #136), because this line has no zone of its own to stand
-    // in. It stands on the doors' panel, the one `join` and every `unavailable`
-    // stand on too, rather than on the strip of band it stood on before issue
-    // #198 drew all three from the template's one `.middle-column`.
+    // This line has no zone of its own to stand in (issue #136). It stands on
+    // the panel `join` and every `unavailable` stand on too, a tile, all three
+    // drawn from the template's one `.middle-column` (issue #198).
     it('stands the connecting line on the panel every screen at the doors stands on', async () => {
       renderRoomPage();
 
       await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
 
       expect(screen.getByRole('status').parentElement).toHaveStyle({
-        backgroundColor: BAND_SOLID,
+        backgroundColor: theme.palette.street.tile,
       });
     });
 
@@ -1426,32 +1422,24 @@ describe('RoomPage', () => {
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
       expect(screen.getByText(/every word is in/i)).toBeInTheDocument();
-      // Twice on the page and once on the screen: the panel says it beside the
-      // board, and the cloth laid over both says it again, which is the one a
-      // player is looking at (issue #116).
-      expect(
-        screen.getAllByText(/all 2 of its words, between the 2 of you/i).length,
-      ).toBeGreaterThan(0);
+      // Said once, by the panel beside the board. It was said a second time by a
+      // cloth laid over the table at the moment the game ended (issue #116), and
+      // that went with the garden (issue #222).
+      expect(screen.getAllByText(/all 2 of its words, between the 2 of you/i)).toHaveLength(1);
     });
 
-    it('lays the cloth over the table when the game ends in this session', async () => {
+    it('lays nothing over the table when the game ends in this session', async () => {
       await openRoom(withWords({ w0: open, w1: carOpen }));
-
-      expect(screen.queryByRole('heading', { name: /congratulations/i })).not.toBeInTheDocument();
 
       await emit(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
-      expect(screen.getByRole('heading', { name: /congratulations/i })).toBeInTheDocument();
-      // One action and no other: the reward is a place to leave from, not a
-      // panel with things to do on it.
-      expect(screen.getByRole('link', { name: /back to the gate/i })).toHaveAttribute('href', '/');
+      // A finished game is answered by its panel alone: no greeting, and no
+      // second control that leaves the room.
+      expect(screen.queryByRole('heading', { name: /congratulations/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: /back to the gate/i })).not.toBeInTheDocument();
     });
 
-    it('lays no cloth over a finished room opened in a fresh tab', async () => {
-      // `finished` is true forever, so a cloth keyed on the screen would be laid
-      // again on every reload and in every tab opened an hour later. What is
-      // shown instead is a calm result, and that is the answer rather than a gap
-      // (`docs/decisions/0030-where-movement-is-allowed.md`).
+    it('shows a finished room opened in a fresh tab the same way', async () => {
       await openRoom(withWords({ w0: catAnswered, w1: carAnswered }, 'completed'));
 
       expect(screen.getByText(/every word is in/i)).toBeInTheDocument();

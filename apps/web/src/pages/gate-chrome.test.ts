@@ -1,23 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  GATE_ACTION_SX,
-  GATE_INK,
-  GATE_LOCKUP_SX,
-  GATE_LOCKUP_TEXT_SIZE,
-  GATE_RULE_SX,
-} from './gate-chrome';
+import { theme } from '../theme';
+import { GATE_ACTION_SX, GATE_LOCKUP_SX, GATE_LOCKUP_TEXT_SIZE, GATE_RULE_SX } from './gate-chrome';
 
 /**
- * What this file is for: the block's position is a place on `gate.jpg`,
- * measured against its real pixels rather than computed from anything (issue
- * #151, `handoffs/scenes/README.md`), and its width follows the template's
- * own formula rather than a number measured here (issue #191,
- * `design/templates/state-tree.html`). There is no formula to exercise the
- * way a geometry module's arithmetic once was — what there is to hold still
- * is that the numbers do not quietly drift, and that the box built from them
- * is positioned as a percentage of the stage rather than of the window in
- * some other unit that would stop meaning the same thing on a phone.
+ * What this file is for: the block's position is a place the page was laid out
+ * at (issue #151, #191), and its width follows the old template's own formula.
+ * There is no formula to exercise the way a geometry module's arithmetic once
+ * was. What there is to hold still is that the numbers do not quietly drift
+ * until the page is redrawn (#224), and that the box built from them is
+ * positioned as a percentage of the stage rather than of the window in some
+ * other unit that would stop meaning the same thing on a phone.
  */
 describe('GATE_LOCKUP_SX', () => {
   it('is a box against the stage, not the window', () => {
@@ -37,16 +30,12 @@ describe('GATE_LOCKUP_SX', () => {
     expect(GATE_LOCKUP_SX.width).toBe('52%');
   });
 
-  it('follows the picture instead on a window narrower than 16:9', () => {
+  it('follows the height instead on a window narrower than 16:9', () => {
     const narrow = GATE_LOCKUP_SX['@media (max-aspect-ratio: 16/9)'] as {
       width: string;
     };
 
     expect(narrow.width).toBe('min(92%, calc(100vh * 16 / 9 * 0.52))');
-  });
-
-  it('is sumi, not the cream the painted garden writes on its own canopy', () => {
-    expect(GATE_INK).toBe('#1C1A1A');
   });
 });
 
@@ -57,11 +46,11 @@ describe('GATE_LOCKUP_TEXT_SIZE', () => {
 });
 
 describe('GATE_RULE_SX', () => {
-  it('is a 2px sumi bar, capped at 220px and centred under the name', () => {
+  it('is a 2px bar of the theme’s ink, capped at 220px and centred under the name', () => {
     expect(GATE_RULE_SX.height).toBe('2px');
     expect(GATE_RULE_SX.width).toBe('min(220px, 46%)');
     expect(GATE_RULE_SX.margin).toBe('0.28em auto 0');
-    expect(GATE_RULE_SX.background).toBe(GATE_INK);
+    expect(GATE_RULE_SX.backgroundColor).toBe(theme.palette.street.ink);
   });
 
   it("shares the name's size so its margin scales with it", () => {

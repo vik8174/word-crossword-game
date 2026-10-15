@@ -3,9 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   inRem,
   LOGOTYPE_TRACKING,
-  SIGN_FONT_FAMILY,
-  SIGN_FONT_WEIGHT,
-  SIGN_TRACKING,
   SPACING_STEPS,
   SYSTEM_FONT_FAMILY,
   TEXT_FONT_FAMILY,
@@ -29,7 +26,6 @@ const EVERY_VARIANT = [
   'button',
   'caption',
   'overline',
-  'signage',
 ] as const;
 
 describe('the scale', () => {
@@ -88,31 +84,15 @@ describe('the one face', () => {
     }
   });
 
-  it('is Alegreya Sans everywhere: the text, the heading and the sign role', () => {
+  it('is Alegreya Sans everywhere: the text and the heading', () => {
     expect(TEXT_FONT_FAMILY).toMatch(/^"Alegreya Sans"/);
-    expect(SIGN_FONT_FAMILY).toMatch(/^"Alegreya Sans"/);
-    for (const family of [TEXT_FONT_FAMILY, SIGN_FONT_FAMILY]) {
-      expect(family).not.toMatch(/Zen|Dela|Mincho/);
-    }
+    expect(TEXT_FONT_FAMILY).not.toMatch(/Zen|Dela|Mincho/);
   });
 
   it('keeps the name of the game’s tracking, its face being the heading’s', () => {
     // Settled on real renders in PRD #145 and kept until the screen is
-    // redrawn (#224) — not `SIGN_TRACKING`, which is the cloth's.
+    // redrawn (#224).
     expect(LOGOTYPE_TRACKING).toBe('0.34em');
-  });
-
-  it('declares the sign face in the theme, so the garden does not declare one', () => {
-    // The scene of issue #115 paints its words onto a canvas, where there is no
-    // variant to reach for. It reads the face from here instead of naming a
-    // font of its own that nothing else in the app could be held to.
-    expect(theme.typography.signage.fontFamily).toBe(SIGN_FONT_FAMILY);
-    expect(theme.typography.signage.fontWeight).toBe(SIGN_FONT_WEIGHT);
-    // There is no 300 file: the cloth's lettering is the regular.
-    expect(SIGN_FONT_WEIGHT).toBe(WEIGHTS.regular);
-    // Lettering rather than text: capitals, held apart.
-    expect(theme.typography.signage.textTransform).toBe('uppercase');
-    expect(theme.typography.signage.letterSpacing).toBeDefined();
   });
 
   it('sets the text of the interface in the text face, and falls back to the system', () => {
@@ -126,11 +106,10 @@ describe('the one face', () => {
     expect(SYSTEM_FONT_FAMILY).not.toMatch(/Alegreya/);
   });
 
-  it('tells lettering from text by tracking and capitals, not by family or weight', () => {
-    // The sign role and the text role are the same face at the same weight
-    // now, so nothing may be left resting on either. What separates them is
-    // the job: a sign is lettered in capitals and held apart, text is neither.
-    expect(theme.typography.signage.letterSpacing).toBe(SIGN_TRACKING);
+  it('sets text in no tracking and no capitals', () => {
+    // Nothing is lettered any more except the name of the game on the landing
+    // page, which carries its own tracking (`LOGOTYPE_TRACKING`) until its
+    // screen is redrawn.
     expect(theme.typography.body1.letterSpacing).toBeUndefined();
     expect(theme.typography.body1.textTransform).toBeUndefined();
   });

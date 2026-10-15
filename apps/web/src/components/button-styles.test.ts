@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { CONTROL, QUIET_CONTROL } from '../garden/scene-palette';
+import { contrastBetween as contrast } from '../contrast';
+import { theme } from '../theme';
 import {
   buttonSx,
   dotSx,
@@ -13,6 +14,8 @@ import {
 type Sx = Record<string, unknown>;
 
 const asSx = (value: unknown): Sx => value as Sx;
+
+const { street } = theme.palette;
 
 /**
  * Every state this app actually puts a `PillButton` in, named as the issue's
@@ -39,15 +42,21 @@ const STATE: {
   dangerLoading: { kind: 'quiet', danger: true, small: false, loading: true, disabled: false },
 };
 
+/** The hover fill, which is a function of the theme because MUI works the shade out. */
+const hoverFill = (state: ButtonStyleState): string => {
+  const fill = asSx(asSx(buttonSx(state))['&:hover']).backgroundColor;
+
+  return String(typeof fill === 'function' ? (fill as (t: typeof theme) => unknown)(theme) : fill);
+};
+
 describe('the pill button, in every kind and state this app puts one in', () => {
-  it('draws the primary control at rest exactly as design/templates/state-tree.html does (.btn, 477-487)', () => {
+  it('draws the primary control at rest as the action: spruce, a white label, an ink edge', () => {
     const sx = asSx(buttonSx(STATE.primary));
 
-    expect(sx.backgroundColor).toBe(CONTROL.fill);
-    expect(sx.border).toBe(`1.5px solid ${CONTROL.edge}`);
+    expect(sx.backgroundColor).toBe(street.spruce);
+    expect(sx.border).toBe(`1.5px solid ${street.ink}`);
+    expect(sx.color).toBe(street.onAccent);
     expect(sx.borderRadius).toBe('999px');
-    expect(sx.color).toBe(CONTROL.ink);
-    expect(sx.boxShadow).toBe(CONTROL.lift);
     expect(sx.padding).toBe('11px 23px 11px 17px');
     expect(sx.fontSize).toBe('11.5px');
     expect(sx.fontWeight).toBe(700);
@@ -66,45 +75,40 @@ describe('the pill button, in every kind and state this app puts one in', () => 
 
     expect(dot.width).toBe('9px');
     expect(dot.height).toBe('9px');
-    expect(dot.backgroundColor).toBe(CONTROL.mark);
-    expect(dot.boxShadow).toBe(`0 0 0 3px ${CONTROL.markRing}`);
+    expect(dot.backgroundColor).toBe(street.onAccent);
     expect(dot.animation).toBeUndefined();
   });
 
-  it('lifts higher and lights under a finger, on every kind (.btn:hover, 490)', () => {
-    // Line 490's `box-shadow` is not overridden by `.btn.quiet:hover` or
-    // `.btn.danger:hover` for either property (`button-styles.ts`'s own
-    // comment on `hoverOf`), so every kind gets the same bloom.
-    for (const [name, state] of Object.entries({
-      primary: STATE.primary,
-      quiet: STATE.quiet,
-      danger: STATE.danger,
-    })) {
-      const hover = asSx(asSx(buttonSx(state))['&:hover']);
+  it('casts no shadow in any state: the lift was for the picture and the picture is gone', () => {
+    for (const [name, state] of Object.entries(STATE)) {
+      const sx = asSx(buttonSx(state));
 
-      expect(hover.boxShadow, name).toBe(CONTROL.hoverLift);
+      expect(sx.boxShadow, name).toBeUndefined();
+      expect(asSx(sx['&:hover'] ?? {}).boxShadow, name).toBeUndefined();
     }
-
-    expect(asSx(asSx(buttonSx(STATE.primary))['&:hover']).backgroundColor).toBe(CONTROL.litFill);
-    expect(asSx(asSx(buttonSx(STATE.quiet))['&:hover']).backgroundColor).toBe(
-      QUIET_CONTROL.hoverFill,
-    );
-    expect(asSx(asSx(buttonSx(STATE.danger))['&:hover']).backgroundColor).toBe(
-      QUIET_CONTROL.dangerHoverFill,
-    );
   });
 
-  it('presses down one pixel and shows the gold focus ring, on every kind (491-492)', () => {
+  it('darkens the action under a finger, to the theme’s own shade of spruce', () => {
+    expect(hoverFill(STATE.primary)).toBe(theme.palette.primary.dark);
+    expect(hoverFill(STATE.primary)).not.toBe(street.spruce);
+    // Quiet takes the ground's colour, and a quiet danger takes rose with an
+    // ink label: brick is never text on rose (4.31:1), ink is (9.31:1).
+    expect(hoverFill(STATE.quiet)).toBe(street.duck);
+    expect(hoverFill(STATE.danger)).toBe(street.rose);
+    expect(asSx(asSx(buttonSx(STATE.danger))['&:hover']).color).toBe(street.ink);
+  });
+
+  it('presses down one pixel and keeps a spruce focus ring, on every kind', () => {
     for (const state of [STATE.primary, STATE.quiet, STATE.danger]) {
       const sx = asSx(buttonSx(state));
 
       expect(asSx(sx['&:active']).transform).toBe('translateY(1px)');
-      expect(asSx(sx['&:focus-visible']).outline).toBe(`2px solid ${CONTROL.focusOutline}`);
+      expect(asSx(sx['&:focus-visible']).outline).toBe(`2px solid ${street.spruce}`);
       expect(asSx(sx['&:focus-visible']).outlineOffset).toBe('3px');
     }
   });
 
-  it('shrinks to the small pill without changing the ring round its dot (.btn.sm, 493-494)', () => {
+  it('shrinks to the small pill without changing the dot', () => {
     const sx = asSx(buttonSx(STATE.quietSmall));
 
     expect(sx.padding).toBe('9px 18px 9px 14px');
@@ -114,86 +118,77 @@ describe('the pill button, in every kind and state this app puts one in', () => 
 
     expect(dot.width).toBe('8px');
     expect(dot.height).toBe('8px');
-    expect(dot.boxShadow).toBe(`0 0 0 3px ${QUIET_CONTROL.markRing}`);
   });
 
-  it('stands directly on the picture as the quiet kind, blurred (.btn.quiet, 496-498)', () => {
+  it('is a tile with an ink edge and an ink label as the quiet kind', () => {
     const sx = asSx(buttonSx(STATE.quiet));
 
-    expect(sx.backgroundColor).toBe(QUIET_CONTROL.fill);
-    expect(sx.border).toBe(`1.5px solid ${QUIET_CONTROL.edge}`);
-    expect(sx.color).toBe(QUIET_CONTROL.ink);
-    expect(sx.backdropFilter).toBe('blur(3px)');
+    expect(sx.backgroundColor).toBe(street.tile);
+    expect(sx.border).toBe(`1.5px solid ${street.ink}`);
+    expect(sx.color).toBe(street.ink);
+    expect(sx.backdropFilter).toBeUndefined();
 
-    const dot = asSx(dotSx(STATE.quiet));
-
-    expect(dot.backgroundColor).toBe(QUIET_CONTROL.mark);
-    expect(dot.boxShadow).toBe(`0 0 0 3px ${QUIET_CONTROL.markRing}`);
+    expect(asSx(dotSx(STATE.quiet)).backgroundColor).toBe(street.ink);
   });
 
-  it('carries the danger edge and ink only over a quiet surface (.btn.danger, 499-501)', () => {
+  it('carries the danger edge and label only over a quiet tile, in brick', () => {
     const sx = asSx(buttonSx(STATE.danger));
 
-    // The fill is still the quiet one — `.btn.danger` never sets `background`.
-    expect(sx.backgroundColor).toBe(QUIET_CONTROL.fill);
-    expect(sx.border).toBe(`1.5px solid ${QUIET_CONTROL.dangerEdge}`);
-    expect(sx.color).toBe(QUIET_CONTROL.dangerInk);
-
-    const dot = asSx(dotSx(STATE.danger));
-
-    // The dot is the one thing danger does put its own colour on, and it
-    // shares that colour with the loading dot (`CONTROL.litDot`,
-    // `SCENE.vermilionLit`) — the ring stays the quiet one, since
-    // `.btn.danger .dot` never mentions `box-shadow`.
-    expect(dot.backgroundColor).toBe(CONTROL.litDot);
-    expect(dot.boxShadow).toBe(`0 0 0 3px ${QUIET_CONTROL.markRing}`);
+    // Brick is text on a tile or on the ground, and a quiet button is a tile.
+    expect(sx.backgroundColor).toBe(street.tile);
+    expect(sx.border).toBe(`1.5px solid ${street.brick}`);
+    expect(sx.color).toBe(street.brick);
+    expect(asSx(dotSx(STATE.danger)).backgroundColor).toBe(street.brick);
   });
 
-  it('turns hollow and casts no shadow once it cannot be pressed (.btn[disabled], 505-510)', () => {
+  it('turns to the disabled surface and casts nothing once it cannot be pressed', () => {
     const sx = asSx(buttonSx(STATE.primaryDisabled));
 
-    expect(sx.backgroundColor).toBe(CONTROL.restingFill);
-    expect(sx.border).toBe(`1.5px solid ${CONTROL.restingEdge}`);
-    expect(sx.color).toBe(CONTROL.restingInk);
-    expect(sx.boxShadow).toBe('none');
+    expect(sx.backgroundColor).toBe(street.disabledSurface);
+    expect(sx.border).toBe(`1.5px solid ${street.disabledRule}`);
+    expect(sx.color).toBe(street.disabledLabel);
     expect(sx.cursor).toBe('not-allowed');
-    // `.btn[disabled]:hover` restates the same fill rather than lighting up —
-    // modelled here by omitting `&:hover` rather than repeating the colours a
+    // Modelled by omitting `&:hover` rather than repeating the colours a
     // second time, which a disabled control can never actually show a reader.
     expect(sx['&:hover']).toBeUndefined();
 
     const dot = asSx(dotSx(STATE.primaryDisabled));
 
     expect(dot.backgroundColor).toBe('transparent');
-    expect(dot.boxShadow).toBe(`inset 0 0 0 1.5px ${CONTROL.disabledDotRing}`);
+    expect(dot.border).toBe(`1.5px solid ${street.disabledLabel}`);
   });
 
-  it('turns to the opaque loading surface and beats, regardless of kind (.btn.loading, 512-513)', () => {
+  it('keeps the action’s spruce and a white label while loading, not the disabled fill', () => {
     // `create/creating`, `join/joining` and `lobby/starting` all reach this
-    // state on a plain primary control.
+    // state on a plain primary control. Mapped by name it came out as white on
+    // `#BFCBC8`, 1.67:1; by role it is the action in progress.
     const sx = asSx(buttonSx(STATE.primaryLoading));
 
-    expect(sx.backgroundColor).toBe(CONTROL.restingFill);
-    expect(sx.border).toBe(`1.5px solid ${CONTROL.loadingEdge}`);
-    expect(sx.color).toBe(CONTROL.ink);
+    expect(sx.backgroundColor).toBe(street.spruce);
+    expect(sx.backgroundColor).not.toBe(street.disabledSurface);
+    expect(sx.color).toBe(street.onAccent);
+    expect(sx.border).toBe(`1.5px solid ${street.ink}`);
     expect(sx.cursor).toBe('progress');
-    expect(sx.boxShadow).toBe(CONTROL.lift);
     expect(sx['&:hover']).toBeUndefined();
 
     const dot = asSx(dotSx(STATE.primaryLoading));
 
-    expect(dot.backgroundColor).toBe(CONTROL.litDot);
+    expect(dot.backgroundColor).toBe(street.ochre);
+    expect(dot.border).toBe(`1.5px solid ${street.ink}`);
     expect(dot.animation).toBe(`sun-beat ${SUN_BEAT_MS}ms cubic-bezier(.3,.6,.3,1) infinite`);
     expect(dot['@keyframes sun-beat']).toBeDefined();
   });
 
+  it('draws the beat in the dot’s own colour, naming none of its own', () => {
+    const keyframes = asSx(asSx(dotSx(STATE.primaryLoading))['@keyframes sun-beat']);
+
+    expect(JSON.stringify(keyframes)).not.toMatch(/#[0-9a-f]{3,8}|rgb|hsl/i);
+  });
+
   it('lets loading win the surface over quiet and danger both, on playing/ending', () => {
-    // Measured live off the served template rather than derived by hand — see
-    // `surfaceOf`'s own comment in `button-styles.ts`. `class="btn quiet
-    // danger loading"` (the template's own generator,
+    // `class="btn quiet danger loading"` (the template's own generator,
     // `btn("Ending the game", "quiet danger loading")`) renders the same
-    // opaque loading surface as a plain primary control loading, not the
-    // translucent quiet-danger one.
+    // loading surface as a plain primary control loading, not the quiet one.
     const loading = asSx(buttonSx(STATE.dangerLoading));
     const primaryLoading = asSx(buttonSx(STATE.primaryLoading));
 
@@ -201,13 +196,9 @@ describe('the pill button, in every kind and state this app puts one in', () => 
     expect(loading.border).toBe(primaryLoading.border);
     expect(loading.color).toBe(primaryLoading.color);
 
-    // The dot's ring is the one thing that does not move: neither `.loading`
-    // nor `.danger` ever mentions the dot's `box-shadow`, so `.quiet`'s ring
-    // survives underneath the loading colour and the beat.
     const dot = asSx(dotSx(STATE.dangerLoading));
 
-    expect(dot.backgroundColor).toBe(CONTROL.litDot);
-    expect(dot.boxShadow).toBe(`0 0 0 3px ${QUIET_CONTROL.markRing}`);
+    expect(dot.backgroundColor).toBe(street.ochre);
     expect(dot.animation).toBe(`sun-beat ${SUN_BEAT_MS}ms cubic-bezier(.3,.6,.3,1) infinite`);
   });
 
@@ -216,5 +207,21 @@ describe('the pill button, in every kind and state this app puts one in', () => 
     // it the same way it names `CircularProgress` out — see that file's
     // `MuiCssBaseline` override.
     expect(LOADING_DOT_CLASS).toBe('wcg-btn-dot');
+  });
+});
+
+describe('the pill button’s label, in every state it can be read in', () => {
+  it.each(Object.entries(STATE))('reads at least 4.5:1 when it is %s', (_name, state) => {
+    const sx = asSx(buttonSx(state));
+
+    expect(contrast(String(sx.color), String(sx.backgroundColor))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('reads at least 4.5:1 under a finger as well', () => {
+    expect(contrast(street.onAccent, hoverFill(STATE.primary))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(street.ink, hoverFill(STATE.quiet))).toBeGreaterThanOrEqual(4.5);
+    // The quiet danger label turns ink on rose, never brick on rose.
+    expect(contrast(street.ink, hoverFill(STATE.danger))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(street.brick, street.rose)).toBeLessThan(4.5);
   });
 });

@@ -50,12 +50,13 @@ const NUMBER_SX: SxProps<Theme> = {
  * It is drawn in ink rather than in an accent of its own, and that is the same
  * decision: the board carries one accent, which belongs to the squares this
  * player types in, so a square they merely read is a tone of the paper it is on
- * (see `theme.ts`). The tone stays light enough for the crossword number to
- * keep its dark ink on top of it.
+ * (see `theme.ts`). The outline is `ink` and not `line`, so ADR 0015's cue
+ * survives the move to the street's colours. The tone stays light enough for
+ * the crossword number to keep its dark ink on top of it.
  */
 const EXPLAINED_SQUARE_SX: SxProps<Theme> = {
   borderStyle: 'dashed',
-  borderColor: 'sumi.light',
+  borderColor: 'street.ink',
   fontStyle: 'italic',
 };
 

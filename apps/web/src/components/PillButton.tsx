@@ -5,7 +5,7 @@ import type { ElementType, ReactNode } from 'react';
 import { buttonSx, dotSx, LOADING_DOT_CLASS, type ButtonKind } from './button-styles';
 
 export interface PillButtonProps {
-  /** `primary`, the temple's own red, or `quiet`, standing directly on the picture. */
+  /** `primary`, the action in spruce, or `quiet`, a tile with an ink edge. */
   readonly kind?: ButtonKind;
   /**
    * The `danger` modifier — meaningful on a `quiet` button only
@@ -43,17 +43,17 @@ export interface PillButtonProps {
 
 /**
  * The template's one button — `.btn` in `design/templates/state-tree.html`,
- * replacing MUI's `Button` everywhere in this app but `garden/RewardCloth.tsx`
- * and the two dialog buttons in `components/EndGamePanel.tsx` (issue #184,
- * "Where it goes" and "Not this issue's").
+ * replacing MUI's `Button` everywhere in this app but the two dialog buttons in
+ * `components/EndGamePanel.tsx` (issue #184, "Where it goes" and "Not this
+ * issue's"). The greeting cloth was the third until it went with the garden
+ * (issue #222).
  *
  * Named `PillButton` rather than the plainer `Button` a caller might expect
  * (`Message.tsx`'s own precedent, one component named straight after its
  * template concept): this file and MUI's own button component are imported
  * side by side in `EndGamePanel.tsx`, and issue #184's own acceptance
  * criterion greps the source for the JSX opening tag of MUI's component to
- * prove nothing but `RewardCloth.tsx` and that file's two dialog buttons
- * still render it. Two components sharing one tag name would satisfy that
+ * prove nothing but that file's two dialog buttons still render it. Two components sharing one tag name would satisfy that
  * grep by accident, whichever module a given tag in the file happened to
  * import from — a plain text search cannot follow an import. `PillButton` is
  * not a random substitute; it is the template's own word for this control, in

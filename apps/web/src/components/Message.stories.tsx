@@ -2,25 +2,26 @@ import Box from '@mui/material/Box';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { ReactNode } from 'react';
 
-import { fullHeightBandSx, GATE_BAND_WIDTH, ON_SCENE_SX } from '../garden/scene-surface';
 import { gapAt } from '../scale';
 import { Message } from './Message';
+import { MiddlePanel } from './MiddlePanel';
 import { SIDE_ZONE_WIDTH } from './room-layout';
+import { fullHeightBandSx, GATE_BAND_WIDTH, TILE_SX } from './surface-styles';
+import { ZONE_PADDING } from './zone-styles';
 
-/** How far the gate's own column keeps from the edge of the band (`pages/NotFoundPage.tsx`). */
+/** How far the column keeps from the edge of the band (`pages/NotFoundPage.tsx`). */
 const GATE_PADDING = gapAt(4);
 const GATE_COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${GATE_PADDING} - ${GATE_PADDING})`;
 
 /**
- * The gate's own band. `WordListForm`'s warning stands on `/create`'s panel
- * (`components/gate-panel-styles.ts`) and `JoinRoomForm`'s error on the doors'
- * panel (`components/MiddlePanel.tsx`, issue #198), both a dark surface of the
- * same colour or a shade more opaque, so the band is still a fair place to read
- * a message's contrast off; it is kept here rather than redrawn as either
- * panel.
+ * A tile down the middle of the window. `WordListForm`'s warning stands on
+ * `/create`'s panel (`components/gate-panel-styles.ts`) and `JoinRoomForm`'s
+ * error on the doors' panel (`components/MiddlePanel.tsx`, issue #198), both a
+ * tile, so the band is still a fair place to read a message off; it is kept
+ * here rather than redrawn as either panel.
  */
 const GateSurface = ({ children }: { readonly children: ReactNode }) => (
-  <Box sx={{ position: 'relative', minHeight: '100dvh', ...ON_SCENE_SX }}>
+  <Box sx={{ position: 'relative', minHeight: '100dvh' }}>
     <Box aria-hidden sx={fullHeightBandSx('centre', GATE_BAND_WIDTH)} />
     <Box
       sx={{ position: 'relative', width: '100%', maxWidth: GATE_COLUMN_WIDTH, mx: 'auto', pt: 5 }}
@@ -31,10 +32,9 @@ const GateSurface = ({ children }: { readonly children: ReactNode }) => (
 );
 
 /**
- * The centred column a room stands a notice in while there is no room to
- * frame yet — `pages/RoomPage.tsx`'s own `Waiting`, reused at the same width
- * rather than redrawn, since that is exactly where `RoomUnavailableNotice`'s
- * info reads stand.
+ * The centred panel a room stands a notice in while there is no room to frame
+ * yet — `pages/RoomPage.tsx`'s own `Waiting`, reused rather than redrawn, since
+ * that is exactly where `RoomUnavailableNotice`'s info reads stand.
  */
 const DoorsSurface = ({ children }: { readonly children: ReactNode }) => (
   <Box
@@ -44,17 +44,16 @@ const DoorsSurface = ({ children }: { readonly children: ReactNode }) => (
       alignItems: 'center',
       justifyContent: 'center',
       p: 5,
-      ...ON_SCENE_SX,
     }}
   >
-    <Box sx={{ maxWidth: '32rem', width: '100%' }}>{children}</Box>
+    <MiddlePanel>{children}</MiddlePanel>
   </Box>
 );
 
 /**
- * A room's own side zone — the band `GameCompletedPanel`'s success stands in,
- * inside `RoomShell` (`components/RoomShell.tsx`'s `zoneSx`, reused at the
- * same width via `room-layout.ts`'s `SIDE_ZONE_WIDTH` rather than copied).
+ * A room's own side zone — the tile `GameCompletedPanel`'s success stands in,
+ * inside `RoomShell` (`components/RoomShell.tsx`'s `zoneSx`, reused at the same
+ * width via `room-layout.ts`'s `SIDE_ZONE_WIDTH` rather than copied).
  */
 const HallSurface = ({ children }: { readonly children: ReactNode }) => (
   <Box
@@ -63,20 +62,20 @@ const HallSurface = ({ children }: { readonly children: ReactNode }) => (
       display: 'flex',
       alignItems: 'center',
       p: 5,
-      ...ON_SCENE_SX,
     }}
   >
-    <Box sx={{ width: SIDE_ZONE_WIDTH, maxWidth: '100%' }}>{children}</Box>
+    <Box sx={{ ...TILE_SX, padding: ZONE_PADDING, width: SIDE_ZONE_WIDTH, maxWidth: '100%' }}>
+      {children}
+    </Box>
   </Box>
 );
 
 /**
  * The template's one component for every error, warning, notice and success
- * (issue #185), each kind shown over the scene it first appears on — warning
- * and error inside the gate's own band (the surface `WordListForm` and
- * `JoinRoomForm` stand on), info in the doors' centred column
- * (`RoomUnavailableNotice`), success in a room's side zone
- * (`GameCompletedPanel`).
+ * (issue #185), each kind shown on the surface it first appears on — warning
+ * and error on a tile down the middle (the surface `WordListForm` and
+ * `JoinRoomForm` stand on), info in the centred panel (`RoomUnavailableNotice`),
+ * success in a room's side zone (`GameCompletedPanel`).
  *
  * Warning is the one kind that really appears both with a list and without
  * one in this app (`WordListForm`'s validation errors and unfit words versus
@@ -94,8 +93,7 @@ export default meta;
 type Story = StoryObj<typeof Message>;
 
 export const WarningOnGate: Story = {
-  name: 'Warning · gate (no crossword)',
-  parameters: { scene: 'gate' },
+  name: 'Warning · create panel (no crossword)',
   render: () => (
     <GateSurface>
       <Message kind="warning" heading="No crossword can be built">
@@ -107,8 +105,7 @@ export const WarningOnGate: Story = {
 };
 
 export const WarningOnGateWithList: Story = {
-  name: 'Warning · gate, with a list (the list needs a change)',
-  parameters: { scene: 'gate' },
+  name: 'Warning · create panel, with a list (the list needs a change)',
   render: () => (
     <GateSurface>
       <Message
@@ -123,8 +120,7 @@ export const WarningOnGateWithList: Story = {
 };
 
 export const ErrorOnGate: Story = {
-  name: 'Error · gate (could not join)',
-  parameters: { scene: 'gate' },
+  name: 'Error · panel (could not join)',
   render: () => (
     <GateSurface>
       <Message kind="error" heading="Could not join the game">
@@ -135,8 +131,7 @@ export const ErrorOnGate: Story = {
 };
 
 export const InfoOnDoors: Story = {
-  name: 'Info · doors (room unavailable)',
-  parameters: { scene: 'doors' },
+  name: 'Info · panel (room unavailable)',
   render: () => (
     <DoorsSurface>
       <Message kind="info" heading="This room has expired">
@@ -148,8 +143,7 @@ export const InfoOnDoors: Story = {
 };
 
 export const SuccessOnHall: Story = {
-  name: 'Success · hall (every word is in)',
-  parameters: { scene: 'hall' },
+  name: 'Success · zone (every word is in)',
   render: () => (
     <HallSurface>
       <Message kind="success" heading="Every word is in" role="status">

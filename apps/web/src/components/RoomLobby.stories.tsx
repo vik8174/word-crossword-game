@@ -79,7 +79,6 @@ const meta: Meta<typeof RoomLobby> = {
   title: 'Screens/RoomLobby',
   component: RoomLobby,
   args: { roomId: 'room-1', viewerId: OWNER_ID, room: lobbyRoom({ playerCount: 2 }) },
-  parameters: { scene: 'doors' },
 };
 
 export default meta;

@@ -1,43 +1,38 @@
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 
-import { BAND_SOLID, SCENE, SCENE_INK_DIM } from '../garden/scene-palette';
+import { STREET } from '../street';
+import { TILE_SX } from './surface-styles';
 
 /** The four kinds of thing this app ever has to say. */
 export type MessageKind = 'error' | 'warning' | 'info' | 'success';
 
 /**
- * The four severities, in the three colours each is drawn in.
+ * The rule down a message's left edge, by the role of its kind: an error is
+ * brick, a warning the lit window (ochre), a success the action's spruce and
+ * information the secondary slate.
  *
- * Read straight off the template (`design/templates/state-tree.html`'s
- * `--sev-*` custom properties and the `.msg.<kind>` overrides beside them,
- * lines 20-23 and 456-462) rather than off the theme: these are the template's
- * own palette, distinct from `theme.ts`'s `error`/`warning`/`info`/`success`,
- * which still colour buttons and fields and stay exactly as they are. `info`
- * takes no override in the template because it is the base `.msg` rule itself
- * — a call to the template's `msg()` with `""` as the kind.
+ * Ochre is a fill and never writing, so it appears here and in the mark and
+ * nowhere in a message's text. What kind a message is, is said by the words of
+ * its heading as well, and never by colour alone.
  */
 const ACCENT: Record<MessageKind, string> = {
-  error: '#DA4620',
-  warning: '#C9A227',
-  info: '#63D8CE',
-  success: '#A9D147',
+  error: STREET.brick,
+  warning: STREET.ochre,
+  info: STREET.slate,
+  success: STREET.spruce,
 };
 
-/** The 8×8 dot beside the text. Error alone reads lighter than its own rule colour. */
-const MARK: Record<MessageKind, string> = {
-  error: '#FF9068',
-  warning: '#C9A227',
-  info: '#63D8CE',
-  success: '#A9D147',
-};
-
-/** The head line. Error and warning both read lighter than their own rule colour. */
+/**
+ * The head line's colour: ink for information, a warning and a success, and
+ * brick for an error. Brick is writing on a tile or on the ground, and a
+ * message is a tile.
+ */
 const HEAD: Record<MessageKind, string> = {
-  error: '#FF9068',
-  warning: '#E0BC46',
-  info: '#63D8CE',
-  success: '#A9D147',
+  error: STREET.brick,
+  warning: STREET.ink,
+  info: STREET.ink,
+  success: STREET.ink,
 };
 
 interface MessageProps {
@@ -70,17 +65,13 @@ interface MessageProps {
  * `.msg` in `design/templates/state-tree.html`, replacing MUI's `Alert`
  * everywhere in this app but `OwnPresenceNotice` (issue #185).
  *
- * A dark surface rather than `Alert`'s pale paper, so it draws cream on a
- * surface of its own instead of ink meant for the theme's paper — which is
- * also why nothing in it reads `Typography` at a `body2` variant: that class
- * is dimmed wherever `garden/scene-surface.ts`'s `ON_SCENE_SX` stands over it
- * (`'& .MuiTypography-body2'`), which is the specificity bug this component
- * must not reintroduce by another name. Every colour below is written out
- * rather than read from the theme, because the template's severities are not
- * the theme's `error`/`warning`/`info`/`success` — those still belong to
- * buttons and fields and are untouched by this issue.
+ * A tile with the street's hairline round it, and a rule of its kind down the
+ * left. It writes ink on a surface of its own, and nothing in it reads
+ * `Typography` at a `body2` variant: the colour of each line is set on the line
+ * itself, by the role it plays (a heading, a sentence, a detail). Every colour
+ * is a token of the street (`street.ts`).
  *
- * No icon: the template carries none, the 8px mark and the head line already
+ *  * No icon: the template carries none, the 8px mark and the head line already
  * say which kind this is, and a fourth statement of it would be the one MUI
  * drew that the template deliberately leaves out.
  *
@@ -111,12 +102,13 @@ export const Message = ({
       gap: '12px',
       width: '100%',
       padding: '12px 15px 13px',
-      backgroundColor: BAND_SOLID,
+      ...TILE_SX,
+      // Outside the box, unlike every other tile: the rule down the left is
+      // 3px of the box's own border, and an outline drawn inside would cover
+      // half of it.
+      outlineOffset: 0,
       borderLeft: `3px solid ${ACCENT[kind]}`,
       borderRadius: '2px',
-      backdropFilter: 'blur(2px)',
-      WebkitBackdropFilter: 'blur(2px)',
-      boxShadow: '0 12px 30px -18px rgba(0, 0, 0, 0.8)',
     }}
   >
     <Box
@@ -127,7 +119,7 @@ export const Message = ({
         height: '8px',
         marginTop: '6px',
         borderRadius: '50%',
-        backgroundColor: MARK[kind],
+        backgroundColor: ACCENT[kind],
       }}
     />
 
@@ -155,7 +147,7 @@ export const Message = ({
 
       <Box
         component="p"
-        sx={{ margin: 0, fontSize: '12.5px', lineHeight: 1.55, color: SCENE.cream }}
+        sx={{ margin: 0, fontSize: '12.5px', lineHeight: 1.55, color: STREET.ink }}
       >
         {children}
       </Box>
@@ -170,7 +162,7 @@ export const Message = ({
               // than once", said once per word it is true of).
               key={`${index}:${item}`}
               component="li"
-              sx={{ fontSize: '12px', color: SCENE_INK_DIM, margin: '2px 0' }}
+              sx={{ fontSize: '12px', color: STREET.slate, margin: '2px 0' }}
             >
               {item}
             </Box>

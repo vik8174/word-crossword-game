@@ -1,7 +1,6 @@
 import Box from '@mui/material/Box';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { ON_SCENE_SX } from '../garden/scene-surface';
 import { gateScreenSx } from './gate-panel-styles';
 import { JoinRoomForm } from './JoinRoomForm';
 import { MiddlePanel } from './MiddlePanel';
@@ -17,10 +16,9 @@ const meta: Meta<typeof JoinRoomForm> = {
   title: 'Components/JoinRoomForm',
   component: JoinRoomForm,
   args: { onJoin: () => undefined, isJoining: false },
-  parameters: { scene: 'doors' },
   decorators: [
     (Story) => (
-      <Box sx={{ ...ON_SCENE_SX, ...gateScreenSx }}>
+      <Box sx={gateScreenSx}>
         <MiddlePanel>
           <Story />
         </MiddlePanel>
