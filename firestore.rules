@@ -93,6 +93,61 @@ service cloud.firestore {
             || request.auth.uid == before.ownerId));
     }
 
+    // Who may end a game early. In a pair game either player may, since either
+    // can be the one left alone with a crossword nobody can finish
+    // (docs/decisions/0027-a-game-a-player-can-end.md). In a lesson the teacher
+    // alone: the lesson ends when they say so, and a student who could write
+    // `closed` would end it for the teacher, with the words they were still
+    // watching unanswered. Only the move INTO `closed` is judged here, so a write
+    // that leaves a closed room as it is (and `hasValidStatus` refuses every
+    // other) is the business of the rules that were already there. `completed` is
+    // not a decision, since every client that sees a full board writes it, and it
+    // stays any client's to write.
+    //
+    // The mode that counts is the stored one: `before` is `resource.data`.
+    function mayEnd(before, after) {
+      return !isLesson(before)
+        || after.status != 'closed'
+        || before.status == 'closed'
+        || request.auth.uid == before.ownerId;
+    }
+
+    // The one write a lesson's teacher makes under `words`: the deal. It moves
+    // the room from the lobby to `playing`, it keeps the words the room has, and
+    // it hides each of them from one of the two students and from nobody else,
+    // with no word answered, since the teacher does not play. Checked over every
+    // value of the map with `values()` and `hasOnly`, which is how the rules can
+    // walk a map that the comments elsewhere say they cannot
+    // (apps/web/src/rooms/word-visibility.ts, room-completion.ts). A lesson holds
+    // exactly two students by the time it can be dealt (`isValidStart` and
+    // `hasRoomForPlayers`), so there are two ids to name.
+    function isTheDeal(before, after) {
+      let students = after.players.keys();
+
+      return before.status == 'lobby'
+        && after.status == 'playing'
+        && after.words.keys().hasOnly(before.words.keys())
+        && after.words.keys().hasAll(before.words.keys())
+        && after.words.values().hasOnly([
+          { 'hiddenFromPlayerId': students[0], 'guessedByPlayerId': null },
+          { 'hiddenFromPlayerId': students[1], 'guessedByPlayerId': null }
+        ]);
+    }
+
+    // The teacher does not play, so apart from the deal nothing under `words` is
+    // theirs to write, in the lobby, in the game or after it: a word hidden from
+    // somebody is the deal's, and a word answered is the player's who answers it
+    // (docs/decisions/0037-a-lesson-is-run-by-a-teacher-who-does-not-play.md).
+    // Said of the stored owner, so a student writing the same fields is judged by
+    // the rules a player always had. A pair game's owner plays, and none of this
+    // asks anything of them.
+    function keepsTheWordsFromTheTeacher(before, after) {
+      return !isLesson(before)
+        || request.auth.uid != before.ownerId
+        || after.words == before.words
+        || isTheDeal(before, after);
+    }
+
     // A room must expire, must not be born already expired (a badly skewed
     // client clock would have the TTL policy delete it immediately), and must
     // not outlive the 24-hour lifetime by any meaningful margin. Every update
@@ -263,6 +318,8 @@ service cloud.firestore {
         && keepsMode(before, after)
         && keepsTheTeacher(before, after)
         && hasValidStatus(before, after)
+        && mayEnd(before, after)
+        && keepsTheWordsFromTheTeacher(before, after)
         && isValidStart(before, after)
         && freezesPlayersOnceDealt(before, after)
         && keepsTheOwnerIn(before, after)
