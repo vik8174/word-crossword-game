@@ -131,4 +131,33 @@ describe('RoomShell', () => {
       expect(getComputedStyle(cell).overflow).not.toMatch(/auto|hidden|scroll/);
     });
   });
+  describe('on a phone, where the zones stand one under the other', () => {
+    /** The `order` the zone round some content is laid out in: the page's own, before any width is asked. */
+    const orderOf = (content: string): string =>
+      getComputedStyle(screen.getByText(content).parentElement?.parentElement as HTMLElement).order;
+
+    it('puts what a player gets back first, since it is what they wait on', () => {
+      render(
+        <RoomShell left={<p>yours to explain</p>} right={<p>yours to guess</p>}>
+          <p>the board</p>
+        </RoomShell>,
+      );
+
+      expect(orderOf('the board')).toBe('-1');
+      expect(orderOf('yours to guess')).toBe('1');
+      expect(orderOf('yours to explain')).toBe('2');
+    });
+
+    it('reads the teacher’s two zones left then right (`.zones.teacher`)', () => {
+      render(
+        <RoomShell isTeachers left={<p>olena explains</p>} right={<p>taras explains</p>}>
+          <p>the board</p>
+        </RoomShell>,
+      );
+
+      expect(orderOf('the board')).toBe('-1');
+      expect(orderOf('olena explains')).toBe('1');
+      expect(orderOf('taras explains')).toBe('2');
+    });
+  });
 });

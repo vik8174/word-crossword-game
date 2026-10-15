@@ -10,32 +10,11 @@ import { useTurnedSquares } from '../rooms/use-turned-squares';
 import { cellKey, type GridView, type WordLocation } from '../rooms/word-visibility';
 import { inRem } from '../scale';
 import { STREET } from '../street';
-import {
-  type BandAbove,
-  boardHeightsFor,
-  boardVariables,
-  CELL_GAP,
-  CELL_SIDE,
-  cellSizeVariable,
-  GRID_COLUMNS_CSS,
-} from './board-geometry';
+import { type BandAbove, CELL_SIDE } from './board-geometry';
+import { NOTE_SX, NOTES_SX } from './board-note-styles';
+import { BoardFrame } from './BoardFrame';
 import { GridSquare } from './GridSquare';
-import {
-  APP_SHELL,
-  BOX_AT_ITS_GRID,
-  NARROW_WINDOW,
-  TABLET_WINDOW,
-  THREE_ZONES,
-} from './room-layout';
-
-/** One line under the board (`.board-note`): 15px, slate, centred. */
-const NOTE_SX = {
-  margin: 0,
-  fontSize: inRem(15),
-  lineHeight: 1.6,
-  color: STREET.slate,
-  textAlign: 'center',
-} as const;
+import { BOX_AT_ITS_GRID } from './room-layout';
 
 /** Text that is read out but not drawn — for what the grid says in colour alone. */
 const SPOKEN_ONLY: SxProps<Theme> = {
@@ -134,7 +113,6 @@ export const CrosswordGrid = ({
   bandAbove = 'none',
   answeredWords = NO_ANSWERED_WORDS,
 }: CrosswordGridProps) => {
-  const heights = boardHeightsFor(bandAbove);
   const entry = useGuessEntry(view, onSolved);
   const turned = useTurnedSquares(answeredWords);
   const cursor = useGridCursor(entry, view);
@@ -268,64 +246,17 @@ export const CrosswordGrid = ({
   const hasNotes = entry.hasRefusal || hasSquaresToFill || entry.hasCrossings;
 
   return (
-    <Box
-      sx={{
-        py: 2,
-        // On a phone held upright, or a tablet, the box below is as tall as its grid, which it
-        // can only be if it knows its own width: this is the container whose
-        // width that is (`NARROW_BOARD_HEIGHT_CSS`). A screen with nothing under
-        // the board (a viewer left out, a finished game) draws no space under
-        // it either: the next zone stands the template's 28px away and not 52.
-        [BOX_AT_ITS_GRID]: { containerType: 'inline-size', ...(hasNotes ? {} : { pb: 0 }) },
+    <BoardFrame
+      shape={view}
+      bandAbove={bandAbove}
+      hasNotes={hasNotes}
+      group={{
+        role: 'group',
+        'aria-label': `Crossword grid, ${view.rows} by ${view.cols}, ${entry.cells.size} squares, ${filledIn} of them filled in`,
+        onKeyDown: handleKeyDown,
       }}
+      squares={rows.map((row) => cols.map((col) => renderCell(row, col)))}
     >
-      {/*
-        The board's own patch of the page, and the thing every square is
-        measured against: it is declared a CSS container, and the size of a
-        square is a sum over the room it has (`board-geometry.ts`). Its height
-        is given to it rather than taken from its contents, because a container
-        that reports its height has to have one settled without them — and it is
-        a larger share of the window on the screen where the board has a column
-        to itself.
-
-        It scrolls in both directions and not only across. Which axis runs out
-        is not fixed — a phone runs out of width, a board given a desktop's
-        column runs out of height — and a board cut off at the bottom is a board
-        with words nobody can reach.
-      */}
-      <Box
-        sx={{
-          ...boardVariables(view),
-          containerType: 'size',
-          height: heights.phone,
-          overflow: 'auto',
-          [NARROW_WINDOW]: { height: heights.narrow },
-          [APP_SHELL]: { height: heights.appShell },
-          [TABLET_WINDOW]: { height: heights.tablet },
-          [THREE_ZONES]: { height: heights.wide },
-        }}
-      >
-        <Box
-          role="group"
-          aria-label={`Crossword grid, ${view.rows} by ${view.cols}, ${entry.cells.size} squares, ${filledIn} of them filled in`}
-          onKeyDown={handleKeyDown}
-          sx={{
-            ...cellSizeVariable,
-            display: 'grid',
-            gridTemplateColumns: GRID_COLUMNS_CSS,
-            gap: `${CELL_GAP}px`,
-            width: 'max-content',
-            // Centred in a zone wider than the crossword, and pushed to neither
-            // side of one that is narrower: automatic margins on a block wider
-            // than what holds it come out as nothing, so the scroll still starts
-            // at the first column rather than in the middle of the board.
-            mx: 'auto',
-          }}
-        >
-          {rows.map((row) => cols.map((col) => renderCell(row, col)))}
-        </Box>
-      </Box>
-
       {/*
         Swapping between two crossing words moves nothing and reveals nothing —
         the only sign of it is which way the next letter will go, which is a
@@ -352,11 +283,7 @@ export const CrosswordGrid = ({
       */}
       <Box
         sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: inRem(6),
-          maxWidth: inRem(560),
-          margin: `${inRem(16)} auto 0`,
+          ...NOTES_SX,
           // An empty line opens no gap of its own, so it opens no margin either.
           ...(hasNotes ? {} : { [BOX_AT_ITS_GRID]: { marginTop: 0 } }),
         }}
@@ -377,6 +304,6 @@ export const CrosswordGrid = ({
 
         {entry.hasCrossings && <Typography sx={NOTE_SX}>{CROSSING_HINT}</Typography>}
       </Box>
-    </Box>
+    </BoardFrame>
   );
 };

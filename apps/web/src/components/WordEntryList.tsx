@@ -3,10 +3,10 @@ import type { CSSObject } from '@mui/material/styles';
 
 import { MOTION_MS } from '../motion';
 import type { WordLocation } from '../rooms/word-visibility';
-import { inRem, TEXT_FONT_FAMILY, WEIGHTS } from '../scale';
+import { inRem, TEXT_FONT_FAMILY } from '../scale';
 import { STREET } from '../street';
-import { OUTLINE_WIDTH } from './surface-styles';
 import type { WordEntry } from './word-entry';
+import { REFERENCE_SX, ROW_LAYOUT_SX, stateSx, WORD_RULE } from './word-row-styles';
 
 interface WordEntryListProps {
   /** Id of the heading this list belongs to, so it is named by its own half. */
@@ -22,33 +22,12 @@ interface WordEntryListProps {
   readonly onSelectWord: (location: WordLocation) => void;
 }
 
-/** A hairline between rows, and under the last: `.word-list li` (template line 181). */
-const RULE = `${OUTLINE_WIDTH}px solid ${STREET.line}`;
-
-/**
- * Width of the reference track: the template's own 74px (`.word-list .ref`, line
- * 183), in `rem`. It holds `18 across`, the longest name a game of 20 words
- * has, with room to spare, so every word in a list starts at the same point.
- */
-const REFERENCE_TRACK_WIDTH = inRem(74);
-
 /** One row, drawn as `.word-list button` is (template line 182): a row of three tracks. */
 const ROW_SX: CSSObject = {
-  display: 'flex',
-  alignItems: 'baseline',
-  gap: inRem(12),
-  width: '100%',
-  minHeight: inRem(44),
-  padding: `${inRem(10)} ${inRem(2)}`,
-  textAlign: 'left',
+  ...ROW_LAYOUT_SX,
   cursor: 'pointer',
   background: 'none',
   border: 0,
-  color: STREET.ink,
-  font: 'inherit',
-  // The font's own, as a button in the drawing has it: the page's 1.5 would make
-  // every row 6px taller than the drawing's 47 (`.word-list button`, line 182).
-  lineHeight: 'normal',
   '&:focus-visible': { outline: `3px solid ${STREET.ochre}`, outlineOffset: '-3px' },
   // The row's wash on hover (template lines 357-358), 200ms on `ease`, and only
   // where the setting allows movement: with reduced motion the row is the same
@@ -58,19 +37,6 @@ const ROW_SX: CSSObject = {
     '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.5)' },
   },
 };
-
-/**
- * The row's third track, `.state` (line 185): "answered" in slate 15px, and for
- * a word that is done spruce, bold, behind a tick. The word is the cue and the
- * tick is a second one, so no row is told from another by its colour alone, and
- * the row's accessible name says it again out loud (issue #150).
- */
-const stateSx = (isSolved: boolean): CSSObject => ({
-  marginLeft: 'auto',
-  fontSize: inRem(15),
-  color: isSolved ? STREET.spruce : STREET.slate,
-  fontWeight: isSolved ? WEIGHTS.bold : WEIGHTS.regular,
-});
 
 /**
  * The list under one of the two headings: every word of that half, each one a
@@ -105,7 +71,7 @@ export const WordEntryList = ({ labelledBy, entries, onSelectWord }: WordEntryLi
       <Box
         component="li"
         key={entry.id}
-        sx={{ borderTop: RULE, '&:last-child': { borderBottom: RULE } }}
+        sx={{ borderTop: WORD_RULE, '&:last-child': { borderBottom: WORD_RULE } }}
       >
         <Box
           component="button"
@@ -114,17 +80,7 @@ export const WordEntryList = ({ labelledBy, entries, onSelectWord }: WordEntryLi
           aria-label={entry.name}
           sx={ROW_SX}
         >
-          <Box
-            component="span"
-            sx={{
-              width: REFERENCE_TRACK_WIDTH,
-              flex: 'none',
-              color: STREET.slate,
-              fontSize: inRem(15),
-              fontVariantNumeric: 'tabular-nums',
-              whiteSpace: 'nowrap',
-            }}
-          >
+          <Box component="span" sx={REFERENCE_SX}>
             {entry.reference}
           </Box>
 

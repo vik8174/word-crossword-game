@@ -6,9 +6,9 @@ import {
   type WordOrientation,
 } from 'shared';
 
-import type { ReadableRoom } from './room-access';
+import { playersInJoinOrder, type ReadableRoom } from './room-access';
 import { isGameFinished } from './room-completion';
-import { isWordSolved, wordIdAt } from './room-document';
+import { isTeacherOf, isWordSolved, wordIdAt } from './room-document';
 
 /**
  * What one player may see of a room's words, and what the grid may draw.
@@ -95,7 +95,20 @@ export interface GuessableWord extends WordLocation {
 }
 
 /**
- * How a room's words stand for one player. Three situations, kept apart rather
+ * The words one student of a lesson explains to the other, as the teacher reads
+ * them: every one in full, and whether it has been answered.
+ */
+export interface WatchedExplanation {
+  /** UID of the student who explains these words, and who is not shown them as blanks. */
+  readonly explainerId: string;
+  /** UID of the student these words are hidden from: the one who guesses them. */
+  readonly guesserId: string;
+  /** The words, in the order the board numbers them. */
+  readonly words: readonly ExplainedWord[];
+}
+
+/**
+ * How a room's words stand for one person. Four situations, kept apart rather
  * than folded into one shape with empty fields, because two of them must show
  * no word at all and a caller should not be able to forget that.
  *
@@ -104,6 +117,10 @@ export interface GuessableWord extends WordLocation {
  * - `left-out` — the game is on but no word is hidden from this player, so
  *   there is nothing they could be shown without handing them the crossword,
  *   and nothing for them to type into either
+ * - `watched` — the viewer is a lesson's teacher, who plays nothing and sees
+ *   every word, grouped by the student who explains it. `left` is what the
+ *   first student in join order explains, and `right` what the second does
+ *   (`docs/decisions/0037-a-lesson-is-run-by-a-teacher-who-does-not-play.md`)
  */
 export type PlayerWordView =
   | { readonly kind: 'not-dealt' }
@@ -114,10 +131,60 @@ export type PlayerWordView =
       /** Words hidden from this player: they are the ones typing them in. */
       readonly toGuess: readonly GuessableWord[];
     }
-  | { readonly kind: 'left-out' };
+  | { readonly kind: 'left-out' }
+  | {
+      readonly kind: 'watched';
+      /** What the left student explains: the words hidden from the right one. */
+      readonly left: WatchedExplanation;
+      /** What the right student explains: the words hidden from the left one. */
+      readonly right: WatchedExplanation;
+    };
 
 /** The one case that holds words, for whatever is allowed to render them. */
 export type DealtWordView = Extract<PlayerWordView, { kind: 'dealt' }>;
+
+/** The teacher's case: every word of the lesson, grouped by who explains it. */
+export type WatchedWordView = Extract<PlayerWordView, { kind: 'watched' }>;
+
+/** How far one student's words have got: how many are answered, of how many. */
+export interface AnsweredCount {
+  readonly answered: number;
+  readonly total: number;
+}
+
+/**
+ * How many of these words have been answered.
+ *
+ * One answer, asked by every screen that counts: the teacher's lists say it as
+ * "N of M answered by {guesser}", and the lesson summary (#236) is built from
+ * the same two numbers. Never from the squares of the board, since a word
+ * completed through its crossings is answered with nothing typed into it.
+ *
+ * @param words - Words of one student's explanation, or of a player's half
+ * @returns The answered ones and all of them
+ *
+ * @example
+ * answeredCountOf(view.left.words); // { answered: 1, total: 3 }
+ */
+export const answeredCountOf = (
+  words: readonly { readonly isSolved: boolean }[],
+): AnsweredCount => ({
+  answered: words.filter((word) => word.isSolved).length,
+  total: words.length,
+});
+
+/**
+ * The teacher's line under one student's words.
+ *
+ * @param count - From {@link answeredCountOf}
+ * @param guesserName - The nickname of the student the words are hidden from
+ * @returns A sentence, full stop included
+ *
+ * @example
+ * answeredByLine({ answered: 1, total: 3 }, 'Taras'); // '1 of 3 answered by Taras.'
+ */
+export const answeredByLine = ({ answered, total }: AnsweredCount, guesserName: string): string =>
+  `${answered} of ${total} answered by ${guesserName}.`;
 
 /**
  * What a square holds, and why it holds it.
@@ -249,6 +316,37 @@ const explainableFrom = ({
 });
 
 /**
+ * Every dealt word of a lesson, grouped by the student who explains it.
+ *
+ * The first student in join order is the left one, as the lobby lists them, and
+ * the words they explain are the ones hidden from the second. A word hidden from
+ * neither, which the deal does not write but a document another client wrote
+ * could hold, belongs to no group and is not shown, as an unassigned word is
+ * dropped everywhere else. A lesson that has not got both of its students has
+ * nobody to group by, and nothing is shown: the deal needs two, so this is a
+ * document this app did not write.
+ */
+const watchedViewOf = (room: ReadableRoom, assigned: readonly AssignedWord[]): PlayerWordView => {
+  const [first, second] = playersInJoinOrder(room);
+
+  if (first === undefined || second === undefined) {
+    return { kind: 'not-dealt' };
+  }
+
+  const explainedBy = (explainer: string, guesser: string): WatchedExplanation => ({
+    explainerId: explainer,
+    guesserId: guesser,
+    words: assigned.filter((entry) => entry.hiddenFrom === guesser).map(explainableFrom),
+  });
+
+  return {
+    kind: 'watched',
+    left: explainedBy(first.id, second.id),
+    right: explainedBy(second.id, first.id),
+  };
+};
+
+/**
  * Splits a room's words into the ones this player explains and the ones they guess.
  *
  * A player of a game that is on always has at least one word hidden from them:
@@ -257,8 +355,8 @@ const explainableFrom = ({
  * the deal, and every word of the crossword is one they may "explain". That
  * happens for real: somebody who joined between the owner reading the room and
  * the owner writing the deal is in the room but not in the assignment, a race
- * no client can close and no security rule can catch (the rules cannot walk the
- * `words` map). It is reported as `left-out`, and nothing is shown — nor is
+ * no client can close and no security rule can catch (a pair game's rules do not
+ * walk the `words` map). It is reported as `left-out`, and nothing is shown — nor is
  * anything theirs to type into.
  *
  * A word not yet assigned belongs to neither half, so a room in the lobby shows
@@ -270,9 +368,18 @@ const explainableFrom = ({
  * a room can spoil the game for the room it is in, and no reading of the
  * document can tell that write apart from an honest one.
  *
+ * A lesson's teacher is told apart first, and by one thing: the room's stored
+ * `mode` is `lesson` (read with its default, so a room without one is a pair
+ * game) and the viewer is its `ownerId`. They are in no `players` entry, so
+ * without this they would read as left out of a game that has every word
+ * hidden from somebody else, and the notice a player who joined late is given
+ * would be shown to the person running it. They see every word, in the
+ * `watched` case. Everybody else keeps the view they always had: a pair game's
+ * owner is a player, and a lesson's student is one of its two.
+ *
  * @param room - The room document as read from Firestore
- * @param viewerId - Firebase Auth UID of the player looking at the screen
- * @returns Which of the three situations this player is in, with their words if any
+ * @param viewerId - Firebase Auth UID of the person looking at the screen
+ * @returns Which of the four situations this person is in, with their words if any
  *
  * @example
  * wordViewFor(room, playerId); // { kind: 'dealt', toExplain: [...], toGuess: [...] }
@@ -282,6 +389,10 @@ export const wordViewFor = (room: ReadableRoom, viewerId: string): PlayerWordVie
 
   if (room.status === 'lobby' || assigned.length === 0) {
     return { kind: 'not-dealt' };
+  }
+
+  if (isTeacherOf(room, viewerId)) {
+    return watchedViewOf(room, assigned);
   }
 
   const toGuess = assigned.filter((entry) => entry.hiddenFrom === viewerId).map(guessableFrom);
@@ -457,5 +568,79 @@ export const gridViewFor = (room: ReadableRoom, viewerId: string): GridView => {
       };
     }),
     toGuess: view.kind === 'dealt' && isOpenForAnswers ? view.toGuess : [],
+  };
+};
+
+/**
+ * Whose a square of the teacher's board is. A square an answered word runs
+ * through is `answered`, whoever explained it, as it is on every screen. Of the
+ * rest it is the left student's when any of their words runs through it, which
+ * is also what a square where the two students' words cross takes
+ * (`design/templates/state-tree.html`, line 782), and the right student's when
+ * only theirs do.
+ */
+export type WatchedSquareFace = 'answered' | 'left' | 'right';
+
+/** One square of the teacher's board: its letter, its number and whose it is. */
+export interface WatchedCell extends GridPosition {
+  readonly letter: string;
+  readonly face: WatchedSquareFace;
+  /** The crossword number printed in it, `null` unless a word begins here. */
+  readonly number: number | null;
+}
+
+/** The crossword as a lesson's teacher watches it: every letter, and no square to type in. */
+export interface WatchedGridView {
+  readonly rows: number;
+  readonly cols: number;
+  readonly cells: readonly WatchedCell[];
+}
+
+/**
+ * The crossword as the teacher of a lesson sees it, or nothing for anybody else.
+ *
+ * Asked of {@link wordViewFor}, so the one key that decides who is the teacher
+ * decides this too: a pair game's players and a lesson's students get `null`,
+ * and the board they are shown is {@link gridViewFor}'s. A square no dealt word
+ * runs through is left out, as a square of no word is everywhere.
+ *
+ * @param room - The room document as read from Firestore
+ * @param viewerId - Firebase Auth UID of the person looking at the screen
+ * @returns Every square with its letter and whose it is, or `null` for a viewer who is not the teacher, or a room that is not dealt
+ *
+ * @example
+ * watchedGridFor(room, teacherId)?.cells[0]; // { row: 0, col: 0, letter: 'C', face: 'left', number: 1 }
+ */
+export const watchedGridFor = (room: ReadableRoom, viewerId: string): WatchedGridView | null => {
+  const view = wordViewFor(room, viewerId);
+
+  if (view.kind !== 'watched') {
+    return null;
+  }
+
+  const solved = solvedCellKeys(room);
+  const numbers = numberedCellKeys(room);
+  const keysOf = (words: readonly ExplainedWord[]) =>
+    new Set(words.flatMap(({ cells }) => cells.map(cellKey)));
+  const left = keysOf(view.left.words);
+  const right = keysOf(view.right.words);
+
+  return {
+    rows: room.layout.rows,
+    cols: room.layout.cols,
+    cells: room.layout.cells.flatMap(({ row, col, letter }): readonly WatchedCell[] => {
+      const key = cellKey({ row, col });
+      const number = numbers.get(key) ?? null;
+
+      if (solved.has(key)) {
+        return [{ row, col, letter, face: 'answered', number }];
+      }
+
+      if (left.has(key)) {
+        return [{ row, col, letter, face: 'left', number }];
+      }
+
+      return right.has(key) ? [{ row, col, letter, face: 'right', number }] : [];
+    }),
   };
 };
