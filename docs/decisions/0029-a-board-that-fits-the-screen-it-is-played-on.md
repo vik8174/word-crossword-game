@@ -59,3 +59,25 @@ Before this release the same board was drawn 537 by 615, under 1074 pixels of pa
 ## Addendum (2026-10-15, [#260](https://github.com/vik8174/word-crossword-game/issues/260)): on a phone held upright the box is as tall as its grid
 
 The phone's box was `min(62dvh, rows × 46 − 2)`, which is the height of the grid only when every square is 44. At 375 wide the squares are 22 to 36, so the box stood 56 to 237 px taller than its grid and the page scrolled past a blank under the last row (the 9 by 7 board: 56.9 px; 11 by 11: 164.4; the short reference list at about 14 by 11: 237.7). One term is added to that `min()` (`NARROW_BOARD_HEIGHT_CSS`): the height of the grid at the side the **width** allows. Where the height binds, the share of the window is still the smaller term; where the width binds, the box is exactly its grid. So it cannot change the size of a square, and no square does (checked live on the stories at 320, 375, 414 and 767 wide, and in numbers on the 45 seeded layouts). Sizing the squares by width alone was rejected: it would have made a tall board larger and a short window's board taller than the window. It applies to a window narrower than 768 only (`NARROW_WINDOW`); a phone on its side (812 by 375) and every window from 768 up are as they were, and the floor of 20 and the ceiling of 44 do not move. The board's wrapper is declared an inline-size container on a phone so that the box can read its own width. Where a screen draws nothing under the board (a viewer left out, both endings) the wrapper's bottom padding and the notes' top margin are dropped on a phone as well, so the next zone stands the template's 28 px away rather than 52. The tablet is still 52 there and is not part of this record.
+
+## Addendum (2026-10-15, [#274](https://github.com/vik8174/word-crossword-game/issues/274)): a tablet is an application only from 900 high
+
+On a short tablet window the application kept the board's share of the height (62%) and left the two indexes under it whatever remained. Measured live at 1024 by 768, with overlay scrollbars, on the stories of `Screens/RoomGame` and `Screens/RoomEndings`, height shown against content height of the zone under the board:
+
+| story                                       | shown / content   |
+| ------------------------------------------- | ----------------- |
+| Playing                                     | 216 / 260 and 473 |
+| Playing, many words                         | 124 / 308 and 518 |
+| Finished                                    | 107 / 302         |
+| Finished, many words                        | 19 / 339          |
+| Ended early                                 | 75 / 172          |
+| Ended early, many words                     | 4 / 231           |
+| A lesson's teacher, Ended early, many words | 4 / 719           |
+
+A zone is a scroll box there, so 4 px of 231 is an index cut off at the bottom with a scrollbar nobody finds. The board's squares were not the cause and are not touched.
+
+**Decision (Viktor, 2026-10-15): a tablet (768 to 1199 wide) is an application only from 900 px high.** Below that it is a document that scrolls, as the template draws it at that size and as the phone already is. The reading is narrow: the band 768-1199 wide and 600-899 high keeps the tablet's **arrangement and sizing** (the board across the top, the two zones side by side under it, 32 px at the sides, the board's share of the height and its box no taller than its grid as [#267](https://github.com/vik8174/word-crossword-game/issues/267) left it) and loses only the **fixed height**: the room takes the height of its content, no zone is a scroll box, and the page scrolls. It does not go to the phone's one column. In `room-layout.ts` this is two media queries where there was one: `ARRANGED_ROOM` (768 wide, 600 high, the arrangement) and `APP_SHELL` (the fixed height and the scroll boxes: a tablet from `TABLET_SHELL_MIN_HEIGHT`, 900, and a wide window from 600). `boardBoxIn` reads the first, so the board's box is the same with or without the lock.
+
+**From 1200 wide the threshold stays 600** (`THREE_ZONES`): the three zones have the board a column of its own, and nothing there was cut off. Under 600 high nothing changes: 844 by 390 and every phone on its side stay the one-column document they were.
+
+**Consequence: in 768-1199 by 600-899 the board is no longer always on screen.** The rest of the room is under it and the page scrolls to it. That was the price paid for the board's share of the window while the indexes were left nothing. 0029's argument that the board is the thing the screen is for still holds at 900 high and over, and at every size from 1200 wide.
