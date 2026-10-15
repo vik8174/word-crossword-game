@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 
 import { gapAt } from '../scale';
 import { Message } from './Message';
-import { MiddlePanel } from './MiddlePanel';
+import { gateScreenSx } from './gate-panel-styles';
 import { SIDE_ZONE_WIDTH } from './room-layout';
 import { fullHeightBandSx, GATE_BAND_WIDTH, TILE_SX } from './surface-styles';
 import { ZONE_PADDING } from './zone-styles';
@@ -16,9 +16,9 @@ const GATE_COLUMN_WIDTH = `calc(${GATE_BAND_WIDTH} - ${GATE_PADDING} - ${GATE_PA
 /**
  * A tile down the middle of the window. `UnplacedWordsNotice`'s warning stands in
  * `/create`'s column (`components/gate-panel-styles.ts`) and `JoinRoomForm`'s
- * error on the doors' panel (`components/MiddlePanel.tsx`, issue #198), both a
+ * error in the doors' column (`components/DoorColumn.tsx`, issue #226), both a
  * tile, so the band is still a fair place to read a message off; it is kept
- * here rather than redrawn as either panel.
+ * here rather than redrawn as either column.
  */
 const GateSurface = ({ children }: { readonly children: ReactNode }) => (
   <Box sx={{ position: 'relative', minHeight: '100dvh' }}>
@@ -32,22 +32,11 @@ const GateSurface = ({ children }: { readonly children: ReactNode }) => (
 );
 
 /**
- * The centred panel a room stands a notice in while there is no room to frame
- * yet — `pages/RoomPage.tsx`'s own `Waiting`, reused rather than redrawn, since
- * that is exactly where `RoomUnavailableNotice`'s info reads stand.
+ * The column a room's door stands in while there is no room to frame yet,
+ * where `RoomUnavailableNotice`'s info reads (`components/DoorColumn.tsx`).
  */
 const DoorsSurface = ({ children }: { readonly children: ReactNode }) => (
-  <Box
-    sx={{
-      minHeight: '100dvh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      p: 5,
-    }}
-  >
-    <MiddlePanel>{children}</MiddlePanel>
-  </Box>
+  <Box sx={gateScreenSx}>{children}</Box>
 );
 
 /**
@@ -74,7 +63,7 @@ const HallSurface = ({ children }: { readonly children: ReactNode }) => (
  * The template's one component for every error, warning, notice and success
  * (issue #185), each kind shown on the surface it first appears on — warning
  * and error on a tile down the middle (the surface `WordListForm` and
- * `JoinRoomForm` stand on), info in the centred panel (`RoomUnavailableNotice`),
+ * `JoinRoomForm` stand on), info in the doors' column (`RoomUnavailableNotice`),
  * success in a room's side zone (`GameCompletedPanel`).
  *
  * Warning is the one kind that really appears both with a list and without
@@ -124,7 +113,7 @@ export const ErrorOnGate: Story = {
   render: () => (
     <GateSurface>
       <Message kind="error" heading="Could not join the game">
-        Check your connection and try again — the room is still there.
+        Check your connection and try again. The room is still there.
       </Message>
     </GateSurface>
   ),

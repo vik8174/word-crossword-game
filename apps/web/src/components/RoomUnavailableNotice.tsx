@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import { Link as RouterLink } from 'react-router-dom';
 
 import type { RoomUnavailableReason } from '../rooms/room-screen';
-import { gateStackSx } from './gate-panel-styles';
+import { DoorColumn, RefusalStreet } from './DoorColumn';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
 
@@ -14,7 +14,7 @@ interface UnavailableNotice {
 const MESSAGES: Readonly<Record<RoomUnavailableReason, UnavailableNotice>> = {
   missing: {
     heading: 'There is no game at this link',
-    text: 'It may have been mistyped, or the room may have been cleaned up — rooms are kept for 24 hours.',
+    text: 'It may have been mistyped, or the room may have been cleaned up. Rooms are kept for 24 hours.',
   },
   expired: {
     heading: 'This room has expired',
@@ -22,7 +22,7 @@ const MESSAGES: Readonly<Record<RoomUnavailableReason, UnavailableNotice>> = {
   },
   started: {
     heading: 'This game has already begun',
-    text: 'The words were dealt out among the players who were in the room at the time, so it takes no new players — ask whoever invited you for a link to the next game.',
+    text: 'The words were dealt out among the players who were in the room at the time, so it takes no new players. Ask whoever invited you for a link to the next game.',
   },
   // Says the room is closed rather than that its crossword was finished: the
   // status is a client's word and the security rules cannot check it against
@@ -48,7 +48,7 @@ const MESSAGES: Readonly<Record<RoomUnavailableReason, UnavailableNotice>> = {
   },
   connection: {
     heading: 'Could not reach the game',
-    text: 'Check your connection and reload the page — the room is still there.',
+    text: 'Check your connection and reload the page. The room is still there.',
   },
 };
 
@@ -57,7 +57,12 @@ interface RoomUnavailableNoticeProps {
 }
 
 /**
- * Explains, in a player's terms, why the link they opened leads nowhere.
+ * Explains, in a player's terms, why the link they opened leads nowhere: the
+ * whole screen, the shuttered balcony above a card and the way on.
+ *
+ * Built to `?state=unavailable/<reason>` of `design/templates/state-tree.html`
+ * (lines 404-412 and 915-921): the drawing, then the card, then "Start a new
+ * game", from the top of the column and the same for all seven.
  *
  * Every one of these is a normal thing to run into — a stale link, a late
  * arrival, a third friend — so none of them may surface as a raw Firebase
@@ -72,14 +77,16 @@ export const RoomUnavailableNotice = ({ reason }: RoomUnavailableNoticeProps) =>
   const notice = MESSAGES[reason];
 
   return (
-    <Box sx={gateStackSx}>
+    <DoorColumn picture={<RefusalStreet />} unseenHeading="Game room">
       <Message kind={reason === 'connection' ? 'error' : 'info'} heading={notice.heading}>
         {notice.text}
       </Message>
 
-      <PillButton component={RouterLink} to="/">
-        Start a new game
-      </PillButton>
-    </Box>
+      <Box>
+        <PillButton component={RouterLink} to="/">
+          Start a new game
+        </PillButton>
+      </Box>
+    </DoorColumn>
   );
 };

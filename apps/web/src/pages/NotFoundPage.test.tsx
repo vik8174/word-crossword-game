@@ -22,20 +22,32 @@ describe('NotFoundPage', () => {
     expect(screen.getByRole('link', { name: /go to the start/i })).toHaveAttribute('href', '/');
   });
 
-  it('stands on a tile down the middle of the window, not on a picture', () => {
-    const { container } = renderNotFoundPage();
+  it('draws a refusal: the shuttered balcony above an info card', () => {
+    renderNotFoundPage();
 
-    expect(container.querySelector('img')).toBeNull();
-    expect(container.querySelector('canvas')).toBeNull();
+    expect(
+      screen.getByRole('img', { name: 'A balcony across the street with its shutters closed' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('i');
+  });
 
-    const band = container.querySelector('[aria-hidden="true"]') as HTMLElement;
+  it("names the page by the card's head, as its one h1", () => {
+    renderNotFoundPage();
 
-    expect(getComputedStyle(band).backgroundColor).toBe('rgb(250, 251, 250)');
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('This page does not exist');
+  });
+
+  it('says what a link looks like, with no dash', () => {
+    renderNotFoundPage();
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The link may be incomplete or mistyped. If you were invited to a game, ask for the link again. It looks like /room/…',
+    );
   });
 
   it('sets its heading in the text family at the bold weight', () => {
-    // The one visible `h1` in the app (`RoomShell.tsx` and `RoomPage.tsx`
-    // hide theirs). Issue #147 moved it off the serif and onto the text
+    // The card's head is the page's `h1`, drawn as the card's head. Issue #147 moved it off the serif and onto the text
     // family, checked on the rendered element's computed style rather than
     // on the theme's own config object.
     renderNotFoundPage();

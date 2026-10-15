@@ -1,5 +1,4 @@
 import { alpha, createTheme } from '@mui/material/styles';
-import { WAIT_RING_CLASS } from './components/waiting-mark-styles';
 import { FRAME_HEADER_HEIGHT } from './components/frame-height';
 import { MOTION_DURATIONS_MS, MOTION_EASING } from './motion';
 import { inRem, SPACING_STEPS } from './scale';
@@ -251,12 +250,11 @@ export const theme = createTheme({
     // out: `design/templates/state-tree.html` line 95 stops it under reduced
     // motion, so it stands still and says "busy" by being there (issue #224).
     //
-    // The waiting mark's three rings (`components/waiting-mark-styles.ts`,
-    // `WAIT_RING_CLASS`) are named out for the same reason (issue #198): they
-    // replaced the spinner on `connecting`, the one screen where "wait" is the
-    // whole of what the page says. They keep their own 1900ms rather than the
-    // 1400ms the template's reduced-motion rule writes for them, the dot's
-    // duration written into a second selector.
+    // Nor is the waiting line's dot on `connecting`
+    // (`components/WaitingMark.tsx`): it is the button's dot, and the template
+    // stops it under reduced motion too (`.wait-line .dot`, line 258). The three
+    // rings that kept turning here until issue #226 are gone with the drawing
+    // they belonged to.
     MuiCssBaseline: {
       styleOverrides: {
         body: { fontSize: inRem(18), lineHeight: 1.5 },
@@ -264,7 +262,7 @@ export const theme = createTheme({
         // sticky header and not under it (issue #245).
         html: { scrollPaddingTop: FRAME_HEADER_HEIGHT },
         [REDUCED_MOTION_MEDIA]: {
-          [`*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle):not(.${WAIT_RING_CLASS}), *::before, *::after`]:
+          ['*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle), *::before, *::after']:
             {
               animationDuration: '0.01ms !important',
               animationIterationCount: '1 !important',

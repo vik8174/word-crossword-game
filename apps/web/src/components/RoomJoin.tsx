@@ -6,16 +6,17 @@ import { normalizeNickname } from '../rooms/nickname';
 import { rememberNickname } from '../rooms/nickname-store';
 import { joinRoom } from '../rooms/room-service';
 import { logGameEvent } from '../telemetry/analytics';
+import { DoorColumn, JoinStreet } from './DoorColumn';
 import { JoinRoomForm } from './JoinRoomForm';
-import { MiddlePanel } from './MiddlePanel';
-import { RoomShell } from './RoomShell';
 
 /** The heading is `JoinRoomForm`'s own — "Could not join the game", fixed. */
-const JOIN_FAILED_MESSAGE = 'Check your connection and try again — the room is still there.';
+const JOIN_FAILED_MESSAGE = 'Check your connection and try again. The room is still there.';
 
 interface RoomJoinProps {
   /** Id of the room being entered. */
   readonly roomId: string;
+  /** The nickname the room's owner goes by, named in the invitation. */
+  readonly ownerNickname: string;
   /** Firebase Auth UID this visitor will be listed under. */
   readonly playerId: string;
   /**
@@ -44,14 +45,21 @@ interface RoomJoinProps {
  * from outside rather than tidied up here.
  *
  * @param props.roomId - Id of the room the link led to
+ * @param props.ownerNickname - Who invited this visitor
  * @param props.playerId - UID the visitor was signed in under before the room was read
  * @param props.seatToRelease - Whose seat they are taking, if the room was full
  * @param props.onRefused - Told that this room would not take this visitor
  *
  * @example
- * <RoomJoin roomId={roomId} playerId={playerId} seatToRelease={null} onRefused={noteRefusal} />
+ * <RoomJoin roomId={roomId} ownerNickname="Vik" playerId={playerId} seatToRelease={null} onRefused={noteRefusal} />
  */
-export const RoomJoin = ({ roomId, playerId, seatToRelease, onRefused }: RoomJoinProps) => {
+export const RoomJoin = ({
+  roomId,
+  ownerNickname,
+  playerId,
+  seatToRelease,
+  onRefused,
+}: RoomJoinProps) => {
   const [join, setJoin] = useState<ActionPhase>(IDLE);
 
   const submitJoin = async (rawNickname: string) => {
@@ -87,19 +95,17 @@ export const RoomJoin = ({ roomId, playerId, seatToRelease, onRefused }: RoomJoi
   };
 
   return (
-    // Standing alone in the frame: this visitor is not in the room yet, so
-    // there is nothing of the game to put either side of them. It is the same
-    // frame all the same, so walking in moves the contents of a screen rather
-    // than replacing one. The panel is the one `connecting` and `unavailable`
-    // stand on too (issue #198).
-    <RoomShell title="Join the game" solo>
-      <MiddlePanel>
-        <JoinRoomForm
-          onJoin={(nickname) => void submitJoin(nickname)}
-          isJoining={join.phase === 'submitting'}
-          errorMessage={failureOf(join)}
-        />
-      </MiddlePanel>
-    </RoomShell>
+    // Not in the room's frame: this visitor is not in the room yet, so there is
+    // nothing of the game to put either side of them. The street is drawn above
+    // a column that starts under the frame's header, as the template's `join`
+    // does (issue #226), and its three states stand in the same place.
+    <DoorColumn picture={<JoinStreet />}>
+      <JoinRoomForm
+        ownerNickname={ownerNickname}
+        onJoin={(nickname) => void submitJoin(nickname)}
+        isJoining={join.phase === 'submitting'}
+        errorMessage={failureOf(join)}
+      />
+    </DoorColumn>
   );
 };

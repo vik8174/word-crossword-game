@@ -1,12 +1,12 @@
-import Box from '@mui/material/Box';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 
-import { gateScreenSx } from './gate-panel-styles';
+import { DoorColumn, JoinStreet } from './DoorColumn';
 import { JoinRoomForm } from './JoinRoomForm';
-import { MiddlePanel } from './MiddlePanel';
 
 /**
- * The nickname form, on the panel it stands on at the doors (issue #198).
+ * The door into a room, on the column it stands in at the doors with the street
+ * above it (`?state=join`, `join/joining` and `join/failed` of the template;
+ * issue #226).
  *
  * One story per state a prop drives: resting, the join being written, and the
  * last attempt having failed. That the field is focused on arrival, and that
@@ -15,14 +15,12 @@ import { MiddlePanel } from './MiddlePanel';
 const meta: Meta<typeof JoinRoomForm> = {
   title: 'Components/JoinRoomForm',
   component: JoinRoomForm,
-  args: { onJoin: () => undefined, isJoining: false },
+  args: { ownerNickname: 'Viktor', onJoin: () => undefined, isJoining: false },
   decorators: [
     (Story) => (
-      <Box sx={gateScreenSx}>
-        <MiddlePanel>
-          <Story />
-        </MiddlePanel>
-      </Box>
+      <DoorColumn picture={<JoinStreet />}>
+        <Story />
+      </DoorColumn>
     ),
   ],
 };
@@ -38,5 +36,5 @@ export const Joining: Story = {
 };
 
 export const Failed: Story = {
-  args: { errorMessage: 'Check your connection and try again — the room is still there.' },
+  args: { errorMessage: 'Check your connection and try again. The room is still there.' },
 };

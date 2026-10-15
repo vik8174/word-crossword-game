@@ -124,29 +124,6 @@ const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
   [THREE_ZONES]: isEmpty ? ZONE_SURFACE : {},
 });
 
-/**
- * What the room's `main` is laid out as when one thing stands alone in it: a
- * grid of one column that centres its only child across, and down.
- *
- * `.zones.solo` in the template, and the layout of `join`, which stands in the
- * room's frame with nobody else in the room to put in the zones either side of
- * it (issue #198). On a phone the zone is as tall as its child and the page
- * scrolls, so it takes no share of the window's height (`flex: none`); from the
- * app shell up the frame is one window tall and the zone takes what the header
- * leaves, stretching its one row so that the child is centred in all of it and
- * not stood under the header. The three-zone `main` keeps `alignContent:
- * 'start'` and has no way to do that, which is why this is a layout of its own
- * and not a modifier of that one.
- */
-const SOLO_SX = {
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr)',
-  placeItems: 'center',
-  alignContent: 'center',
-  flex: 'none',
-  [APP_SHELL]: { flex: 1, minHeight: 0, alignContent: 'stretch' },
-} as const;
-
 interface RoomShellBaseProps {
   /**
    * The name of this step of the room, shown top left.
@@ -165,34 +142,19 @@ interface RoomShellBaseProps {
    *
    * A screen may have none, and the lobby is that screen: what it puts in the
    * middle is nothing.
-   *
-   * On a `solo` screen it is the one thing that stands alone.
    */
   readonly children?: ReactNode;
 }
 
 /** A room with three zones: what this player gives, the board, and what they get back. */
 interface RoomZonesProps extends RoomShellBaseProps {
-  readonly solo?: false;
   /** What this player gives the other one — nothing until the words are dealt. */
   readonly left?: ReactNode;
   /** What they get back from them, and who is in the room. */
   readonly right?: ReactNode;
 }
 
-/**
- * A room with one thing in it and no zones: `join`, whose visitor is not in the
- * room yet, so there is nothing of the game to put either side of them. It is
- * the same frame all the same, so walking in moves the contents of a screen
- * rather than replacing one.
- */
-interface RoomSoloProps extends RoomShellBaseProps {
-  readonly solo: true;
-  readonly left?: never;
-  readonly right?: never;
-}
-
-type RoomShellProps = RoomZonesProps | RoomSoloProps;
+type RoomShellProps = RoomZonesProps;
 
 /**
  * The frame every screen of a room is drawn in: a header, and three zones with
@@ -240,22 +202,13 @@ type RoomShellProps = RoomZonesProps | RoomSoloProps;
  * @param props.left - The zone on the board's left; an empty one is left empty
  * @param props.right - The zone on its right
  * @param props.children - The middle zone: the board, or nothing at all
- * @param props.solo - Whether one thing stands alone in the middle of the frame, with no zones; `join` alone
  *
  * @example
  * <RoomShell status={<Status />} left={<ToExplain />} right={<ToGuess />}>
  *   <RoomCrossword room={room} viewerId={viewerId} caption={caption} />
  * </RoomShell>
  */
-export const RoomShell = ({
-  title,
-  status,
-  action,
-  left,
-  right,
-  children,
-  solo = false,
-}: RoomShellProps) => {
+export const RoomShell = ({ title, status, action, left, right, children }: RoomShellProps) => {
   const isLeaving = useShiftRole() === 'leaving';
 
   return (
@@ -322,59 +275,53 @@ export const RoomShell = ({
         {action !== undefined && <Box sx={{ [APP_SHELL]: { ml: 'auto' } }}>{action}</Box>}
       </Box>
 
-      {solo ? (
-        <Box component="main" sx={SOLO_SX}>
-          {children}
-        </Box>
-      ) : (
-        <Box
-          component="main"
-          sx={{
-            display: 'grid',
-            gap: 5,
-            alignContent: 'start',
-            [APP_SHELL]: {
-              flex: 1,
-              minHeight: 0,
-              // The zones' own 14px and not a step of the spacing row, which has
-              // none between 12 and 16 (`ZONES_GAP`, issue #199). From a tablet up
-              // because the template's `.zones` says 14 from 768.
-              gap: ZONES_GAP,
-              gridTemplateColumns: '1fr 1fr',
-              gridTemplateRows: 'auto minmax(0, 1fr)',
-              gridTemplateAreas: '"board board" "left right"',
-            },
-            [THREE_ZONES]: {
-              gridTemplateColumns: `${SIDE_ZONE_WIDTH} minmax(0, 1fr) ${SIDE_ZONE_WIDTH}`,
-              gridTemplateRows: 'minmax(0, 1fr)',
-              gridTemplateAreas: '"left board right"',
-            },
-          }}
-        >
-          <Box sx={zoneSx('left', left === undefined)}>{left}</Box>
+      <Box
+        component="main"
+        sx={{
+          display: 'grid',
+          gap: 5,
+          alignContent: 'start',
+          [APP_SHELL]: {
+            flex: 1,
+            minHeight: 0,
+            // The zones' own 14px and not a step of the spacing row, which has
+            // none between 12 and 16 (`ZONES_GAP`, issue #199). From a tablet up
+            // because the template's `.zones` says 14 from 768.
+            gap: ZONES_GAP,
+            gridTemplateColumns: '1fr 1fr',
+            gridTemplateRows: 'auto minmax(0, 1fr)',
+            gridTemplateAreas: '"board board" "left right"',
+          },
+          [THREE_ZONES]: {
+            gridTemplateColumns: `${SIDE_ZONE_WIDTH} minmax(0, 1fr) ${SIDE_ZONE_WIDTH}`,
+            gridTemplateRows: 'minmax(0, 1fr)',
+            gridTemplateAreas: '"left board right"',
+          },
+        }}
+      >
+        <Box sx={zoneSx('left', left === undefined)}>{left}</Box>
 
-          {/* Nothing in a document when a screen puts nothing there, as the
+        {/* Nothing in a document when a screen puts nothing there, as the
             template's `.zone-middle.empty` is: the lobby's middle is the
             doorway, and a grid gap left standing beside an empty box would be
             24px of page under the zone. From a tablet up it is still the row
             the board would stand in. */}
-          <Box
-            sx={{
-              ...(children === undefined && { display: 'none' }),
-              [APP_SHELL]: {
-                display: 'block',
-                gridArea: 'board',
-                minHeight: 0,
-                overflowY: 'auto',
-              },
-            }}
-          >
-            {children}
-          </Box>
-
-          <Box sx={zoneSx('right', right === undefined)}>{right}</Box>
+        <Box
+          sx={{
+            ...(children === undefined && { display: 'none' }),
+            [APP_SHELL]: {
+              display: 'block',
+              gridArea: 'board',
+              minHeight: 0,
+              overflowY: 'auto',
+            },
+          }}
+        >
+          {children}
         </Box>
-      )}
+
+        <Box sx={zoneSx('right', right === undefined)}>{right}</Box>
+      </Box>
     </Box>
   );
 };
