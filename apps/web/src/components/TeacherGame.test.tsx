@@ -223,6 +223,40 @@ describe('the teacher’s board', () => {
   });
 });
 
+describe('a word answered while the teacher is watching', () => {
+  const answered = (room: RoomDocument): RoomDocument => ({
+    ...room,
+    words: {
+      ...room.words,
+      w1: { hiddenFromPlayerId: 'taras-uid', guessedByPlayerId: 'taras-uid' },
+    },
+  });
+
+  it('turns its squares over once, as the player’s board does, and not those answered before', () => {
+    const open = lessonRoom(FEW, 7, 9);
+    // The room the teacher opens has `bread` answered already; `engine` (w1) is answered next.
+    const { rerender } = renderTeacher(open);
+
+    const draw = (room: RoomDocument) =>
+      rerender(
+        <ThemeProvider theme={theme}>
+          <FrameSlotProvider>
+            <Frame />
+            <RoomGame roomId={ROOM_ID} room={room} viewerId={TEACHER_ID} />
+          </FrameSlotProvider>
+        </ThemeProvider>,
+      );
+
+    expect(board().querySelectorAll('.just')).toHaveLength(0);
+
+    draw(answered(open));
+
+    // `engine`, six squares, one of them shared with `bread`, which was answered already.
+    expect(board().querySelectorAll('.just').length).toBeGreaterThanOrEqual(5);
+    expect(squareAt(0, 3).parentElement).not.toHaveClass('just');
+  });
+});
+
 describe('the band over the teacher’s board', () => {
   beforeEach(() => {
     // A window tall enough for the board to leave room for the drawing above it.
