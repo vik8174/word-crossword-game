@@ -128,3 +128,69 @@ describe('lobbyStatusMessage', () => {
     }
   });
 });
+
+describe('lobbyStatusMessage, in a lesson', () => {
+  const lessonMessage = (
+    isOwner: boolean,
+    playerCount: number,
+    teacherAway = false,
+    wordCount = WORD_COUNT,
+  ): string =>
+    lobbyStatusMessage({
+      isOwner,
+      playerCount,
+      wordCount,
+      lesson: { teacherName: 'Carmen', teacherAway },
+    });
+
+  it('tells the teacher with nobody in that the room needs two, and how to get them in', () => {
+    expect(lessonMessage(true, 0)).toBe(
+      'A lesson takes 2 players, so this room needs 2 more before you can start it. Share the room link.',
+    );
+  });
+
+  it('tells the teacher with one student in that it needs one more', () => {
+    expect(lessonMessage(true, 1)).toBe(
+      'A lesson takes 2 players, so this room needs 1 more before you can start it. Share the room link.',
+    );
+  });
+
+  it('tells a student by name who starts the lesson once the others are in', () => {
+    expect(lessonMessage(false, 1)).toBe(
+      'A lesson takes 2 players, so this room needs 1 more. Carmen starts the game once they are in.',
+    );
+  });
+
+  it('tells the teacher that both players are here and the lesson can start', () => {
+    expect(lessonMessage(true, 2)).toBe('Both players are here. The lesson can start now.');
+  });
+
+  it('tells a student who starts the lesson, and where it begins', () => {
+    expect(lessonMessage(false, 2)).toBe(
+      'Both players are here. Carmen starts the lesson, and it begins on this screen the moment they do.',
+    );
+  });
+
+  it('tells a student, when the teacher is away, that only the teacher can start it', () => {
+    expect(lessonMessage(false, 2, true)).toBe(
+      'Both players are here. Only Carmen can start the lesson.',
+    );
+  });
+
+  it('does not let the teacher’s absence change what waiting for a student says', () => {
+    expect(lessonMessage(false, 1, true)).toBe(lessonMessage(false, 1, false));
+  });
+
+  it('says that nobody can start a lesson whose crossword is shorter than its room, by name', () => {
+    expect(lessonMessage(false, 2, false, 1)).toMatch(
+      /^This crossword holds 1 word and the room holds 2 players, .* Carmen cannot start this game; ask for a link to a new one\.$/,
+    );
+    expect(lessonMessage(true, 2, false, 1)).toMatch(/This game cannot start\. Create a new room/);
+  });
+
+  it('keeps saying what it said about a pair game when no lesson is given', () => {
+    expect(lobbyStatusMessage({ isOwner: false, playerCount: 2, wordCount: WORD_COUNT })).toMatch(
+      /^Everybody a game needs is here\. The host starts it/,
+    );
+  });
+});

@@ -1,6 +1,6 @@
-import { abandonedSeatIn, hasFreeSeatIn, roomAccessFor } from './room-access';
+import { abandonedSeatIn, hasFreeSeatIn, ownerNicknameOf, roomAccessFor } from './room-access';
 import { isGameFinished } from './room-completion';
-import type { RoomDocument } from './room-document';
+import { type RoomDocument, type RoomMode, type RoomTeacher, roomModeOf } from './room-document';
 import type { RoomConnection } from './use-room-connection';
 
 /**
@@ -65,12 +65,27 @@ export type RoomUnavailableReason =
  */
 export type RoomScreen =
   | { readonly kind: 'connecting' }
-  | { readonly kind: 'unavailable'; readonly reason: RoomUnavailableReason }
+  | {
+      readonly kind: 'unavailable';
+      readonly reason: RoomUnavailableReason;
+      /**
+       * Present, and `lesson`, when the room that turned this visitor away is a
+       * lesson: two of the reasons are worded for it. Left out for a pair game
+       * and for every reason that is not about a room at all.
+       */
+      readonly mode?: RoomMode;
+    }
   | {
       readonly kind: 'join';
       readonly playerId: string;
       /** The room owner's nickname, for the sentence that says who invited this visitor. */
       readonly ownerNickname: string;
+      /**
+       * The teacher, when the room is a lesson, and left out for a pair game.
+       * The door words itself for a lesson and draws the teacher at the end of
+       * the street while their mark is fresh.
+       */
+      readonly teacher?: RoomTeacher;
       /**
        * UID whose seat this visitor would be taking, when the room is full and
        * one of its players has given theirs up. `null` when a seat was simply
@@ -108,19 +123,6 @@ const screenInsideRoom = (room: RoomDocument, viewerId: string): RoomScreen => {
       return { kind: 'closed-early', room, viewerId };
   }
 };
-
-/** What the invitation calls an owner whose entry is missing from a room that should hold it. */
-const UNKNOWN_OWNER = 'Somebody';
-
-/**
- * The name the owner went by in their own room.
- *
- * The owner's seat is never released (`room-access.ts`), so the entry is always
- * there in a room this app wrote; a document that lacks it is not one this app
- * made, and the invitation says "Somebody" rather than nothing.
- */
-const ownerNicknameOf = (room: RoomDocument): string =>
-  room.players[room.ownerId]?.nickname ?? UNKNOWN_OWNER;
 
 /**
  * The screen this connection is showing this viewer.
@@ -169,12 +171,17 @@ export const roomScreenFor = (connection: RoomConnection, now: Date): RoomScreen
       playerId,
       ownerNickname: ownerNicknameOf(room),
       seatToRelease: abandonedSeatIn(room, now),
+      ...(room.teacher === undefined ? {} : { teacher: room.teacher }),
     };
   }
 
   // Every refusal `roomAccessFor` can answer with is a reason the notice has
   // wording for, and this line is where the compiler checks that it stays so.
-  return { kind: 'unavailable', reason: access };
+  return {
+    kind: 'unavailable',
+    reason: access,
+    ...(roomModeOf(room) === 'lesson' ? { mode: 'lesson' as const } : {}),
+  };
 };
 
 /**

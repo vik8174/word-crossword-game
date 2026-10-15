@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-
-import { awayDurationsIn, PRESENCE_TICK_MS } from './presence';
+import { awayDurationsIn } from './presence';
 import type { RoomDocument } from './room-document';
+import { usePresenceNow } from './use-presence-now';
 
 /**
  * Reads the room's marks on a clock of its own, so silence can be noticed.
@@ -16,20 +15,12 @@ import type { RoomDocument } from './room-document';
  * every few seconds is the player list, not the grid a game is played on.
  *
  * @param room - The room as it last arrived
- * @returns How long each away player has been away, by player id; the present
- * have no entry, and the map is empty when everybody is there
+ * @returns How long each away person has been away, by UID (a lesson's teacher
+ * under the room's `ownerId`); the present have no entry, and the map is empty
+ * when everybody is there
  *
  * @example
  * const awayDurations = useRoomPresence(room);
  */
-export const useRoomPresence = (room: RoomDocument): Readonly<Record<string, string>> => {
-  const [now, setNow] = useState(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), PRESENCE_TICK_MS);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  return awayDurationsIn(room, now);
-};
+export const useRoomPresence = (room: RoomDocument): Readonly<Record<string, string>> =>
+  awayDurationsIn(room, usePresenceNow());

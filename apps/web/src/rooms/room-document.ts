@@ -53,6 +53,35 @@ export type RoomStatus = 'lobby' | 'playing' | 'completed' | 'closed';
 export const isTerminalStatus = (status: RoomStatus): boolean =>
   status === 'completed' || status === 'closed';
 
+/**
+ * What a room is for:
+ * - `pair` — two people play it, and the one who made it is one of them
+ * - `lesson` — two students play it and the one who made it, the teacher,
+ *   deals the words and watches (`docs/decisions/0037-a-lesson-is-run-by-a-teacher-who-does-not-play.md`)
+ *
+ * Chosen on `/create` and never changed: the security rules refuse a write that
+ * changes it. A room written before lessons existed carries no mode at all and
+ * is a `pair` room, which is what {@link roomModeOf} reads it as.
+ */
+export type RoomMode = 'pair' | 'lesson';
+
+/**
+ * The teacher of a lesson: not a player, so not in `players`, with a nickname
+ * and a presence mark of their own (`docs/decisions/0037-a-lesson-is-run-by-a-teacher-who-does-not-play.md`,
+ * addendum). The teacher is the room's owner, so their UID is `ownerId`.
+ */
+export interface RoomTeacher<TTimestamp = Timestamp> {
+  /** The name the teacher typed; the students see them by it. */
+  readonly nickname: string;
+  /**
+   * When the teacher's own client last said it was still there, rewritten every
+   * fifteen seconds like a player's mark (`docs/decisions/0022-a-mark-a-player-writes-for-themselves.md`).
+   * Required, unlike a player's: a lesson is a room of this app's making, so
+   * there is no older one to fall back for.
+   */
+  readonly lastSeenAt: TTimestamp;
+}
+
 /** A participant of the room, keyed in the document by their Firebase Auth UID. */
 export interface RoomPlayer<TTimestamp = Timestamp> {
   /** Name the player typed; the only thing other players see them by. */
@@ -94,8 +123,18 @@ export interface RoomWordState {
  */
 export interface RoomDocumentShape<TTimestamp> {
   readonly status: RoomStatus;
-  /** UID of the player who created the room. They also play. */
+  /**
+   * What the room is for. Absent in a room written before lessons existed, which
+   * is a `pair` room: read it with {@link roomModeOf}, never directly.
+   */
+  readonly mode?: RoomMode;
+  /**
+   * UID of the person who created the room. In a pair game they also play; in a
+   * lesson they are its teacher and do not.
+   */
   readonly ownerId: string;
+  /** The lesson's teacher. Present in a `lesson` room and in no other. */
+  readonly teacher?: RoomTeacher<TTimestamp>;
   /** The crossword as generated at creation time; never modified afterwards. */
   readonly layout: CrosswordLayout;
   /**
@@ -107,7 +146,10 @@ export interface RoomDocumentShape<TTimestamp> {
    * overwrite each other, which rewriting a whole array would risk.
    */
   readonly words: Readonly<Record<string, RoomWordState>>;
-  /** Players in the room, keyed by Firebase Auth UID. Empty rooms do not exist — the owner is always in. */
+  /**
+   * Players in the room, keyed by Firebase Auth UID. In a pair game the owner is
+   * always in; in a lesson nobody is when it is made, and the owner never is.
+   */
   readonly players: Readonly<Record<string, RoomPlayer<TTimestamp>>>;
   readonly createdAt: TTimestamp;
   /** When Firestore's TTL policy may delete this room. Refreshed on activity (issue #9). */
@@ -124,11 +166,50 @@ export type NewRoomDocument = RoomDocumentShape<Date>;
 export interface NewRoomInput {
   /** UID of the owner, already signed in. */
   readonly ownerId: string;
+  /** The owner's name: their player's name in a pair game, the teacher's in a lesson. */
   readonly ownerNickname: string;
+  /** What the room is for; `pair` unless given. */
+  readonly mode?: RoomMode;
   readonly layout: CrosswordLayout;
   /** Creation moment; `expiresAt` is derived from it. */
   readonly createdAt: Date;
 }
+
+/**
+ * What this room is for.
+ *
+ * Every read of the mode goes through here, because a room written before
+ * lessons existed has no `mode` field and is a pair game. The security rules
+ * read it the same way (`modeOf` in `firestore.rules`).
+ *
+ * @param room - The room document, or anything shaped like its mode field
+ * @returns `lesson` for a lesson, `pair` for everything else
+ *
+ * @example
+ * roomModeOf({}); // 'pair'
+ */
+export const roomModeOf = (room: { readonly mode?: RoomMode }): RoomMode => room.mode ?? 'pair';
+
+/**
+ * Whether this person is the teacher of this room: a lesson, and the one who
+ * made it.
+ *
+ * Asked of the room and a UID, never of a role the screen was given, because
+ * the teacher is no entry in `players` and nothing else in the document names
+ * them: the UID is `ownerId`, and what makes the owner a teacher is the mode.
+ *
+ * @param room - The room document, or anything shaped like its mode and owner
+ * @param playerId - Firebase Auth UID of the person asking
+ * @returns `true` for the teacher of a lesson; `false` for everyone else, the
+ * owner of a pair game included
+ *
+ * @example
+ * isTeacherOf(lesson, lesson.ownerId); // true
+ */
+export const isTeacherOf = (
+  room: { readonly mode?: RoomMode; readonly ownerId: string },
+  playerId: string,
+): boolean => roomModeOf(room) === 'lesson' && room.ownerId === playerId;
 
 /**
  * Id of the word placed at `index` in `layout.placedWords`.
@@ -148,16 +229,19 @@ export const wordIdAt = (index: number): string => `w${index}`;
  * the generator could not place is dropped here, after the owner has been
  * warned about it (user story 17).
  *
- * @param input - Owner, their nickname, the generated layout, and the creation moment
- * @returns The document to write, with every player and word field initialised
+ * @param input - Owner, their nickname, the mode, the generated layout, and the creation moment
+ * @returns The document to write, with every player and word field initialised: the
+ * owner as the first player of a pair game, or as the teacher of a lesson with no player in
  * @throws Error when the layout holds no placed word — such a room is unplayable
  *
  * @example
  * buildRoomDocument({ ownerId: 'uid', ownerNickname: 'Vik', layout, createdAt: new Date() });
+ * buildRoomDocument({ ownerId: 'uid', ownerNickname: 'Carmen', mode: 'lesson', layout, createdAt: new Date() });
  */
 export const buildRoomDocument = ({
   ownerId,
   ownerNickname,
+  mode = 'pair',
   layout,
   createdAt,
 }: NewRoomInput): NewRoomDocument => {
@@ -172,12 +256,25 @@ export const buildRoomDocument = ({
     ]),
   );
 
+  // The owner plays in a pair game and teaches in a lesson. In a lesson they
+  // are kept out of `players`, which stays the two who play, and are recorded
+  // as the teacher instead.
+  const owner =
+    mode === 'lesson'
+      ? { players: {}, teacher: { nickname: ownerNickname, lastSeenAt: createdAt } }
+      : {
+          players: {
+            [ownerId]: { nickname: ownerNickname, joinedAt: createdAt, lastSeenAt: createdAt },
+          },
+        };
+
   return {
     status: 'lobby',
+    mode,
     ownerId,
     layout,
     words,
-    players: { [ownerId]: { nickname: ownerNickname, joinedAt: createdAt, lastSeenAt: createdAt } },
+    ...owner,
     createdAt,
     expiresAt: new Date(createdAt.getTime() + ROOM_LIFETIME_MS),
   };
@@ -290,6 +387,24 @@ export const buildPresenceUpdate = (playerId: string, now: Date): RoomUpdate =>
   buildRoomUpdate({ [`players.${playerId}.lastSeenAt`]: now }, now);
 
 /**
+ * The update the teacher of a lesson writes to say they are still there.
+ *
+ * The single leaf field `teacher.lastSeenAt`, for the reason
+ * {@link buildPresenceUpdate} writes a leaf: the nickname beside it is not this
+ * write's to touch, and the security rules refuse a write that renames the
+ * teacher. Only the teacher writes it.
+ *
+ * @param now - The moment they were last seen; the room's new expiry follows from it
+ * @returns Field path and value for a single `updateDoc` call
+ *
+ * @example
+ * buildTeacherPresenceUpdate(new Date());
+ * // { 'teacher.lastSeenAt': ..., expiresAt: ... }
+ */
+export const buildTeacherPresenceUpdate = (now: Date): RoomUpdate =>
+  buildRoomUpdate({ 'teacher.lastSeenAt': now }, now);
+
+/**
  * The update that starts a game: the words are dealt out and the room begins.
  *
  * Written as one nested field per word (`words.w0.hiddenFromPlayerId`) rather
@@ -380,6 +495,19 @@ const isPlayer = (value: unknown): boolean =>
   isTimestamp(value.joinedAt) &&
   (value.lastSeenAt === undefined || isTimestamp(value.lastSeenAt));
 
+const isTeacher = (value: unknown): boolean =>
+  isRecord(value) && typeof value.nickname === 'string' && isTimestamp(value.lastSeenAt);
+
+/**
+ * Whether the mode and the teacher agree: a lesson has its teacher, and a pair
+ * game, written with a mode or without one, has none. The security rules hold
+ * the same line, so a document that breaks it was not written by this app.
+ */
+const isModeConsistent = (data: Record<string, unknown>): boolean =>
+  data.mode === 'lesson'
+    ? isTeacher(data.teacher)
+    : (data.mode === undefined || data.mode === 'pair') && data.teacher === undefined;
+
 const isLayout = (value: unknown): boolean =>
   isRecord(value) &&
   typeof value.rows === 'number' &&
@@ -419,6 +547,7 @@ export const parseRoomDocument = (data: unknown): RoomDocument | null => {
     isRecord(data.words) &&
     isRecord(data.players) &&
     Object.values(data.players).every(isPlayer) &&
+    isModeConsistent(data) &&
     isTimestamp(data.createdAt) &&
     isTimestamp(data.expiresAt);
 

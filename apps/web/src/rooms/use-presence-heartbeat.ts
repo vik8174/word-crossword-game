@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { awaitsPresenceFrom, PRESENCE_PERIOD_MS } from './presence';
+import { isTeacherOf } from './room-document';
 import { markPresence } from './room-service';
 import type { RoomConnection } from './use-room-connection';
 
@@ -10,7 +11,8 @@ import type { RoomConnection } from './use-room-connection';
  * The mark is what the other players read to tell somebody thinking from
  * somebody gone (see `presence.ts`), and it says nothing unless it keeps being
  * rewritten — so this is a timer, running for as long as the screen is on a
- * room that is waiting or being played and this client is one of its players.
+ * room that is waiting or being played and this client is one of its players,
+ * or the teacher of its lesson, whose mark is their own field of the room.
  * A visitor still looking at the nickname form writes nothing: they are not in
  * the game, and nobody is waiting on them.
  *
@@ -29,7 +31,7 @@ import type { RoomConnection } from './use-room-connection';
  * when the write that was pending finally lands. A refused write ends it for
  * good, by simply not scheduling another.
  *
- * What the effect watches is a `boolean` and two strings, never the room
+ * What the effect watches is two `boolean`s and two strings, never the room
  * document: a new document arrives with every snapshot, and this client's own
  * mark causes one — an effect depending on it would tear its own timer down
  * every time it fired.
@@ -44,6 +46,8 @@ export const usePresenceHeartbeat = (roomId: string, connection: RoomConnection)
   const playerId = connection.status === 'ready' ? connection.playerId : null;
   const isMarking =
     connection.status === 'ready' && awaitsPresenceFrom(connection.room, connection.playerId);
+  const isTeacher =
+    connection.status === 'ready' && isTeacherOf(connection.room, connection.playerId);
 
   useEffect(() => {
     if (!isMarking || playerId === null) {
@@ -54,7 +58,7 @@ export const usePresenceHeartbeat = (roomId: string, connection: RoomConnection)
     let isStopped = false;
 
     const mark = () => {
-      markPresence({ roomId, playerId })
+      markPresence({ roomId, playerId, isTeacher })
         .then(() => {
           // A mark can land after the screen has gone — a player leaving a room
           // has one in flight more often than not — and scheduling from that
@@ -80,5 +84,5 @@ export const usePresenceHeartbeat = (roomId: string, connection: RoomConnection)
       isStopped = true;
       clearTimeout(timer);
     };
-  }, [isMarking, playerId, roomId]);
+  }, [isMarking, isTeacher, playerId, roomId]);
 };

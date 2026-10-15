@@ -6,10 +6,12 @@ import {
   awayDurationsIn,
   hasLeftTheSeat,
   isAway,
+  isTeacherAway,
   SEAT_FREE_AFTER_MS,
   type SeenPlayer,
   silenceLabel,
   silenceOf,
+  teacherSilenceOf,
 } from './presence';
 import type { MillisecondTimestamp, ReadableRoom } from './room-access';
 
@@ -131,5 +133,72 @@ describe('awaitsPresenceFrom', () => {
     // as long as the last tab stays open.
     expect(awaitsPresenceFrom(roomWith({ bob: player }, 'completed'), 'bob')).toBe(false);
     expect(awaitsPresenceFrom(roomWith({ bob: player }, 'closed'), 'bob')).toBe(false);
+  });
+});
+
+/** A lesson: its teacher's mark is their own field, outside `players`. */
+const lessonWith = (
+  teacherSilenceMs: number,
+  students: Record<string, SeenPlayer> = {},
+  status: ReadableRoom['status'] = 'lobby',
+): ReadableRoom => ({
+  ...roomWith(students, status),
+  mode: 'lesson',
+  teacher: { nickname: 'Carmen', lastSeenAt: at(NOW.getTime() - teacherSilenceMs) },
+});
+
+describe('the teacher of a lesson', () => {
+  it('is measured from their own mark, which is in the teacher field and not in players', () => {
+    expect(
+      teacherSilenceOf({ nickname: 'Carmen', lastSeenAt: at(NOW.getTime() - 7000) }, NOW),
+    ).toBe(7000);
+  });
+
+  it('is away by the threshold a player is away by, and not before', () => {
+    const teacher = (silenceMs: number) => ({
+      nickname: 'Carmen',
+      lastSeenAt: at(NOW.getTime() - silenceMs),
+    });
+
+    expect(isTeacherAway(teacher(AWAY_AFTER_MS - SECOND_MS), NOW)).toBe(false);
+    expect(isTeacherAway(teacher(AWAY_AFTER_MS + SECOND_MS), NOW)).toBe(true);
+    expect(isTeacherAway(teacher(AWAY_AFTER_MS), NOW)).toBe(isAway(silentFor(AWAY_AFTER_MS), NOW));
+  });
+
+  it('is listed as away under the owner’s UID, beside any student who is away', () => {
+    const room = lessonWith(125 * SECOND_MS, { a: silentFor(180 * SECOND_MS), b: silentFor(0) });
+
+    expect(awayDurationsIn(room, NOW)).toEqual({ 'owner-uid': '2 min', a: '3 min' });
+  });
+
+  it('is not listed while their mark is fresh, with 0 students or with 2', () => {
+    expect(awayDurationsIn(lessonWith(5 * SECOND_MS), NOW)).toEqual({});
+    expect(
+      awayDurationsIn(lessonWith(5 * SECOND_MS, { a: silentFor(0), b: silentFor(0) }), NOW),
+    ).toEqual({});
+  });
+
+  it('is not a player in a pair game, where the owner is read from players alone', () => {
+    const pair = roomWith({ 'owner-uid': silentFor(125 * SECOND_MS) });
+
+    expect(awayDurationsIn(pair, NOW)).toEqual({ 'owner-uid': '2 min' });
+  });
+});
+
+describe('awaitsPresenceFrom, for a lesson', () => {
+  it.each(['lobby', 'playing'] as const)(
+    'waits on its teacher while it is %s, though they are in no entry of players',
+    (status) => {
+      expect(awaitsPresenceFrom(lessonWith(0, {}, status), 'owner-uid')).toBe(true);
+    },
+  );
+
+  it.each(['completed', 'closed'] as const)('stops waiting on them once it is %s', (status) => {
+    expect(awaitsPresenceFrom(lessonWith(0, {}, status), 'owner-uid')).toBe(false);
+  });
+
+  it('waits on nobody else who is not a student: a visitor has no mark to write', () => {
+    expect(awaitsPresenceFrom(lessonWith(0, { a: silentFor(0) }), 'visitor')).toBe(false);
+    expect(awaitsPresenceFrom(lessonWith(0, { a: silentFor(0) }), 'a')).toBe(true);
   });
 });

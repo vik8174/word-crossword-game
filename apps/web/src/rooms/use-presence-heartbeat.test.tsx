@@ -176,3 +176,52 @@ describe('usePresenceHeartbeat', () => {
     expect(marks()).toEqual([]);
   });
 });
+
+describe('usePresenceHeartbeat, for a lesson', () => {
+  const lesson = (status: RoomDocument['status'], students: readonly string[]): RoomDocument =>
+    ({
+      ...roomWith(status, students),
+      mode: 'lesson',
+      teacher: { nickname: 'Carmen', lastSeenAt: timestamp(0) },
+    }) as unknown as RoomDocument;
+
+  const asTeacher = (room: RoomDocument): RoomConnection => ({
+    status: 'ready',
+    playerId: 'owner-uid',
+    room,
+  });
+
+  it.each([[[]], [['a']], [['a', 'b']]] as const)(
+    'marks the teacher in their own field with %j in the lobby, which is where the mark lives',
+    (students) => {
+      beat(asTeacher(lesson('lobby', students)));
+
+      expect(marks()).toEqual([['teacher.lastSeenAt', 'expiresAt']]);
+    },
+  );
+
+  it('goes on marking the teacher while the lesson is being played', async () => {
+    beat(asTeacher(lesson('playing', ['a', 'b'])));
+
+    await act(() => vi.advanceTimersByTimeAsync(PRESENCE_PERIOD_MS));
+
+    expect(marks()).toEqual([
+      ['teacher.lastSeenAt', 'expiresAt'],
+      ['teacher.lastSeenAt', 'expiresAt'],
+    ]);
+  });
+
+  it('marks a student in players, as ever, and never the teacher’s field', () => {
+    beat({ status: 'ready', playerId: 'a', room: lesson('lobby', ['a']) });
+
+    expect(marks()).toEqual([['players.a.lastSeenAt', 'expiresAt']]);
+  });
+
+  it('stops marking the teacher once the lesson has ended', async () => {
+    beat(asTeacher(lesson('closed', ['a', 'b'])));
+
+    await act(() => vi.advanceTimersByTimeAsync(3 * PRESENCE_PERIOD_MS));
+
+    expect(marks()).toEqual([]);
+  });
+});

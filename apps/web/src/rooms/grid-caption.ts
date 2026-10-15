@@ -84,13 +84,23 @@ export const wordsLabel = (wordCount: number): string =>
  *
  * With one word nobody can share it, so the sentence stops before the half.
  *
+ * In a lesson it speaks of the players, not of "you": the teacher and the
+ * students read the same line, and only two of them play.
+ *
  * @param wordCount - How many words made it into the grid
+ * @param isLesson - Whether the room is a lesson
  * @returns The caption for the drawing
  *
  * @example
  * lobbyCaption(6); // 'The crossword: 6 words, half of them for each of you.'
+ * lobbyCaption(6, true); // 'The crossword: 6 words, half of them for each player.'
  */
-export const lobbyCaption = (wordCount: number): string =>
-  wordCount === 1
-    ? 'The crossword: 1 word.'
-    : `The crossword: ${wordCount} words, half of them for each of you.`;
+export const lobbyCaption = (wordCount: number, isLesson = false): string => {
+  if (wordCount === 1) {
+    return 'The crossword: 1 word.';
+  }
+
+  const eachOf = isLesson ? 'player' : 'of you';
+
+  return `The crossword: ${wordCount} words, half of them for each ${eachOf}.`;
+};
