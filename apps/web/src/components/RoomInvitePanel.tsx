@@ -79,10 +79,10 @@ export const RoomInvitePanel = ({ roomId, origin }: RoomInvitePanelProps) => {
         Send this link to the other players — they join with a nickname, no sign-up.
       </Box>
 
-      {/* Wrapped rather than scrolled sideways inside its own box: the panel
-          stands in a zone beside the board rather than across the page (issue
-          #101), and a link shown as its first thirty characters is not the link
-          shown in full that the sentence above promises. */}
+      {/* One line that clips, as the template draws it (issue #225, which
+          supersedes #199's growing field): the link is still selectable, so a
+          browser that refuses the clipboard leaves it to be copied by hand
+          (issue #101). */}
       <ReadOnlyField label="Room link" value={url} />
 
       <Box
