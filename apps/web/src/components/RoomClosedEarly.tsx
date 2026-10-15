@@ -9,6 +9,7 @@ import { isTeacherOf, type RoomDocument, roomModeOf } from '../rooms/room-docume
 import { NEW_LESSON_PATH } from '../rooms/room-link';
 import { gridViewFor, wordViewFor } from '../rooms/word-visibility';
 import { useFrameSlot } from './frame-slot';
+import { gateStackSx } from './gate-panel-styles';
 import { LessonSummary } from './LessonSummary';
 import { LobbyPlayers } from './LobbyPlayers';
 import { Message } from './Message';
@@ -151,7 +152,7 @@ export const RoomClosedEarly = ({ room, viewerId }: RoomClosedEarlyProps) => {
       isTeachers={isTeacher}
       left={
         isTeacher ? (
-          <>
+          <Box sx={gateStackSx}>
             <LessonSummary room={room} viewerId={viewerId} />
 
             <Box>
@@ -159,7 +160,7 @@ export const RoomClosedEarly = ({ room, viewerId }: RoomClosedEarlyProps) => {
                 Start a new lesson
               </PillButton>
             </Box>
-          </>
+          </Box>
         ) : (
           <>
             <Message
