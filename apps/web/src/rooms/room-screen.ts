@@ -69,6 +69,8 @@ export type RoomScreen =
   | {
       readonly kind: 'join';
       readonly playerId: string;
+      /** The room owner's nickname, for the sentence that says who invited this visitor. */
+      readonly ownerNickname: string;
       /**
        * UID whose seat this visitor would be taking, when the room is full and
        * one of its players has given theirs up. `null` when a seat was simply
@@ -106,6 +108,19 @@ const screenInsideRoom = (room: RoomDocument, viewerId: string): RoomScreen => {
       return { kind: 'closed-early', room, viewerId };
   }
 };
+
+/** What the invitation calls an owner whose entry is missing from a room that should hold it. */
+const UNKNOWN_OWNER = 'Somebody';
+
+/**
+ * The name the owner went by in their own room.
+ *
+ * The owner's seat is never released (`room-access.ts`), so the entry is always
+ * there in a room this app wrote; a document that lacks it is not one this app
+ * made, and the invitation says "Somebody" rather than nothing.
+ */
+const ownerNicknameOf = (room: RoomDocument): string =>
+  room.players[room.ownerId]?.nickname ?? UNKNOWN_OWNER;
 
 /**
  * The screen this connection is showing this viewer.
@@ -149,7 +164,12 @@ export const roomScreenFor = (connection: RoomConnection, now: Date): RoomScreen
     // Worked out here rather than by the form, so what the join writes is
     // decided from the same room, at the same moment, as the decision to offer
     // the form at all.
-    return { kind: 'join', playerId, seatToRelease: abandonedSeatIn(room, now) };
+    return {
+      kind: 'join',
+      playerId,
+      ownerNickname: ownerNicknameOf(room),
+      seatToRelease: abandonedSeatIn(room, now),
+    };
   }
 
   // Every refusal `roomAccessFor` can answer with is a reason the notice has
@@ -179,7 +199,7 @@ export const roomScreenFor = (connection: RoomConnection, now: Date): RoomScreen
  * @returns The screen to render
  *
  * @example
- * screenAfterRefusedJoin({ kind: 'join', playerId, seatToRelease: null }, true);
+ * screenAfterRefusedJoin({ kind: 'join', playerId, ownerNickname, seatToRelease: null }, true);
  * // { kind: 'unavailable', reason: 'refused' }
  */
 export const screenAfterRefusedJoin = (screen: RoomScreen, wasRefused: boolean): RoomScreen =>

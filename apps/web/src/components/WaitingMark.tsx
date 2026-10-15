@@ -1,14 +1,8 @@
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 
-import {
-  coreSx,
-  ringSx,
-  SUN_OUT_DELAYS_MS,
-  WAIT_RING_CLASS,
-  waitingLineSx,
-  waitingRingSx,
-} from './waiting-mark-styles';
+import { dotSx } from './button-styles';
+import { gateWaitLineSx } from './gate-panel-styles';
 
 interface WaitingMarkProps {
   /** What is being waited for, in a sentence. */
@@ -16,16 +10,16 @@ interface WaitingMarkProps {
 }
 
 /**
- * The template's "wait" mark and its sentence: three rings growing out of a
- * small sun (`.sun-wait` in `design/templates/state-tree.html`), replacing
- * MUI's `CircularProgress` on the `connecting` screen (issue #198).
+ * The template's waiting line: a beating ochre dot and the sentence it waits
+ * with (`.wait-line` in `design/templates/state-tree.html`, lines 256-258),
+ * centred in the column on the `connecting` screen.
  *
  * The one thing on the page that says "something is happening", so it announces
- * itself as a `status` for a reader who cannot see it, and the rings are
- * `aria-hidden`: they are the picture of the sentence beside them and add no
- * word to it. `CircularProgress` is still what `PageLoading` draws while a
- * route's chunk arrives, and `theme.ts` still names it out of the
- * reduced-motion freeze; the rings are named out beside it.
+ * itself as a `status` for a reader who cannot see it, and the dot is
+ * `aria-hidden`. The dot is the button's own, a little larger (12px), and under
+ * `prefers-reduced-motion: reduce` it does not beat: it says "busy" by being
+ * there. `CircularProgress` is still what `PageLoading` draws while a route's
+ * chunk arrives, and `theme.ts` still names it out of the reduced-motion freeze.
  *
  * @param props.children - What is being waited for
  *
@@ -33,13 +27,8 @@ interface WaitingMarkProps {
  * <WaitingMark>Connecting to the game…</WaitingMark>
  */
 export const WaitingMark = ({ children }: WaitingMarkProps) => (
-  <Box role="status" sx={waitingLineSx}>
-    <Box aria-hidden component="span" sx={waitingRingSx}>
-      {SUN_OUT_DELAYS_MS.map((delay) => (
-        <Box key={delay} component="span" className={WAIT_RING_CLASS} sx={ringSx(delay)} />
-      ))}
-      <Box component="span" sx={coreSx} />
-    </Box>
+  <Box role="status" sx={gateWaitLineSx}>
+    <Box aria-hidden component="span" sx={dotSx(12)} />
     {children}
   </Box>
 );

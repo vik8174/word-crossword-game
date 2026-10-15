@@ -356,6 +356,14 @@ describe('RoomPage', () => {
       expect(onSnapshot).toHaveBeenCalledOnce();
     });
 
+    it('says who invited the newcomer, by the nickname the owner chose', async () => {
+      await openRoom();
+
+      expect(
+        screen.getByText('Vik has invited you to a game. Pick a name they will know you by.'),
+      ).toBeInTheDocument();
+    });
+
     it('asks a newcomer for a nickname', async () => {
       await openRoom();
 
@@ -403,17 +411,22 @@ describe('RoomPage', () => {
       expect(screen.queryByRole('banner')).not.toBeInTheDocument();
     });
 
-    // This line has no zone of its own to stand in (issue #136). It stands on
-    // the panel `join` and every `unavailable` stand on too, a tile, all three
-    // drawn from the template's one `.middle-column` (issue #198).
-    it('stands the connecting line on the panel every screen at the doors stands on', async () => {
+    // This line has no zone of its own to stand in (issue #136). It stands in
+    // the column every screen at the doors stands in, under the line being
+    // thrown across the street to an empty balcony (issue #226).
+    it('draws the line being thrown across the street above the connecting line', async () => {
       renderRoomPage();
 
       await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
 
-      expect(screen.getByRole('status').parentElement).toHaveStyle({
-        backgroundColor: theme.palette.street.tile,
+      const picture = screen.getByRole('img', {
+        name: 'A line being thrown across the street to an empty balcony',
       });
+
+      expect(
+        picture.compareDocumentPosition(screen.getByRole('status')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
     });
 
     it('shows no room frame either for a link that leads nowhere', async () => {

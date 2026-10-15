@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box';
 import type { ReactNode } from 'react';
 
-import { inRem } from '../scale';
+import { inRem, TEXT_FONT_FAMILY } from '../scale';
 import { STREET } from '../street';
 
 /** The four kinds of thing this app ever has to say. */
@@ -41,6 +41,12 @@ interface MessageProps {
    * (`GameCompletedPanel`, carried over from its `AlertTitle`).
    */
   readonly headingId?: string;
+  /**
+   * Makes the heading the page's own, at this level, for the one screen whose
+   * only heading it is (the not-found page). Drawn the same either way; a
+   * `span` unless given.
+   */
+  readonly headingLevel?: 'h1' | 'h2';
   /** The sentence the message says. */
   readonly children: ReactNode;
   /** Further detail as a list, e.g. the words a list problem names or drops. */
@@ -68,6 +74,7 @@ interface MessageProps {
  *
  * @param props.kind - Which of the four kinds this is
  * @param props.heading - The short line above the sentence
+ * @param props.headingLevel - Makes the heading an `h1` or `h2`; a `span` otherwise
  * @param props.children - The sentence itself
  * @param props.items - Further detail as a list, if there is any
  * @param props.role - `alert` unless the caller is `GameCompletedPanel`
@@ -81,6 +88,7 @@ export const Message = ({
   kind,
   heading,
   headingId,
+  headingLevel,
   children,
   items,
   role = 'alert',
@@ -123,13 +131,15 @@ export const Message = ({
 
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Box
-          component="span"
+          component={headingLevel ?? 'span'}
           id={headingId}
           sx={{
             display: 'block',
+            fontFamily: TEXT_FONT_FAMILY,
+            margin: `0 0 ${inRem(2)}`,
             fontWeight: 700,
             fontSize: inRem(19),
-            marginBottom: inRem(2),
+            lineHeight: 'inherit',
             color: HEAD[kind],
           }}
         >

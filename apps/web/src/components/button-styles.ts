@@ -123,14 +123,17 @@ export const buttonSx = (state: ButtonStyleState): SxProps<Theme> => {
 /**
  * The lit dot a loading control shows before its label (`.btn .dot`): ochre,
  * ringed in ink, beating with `pulse`. A control that is not loading has no
- * dot, so `PillButton` does not render one.
+ * dot, so `PillButton` does not render one. The waiting line on `connecting`
+ * draws the same dot at 12px (`.wait-line .dot`, template line 257).
  *
- * Under reduced motion it does not beat (template line 95).
+ * Under reduced motion it does not beat (template lines 95 and 258).
+ *
+ * @param size - The dot's width and height in pixels; the button's 10 unless given
  */
-export const dotSx = (): SxProps<Theme> => ({
+export const dotSx = (size = 10): SxProps<Theme> => ({
   flex: 'none',
-  width: inRem(10),
-  height: inRem(10),
+  width: inRem(size),
+  height: inRem(size),
   borderRadius: '50%',
   backgroundColor: STREET.ochre,
   boxShadow: `0 0 0 ${RING} ${STREET.ink}`,

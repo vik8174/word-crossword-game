@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 
+import { JoinRoomForm } from './components/JoinRoomForm';
 import { RoomShell } from './components/RoomShell';
 import { stepTitleSx } from './components/surface-styles';
 import { CreateRoomPage } from './pages/CreateRoomPage';
@@ -63,14 +64,14 @@ describe('the name of a step', () => {
     render(
       <ThemeProvider theme={theme}>
         <MemoryRouter>
-          <RoomShell title="Join the game" solo>
+          <RoomShell title="Lobby">
             <p>What is there</p>
           </RoomShell>
         </MemoryRouter>
       </ThemeProvider>,
     );
 
-    const heading = screen.getByRole('heading', { level: 1, name: 'Join the game' });
+    const heading = screen.getByRole('heading', { level: 1, name: 'Lobby' });
 
     expectAStepTitle(heading);
     // Its heading level is the page's, so a reader moving by headings finds it.
@@ -95,7 +96,20 @@ describe('the name of a step', () => {
     expect(heading.tagName).toBe('H1');
   });
 
-  it('is set by the same recipe at both sites, which draws no rule and no shadow', () => {
+  it('is set as the template draws it where the door into a room puts it', () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <JoinRoomForm ownerNickname="Vik" onJoin={() => undefined} isJoining={false} />
+      </ThemeProvider>,
+    );
+
+    const heading = screen.getByRole('heading', { level: 1, name: 'Join the game' });
+
+    expectAStepTitle(heading, '0px');
+    expect(heading.tagName).toBe('H1');
+  });
+
+  it('is set by the same recipe at all three sites, which draws no rule and no shadow', () => {
     const title = stepTitleSx();
 
     expect(title.color).toBe(theme.palette.street.ink);

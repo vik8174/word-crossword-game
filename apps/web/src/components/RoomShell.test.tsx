@@ -93,44 +93,6 @@ describe('RoomShell', () => {
     expect(screen.getByRole('main')).toBeVisible();
   });
 
-  describe('standing one thing alone in the middle', () => {
-    it('draws no zone, and puts what it is given straight in the main', () => {
-      render(
-        <RoomShell title="Join the game" solo>
-          <p>the one thing</p>
-        </RoomShell>,
-      );
-
-      expect(screen.getByRole('main').children).toHaveLength(1);
-      expect(screen.getByRole('main').textContent).toBe('the one thing');
-    });
-
-    it('centres it across and down, as tall as it is on a phone', () => {
-      render(
-        <RoomShell solo>
-          <p>the one thing</p>
-        </RoomShell>,
-      );
-
-      expect(screen.getByRole('main')).toHaveStyle({
-        display: 'grid',
-        placeItems: 'center',
-        alignContent: 'center',
-        flex: 'none',
-      });
-    });
-
-    it('still names the page, once, when it has no title of its own', () => {
-      render(
-        <RoomShell solo>
-          <p>the one thing</p>
-        </RoomShell>,
-      );
-
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Game room');
-    });
-  });
-
   it('stands the frame the way the template draws it, on a phone: 20 above, 24 below, 16 apart', () => {
     render(<RoomShell>the board</RoomShell>);
 
