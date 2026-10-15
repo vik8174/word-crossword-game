@@ -339,6 +339,36 @@ describe('the mode of a room', () => {
     );
   });
 
+  it('cannot turn a pair game into a lesson, even when the same write brings the teacher along', async () => {
+    await testEnv.clearFirestore();
+    await seed(pairOwnedBy(TEACHER));
+
+    // Every other rule is satisfied by this write: the room reads as a lesson
+    // with its teacher, and the owner stays in players as a pair game's rules
+    // want them to. Only the rule that pins the mode refuses it.
+    await assertFails(
+      updateDoc(doc(as(TEACHER), ROOM_PATH), {
+        mode: 'lesson',
+        teacher: { nickname: 'Vik', lastSeenAt: new Date() },
+        expiresAt: new Date(Date.now() + 24 * HOUR_MS),
+      }),
+    );
+  });
+
+  it('cannot turn a lesson into a pair game, even when the same write takes the teacher away', async () => {
+    await testEnv.clearFirestore();
+    await seed(lessonWith([]));
+
+    await assertFails(
+      updateDoc(doc(as(TEACHER), ROOM_PATH), {
+        mode: 'pair',
+        teacher: deleteField(),
+        [`players.${TEACHER}`]: { nickname: 'Carmen', joinedAt: new Date() },
+        expiresAt: new Date(Date.now() + 24 * HOUR_MS),
+      }),
+    );
+  });
+
   it('cannot be removed from a lesson', async () => {
     await testEnv.clearFirestore();
     await seed(lessonWith([]));
@@ -371,6 +401,50 @@ describe('the mode of a room', () => {
       }),
     );
   });
+});
+
+/**
+ * The write that only `keepsMode` refuses: a lesson in all but name. It names
+ * the teacher in the same write, so the room reads as a lesson to every other
+ * rule, and it leaves the owner inside `players`, which is where a pair game's
+ * rules want them. Nothing else stands between a client and the change, on a
+ * room that states `mode: 'pair'` and on one written before lessons that has no
+ * `mode` at all.
+ */
+describe('turning a pair game into a lesson with the teacher named in the same write', () => {
+  /** Both players of a pair game are in, so the guest is somebody the room holds. */
+  const bothPlayers = {
+    [TEACHER]: { nickname: 'Vik', joinedAt: Timestamp.now() },
+    [STUDENT_A]: { nickname: 'Bob', joinedAt: Timestamp.now() },
+  };
+
+  const rooms = {
+    'a pair game that states its mode': () => pairOwnedBy(TEACHER, { players: bothPlayers }),
+    'a pair game written before lessons, with no mode field': () => {
+      const { mode: _mode, ...room } = pairOwnedBy(TEACHER, { players: bothPlayers });
+
+      return room;
+    },
+  };
+
+  const writers = { 'the owner': TEACHER, 'the guest': STUDENT_A };
+
+  for (const [roomName, room] of Object.entries(rooms)) {
+    for (const [writerName, uid] of Object.entries(writers)) {
+      it(`is refused to ${writerName}, in ${roomName}`, async () => {
+        await testEnv.clearFirestore();
+        await seed(room());
+
+        await assertFails(
+          updateDoc(doc(as(uid), ROOM_PATH), {
+            mode: 'lesson',
+            teacher: { nickname: 'Vik', lastSeenAt: new Date() },
+            expiresAt: new Date(Date.now() + 24 * HOUR_MS),
+          }),
+        );
+      });
+    }
+  }
 });
 
 describe('students joining a lesson', () => {
