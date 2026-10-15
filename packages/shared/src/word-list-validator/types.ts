@@ -21,7 +21,9 @@ export type WordListErrorCode =
   | 'too-many-words'
   | 'word-too-short'
   | 'word-too-long'
+  | 'word-has-digit'
   | 'word-not-latin'
+  | 'word-has-symbol'
   | 'duplicate-word';
 
 /** A single problem found in the word list, ready to be shown to the owner. */
@@ -40,7 +42,7 @@ export interface WordListError {
  * word count while the owner is still typing.
  */
 export interface WordListValidation {
-  /** Words as typed (whitespace trimmed, letter case preserved), in input order. */
+  /** Words as typed (whitespace trimmed, composed to NFC, letter case preserved), in input order. */
   readonly words: readonly string[];
   readonly errors: readonly WordListError[];
   /** `true` only when `errors` is empty — the list can start a game as is. */

@@ -1,4 +1,4 @@
-import type { GridPosition, WordOrientation } from 'shared';
+import { type GridPosition, gridLettersOf, type WordOrientation } from 'shared';
 
 import {
   cellKey,
@@ -103,11 +103,27 @@ export const sourceOf = (content: GridCellContent, isOwn: boolean): CellSource =
   return isOwn ? 'own' : 'blank';
 };
 
-/** A single letter, as it is drawn in the grid — anything else is not typing. */
+/**
+ * A single letter, as it is drawn in the grid — anything else is not typing.
+ *
+ * What a square's input holds can be more than the one letter just typed: the
+ * letter that was in it, a precomposed `é`, or an `e` and an accent that arrived
+ * as two characters. So the value is composed to NFC first, and the letter is
+ * the last one of it. It is drawn as the grid draws every letter
+ * ({@link gridLettersOf}): upper case, `é` as `É`, `ß` as `ẞ`. A letter that
+ * would take more than one square (`ŉ`, a ligature) is not typing either.
+ *
+ * @param value - What the square's input holds
+ * @returns The letter for the square, or `''` when the value holds none
+ *
+ * @example
+ * letterTyped('e\u0301'); // 'É'
+ * letterTyped('ß'); // 'ẞ'
+ */
 export const letterTyped = (value: string): string => {
-  const last = value.slice(-1).toUpperCase();
+  const letter = gridLettersOf([...value.normalize('NFC')].at(-1) ?? '');
 
-  return /^\p{L}$/u.test(last) ? last : '';
+  return /^\p{L}$/u.test(letter) ? letter : '';
 };
 
 /** The words this player still has to answer — solved ones are nobody's input. */

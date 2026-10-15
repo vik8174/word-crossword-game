@@ -42,4 +42,51 @@ describe('checkGuess', () => {
     expect(checkGuess('', '')).toBe(false);
     expect(checkGuess('bread', '   ')).toBe(false);
   });
+
+  describe('accents and the letters that have no accent-free form', () => {
+    it('answers café however the guess is accented or capitalised', () => {
+      for (const guess of ['cafe', 'CAFÉ', 'café', 'Cafe', 'cafe\u0301', 'CAFE\u0301']) {
+        expect(checkGuess(guess, 'café'), guess).toBe(true);
+      }
+    });
+
+    it('answers a word stored without accents by a guess that has them', () => {
+      expect(checkGuess('café', 'cafe')).toBe(true);
+    });
+
+    it('answers a word stored decomposed by the same word composed', () => {
+      expect(checkGuess('CAFÉ', 'cafe\u0301')).toBe(true);
+    });
+
+    it('answers kapı with kapi, because the board draws the dotless ı as I', () => {
+      expect(checkGuess('kapi', 'kapı')).toBe(true);
+      expect(checkGuess('KAPI', 'kapı')).toBe(true);
+      expect(checkGuess('kapı', 'kapi')).toBe(true);
+    });
+
+    it('answers straße by straße and not by strasse', () => {
+      expect(checkGuess('straße', 'straße')).toBe(true);
+      expect(checkGuess('STRAẞE', 'straße')).toBe(true);
+      expect(checkGuess('strasse', 'straße')).toBe(false);
+      expect(checkGuess('STRASSE', 'straße')).toBe(false);
+    });
+
+    it.each([
+      ['ß', 'ss'],
+      ['æ', 'ae'],
+      ['ø', 'o'],
+      ['œ', 'oe'],
+      ['ł', 'l'],
+      ['đ', 'd'],
+      ['þ', 'th'],
+    ])('compares %s as itself, not as %s', (letter, plain) => {
+      expect(checkGuess(`a${letter}b`, `a${letter}b`)).toBe(true);
+      expect(checkGuess(`a${plain}b`, `a${letter}b`)).toBe(false);
+    });
+
+    it('does not answer one accented letter by another', () => {
+      expect(checkGuess('cafè', 'café')).toBe(true);
+      expect(checkGuess('cafó', 'café')).toBe(false);
+    });
+  });
 });

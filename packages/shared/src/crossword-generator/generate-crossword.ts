@@ -1,5 +1,6 @@
 import { generateLayout, type WordResult } from 'crossword-generator-x';
 
+import { gridLettersOf } from '../board-letters';
 import type {
   CrosswordCell,
   CrosswordLayout,
@@ -20,19 +21,17 @@ interface Placement extends InputWord {
   readonly cells: readonly GridPosition[];
 }
 
-/** The letters a word occupies in the grid — the grid is rendered uppercase. */
-const gridLettersOf = (word: string): string => word.toUpperCase();
-
 /** The distinct letters a word occupies in the grid, without their repetitions. */
 const distinctLettersOf = (word: string): ReadonlySet<string> => new Set(gridLettersOf(word));
 
 const cellKey = ({ row, col }: GridPosition): string => `${row},${col}`;
 
 /**
- * Groups the input words by their uppercase spelling, so a layout entry can be
- * traced back to the word the caller passed in (the library uppercases the
- * words it returns). Words that repeat share a bucket and are handed out in
- * input order.
+ * Groups the input words by the letters they occupy in the grid
+ * ({@link gridLettersOf}), so a layout entry can be traced back to the word the
+ * caller passed in. The library is shown those same letters, and what it returns
+ * is exactly them. Words that repeat share a bucket and are handed out in input
+ * order.
  */
 const groupWordsByLetters = (words: readonly string[]): Map<string, InputWord[]> => {
   const byLetters = new Map<string, InputWord[]>();
@@ -240,7 +239,12 @@ const attemptLayout = (
   words: readonly string[],
   crossableWords: readonly string[],
 ): CrosswordLayout => {
-  const layout = generateLayout(crossableWords.map((word) => ({ answer: word })));
+  // The library is given the grid's letters and not the words: it upper-cases
+  // what it is given, and `straße` would come back as `STRASSE`, seven squares
+  // for a word of six. Handed `STRAẞE` it has nothing left to change, and it
+  // crosses two words only where their squares hold the same letter, accents
+  // included.
+  const layout = generateLayout(crossableWords.map((word) => ({ answer: gridLettersOf(word) })));
   const unmatchedWords = groupWordsByLetters(words);
   const placements = layout.result
     .map((entry) => toPlacement(entry, unmatchedWords))
@@ -286,6 +290,12 @@ const attemptLayout = (
  * can warn the owner and still start the game. Word validation (count, length,
  * alphabet, duplicates) belongs to `word-list-validator` and is not repeated
  * here — any word this function cannot place simply comes back unplaced.
+ *
+ * A word occupies one square per letter, as the board draws it
+ * ({@link gridLettersOf}): upper case, `ß` as `ẞ`, accents kept. Two words cross
+ * only where those squares hold the same letter, so `café` and `épée` may cross
+ * at `É`, and `café` and `fee` may not cross `É` with `E`. The word itself is
+ * stored as it was passed in.
  *
  * A word sharing no letter with any other word in the list never reaches the
  * library: it could not have crossed anything, and the library only finds that

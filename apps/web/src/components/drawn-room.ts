@@ -1,3 +1,5 @@
+import { gridLettersOf } from 'shared';
+
 import { type RoomDocument, type RoomStatus, wordIdAt } from '../rooms/room-document';
 
 /**
@@ -69,11 +71,14 @@ export const gameRoom = (
   const cells = new Map<string, { row: number; col: number; letter: string }>();
 
   const placedWords = words.map((drawn) => {
-    const positions = [...drawn.word].map((letter, index) => {
+    // Each square is drawn as the grid draws it (`gridLettersOf`): upper case,
+    // `ß` as `ẞ`, accents kept. Not in the comparison key (`boardFormOf`), which
+    // is for telling words apart and would draw `łódź` as `ŁODZ`.
+    const positions = [...gridLettersOf(drawn.word)].map((letter, index) => {
       const row = drawn.row + (drawn.orientation === 'down' ? index : 0);
       const col = drawn.col + (drawn.orientation === 'across' ? index : 0);
 
-      cells.set(`${row}:${col}`, { row, col, letter: letter.toUpperCase() });
+      cells.set(`${row}:${col}`, { row, col, letter });
 
       return { row, col };
     });
