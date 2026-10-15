@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 
+import { belowFrame } from '../components/frame-height';
 import { PillButton } from '../components/PillButton';
 import { fullHeightBandSx, GATE_BAND_WIDTH } from '../components/surface-styles';
 import { gapAt } from '../scale';
@@ -46,7 +47,7 @@ export const NotFoundPage = () => {
       component="main"
       sx={{
         position: 'relative',
-        minHeight: '100dvh',
+        minHeight: belowFrame('100dvh'),
         px: PAGE_PADDING_STEP,
         py: 7,
       }}

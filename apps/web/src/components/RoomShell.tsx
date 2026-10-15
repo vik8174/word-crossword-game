@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 
 import { inRem } from '../scale';
 import { STREET } from '../street';
+import { belowFrame } from './frame-height';
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES, ZONES_GAP } from './room-layout';
 import { useShiftRole } from './screen-shift';
 import { OUTLINE_WIDTH, stepTitleSx, TILE_SX } from './surface-styles';
@@ -265,14 +266,16 @@ export const RoomShell = ({
         flexDirection: 'column',
         gap: inRem(16),
         padding: FRAME_PADDING.document,
-        // At least a window tall on a phone, on every screen: the frame is one
-        // drawing, and what stands in it is centred in the height it has (issue
-        // #198). It is a floor and not a cap, so a screen taller than the window
-        // still scrolls. From the app shell up `height` fixes it to one window,
-        // which a `min-height` set beside it cannot narrow.
-        minHeight: '100dvh',
+        // At least what the frame's header leaves of a window on a phone, on
+        // every screen: the frame is one drawing, and what stands in it is
+        // centred in the height it has (issue #198). It is a floor and not a
+        // cap, so a screen taller than that still scrolls, and a screen that
+        // grew past a window grows by the header and no more (issue #245). From
+        // the app shell up `height` fixes it to that, which a `min-height` set
+        // beside it cannot narrow.
+        minHeight: belowFrame('100dvh'),
         [APP_SHELL]: {
-          height: '100dvh',
+          height: belowFrame('100dvh'),
           minHeight: 0,
           gap: inRem(14),
           padding: FRAME_PADDING.application,

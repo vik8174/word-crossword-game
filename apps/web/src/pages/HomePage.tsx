@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 
+import { belowFrame } from '../components/frame-height';
 import { PillButton } from '../components/PillButton';
 import { LOGOTYPE_TRACKING, TEXT_FONT_FAMILY, WEIGHTS } from '../scale';
 import { STREET } from '../street';
@@ -15,9 +16,10 @@ import { GATE_ACTION_SX, GATE_LOCKUP_SX, GATE_LOCKUP_TEXT_SIZE, GATE_RULE_SX } f
  * the tagline hang near the top of the window as one block, and the button
  * stands lower down, both placed against percentages of the window
  * (`gate-chrome.ts`). Those percentages are read against this component's own
- * root below, `position: fixed; inset: 0`. They were places on a photograph of
- * a gate until issue #222 removed it; the layout is the old one and goes when
- * this screen is redrawn (#224).
+ * root below, the window less the frame's header: it was `position: fixed;
+ * inset: 0` until issue #245 put the header across the top and this screen
+ * under it. They were places on a photograph of a gate until issue #222 removed
+ * it; the layout is the old one and goes when this screen is redrawn (#224).
  *
  * The name is lettered rather than written: Alegreya Sans at its bold, in
  * capitals held apart by `LOGOTYPE_TRACKING`, in ink — sized off a `vw`-driven
@@ -39,7 +41,7 @@ export const HomePage = () => {
   useScreenReached('home');
 
   return (
-    <Box component="main" sx={{ position: 'fixed', inset: 0 }}>
+    <Box component="main" sx={{ position: 'relative', height: belowFrame('100dvh') }}>
       <Box sx={GATE_LOCKUP_SX}>
         <Typography
           component="h1"

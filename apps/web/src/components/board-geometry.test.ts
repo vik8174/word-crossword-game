@@ -11,6 +11,7 @@ import {
   MIN_CELL_SIZE,
   WIDE_BOARD_HEIGHT_PERCENT,
 } from './board-geometry';
+import { FRAME_HEADER_FALLBACK } from './frame-height';
 
 /**
  * Words a game is played with, in the proportions a real list has: most of them
@@ -114,7 +115,7 @@ interface Screen {
  * The desktop's promise is 0.8, which is what the release undertook and what
  * issue #100 could not reach from inside this module at any setting of the
  * bounds or of the height budget, because the width was not the board's to
- * give. It is a floor with a great deal under it: at 915 by 702 every one of
+ * give. It is a floor with a great deal under it: at 915 by 638 (702 before issue #245's frame) every one of
  * these 45 games fits whole, and it takes the board back to about 660 pixels
  * across before 0.8 is in danger.
  */
@@ -135,9 +136,17 @@ const SCREENS: readonly Screen[] = [
   },
 ];
 
+/**
+ * The box the board is drawn into on a screen: its share of the window less the
+ * frame's header, which both of these screens have, because the room is one
+ * window on both (issue #245). The header is 64px (`frame-height.ts`'s
+ * fallback, and the template's `min-height`), so the budgets are 638 and 625.4
+ * where they were 702 and 689.4. The share is on the board's own box, whose
+ * width the header does not change.
+ */
 const boardBoxOn = ({ windowHeight, boardWidth, heightPercent }: Screen): BoardBox => ({
   width: boardWidth,
-  height: (windowHeight * heightPercent) / 100,
+  height: (windowHeight * heightPercent) / 100 - FRAME_HEADER_FALLBACK,
 });
 
 /** A small deterministic source of randomness — mulberry32. */
@@ -235,7 +244,7 @@ afterEach(() => {
  * change that is not measured is a promise nobody checked.
  *
  * What the margins are, since they decide how much of the above is a warning
- * and how much is a wall. A desktop fits all 45 of these games at 915 by 702,
+ * and how much is a wall. A desktop fits all 45 of these games at 915 by 638 (702 before issue #245's frame, with the same rate),
  * and it goes on fitting all of them down to about 660 pixels across; the
  * promise of 0.8 breaks somewhere under 570. A square that may not go below 22
  * pixels rather than 20 costs neither screen anything at these sizes, which it

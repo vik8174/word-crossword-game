@@ -35,7 +35,9 @@ describe('GATE_LOCKUP_SX', () => {
       width: string;
     };
 
-    expect(narrow.width).toBe('min(92%, calc(100vh * 16 / 9 * 0.52))');
+    expect(narrow.width).toBe(
+      'min(92%, calc(calc(100vh - var(--frame-header-height, 64px)) * 16 / 9 * 0.52))',
+    );
   });
 });
 

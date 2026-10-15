@@ -2,6 +2,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider } from '@mui/material/styles';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { Frame } from './components/Frame';
+import { FrameSlotProvider } from './components/FrameSlotProvider';
 import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PageLoading } from './pages/PageLoading';
@@ -37,7 +39,9 @@ const GATE_PATH = '/';
  * Every route stands on the same ground, `duck`, which `CssBaseline` paints on
  * the body from the theme. Nothing wraps the routes: the garden that used to
  * (a picture, weather and a veil) went in issue #222, and with it the hand-off
- * where each page claimed the picture it stood in front of.
+ * where each page claimed the picture it stood in front of. The frame is not
+ * in here either: it is mounted beside this, once, so it is on screen while a
+ * page is fetched and does not move with the routes (issue #245).
  */
 const RoutedPages = () => {
   usePageView();
@@ -55,7 +59,8 @@ const RoutedPages = () => {
 };
 
 /**
- * App root — wires up the MUI theme and client-side routing.
+ * App root — wires up the MUI theme, client-side routing and the frame: the
+ * header with the name that is across the top of every route (issue #245).
  *
  * `/room/:roomId` is the address invite links point at, and the catch-all
  * behind it is not decoration: links travel through chats that truncate them,
@@ -66,7 +71,10 @@ export const App = () => {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <BrowserRouter>
-        <RoutedPages />
+        <FrameSlotProvider>
+          <Frame />
+          <RoutedPages />
+        </FrameSlotProvider>
       </BrowserRouter>
     </ThemeProvider>
   );

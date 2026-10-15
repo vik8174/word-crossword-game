@@ -12,6 +12,8 @@
  * the board had stopped making.
  */
 
+import { belowFrame } from './frame-height';
+
 /** A rectangle the board is drawn into, in CSS pixels. */
 export interface BoardBox {
   readonly width: number;
@@ -75,9 +77,18 @@ export const BOARD_HEIGHT_PERCENT = 62;
  */
 export const WIDE_BOARD_HEIGHT_PERCENT = 78;
 
-/** The height the board is given as a share of the window, never more than its squares could use. */
-const boardHeightCss = (percent: number): string =>
-  `min(${percent}dvh, calc(var(--board-rows) * ${MAX_CELL_SIZE + CELL_GAP}px - ${CELL_GAP}px))`;
+/**
+ * The height the board is given as a share of the window, never more than its
+ * squares could use.
+ *
+ * Where `belowHeader` is set the share is of the window less the frame's header
+ * (`frame-height.ts`): the room is one window then, and the header is part of it.
+ */
+const boardHeightCss = (percent: number, belowHeader: boolean): string => {
+  const share = belowHeader ? belowFrame(`${percent}dvh`) : `${percent}dvh`;
+
+  return `min(${share}, calc(var(--board-rows) * ${MAX_CELL_SIZE + CELL_GAP}px - ${CELL_GAP}px))`;
+};
 
 /**
  * The height the board is given: its share of the window, and never more than
@@ -90,10 +101,20 @@ const boardHeightCss = (percent: number): string =>
  *
  * Reads `--board-rows`, which {@link boardVariables} writes.
  */
-export const BOARD_HEIGHT_CSS = boardHeightCss(BOARD_HEIGHT_PERCENT);
+export const BOARD_HEIGHT_CSS = boardHeightCss(BOARD_HEIGHT_PERCENT, false);
+
+/**
+ * The same, where the room is one window (from 768 by 600 up) and the frame's
+ * header is part of it: the share is of what the header leaves.
+ *
+ * Not on a phone. There the room is a page that scrolls and the header only adds
+ * to the page, so the board keeps its share of the whole window and no board
+ * scrolls inside a scrolling page (ADR 0029).
+ */
+export const APP_SHELL_BOARD_HEIGHT_CSS = boardHeightCss(BOARD_HEIGHT_PERCENT, true);
 
 /** The same, for the screen where the board has a column of its own. */
-export const WIDE_BOARD_HEIGHT_CSS = boardHeightCss(WIDE_BOARD_HEIGHT_PERCENT);
+export const WIDE_BOARD_HEIGHT_CSS = boardHeightCss(WIDE_BOARD_HEIGHT_PERCENT, true);
 
 /** The custom property the side of a square is published as. */
 const CELL_PROPERTY = '--board-cell';

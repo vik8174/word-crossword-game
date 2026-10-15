@@ -1,5 +1,6 @@
 import type { CSSObject } from '@mui/material/styles';
 
+import { belowFrame } from '../components/frame-height';
 import { STREET } from '../street';
 
 /**
@@ -13,8 +14,8 @@ import { STREET } from '../street';
  * landing page is redrawn on its own issue (#224), and these are replaced there.
  * What is new is only the colour, which is `ink` of the street's palette.
  *
- * Everything here is a percentage of the stage, the fixed, full-viewport box
- * `HomePage.tsx` sizes to the window. The stage is exactly the viewport, and a
+ * Everything here is a percentage of the stage, the box `HomePage.tsx` sizes to
+ * the window less the frame's header. The stage is exactly that, and a
  * percentage of it is a percentage a `getBoundingClientRect` reading can be
  * checked against directly.
  */
@@ -29,13 +30,14 @@ const LOCKUP_TOP = 5;
 const LOCKUP_WIDE_WIDTH = '52%';
 
 /**
- * The block's width on a window narrower than 16:9: `100vh * 16 / 9` is the
- * width of a 16:9 window as tall as this one, and 0.52 of that is the same
+ * The block's width on a window narrower than 16:9: `100vh * 16 / 9`, less the
+ * frame's header (issue #245) because the stage is that much shorter, is the
+ * width of a 16:9 stage as tall as this one, and 0.52 of that is the same
  * share `LOCKUP_WIDE_WIDTH` reads off the window directly at 16:9 and wider.
  * Capped at 92% of the window so the block never touches the edges of a very
  * narrow one.
  */
-const LOCKUP_NARROW_WIDTH = 'min(92%, calc(100vh * 16 / 9 * 0.52))';
+const LOCKUP_NARROW_WIDTH = `min(92%, calc(${belowFrame('100vh')} * 16 / 9 * 0.52))`;
 
 /**
  * The name's and the rule's shared size, both driving off the same `clamp`
