@@ -1,9 +1,7 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { theme } from '../theme';
 import { RoomShell } from './RoomShell';
-import { ShiftRoleContext } from './screen-shift';
 
 describe('RoomShell', () => {
   it('names the room once, whatever the room is doing', () => {
@@ -16,17 +14,13 @@ describe('RoomShell', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Game room');
   });
 
-  it('keeps what the room is doing, and the one thing to do about it, in the header', () => {
-    render(
-      <RoomShell status={<p>The game is on.</p>} action={<button>End the game</button>}>
-        the board
-      </RoomShell>,
-    );
+  it('draws no header of its own: the status and the action are the frame’s', () => {
+    render(<RoomShell>the board</RoomShell>);
 
-    const header = within(screen.getByRole('banner'));
-
-    expect(header.getByText('The game is on.')).toBeInTheDocument();
-    expect(header.getByRole('button', { name: 'End the game' })).toBeInTheDocument();
+    // The header is drawn once by the frame, for every screen
+    // (`useFrameSlot`); a second one here would be a banner inside a page that
+    // already has one.
+    expect(screen.queryByRole('banner')).toBeNull();
   });
 
   it('reads left to right the way the screen does — what is given, the board, what comes back', () => {
@@ -42,30 +36,22 @@ describe('RoomShell', () => {
     expect(screen.getByRole('main').textContent).toBe('yours to explainthe boardyours to guess');
   });
 
-  it('lays a zone with something in it on a tile, outlined inside its own box', () => {
+  it('lays a zone on the ground, with no tile behind it', () => {
     render(
       <RoomShell left={<p>yours to explain</p>}>
         <p>the board</p>
       </RoomShell>,
     );
 
-    const zone = screen.getByText('yours to explain').parentElement as HTMLElement;
-    const style = getComputedStyle(zone);
-
-    expect(style.backgroundColor).toBe('rgb(250, 251, 250)');
-    expect(theme.palette.street.tile).toBe('#FAFBFA');
-    // The 1.5px rule along its top edge is kept as a border, so the content of
-    // the zone stands where it did when the rule was red; the rest of the
-    // outline is drawn inside the box.
-    expect(style.borderTopWidth).toBe('1.5px');
-    expect(style.borderTopColor).toBe('rgb(195, 208, 205)');
-    expect(theme.palette.street.line).toBe('#C3D0CD');
-    expect(style.outline.toLowerCase()).toBe(
-      `1.5px solid ${theme.palette.street.line}`.toLowerCase(),
+    // The drawing sets no surface behind a zone: `.zone` has no rule of its
+    // own, only `.zones` lays the three out.
+    const style = getComputedStyle(
+      screen.getByText('yours to explain').parentElement as HTMLElement,
     );
-    // No blur over a picture, and no shadow under the zone.
-    expect(['', 'none']).toContain(style.backdropFilter);
-    expect(['', 'none']).toContain(style.boxShadow);
+
+    expect(style.backgroundColor).not.toBe('rgb(250, 251, 250)');
+    expect(style.outline).not.toMatch(/solid/);
+    expect(style.borderTopWidth).not.toBe('1.5px');
   });
 
   it('leaves a zone this screen has nothing for empty rather than filling it', () => {
@@ -77,28 +63,12 @@ describe('RoomShell', () => {
     expect(screen.getByRole('main').textContent).toBe('the boardwho is here');
   });
 
-  it('gives up its header to the screen replacing it', () => {
-    render(
-      <ShiftRoleContext value="leaving">
-        <RoomShell status={<p>The game is on.</p>}>the board</RoomShell>
-      </ShiftRoleContext>,
-    );
-
-    // While a shift runs there are two of these on the page, one over the
-    // other. Two headers in the same place would print over each other, and the
-    // header is the part that is meant to stand still — so the screen on its
-    // way out lets the arriving one's stand (issue #93).
-    expect(screen.queryByRole('banner')).toBeNull();
-    expect(screen.getByRole('banner', { hidden: true })).not.toBeVisible();
-    expect(screen.getByRole('main')).toBeVisible();
-  });
-
-  it('stands the frame the way the template draws it, on a phone: 20 above, 24 below, 16 apart', () => {
+  it('stands the frame the way the template draws it, on a phone: 24 above, 40 below, 18 either side', () => {
     render(<RoomShell>the board</RoomShell>);
 
     const frame = screen.getByRole('main').parentElement;
 
-    expect(frame).toHaveStyle({ padding: '20px 16px 24px', gap: '1rem' });
+    expect(frame).toHaveStyle({ padding: '24px 18px 40px' });
   });
 
   it('is at least what the frame’s header leaves of a window on a phone whatever it holds', () => {

@@ -1,26 +1,29 @@
-import Stack from '@mui/material/Stack';
-import Typography from '@mui/material/Typography';
-import { type ReactNode, useState } from 'react';
+import Box from '@mui/material/Box';
+import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
+import { answeredSpellings } from '../rooms/answered-spellings';
 import { openGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
-import { endGameEarly, recordGuess } from '../rooms/room-service';
+import { endGameEarly as endTheGame, recordGuess as recordTheGuess } from '../rooms/room-service';
 import { useGameCompletion } from '../rooms/use-game-completion';
 import { useRoomPresence } from '../rooms/use-room-presence';
-import { type WordLocation, wordViewFor } from '../rooms/word-visibility';
+import { gridViewFor, type WordLocation, wordViewFor } from '../rooms/word-visibility';
 import { logGameEvent } from '../telemetry/analytics';
 import { EndGamePanel } from './EndGamePanel';
+import { useFrameSlot } from './frame-slot';
+import { gateStackSx } from './gate-panel-styles';
+import { LobbyPlayers } from './LobbyPlayers';
 import { Message } from './Message';
 import { OwnPresenceNotice } from './OwnPresenceNotice';
-import { PlayerList } from './PlayerList';
 import { RoomCrossword } from './RoomCrossword';
 import { RoomShell } from './RoomShell';
+import { Street } from './Street';
 import { WordsToExplainPanel } from './WordsToExplainPanel';
 import { WordsToGuessPanel } from './WordsToGuessPanel';
 
-/** Said in a room whose words have been dealt out and is being played. */
-const PLAYING_MESSAGE = 'The game is on.';
+/** What the drawing above the board is called to a reader who cannot see it. */
+const BAND_LABEL = 'The answered words hanging on the line between the two balconies';
 
 /**
  * Said to a player who is in the room but in nobody's assignment — they joined
@@ -34,13 +37,18 @@ const LEFT_OUT_MESSAGE =
 // here means the database refused it outright — most likely an expired room.
 // The heading is `RoomCrossword`'s own — "Your answer was not saved", fixed.
 const GUESS_FAILED_MESSAGE =
-  'It was right, but the others could not be told about it. The room may have expired — reload the page to see where the game stands.';
+  'It was right, but the other player could not be told. The room may have expired. Reload the page to see where the game stands.';
 
 // The same kind of rejection, with one more cause worth naming: the rules
 // refuse to move a room that has already ended, so the other player finishing
-// the crossword in the same second arrives here too.
+// the crossword in the same second arrives here too. Said in the dialog that
+// asked for it.
 const END_FAILED_MESSAGE =
-  'The room may have expired, or it may have ended already — reload the page to see where it stands.';
+  'The game could not be ended. The room may have expired, or it may have ended already. Reload the page to see where it stands.';
+
+/** The room's own line about the game, in the frame's header; the other player's name makes it. */
+const statusFor = (otherName: string | undefined): string =>
+  otherName === undefined ? 'Playing' : `Playing with ${otherName}`;
 
 interface RoomGameProps {
   /** Id of the room, for the answers and the ending this screen writes. */
@@ -49,6 +57,17 @@ interface RoomGameProps {
   readonly room: RoomDocument;
   /** UID of the player looking at it, so they see their own half of the game. */
   readonly viewerId: string;
+  /**
+   * The two writes a game makes. `recordGuess` and `endGameEarly` unless given:
+   * handed in only by the workshop, so that the screens behind a refused write
+   * (`playing/guessfail`, `playing/endfail`) and the one mid-write
+   * (`playing/ending`) can be drawn without a database, which cannot be made to
+   * refuse one (`updateDoc` queues a write that cannot be sent).
+   */
+  readonly writes?: {
+    readonly recordGuess: typeof recordTheGuess;
+    readonly endGameEarly: typeof endTheGame;
+  };
 }
 
 /**
@@ -86,11 +105,17 @@ interface RoomGameProps {
  * @param props.roomId - Id of the room being played
  * @param props.room - The room document
  * @param props.viewerId - Which player is reading, so they see their own words
+ * @param props.writes - The two writes; the workshop's way to draw a refused one
  *
  * @example
  * <RoomGame roomId={roomId} room={room} viewerId={playerId} />
  */
-export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
+export const RoomGame = ({
+  roomId,
+  room,
+  viewerId,
+  writes = { recordGuess: recordTheGuess, endGameEarly: endTheGame },
+}: RoomGameProps) => {
   // Only ever a failure: a right answer needs no confirmation on this screen —
   // it turns into letters in the grid, for everybody at once.
   const [guessError, setGuessError] = useState<string | null>(null);
@@ -106,6 +131,10 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
   const awayDurations = useRoomPresence(room);
   const players = playersInJoinOrder(room);
   const wordView = wordViewFor(room, viewerId);
+  const placedCount = room.layout.placedWords.length;
+  const playerCount = Object.keys(room.players).length;
+  const otherName = players.find((player) => player.id !== viewerId)?.nickname;
+  const isLeftOut = wordView.kind === 'left-out';
 
   // Watches the room that arrives rather than the answer this player sent: the
   // client that answered last is not necessarily the one that can tell the game
@@ -114,7 +143,7 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
 
   const submitGuess = async (wordId: string) => {
     try {
-      await recordGuess({ roomId, playerId: viewerId, wordId });
+      await writes.recordGuess({ roomId, playerId: viewerId, wordId });
       setGuessError(null);
     } catch (error) {
       console.error('Recording the answer failed', error);
@@ -125,7 +154,9 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
     }
   };
 
-  const endGame = async () => {
+  const { endGameEarly } = writes;
+
+  const endGame = useCallback(async () => {
     setIsEnding(true);
     setEndError(null);
 
@@ -136,8 +167,8 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
       // meaning both would measure nothing
       // (`docs/decisions/0027-a-game-a-player-can-end.md`).
       void logGameEvent('game_closed', {
-        word_count: room.layout.placedWords.length,
-        player_count: Object.keys(room.players).length,
+        word_count: placedCount,
+        player_count: playerCount,
       });
     } catch (error) {
       // Not retried on the next snapshot, unlike the ending a full board asks
@@ -147,7 +178,57 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
       setEndError(END_FAILED_MESSAGE);
       setIsEnding(false);
     }
-  };
+  }, [endGameEarly, roomId, placedCount, playerCount]);
+
+  // The header is the frame's: what the room is doing, and the one thing this
+  // player can do about it. A player the deal left out has neither, there being
+  // no game of theirs to end (`playing/leftout`).
+  const status = useMemo(
+    () => (isLeftOut ? undefined : <span role="status">{statusFor(otherName)}</span>),
+    [isLeftOut, otherName],
+  );
+  const action = useMemo(
+    () =>
+      isLeftOut ? undefined : (
+        <EndGamePanel
+          onEnd={() => {
+            void endGame();
+          }}
+          isEnding={isEnding}
+          errorMessage={endError ?? undefined}
+        />
+      ),
+    [isLeftOut, endGame, isEnding, endError],
+  );
+  useFrameSlot({ status, action });
+
+  // The grid as this player may see it, for the spellings of the words they have
+  // guessed and for the cards on the line: the same view the board is drawn from.
+  const gridView = useMemo(() => gridViewFor(room, viewerId), [room, viewerId]);
+  const spellings = useMemo(
+    () => (wordView.kind === 'dealt' ? answeredSpellings(gridView, wordView.toGuess) : undefined),
+    [gridView, wordView],
+  );
+  // Every answered word, in the order the board numbers them: the ones this
+  // player explained and the ones they guessed.
+  const answeredWords = useMemo(() => {
+    if (wordView.kind !== 'dealt') {
+      return [];
+    }
+
+    return [
+      ...wordView.toExplain
+        .filter((word) => word.isSolved)
+        .map((word) => ({ number: word.number, word: word.word })),
+      ...wordView.toGuess.flatMap((word) => {
+        const spelling = spellings?.get(word.id);
+
+        return spelling === undefined ? [] : [{ number: word.number, word: spelling }];
+      }),
+    ]
+      .sort((one, other) => one.number - other.number)
+      .map((entry) => entry.word);
+  }, [wordView, spellings]);
 
   // The two zones the board sits between, and the one thing the deal can leave
   // a player with instead of them. Built as values rather than inline, so it is
@@ -168,10 +249,10 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
   );
 
   const toGuess: ReactNode = (
-    <Stack spacing={4}>
+    <Box sx={gateStackSx}>
       <OwnPresenceNotice awayDuration={awayDurations[viewerId]} />
 
-      <PlayerList
+      <LobbyPlayers
         players={players}
         ownerId={room.ownerId}
         viewerId={viewerId}
@@ -179,37 +260,26 @@ export const RoomGame = ({ roomId, room, viewerId }: RoomGameProps) => {
       />
 
       {wordView.kind === 'dealt' && (
-        <WordsToGuessPanel words={wordView.toGuess} onSelectWord={setWordToReach} />
+        <WordsToGuessPanel
+          words={wordView.toGuess}
+          onSelectWord={setWordToReach}
+          spellings={spellings}
+        />
       )}
-    </Stack>
+    </Box>
   );
 
   return (
-    <RoomShell
-      status={
-        <Typography variant="body1" role="status">
-          {PLAYING_MESSAGE}
-        </Typography>
-      }
-      action={
-        <EndGamePanel
-          onEnd={() => {
-            void endGame();
-          }}
-          isEnding={isEnding}
-          errorMessage={endError ?? undefined}
-        />
-      }
-      left={toExplain}
-      right={toGuess}
-    >
+    <RoomShell left={toExplain} right={toGuess}>
       <RoomCrossword
         room={room}
         viewerId={viewerId}
-        caption={openGridCaption(room.layout.placedWords.length)}
+        caption={openGridCaption(placedCount)}
         onSolved={submitGuess}
         errorMessage={guessError ?? undefined}
         wordToReach={wordToReach}
+        hasVisibleHeading={false}
+        band={<Street crop="band" mood="talk" cards={answeredWords} label={BAND_LABEL} />}
       />
     </RoomShell>
   );

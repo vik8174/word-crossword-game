@@ -1,6 +1,6 @@
 import type { CSSObject } from '@mui/material/styles';
 
-import { inRem } from '../scale';
+import { inRem, TEXT_FONT_FAMILY } from '../scale';
 import { STREET } from '../street';
 import { OUTLINE_WIDTH } from './surface-styles';
 
@@ -15,9 +15,10 @@ import { OUTLINE_WIDTH } from './surface-styles';
  * reader who has made their text larger gets a column that grows with it.
  */
 
-/** `.h3`: the name of a block, 22px bold in a line of 1.3. */
+/** `.h3`: the name of a block, 22px bold in a line of 1.3. The lobby's blocks and the game room's lists are named with it. */
 export const lobbyHeadingSx: CSSObject = {
   margin: 0,
+  fontFamily: TEXT_FONT_FAMILY,
   fontSize: inRem(22),
   fontWeight: 700,
   lineHeight: 1.3,

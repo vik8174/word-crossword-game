@@ -1,11 +1,10 @@
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import type { CSSObject } from '@mui/material/styles';
 
 import type { WordLocation } from '../rooms/word-visibility';
-import { inRem, TEXT_LEVELS } from '../scale';
-import { AnsweredMark } from './AnsweredMark';
+import { inRem, TEXT_FONT_FAMILY, WEIGHTS } from '../scale';
+import { STREET } from '../street';
+import { OUTLINE_WIDTH } from './surface-styles';
 import type { WordEntry } from './word-entry';
 
 interface WordEntryListProps {
@@ -22,41 +21,48 @@ interface WordEntryListProps {
   readonly onSelectWord: (location: WordLocation) => void;
 }
 
-/**
- * The sentence of a row when it is done, struck through wherever it has
- * anything to strike — the reference always, the word too where this half of
- * the game draws one — and in secondary text, `slate`, so a done row is quieter
- * than one still open.
- *
- * Kept apart from {@link AnsweredMark} on purpose: whether a word is done is
- * said by things that do not depend on each other — this styling, the mark's
- * own shape, and the sentence in the row's accessible name — so no single one
- * of them carries the state alone (issue #150).
- */
-const doneSx = {
-  textDecoration: 'line-through',
-  color: 'text.secondary',
-} as const;
+/** A hairline between rows, and under the last: `.word-list li` (template line 181). */
+const RULE = `${OUTLINE_WIDTH}px solid ${STREET.line}`;
 
 /**
- * Width of the reference track: wide enough for the longest number this game
- * ever numbers a word with — two digits, `MAX_WORDS` in `shared` being 20 —
- * plus the longer of the two directions, "across", in the crossword's own
- * face. Fixed rather than measured, so `1 across` and `18 across` occupy the
- * same width and every word in the list starts its own track at the same
- * point (issue #150).
+ * Width of the reference track: the template's own 74px (`.word-list .ref`, line
+ * 183), in `rem`. It holds `18 across`, the longest name a game of 20 words
+ * has, with room to spare, so every word in a list starts at the same point.
  */
-const REFERENCE_TRACK_WIDTH = '5.6em';
+const REFERENCE_TRACK_WIDTH = inRem(74);
+
+/** One row, drawn as `.word-list button` is (template line 182): a row of three tracks. */
+const ROW_SX: CSSObject = {
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: inRem(12),
+  width: '100%',
+  minHeight: inRem(44),
+  padding: `${inRem(10)} ${inRem(2)}`,
+  textAlign: 'left',
+  cursor: 'pointer',
+  background: 'none',
+  border: 0,
+  color: STREET.ink,
+  font: 'inherit',
+  // The font's own, as a button in the drawing has it: the page's 1.5 would make
+  // every row 6px taller than the drawing's 47 (`.word-list button`, line 182).
+  lineHeight: 'normal',
+  '&:focus-visible': { outline: `3px solid ${STREET.ochre}`, outlineOffset: '-3px' },
+};
 
 /**
- * The text size the reference track is measured in: 17px, the `body` level.
- *
- * The track is in `em`, and a button takes its size from the page. The page's
- * own size was 17px until the street's 18px (issue #222), which would have
- * widened the track by 5.6px and moved every word of the list across. Naming
- * the size here keeps the list where it was, whatever the page is set in.
+ * The row's third track, `.state` (line 185): "answered" in slate 15px, and for
+ * a word that is done spruce, bold, behind a tick. The word is the cue and the
+ * tick is a second one, so no row is told from another by its colour alone, and
+ * the row's accessible name says it again out loud (issue #150).
  */
-const TRACK_TEXT_SIZE = inRem(TEXT_LEVELS.body);
+const stateSx = (isSolved: boolean): CSSObject => ({
+  marginLeft: 'auto',
+  fontSize: inRem(15),
+  color: isSolved ? STREET.spruce : STREET.slate,
+  fontWeight: isSolved ? WEIGHTS.bold : WEIGHTS.regular,
+});
 
 /**
  * The list under one of the two headings: every word of that half, each one a
@@ -67,19 +73,12 @@ const TRACK_TEXT_SIZE = inRem(TEXT_LEVELS.body);
  * grid are there to find a word once somebody names it, and this is what does
  * the finding (`docs/decisions/0016-the-cursor-lives-in-the-grid.md`).
  *
- * A row draws in three tracks — reference, word, mark — but they are what the
- * eye gets and nothing else does: the columns are laid out with CSS grid on
- * the button itself, and the button's accessible name stays
- * {@link WordEntry.name}, the whole sentence, whether or not this half of the
- * game has a word to show in the middle one. A reader moving through the list
- * by line is handed the same sentence a sighted player reads across three
- * columns, never half of it (issue #150).
- *
- * Whether a word is done is said more than one way, and the ways do not
- * depend on each other: struck through (and dimmed, where the surface lets
- * it — see {@link doneSx}) here, a different shape in {@link AnsweredMark},
- * and outright in {@link WordEntry.name} — so it never rests on telling one
- * mark's colour from another.
+ * A row draws in three tracks, reference, word and state, and the button's
+ * accessible name stays {@link WordEntry.name}, the whole sentence, so a reader
+ * moving through the list by line is handed what a sighted player reads across
+ * three columns, never half of it (issue #150). A word that is done says so in
+ * its state ("answered", behind a tick), in its name, and in the squares of the
+ * grid, so it never rests on telling one colour from another.
  *
  * @param props.labelledBy - Id of the heading naming this half of the game
  * @param props.entries - The words of that half
@@ -89,48 +88,57 @@ const TRACK_TEXT_SIZE = inRem(TEXT_LEVELS.body);
  * <WordEntryList labelledBy="to-guess-heading" entries={entries} onSelectWord={goTo} />
  */
 export const WordEntryList = ({ labelledBy, entries, onSelectWord }: WordEntryListProps) => (
-  <List dense disablePadding aria-labelledby={labelledBy}>
+  <Box
+    component="ul"
+    aria-labelledby={labelledBy}
+    sx={{ listStyle: 'none', margin: `${inRem(10)} 0 0`, padding: 0 }}
+  >
     {entries.map((entry) => (
-      <ListItem key={entry.id} disableGutters disablePadding>
-        <ListItemButton
+      <Box
+        component="li"
+        key={entry.id}
+        sx={{ borderTop: RULE, '&:last-child': { borderBottom: RULE } }}
+      >
+        <Box
+          component="button"
+          type="button"
           onClick={() => onSelectWord(entry.location)}
           aria-label={entry.name}
-          sx={{
-            py: 1,
-            px: 1,
-            fontSize: TRACK_TEXT_SIZE,
-            display: 'grid',
-            gridTemplateColumns: `${REFERENCE_TRACK_WIDTH} minmax(0, 1fr) auto`,
-            columnGap: 1,
-            alignItems: 'baseline',
-          }}
+          sx={ROW_SX}
         >
-          <Typography
+          <Box
             component="span"
-            variant="body2"
             sx={{
+              width: REFERENCE_TRACK_WIDTH,
+              flex: 'none',
+              color: STREET.slate,
+              fontSize: inRem(15),
               fontVariantNumeric: 'tabular-nums',
               whiteSpace: 'nowrap',
-              ...(entry.isSolved ? doneSx : {}),
             }}
           >
             {entry.reference}
-          </Typography>
+          </Box>
 
-          {/* Rendered even where this half has no word to show, so the mark
-            always lands in the grid's third track rather than sliding into
-            the second one behind it. */}
-          <Typography
+          <Box
             component="span"
-            variant="body2"
-            sx={{ minWidth: 0, overflowWrap: 'anywhere', ...(entry.isSolved ? doneSx : {}) }}
+            sx={{
+              minWidth: 0,
+              fontFamily: TEXT_FONT_FAMILY,
+              overflowWrap: 'anywhere',
+              ...(entry.look === 'word'
+                ? { fontStyle: 'italic', fontSize: inRem(22) }
+                : { letterSpacing: '0.2em', fontSize: inRem(20) }),
+            }}
           >
-            {entry.word}
-          </Typography>
+            {entry.shown}
+          </Box>
 
-          <AnsweredMark isSolved={entry.isSolved} />
-        </ListItemButton>
-      </ListItem>
+          <Box component="span" aria-hidden="true" sx={stateSx(entry.isSolved)}>
+            {entry.isSolved ? '✓ answered' : ''}
+          </Box>
+        </Box>
+      </Box>
     ))}
-  </List>
+  </Box>
 );

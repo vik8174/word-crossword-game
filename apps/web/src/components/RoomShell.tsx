@@ -1,117 +1,76 @@
 import Box from '@mui/material/Box';
-import { type SxProps, type Theme } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
 import { inRem } from '../scale';
-import { STREET } from '../street';
 import { belowFrame } from './frame-height';
+import { FROM_TABLET, FROM_WIDE } from './frame-styles';
 import { LobbyArrangement } from './LobbyArrangement';
 import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES, ZONES_GAP } from './room-layout';
-import { useShiftRole } from './screen-shift';
-import { OUTLINE_WIDTH, stepTitleSx, TILE_SX, UNSEEN_HEADING } from './surface-styles';
-import { ZONE_PADDING } from './zone-styles';
+import { UNSEEN_HEADING } from './surface-styles';
 
 /** What the page is, said once for every phase the room goes through. */
 const ROOM_HEADING = 'Game room';
 
 /**
- * How far the frame stands from the edge of the window, in the template's own
- * pixels (`design/templates/state-tree.html`'s `.room`, lines 280 and 319 and
- * 335): 20 above and 24 below on a phone with 16 either side, 16 and 22 from the
- * app shell, 20 and 22 from the three zones. They are not steps of the spacing
- * row, the same way `gate-panel-styles.ts`'s panel padding is not. Lengths are
- * in `rem` so that a reader who has made their text larger gets a frame that
- * grows with it.
+ * How far the room's content stands from the edge of the window and from the
+ * frame's header, in the template's own pixels (`.body` and `--pad`,
+ * `design/templates/state-tree.html` lines 218-223): 24 above and 40 below at
+ * every width, and 18, 32 and 48 either side on a phone, a tablet and a wide
+ * window. They are not steps of the spacing row, the same way
+ * `gate-panel-styles.ts`'s are not. Lengths are in `rem` so that a reader who
+ * has made their text larger gets a frame that grows with it.
  */
-const FRAME_PADDING = {
-  document: `${inRem(20)} ${inRem(16)} ${inRem(24)}`,
-  application: `${inRem(16)} ${inRem(22)}`,
-  threeZones: `${inRem(20)} ${inRem(22)}`,
-} as const;
+const BODY_PADDING = `${inRem(24)} ${inRem(18)} ${inRem(40)}`;
 
 /**
- * The size of the room's status line, in the template's own pixels
- * (`.room-status`, `design/templates/state-tree.html` line 296): 12.5, with its
- * line 1.5.
+ * The zone a side of the room is, and what it does when it is empty.
  *
- * Twelve and a half is not one of the four levels `context.md`'s **Level**
- * entry closes (31, 23, 17, 13). The status line is granted the exception here,
- * explicitly and for this one slot (issue #199): the drawing sets it at 12.5 on
- * every room screen that has a status line, and two do, the lobby and
- * `playing`. It is not a fifth level, and `scale.ts` has none added. It is set
- * on the slot rather than on the sentence in it, so the two screens that fill
- * it move together and a third that does never has to remember to.
- */
-const STATUS_SX = {
-  '& .MuiTypography-root': { fontSize: inRem(12.5), lineHeight: 1.5 },
-} as const;
-
-/**
- * The surface a zone is: a tile with the street's hairline round it.
- * `.zone` in the template (line 306), and the whole of what a zone looks like.
- * There is no box drawn behind it and running to the edge of the window, so
- * nothing stacks over it and the zone stops where the frame does.
- *
- * The 1.5px rule along its top edge is kept as a border, in `line`, so that the
- * zone's content stands exactly where it did when the rule was red. The rest of the outline is `TILE_SX`'s, drawn inside the box.
- */
-const ZONE_SURFACE = {
-  ...TILE_SX,
-  borderTop: `${OUTLINE_WIDTH}px solid ${STREET.line}`,
-} as const;
-
-/** A zone with the surface switched off: what a side with nothing on it is from a tablet up. */
-const NO_ZONE_SURFACE = {
-  backgroundColor: 'transparent',
-  outline: 'none',
-  borderTop: 0,
-} as const;
-
-/**
- * The zone a side of the room is given, and what it does when it is empty.
- *
- * A zone with anything in it is a surface of its own ({@link ZONE_SURFACE}),
- * at every width, and everything inside it is written in ink.
+ * A zone is a column on the ground and nothing more: the drawing sets no
+ * surface behind it (`.zone` has no rule of its own in `state-tree.html`; only
+ * `.zones`, line 227, lays the three out). Everything in it is written in ink
+ * on the page.
  *
  * An empty zone is a column with nothing in it while the room is an
- * application — that is what keeps the board in the middle of the screen when
- * only one side has anything to say. In a document it is nothing at all, since
- * a stack would otherwise put a gap where a lobby has no words yet. What an
- * empty column looks like changes with the window, on purpose and as drawn: bare
- * ground on a tablet, where the two zones share a row and an empty one is a
- * hole in it, and the surface it was drawn with from three zones up
- * (`state-tree.html` lines 329 and 342), where it is one of the columns either
- * side of the doorway and the frame would look lopsided without it.
+ * application, which is what keeps the board in the middle of the screen when
+ * only one side has anything to say, and nothing at all in a document, where a
+ * stack would otherwise put a gap where there is nothing (`.zone.empty`, lines
+ * 237-238).
+ *
+ * On a phone the board comes first, then the zone on the right ("You guess"),
+ * then the one on the left ("You explain"): `order` moves them and the document
+ * keeps its own order, left, board, right, which is the order a reader of the
+ * markup is walked through.
  *
  * @param area - Which of the named areas of the shell's grid it fills
  * @param isEmpty - Whether this screen handed the zone anything
+ * @param phoneOrder - Where it stands on a phone, after the board's -1
  */
-const zoneSx = (area: string, isEmpty: boolean): SxProps<Theme> => ({
-  ...(isEmpty ? { display: 'none' } : { ...ZONE_SURFACE, padding: ZONE_PADDING }),
+const zoneSx = (area: string, isEmpty: boolean, phoneOrder: number) => ({
+  order: phoneOrder,
+  minWidth: 0,
+  ...(isEmpty ? { display: 'none' } : {}),
   [APP_SHELL]: {
-    display: 'block',
+    order: 0,
+    display: isEmpty ? 'block' : 'flex',
+    flexDirection: 'column',
+    gap: inRem(18),
     gridArea: area,
     minHeight: 0,
     overflowY: 'auto',
-    ...(isEmpty ? NO_ZONE_SURFACE : {}),
   },
-  [THREE_ZONES]: isEmpty ? ZONE_SURFACE : {},
 });
 
 interface RoomShellBaseProps {
   /**
-   * The name of this step of the room, shown top left.
+   * The name of this step of the room, read aloud and not shown: the frame's
+   * header carries the app's name, and a screen's status and its one action go
+   * there through `useFrameSlot`.
    *
-   * A screen that gives none is named to a reader and to nobody else, which is
-   * the game's own case: the letters in the squares say what that screen is,
-   * and the strip a title would take is height the board has none of.
+   * A screen that gives none is named "Game room", which is the game's own
+   * case: the letters in the squares say what that screen is.
    */
   readonly title?: string;
-  /** What the room is doing right now, said in the header beside its name. */
-  readonly status?: ReactNode;
-  /** The one thing this screen offers to do, if it offers anything. */
-  readonly action?: ReactNode;
   /**
    * The middle of the screen, which is the board on every screen that has one.
    *
@@ -130,9 +89,7 @@ interface RoomZonesProps extends RoomShellBaseProps {
   /**
    * The lobby's drawing. Giving one selects the lobby's own arrangement
    * (`LobbyArrangement`, the template's `.lobby-grid`): `left` is then the
-   * column beside it, `title` is read aloud and not shown, and `status`,
-   * `action`, `right` and the children are not used. The status line of that
-   * screen is the frame's.
+   * column beside it, and `right` and the children are not used.
    */
   readonly picture?: ReactNode;
 }
@@ -167,42 +124,29 @@ type RoomShellProps = RoomZonesProps;
  * taking the size of a square away from it, and a board that has to be scrolled
  * to is a board a player is not looking at.
  *
- * The frame standing still is also what the shift between screens is drawn
- * against (issue #93). While one is running there are two of these on the page,
- * so the one on its way out gives up its header and lets the arriving screen's
- * stand in the same place: the header is the part that does not move, and two
- * of them printed over each other would be the page redrawing after all.
+ * The frame's header is not this component's: a screen's status and its one
+ * action are put there by `useFrameSlot`, and the frame draws the header once
+ * for every screen, so nothing here moves when the room goes from one phase to
+ * the next.
  *
- * A zone with anything in it is a surface of its own, a tile with the street's
- * hairline round it, and it stops where the frame does rather than running out
- * to the edge of the window (issue #199; it was a separate box behind the zone).
- * Everything inside a zone or the header is written in ink on the ground or on
- * that tile (see `surface-styles.ts`).
+ * A zone is a column on the ground, 290px wide from 1200 up with 40px between
+ * the three of them (`.zones`, `design/templates/state-tree.html` line 227),
+ * and it stops where the frame does rather than running out to the edge of the
+ * window. Everything inside a zone is written in ink on the ground (see
+ * `surface-styles.ts`).
  *
- * @param props.title - The name of this step, or nothing on the screen a game is played on
- * @param props.status - The room's own line about what it is doing
- * @param props.action - The screen's one control, offered in the header
+ * @param props.title - The name of this step, read aloud and not shown
  * @param props.left - The zone on the board's left; an empty one is left empty
  * @param props.right - The zone on its right
  * @param props.picture - The lobby's drawing; selects the lobby's arrangement
  * @param props.children - The middle zone: the board, or nothing at all
  *
  * @example
- * <RoomShell status={<Status />} left={<ToExplain />} right={<ToGuess />}>
+ * <RoomShell left={<ToExplain />} right={<ToGuess />}>
  *   <RoomCrossword room={room} viewerId={viewerId} caption={caption} />
  * </RoomShell>
  */
-export const RoomShell = ({
-  title,
-  status,
-  action,
-  left,
-  right,
-  picture,
-  children,
-}: RoomShellProps) => {
-  const isLeaving = useShiftRole() === 'leaving';
-
+export const RoomShell = ({ title, left, right, picture, children }: RoomShellProps) => {
   if (picture !== undefined) {
     return <LobbyArrangement title={title ?? ROOM_HEADING} column={left} picture={picture} />;
   }
@@ -213,110 +157,72 @@ export const RoomShell = ({
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
-        gap: inRem(16),
-        padding: FRAME_PADDING.document,
+        padding: BODY_PADDING,
+        [FROM_TABLET]: { paddingInline: inRem(32) },
+        [FROM_WIDE]: { paddingInline: inRem(48) },
         // At least what the frame's header leaves of a window on a phone, on
-        // every screen: the frame is one drawing, and what stands in it is
-        // centred in the height it has (issue #198). It is a floor and not a
-        // cap, so a screen taller than that still scrolls, and a screen that
-        // grew past a window grows by the header and no more (issue #245). From
-        // the app shell up `height` fixes it to that, which a `min-height` set
-        // beside it cannot narrow.
+        // every screen: the frame is one drawing (issue #198). It is a floor
+        // and not a cap, so a screen taller than that still scrolls. From the
+        // app shell up `height` fixes it to what the header leaves, which a
+        // `min-height` set beside it cannot narrow (issue #245).
         minHeight: belowFrame('100dvh'),
-        [APP_SHELL]: {
-          height: belowFrame('100dvh'),
-          minHeight: 0,
-          gap: inRem(14),
-          padding: FRAME_PADDING.application,
-          overflow: 'hidden',
-        },
-        [THREE_ZONES]: { padding: FRAME_PADDING.threeZones },
+        [APP_SHELL]: { height: belowFrame('100dvh'), minHeight: 0, overflow: 'hidden' },
       }}
     >
-      <Box
-        component="header"
-        sx={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          columnGap: 4,
-          rowGap: 2,
-          visibility: isLeaving ? 'hidden' : undefined,
-          [APP_SHELL]: { flexShrink: 0 },
-        }}
-      >
-        {title === undefined ? (
-          <Typography component="h1" variant="h1" sx={UNSEEN_HEADING}>
-            {ROOM_HEADING}
-          </Typography>
-        ) : (
-          // A row of its own, so that what the room is doing wraps beside or
-          // under it rather than into it: the template's `.step-title` is
-          // `flex-basis: 100%` (`stepTitleSx`).
-          <Box sx={{ flexBasis: '100%' }}>
-            <Typography component="h1" variant="stepTitle" sx={stepTitleSx()}>
-              {title}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Wide enough to sit beside the heading on a screen that has the room
-          for it, and told to take a line of its own rather than be squeezed
-          into a column of single words when it does not. */}
-        <Box sx={{ flex: '1 1 16rem', minWidth: 0, ...STATUS_SX }}>{status}</Box>
-
-        {/* Pushed to the far end of the header where there is a header to push it
-          along, and left where it falls in a document, which is a page a player
-          reads from the top down rather than a bar they scan across. */}
-        {action !== undefined && <Box sx={{ [APP_SHELL]: { ml: 'auto' } }}>{action}</Box>}
-      </Box>
+      <Typography component="h1" variant="h1" sx={UNSEEN_HEADING}>
+        {title ?? ROOM_HEADING}
+      </Typography>
 
       <Box
         component="main"
         sx={{
           display: 'grid',
-          gap: 5,
+          gap: inRem(28),
           alignContent: 'start',
           [APP_SHELL]: {
             flex: 1,
             minHeight: 0,
-            // The zones' own 14px and not a step of the spacing row, which has
-            // none between 12 and 16 (`ZONES_GAP`, issue #199). From a tablet up
-            // because the template's `.zones` says 14 from 768.
-            gap: ZONES_GAP,
+            gap: inRem(28),
             gridTemplateColumns: '1fr 1fr',
             gridTemplateRows: 'auto minmax(0, 1fr)',
             gridTemplateAreas: '"board board" "left right"',
           },
           [THREE_ZONES]: {
+            gap: ZONES_GAP,
             gridTemplateColumns: `${SIDE_ZONE_WIDTH} minmax(0, 1fr) ${SIDE_ZONE_WIDTH}`,
             gridTemplateRows: 'minmax(0, 1fr)',
             gridTemplateAreas: '"left board right"',
           },
         }}
       >
-        <Box sx={zoneSx('left', left === undefined)}>{left}</Box>
+        <Box sx={zoneSx('left', left === undefined, 2)}>{left}</Box>
 
         {/* Nothing in a document when a screen puts nothing there, as the
-            template's `.zone-middle.empty` is: the lobby's middle is the
-            doorway, and a grid gap left standing beside an empty box would be
-            24px of page under the zone. From a tablet up it is still the row
-            the board would stand in. */}
+            template's `.zone-middle` is not drawn empty. From a tablet up it is
+            still the row the board would stand in, across the top. On a phone
+            it is the first thing under the header. */}
         <Box
           sx={{
+            order: -1,
+            minWidth: 0,
             ...(children === undefined && { display: 'none' }),
             [APP_SHELL]: {
+              order: 0,
               display: 'block',
               gridArea: 'board',
               minHeight: 0,
               overflowY: 'auto',
             },
+            // A size container in width, so that the board can take the
+            // drawing's height off its own: the drawing is as tall as this
+            // zone is wide (`board-geometry.ts`).
+            [THREE_ZONES]: { containerType: 'inline-size' },
           }}
         >
           {children}
         </Box>
 
-        <Box sx={zoneSx('right', right === undefined)}>{right}</Box>
+        <Box sx={zoneSx('right', right === undefined, 1)}>{right}</Box>
       </Box>
     </Box>
   );

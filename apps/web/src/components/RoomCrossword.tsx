@@ -1,12 +1,13 @@
 import Box from '@mui/material/Box';
-import { useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 import type { RoomDocument } from '../rooms/room-document';
 import { gridViewFor, type WordLocation } from '../rooms/word-visibility';
 import { CrosswordGrid } from './CrosswordGrid';
 import { CROSSWORD_HEADING_ID, CrosswordHeading } from './CrosswordHeading';
 import { Message } from './Message';
-import { SENTENCE_BAND_SX } from './surface-styles';
+import { SENTENCE_BAND_SX, UNSEEN_HEADING } from './surface-styles';
+import { useBandShown } from './use-band-shown';
 
 /**
  * Stands in for a board that takes no answers.
@@ -34,6 +35,18 @@ interface RoomCrosswordProps {
   readonly errorMessage?: string;
   /** A word the player asked to be taken to, from the panel beside the grid. */
   readonly wordToReach?: WordLocation | null;
+  /**
+   * The room's drawing, for a screen that has one above its board. It is drawn
+   * only when the board has room for it (`bandIsShown` in `board-geometry.ts`),
+   * and the board gives up its height to it when it is.
+   */
+  readonly band?: ReactNode;
+  /**
+   * Whether the heading and the line under it are drawn. The game room draws
+   * neither (the letters in the squares say what the screen is), and the
+   * section is still named by them for a reader who cannot see.
+   */
+  readonly hasVisibleHeading?: boolean;
 }
 
 /**
@@ -50,6 +63,8 @@ interface RoomCrosswordProps {
  * @param props.viewerId - Which player is reading, so they get their own squares
  * @param props.caption - The line under the heading
  * @param props.onSolved - Called once one of this player's words has been answered
+ * @param props.band - The drawing above the board, when it fits
+ * @param props.hasVisibleHeading - Whether the heading and its caption are drawn (the default) or only read
  *
  * @example
  * <RoomCrossword room={room} viewerId={playerId} caption={openGridCaption(6)} />
@@ -61,24 +76,38 @@ export const RoomCrossword = ({
   onSolved,
   errorMessage,
   wordToReach,
+  band,
+  hasVisibleHeading = true,
 }: RoomCrosswordProps) => {
   // Kept across renders the room did not change in, so the grid's own state —
   // the letters this player has typed so far — is not judged afresh every time
   // React redraws for some other reason.
   const view = useMemo(() => gridViewFor(room, viewerId), [room, viewerId]);
+  const isBandShown = useBandShown(view) && band !== undefined;
 
   return (
     <section aria-labelledby={CROSSWORD_HEADING_ID}>
-      {/* The middle of the window is the one part of the room with no zone of
-        its own, so the line that names the board is given a tile. */}
-      <Box sx={SENTENCE_BAND_SX}>
-        <CrosswordHeading caption={caption} />
-      </Box>
+      {hasVisibleHeading ? (
+        /* The middle of the window is the one part of the room with no zone of
+          its own, so the line that names the board is given a tile. */
+        <Box sx={SENTENCE_BAND_SX}>
+          <CrosswordHeading caption={caption} />
+        </Box>
+      ) : (
+        <Box sx={UNSEEN_HEADING}>
+          <CrosswordHeading caption={caption} />
+        </Box>
+      )}
+
+      {/* 10px of margin and the 8px the board's own box keeps above it make the
+        template's 18px between the band and the board. */}
+      {isBandShown && <Box sx={{ marginBottom: '10px' }}>{band}</Box>}
 
       <CrosswordGrid
         view={view}
         onSolved={onSolved ?? TAKES_NO_ANSWERS}
         wordToReach={wordToReach}
+        belowBand={isBandShown}
       />
 
       {errorMessage !== undefined && (
