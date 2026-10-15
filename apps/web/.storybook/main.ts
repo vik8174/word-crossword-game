@@ -79,8 +79,9 @@ const config: StorybookConfig = {
     },
   },
 
-  // The four faces `index.html` preloads and declares are not read by
-  // Storybook's own HTML, which is why `preview-head.html` carries a copy.
+  // The six faces `index.html` declares (the latin and the latin-ext range of
+  // each style; two of them preloaded) are not read by Storybook's own HTML,
+  // which is why `preview-head.html` carries a copy of all six.
   staticDirs: ['../public'],
 
   viteFinal: async (viteConfig) => {

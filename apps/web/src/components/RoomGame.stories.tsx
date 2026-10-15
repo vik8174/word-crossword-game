@@ -28,6 +28,30 @@ const shortListRoom = (): RoomDocument => {
   return gameRoom(drawn, layout.rows, layout.cols);
 };
 
+/**
+ * A board with letters beyond the latin range, for `BoardDiacritics`: `łódź`
+ * is explained by the viewer (it stands on the board in italics), `ősz` was
+ * explained to them and they have answered it (it stands in 700, and hangs on
+ * the line as a card). Two words on three rows, side by side, because the
+ * story is about the faces they are drawn in and not about crossing.
+ */
+const diacriticsRoom = (): RoomDocument =>
+  gameRoom(
+    [
+      { row: 0, col: 0, orientation: 'across', word: 'łódź', explainedBy: 'viewer' },
+      {
+        row: 2,
+        col: 0,
+        orientation: 'across',
+        word: 'ősz',
+        explainedBy: 'other',
+        isAnswered: true,
+      },
+    ],
+    3,
+    4,
+  );
+
 /** The write that never settles: the screen stays mid-write. */
 const neverSettles = () => new Promise<void>(() => undefined);
 
@@ -128,6 +152,17 @@ export const PlayingMany: Story = {
 /** `playing` on the short reference list at the size of a real game (no band: 14 by 11 squares are too many). */
 export const ShortReferenceList: Story = {
   args: { room: shortListRoom() },
+};
+
+/**
+ * `playing` with letters beyond the latin range: `łódź` explained by the viewer
+ * and `ősz` answered by them. The page asks for exactly the latin-ext files its
+ * letters are drawn in (#232), which is the rule the story is here to show: the
+ * (weight, style) pairs the page draws a latin-ext letter in are the files it
+ * requests, no more.
+ */
+export const BoardDiacritics: Story = {
+  args: { room: diacriticsRoom() },
 };
 
 /** `playing`, the guest's view of the same board. */
