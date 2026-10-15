@@ -121,6 +121,10 @@ jobs:
       # Not `VITE_`-prefixed on purpose: read by the build on the Node side, to
       # upload source maps, and never embedded into the public bundle.
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+      # The switch that makes the build use that token. A token alone uploads
+      # nothing, so this is the only build that uploads source maps: set here,
+      # in the one job that has the token, and nowhere else (ADR 0018, addendum).
+      SENTRY_UPLOAD: '1'
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v7.0.1
