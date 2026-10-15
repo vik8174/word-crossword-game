@@ -95,15 +95,16 @@ const Zone = ({ area, phoneOrder, isEmpty, isColumn, isWidthContainer, children 
   >
     <Box
       sx={{
+        // A side is a column of blocks 18px apart at every width, a phone's
+        // included (`.stack`, template line 115), not only inside the shell.
+        ...(isColumn ? { display: 'flex', flexDirection: 'column', gap: inRem(18) } : {}),
         [APP_SHELL]: {
           flex: '1 1 auto',
           minHeight: 0,
           overflowY: 'auto',
           margin: `-${ZONE_RING_ROOM_PX}px`,
           padding: `${ZONE_RING_ROOM_PX}px`,
-          ...(isColumn
-            ? { display: 'flex', flexDirection: 'column', gap: inRem(18) }
-            : { display: 'block' }),
+          ...(isColumn ? {} : { display: 'block' }),
           // A size container in width, so that the board can take the drawing's
           // height off its own: the drawing is as tall as this zone is wide
           // (`board-geometry.ts`). From a tablet up, where the room is one window
