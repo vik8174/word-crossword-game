@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { gateSceneSx, gateScreenSx, gateStackSx } from './gate-panel-styles';
 import { BLOCK_PROPS, BLOCKS_PROPS } from './screen-blocks';
 import { Street } from './Street';
+import { joinStreetLabel } from './street-labels';
 import { UNSEEN_HEADING } from './surface-styles';
 
 interface DoorColumnProps {
@@ -71,18 +72,34 @@ export const ConnectingStreet = () => (
   />
 );
 
+interface JoinStreetProps {
+  /**
+   * In a lesson, how the teacher is drawn at the end of the street: at their
+   * window while their mark is fresh as the visitor sees it, with the curtains
+   * drawn once it is old. Left out for a pair game, where the shutters stay
+   * closed.
+   */
+  readonly teacher?: 'here' | 'away';
+}
+
 /**
  * The drawing over `join` in all three of its states: a neighbour waving from
  * her balcony with a line held out to the empty one across the street
  * (`?state=join` of the template, line 907).
+ *
+ * In a lesson the teacher is at the end of the street, and the label says so
+ * while they are at their window (`street-labels.ts`).
+ *
+ * @param props.teacher - How the teacher is drawn, in a lesson
  */
-export const JoinStreet = () => (
+export const JoinStreet = ({ teacher }: JoinStreetProps) => (
   <Street
     right="empty"
     line="loose"
     mood="wave"
     crop="top"
-    label="A neighbour waving from her balcony, holding out a line to an empty balcony across the street"
+    teacher={teacher}
+    label={joinStreetLabel(teacher)}
   />
 );
 

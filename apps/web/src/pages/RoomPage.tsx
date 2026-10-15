@@ -13,7 +13,7 @@ import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import { ScreenEnter } from '../components/ScreenEnter';
 import { WaitingMark } from '../components/WaitingMark';
 import { MOTION_PLAY_CSS } from '../motion-play-styles';
-import type { RoomDocument } from '../rooms/room-document';
+import { isTeacherOf, type RoomDocument } from '../rooms/room-document';
 import {
   hasSomebodyToInvite,
   type RoomScreen,
@@ -73,12 +73,13 @@ const RoomScreenView = ({
     case 'connecting':
       return <Connecting />;
     case 'unavailable':
-      return <RoomUnavailableNotice reason={screen.reason} />;
+      return <RoomUnavailableNotice reason={screen.reason} mode={screen.mode} />;
     case 'join':
       return (
         <RoomJoin
           roomId={roomId}
           ownerNickname={screen.ownerNickname}
+          teacher={screen.teacher}
           playerId={screen.playerId}
           seatToRelease={screen.seatToRelease}
           onRefused={onJoinRefused}
@@ -201,8 +202,12 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
           roomId={roomId}
           screen={screen}
           invitation={
-            hasSomebodyToInvite(screen, now) ? (
-              <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
+            hasSomebodyToInvite(screen, now) && screen.kind === 'lobby' ? (
+              <RoomInvitePanel
+                roomId={roomId}
+                origin={window.location.origin}
+                isLesson={isTeacherOf(screen.room, screen.viewerId)}
+              />
             ) : undefined
           }
           onJoinRefused={() => setRefusedRoom(latestRoom.current)}

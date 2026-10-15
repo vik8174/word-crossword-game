@@ -1,5 +1,5 @@
 import type { MillisecondTimestamp, ReadableRoom } from './room-access';
-import type { RoomPlayer } from './room-document';
+import { isTeacherOf, type RoomPlayer, type RoomTeacher } from './room-document';
 
 /**
  * Who is still there, read from the mark each player writes for themselves.
@@ -104,6 +104,37 @@ export const isAway = (player: SeenPlayer, now: Date): boolean =>
 export const hasLeftTheSeat = (player: SeenPlayer, now: Date): boolean =>
   silenceOf(player, now) > SEAT_FREE_AFTER_MS;
 
+/** All this module needs of a lesson's teacher: the one moment they can be dated by. */
+export type SeenTeacher = RoomTeacher<MillisecondTimestamp>;
+
+/**
+ * How long it has been since the teacher of a lesson was last known to be there.
+ *
+ * The same reading as {@link silenceOf}, of the mark the teacher keeps in
+ * `teacher.lastSeenAt` and not in `players` (ADR 0037). Their mark is required,
+ * so there is no `joinedAt` to fall back to.
+ *
+ * @param teacher - The room's `teacher` entry
+ * @param now - The moment to measure from
+ * @returns Milliseconds since their last mark; negative if it is in the future
+ *
+ * @example
+ * teacherSilenceOf(room.teacher, new Date()); // 3_000
+ */
+export const teacherSilenceOf = (teacher: SeenTeacher, now: Date): number =>
+  now.getTime() - teacher.lastSeenAt.toMillis();
+
+/**
+ * Whether the teacher of a lesson has gone quiet for long enough to be worth
+ * saying so: by the threshold a player is, {@link AWAY_AFTER_MS}.
+ *
+ * @param teacher - The room's `teacher` entry
+ * @param now - The moment to judge the mark against
+ * @returns `true` when their mark is older than {@link AWAY_AFTER_MS}
+ */
+export const isTeacherAway = (teacher: SeenTeacher, now: Date): boolean =>
+  teacherSilenceOf(teacher, now) > AWAY_AFTER_MS;
+
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;
 
@@ -139,34 +170,48 @@ export const silenceLabel = (silenceMs: number): string => {
 };
 
 /**
- * How long each player of this room has been quiet, for those who have been.
+ * How long each person of this room has been quiet, for those who have been.
  *
- * A player who is present has no entry at all, which is the whole shape of what
+ * A person who is present has no entry at all, which is the whole shape of what
  * the screen says: only a deviation is worth a label, since one that appears on
  * every row is read as decoration and says nothing — the lesson `Players (2 of
  * 4)` cost (issue #29).
  *
+ * A lesson's teacher is read here too, under their own UID, which is the room's
+ * `ownerId`: nobody else in a lesson has it, so the keys cannot collide, and
+ * everything that asks whether somebody is away asks the same map. The teacher
+ * is away by the very threshold a player is, {@link AWAY_AFTER_MS}.
+ *
  * @param room - The room document as read from Firestore
  * @param now - The moment to judge every mark against
- * @returns How long they have been away, by player id, for the away ones only
+ * @returns How long they have been away, by UID, for the away ones only
  *
  * @example
  * awayDurationsIn(room, new Date()); // { 'guest-uid': '2 min' }
  */
-export const awayDurationsIn = (room: ReadableRoom, now: Date): Readonly<Record<string, string>> =>
-  Object.fromEntries(
-    Object.entries(room.players)
-      .filter(([, player]) => isAway(player, now))
-      .map(([playerId, player]) => [playerId, silenceLabel(silenceOf(player, now))]),
-  );
+export const awayDurationsIn = (
+  room: ReadableRoom,
+  now: Date,
+): Readonly<Record<string, string>> => {
+  const players = Object.entries(room.players)
+    .filter(([, player]) => isAway(player, now))
+    .map(([playerId, player]) => [playerId, silenceLabel(silenceOf(player, now))] as const);
+
+  const teacher =
+    room.teacher !== undefined && isTeacherAway(room.teacher, now)
+      ? ([[room.ownerId, silenceLabel(teacherSilenceOf(room.teacher, now))]] as const)
+      : [];
+
+  return Object.fromEntries([...players, ...teacher]);
+};
 
 /**
  * Whether this room is waiting on a mark from this player.
  *
  * Two conditions, and both are about somebody waiting on the other side of it.
- * A room takes marks only from the players it holds: whoever opened the link
- * and has yet to give a nickname is not in the game, and has nothing to be
- * present for. And it takes them only while it is being waited in or played —
+ * A room takes marks only from the people it holds, which are its players and,
+ * in a lesson, its teacher: whoever opened the link and has yet to give a
+ * nickname is not in the game, and has nothing to be present for. And it takes them only while it is being waited in or played —
  * a room that has ended is over however it ended, so a mark in it would tell
  * nobody anything, while every write pushes `expiresAt` another 24 hours out
  * (`docs/decisions/0013-keeping-a-room-alive-on-every-write.md`), which would
@@ -184,4 +229,5 @@ export const awayDurationsIn = (room: ReadableRoom, now: Date): Readonly<Record<
  * if (awaitsPresenceFrom(room, playerId)) await markPresence({ roomId, playerId });
  */
 export const awaitsPresenceFrom = (room: ReadableRoom, playerId: string): boolean =>
-  (room.status === 'lobby' || room.status === 'playing') && Object.hasOwn(room.players, playerId);
+  (room.status === 'lobby' || room.status === 'playing') &&
+  (Object.hasOwn(room.players, playerId) || isTeacherOf(room, playerId));

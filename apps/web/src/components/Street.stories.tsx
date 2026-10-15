@@ -110,6 +110,24 @@ export const LobbyLesson: Story = {
   },
 };
 
+/**
+ * `lobby/nostudent`: the teacher's first lobby. Both balconies are dark, nobody
+ * stands in either, no line is strung, and the teacher is at the end of the
+ * street. The left balcony is `left: 'empty'`, which only this state asks for.
+ */
+export const LobbyNoStudent: Story = {
+  args: {
+    left: 'empty',
+    right: 'empty',
+    line: 'none',
+    mood: 'wait',
+    crop: 'top',
+    teacher: 'here',
+    label:
+      'Both balconies still empty, and the teacher watching from the house at the end of the street',
+  },
+};
+
 /** `lobby/teacheraway`: the teacher's curtains are drawn. */
 export const LobbyTeacherAway: Story = {
   args: {

@@ -1,19 +1,16 @@
-import Box from '@mui/material/Box';
 import GlobalStyles from '@mui/material/GlobalStyles';
-import Typography from '@mui/material/Typography';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword, validateWordList } from 'shared';
 
-import { gateScreenSx, gateStackSx } from '../components/gate-panel-styles';
-import { BLOCK_PROPS } from '../components/screen-blocks';
+import { NewRoomColumn } from '../components/NewRoomColumn';
 import { ScreenEnter } from '../components/ScreenEnter';
-import { stepTitleSx } from '../components/surface-styles';
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm } from '../components/WordListForm';
 import { MOTION_PLAY_CSS } from '../motion-play-styles';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
+import type { RoomMode } from '../rooms/room-document';
 import { roomPath } from '../rooms/room-link';
 import { createRoom } from '../rooms/room-service';
 import { logGameEvent } from '../telemetry/analytics';
@@ -51,6 +48,10 @@ type CreationPhase =
  *
  * It is the second screen of the funnel, so it says it was reached (issue #51).
  *
+ * The first thing it asks is what the room is for: a game to play with a friend
+ * or a lesson to run for two students (`ModePick`). The title and the help under
+ * the nickname follow the choice, and the room is created in that mode.
+ *
  * @example
  * <Route path="/create" element={<CreateRoomPage />} />
  */
@@ -62,6 +63,10 @@ export const CreateRoomPage = () => {
   // has one source of truth and this is it. Read lazily, so the storage is not
   // asked again on every render of a form that re-renders as its owner types.
   const [nickname, setNickname] = useState(readRememberedNickname);
+  // What the room is for, chosen first: a pair game unless the owner says they
+  // are running a lesson. It cannot change once the room exists, so it is the
+  // owner's to settle here (ADR 0037).
+  const [mode, setMode] = useState<RoomMode>('pair');
   const [rawWords, setRawWords] = useState('');
   const [creation, setCreation] = useState<CreationPhase>({ phase: 'editing' });
 
@@ -73,7 +78,7 @@ export const CreateRoomPage = () => {
     const ownerNickname = normalizeNickname(nickname);
 
     try {
-      const roomId = await createRoom({ layout, ownerNickname });
+      const roomId = await createRoom({ layout, ownerNickname, mode });
 
       // After the write, and the very text that went into the room: a name
       // nobody ever played under is not worth offering back, and a host who
@@ -134,6 +139,7 @@ export const CreateRoomPage = () => {
 
     return (
       <WordListForm
+        mode={mode}
         nickname={nickname}
         onNicknameChange={setNickname}
         rawWords={rawWords}
@@ -153,20 +159,14 @@ export const CreateRoomPage = () => {
     // every state of the screen (issue #225).
     <ScreenEnter>
       <GlobalStyles styles={MOTION_PLAY_CSS} />
-      <Box component="main" sx={gateScreenSx}>
-        <Box sx={gateStackSx}>
-          <Typography
-            {...BLOCK_PROPS}
-            component="h1"
-            variant="stepTitle"
-            sx={{ ...stepTitleSx(), margin: 0 }}
-          >
-            New game
-          </Typography>
-
-          {renderPhase()}
-        </Box>
-      </Box>
+      <NewRoomColumn
+        mode={mode}
+        onModeChange={setMode}
+        isFrozen={creation.phase === 'creating'}
+        showsChoice={creation.phase !== 'confirming'}
+      >
+        {renderPhase()}
+      </NewRoomColumn>
     </ScreenEnter>
   );
 };

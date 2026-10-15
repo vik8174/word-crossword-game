@@ -5,6 +5,7 @@ import {
   abandonedSeatIn,
   hasFreeSeatIn,
   type MillisecondTimestamp,
+  ownerNicknameOf,
   playersInJoinOrder,
   type ReadableRoom,
   roomAccessFor,
@@ -267,5 +268,96 @@ describe('playersInJoinOrder', () => {
     const room = roomWith({ zoe: player('Zoe', 100), adam: player('Adam', 100) });
 
     expect(playersInJoinOrder(room).map(({ id }) => id)).toEqual(['adam', 'zoe']);
+  });
+});
+
+/**
+ * A lesson: the owner is its teacher, who is in no entry of `players`, and the
+ * two seats are the students'.
+ */
+const lessonWith = (
+  students: Record<string, ReturnType<typeof player>>,
+  status: ReadableRoom['status'] = 'lobby',
+  expiresAtMillis = NOW.getTime() + 1,
+): ReadableRoom => ({
+  ...roomWith(students, expiresAtMillis, status),
+  mode: 'lesson',
+  ownerId: 'teacher-uid',
+  teacher: { nickname: 'Carmen', lastSeenAt: at(NOW.getTime()) },
+});
+
+describe('roomAccessFor, in a lesson', () => {
+  const STUDENT_COUNTS = [0, 1, 2] as const;
+  const STATUSES = ['lobby', 'playing', 'completed', 'closed'] as const;
+
+  const studentsOf = (count: (typeof STUDENT_COUNTS)[number]) =>
+    Object.fromEntries(['a', 'b'].slice(0, count).map((id) => [id, player(id.toUpperCase())]));
+
+  describe.each(STUDENT_COUNTS)('with %i students in', (count) => {
+    it.each(STATUSES)(
+      'always lets its teacher into their own room, %s or not: never the join form, never "full", never "started"',
+      (status) => {
+        const room = lessonWith(studentsOf(count), status);
+
+        expect(roomAccessFor(room, 'teacher-uid', NOW)).toBe('joined');
+      },
+    );
+  });
+
+  it('still turns a teacher away from a room that has expired, like any player', () => {
+    const room = lessonWith({}, 'lobby', NOW.getTime());
+
+    expect(roomAccessFor(room, 'teacher-uid', NOW)).toBe('expired');
+  });
+
+  it('offers a seat to a student while there is one, with the teacher out of the count', () => {
+    expect(roomAccessFor(lessonWith({}), 'newcomer', NOW)).toBe('joinable');
+    expect(roomAccessFor(lessonWith(studentsOf(1)), 'newcomer', NOW)).toBe('joinable');
+  });
+
+  it('turns a third student away as "full", although only two people are in players', () => {
+    expect(roomAccessFor(lessonWith(studentsOf(2)), 'newcomer', NOW)).toBe('full');
+  });
+
+  it('turns a student arriving after the deal away as "started"', () => {
+    expect(roomAccessFor(lessonWith(studentsOf(2), 'playing'), 'newcomer', NOW)).toBe('started');
+  });
+
+  it('lets a student who is in go on playing, and gives the teacher no seat to take', () => {
+    expect(roomAccessFor(lessonWith(studentsOf(2), 'playing'), 'a', NOW)).toBe('joined');
+    expect(hasFreeSeatIn(lessonWith(studentsOf(2)), NOW)).toBe(false);
+  });
+
+  it('frees the seat of a student who left, to the next arrival, but never the teacher’s', () => {
+    const gone = { a: player('A', 0, SEAT_FREE_AFTER_MS + 1000), b: player('B') };
+    const room = lessonWith(gone);
+
+    expect(abandonedSeatIn(room, NOW)).toBe('a');
+    expect(roomAccessFor(room, 'newcomer', NOW)).toBe('joinable');
+    expect(abandonedSeatIn(lessonWith({ b: player('B') }), NOW)).toBeNull();
+  });
+
+  it('does not make a pair game’s owner a teacher, whatever the mode field says about the room', () => {
+    const pair = roomWith({ 'owner-uid': player('Vik') });
+
+    expect(roomAccessFor({ ...pair, mode: 'pair' }, 'owner-uid', NOW)).toBe('joined');
+    expect(roomAccessFor(pair, 'someone-else', NOW)).toBe('joinable');
+  });
+});
+
+describe('ownerNicknameOf', () => {
+  it('is the first player’s name in a pair game, written before lessons or after', () => {
+    const pair = roomWith({ 'owner-uid': player('Vik') });
+
+    expect(ownerNicknameOf(pair)).toBe('Vik');
+    expect(ownerNicknameOf({ ...pair, mode: 'pair' })).toBe('Vik');
+  });
+
+  it('is the teacher’s name in a lesson, whose owner is in no entry of players', () => {
+    expect(ownerNicknameOf(lessonWith({}))).toBe('Carmen');
+  });
+
+  it('is "Somebody" for a room that does not hold the name it should', () => {
+    expect(ownerNicknameOf(roomWith({}))).toBe('Somebody');
   });
 });

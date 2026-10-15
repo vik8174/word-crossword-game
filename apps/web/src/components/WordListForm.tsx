@@ -10,6 +10,7 @@ import {
 } from 'shared';
 
 import { isValidNickname, MAX_NICKNAME_LENGTH } from '../rooms/nickname';
+import type { RoomMode } from '../rooms/room-document';
 import { Field } from './Field';
 import { gateButtonRowSx, gateHintSx, gateStackSx } from './gate-panel-styles';
 import { BLOCKS_PROPS } from './screen-blocks';
@@ -26,7 +27,11 @@ import {
 } from './word-fault-sentences';
 
 /** The line under the nickname: who sees it, and that its owner plays too. */
-const NICKNAME_HELP = 'The other player sees you by this name. You play in your own room too.';
+const NICKNAME_HELP: Readonly<Record<RoomMode, string>> = {
+  pair: 'The other player sees you by this name. You play in your own room too.',
+  lesson:
+    'Your players see you by this name. In a lesson you do not play: you deal the words and watch.',
+};
 
 /** The end of a text that has a word still being typed: the last word, with no separator after it. */
 const UNFINISHED_WORD = /[^\s,]+$/;
@@ -43,6 +48,8 @@ const wordsHelp = (count: number): string =>
   `${MIN_WORDS} to ${MAX_WORDS} words, ${MIN_WORD_LENGTH} to ${MAX_WORD_LENGTH} letters each, no repeats. ${count} ${count === 1 ? 'word' : 'words'} entered.`;
 
 interface WordListFormProps {
+  /** What the room is for; `pair` unless given. It decides what the line under the nickname says. */
+  readonly mode?: RoomMode;
   readonly nickname: string;
   readonly onNicknameChange: (nickname: string) => void;
   readonly rawWords: string;
@@ -71,12 +78,14 @@ interface WordListFormProps {
  * loses focus, never while it is being typed. A fault about the count never
  * goes in the strip; while the button is disabled, the reason stands beside it.
  *
+ * @param props.mode - What the room is for, which words the help under the nickname
  * @param props.validation - Result of `validateWordList` for the current text
  * @param props.noCrossing - No crossword can be built from the list
  * @param props.writeFailed - Shows the card for a refused write
  * @param props.onSubmit - Called only when nickname and word list are both valid
  */
 export const WordListForm = ({
+  mode = 'pair',
   nickname,
   onNicknameChange,
   rawWords,
@@ -136,7 +145,7 @@ export const WordListForm = ({
         onChange={onNicknameChange}
         disabled={isCreating}
         maxLength={MAX_NICKNAME_LENGTH}
-        help={NICKNAME_HELP}
+        help={NICKNAME_HELP[mode]}
       />
 
       <Field

@@ -13,6 +13,8 @@ interface RoomInvitePanelProps {
   readonly roomId: string;
   /** Origin the app is served from; injected so the panel stays testable. */
   readonly origin: string;
+  /** Whether the room is a lesson, whose link goes to both of the teacher's students. */
+  readonly isLesson?: boolean;
 }
 
 /** What the block is named by. */
@@ -41,11 +43,12 @@ type CopyState = 'idle' | 'copied' | 'failed';
  *
  * @param props.roomId - Id of the room, taken from the address
  * @param props.origin - Origin to build the shareable URL from
+ * @param props.isLesson - The teacher's invitation, worded for both students
  *
  * @example
  * <RoomInvitePanel roomId={roomId} origin={window.location.origin} />
  */
-export const RoomInvitePanel = ({ roomId, origin }: RoomInvitePanelProps) => {
+export const RoomInvitePanel = ({ roomId, origin, isLesson = false }: RoomInvitePanelProps) => {
   const [copyState, setCopyState] = useState<CopyState>('idle');
   const url = roomUrl(roomId, origin);
 
@@ -66,7 +69,9 @@ export const RoomInvitePanel = ({ roomId, origin }: RoomInvitePanelProps) => {
         Invite
       </Box>
       <Box component="p" sx={gateHintSx}>
-        Send this link to the person you will play with. They join with a nickname, no sign-up.
+        {isLesson
+          ? 'Send this link to both of your players. They join with a nickname, no sign-up.'
+          : 'Send this link to the person you will play with. They join with a nickname, no sign-up.'}
       </Box>
 
       {/* One line that clips, as the template draws it (issue #225): the link is

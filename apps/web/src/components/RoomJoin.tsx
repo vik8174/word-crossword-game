@@ -4,7 +4,10 @@ import { wasRefusedByRules } from '../firebase/refusal';
 import { type ActionPhase, failureOf, IDLE } from '../rooms/action-phase';
 import { normalizeNickname } from '../rooms/nickname';
 import { rememberNickname } from '../rooms/nickname-store';
+import { isTeacherAway } from '../rooms/presence';
+import type { RoomTeacher } from '../rooms/room-document';
 import { joinRoom } from '../rooms/room-service';
+import { usePresenceNow } from '../rooms/use-presence-now';
 import { logGameEvent } from '../telemetry/analytics';
 import { DoorColumn, JoinStreet } from './DoorColumn';
 import { JoinRoomForm } from './JoinRoomForm';
@@ -17,6 +20,12 @@ interface RoomJoinProps {
   readonly roomId: string;
   /** The nickname the room's owner goes by, named in the invitation. */
   readonly ownerNickname: string;
+  /**
+   * The teacher, when the room is a lesson. The door is worded for a lesson and
+   * draws the teacher at the end of the street, at their window while their
+   * mark is fresh and with the curtains drawn once it is old.
+   */
+  readonly teacher?: RoomTeacher;
   /** Firebase Auth UID this visitor will be listed under. */
   readonly playerId: string;
   /**
@@ -46,6 +55,7 @@ interface RoomJoinProps {
  *
  * @param props.roomId - Id of the room the link led to
  * @param props.ownerNickname - Who invited this visitor
+ * @param props.teacher - The teacher of the lesson this door leads into, if it is one
  * @param props.playerId - UID the visitor was signed in under before the room was read
  * @param props.seatToRelease - Whose seat they are taking, if the room was full
  * @param props.onRefused - Told that this room would not take this visitor
@@ -56,11 +66,17 @@ interface RoomJoinProps {
 export const RoomJoin = ({
   roomId,
   ownerNickname,
+  teacher,
   playerId,
   seatToRelease,
   onRefused,
 }: RoomJoinProps) => {
   const [join, setJoin] = useState<ActionPhase>(IDLE);
+  // Read on the presence clock and not on the render: a teacher who has stopped
+  // writing produces no snapshot, and the door would go on drawing them at
+  // their window.
+  const now = usePresenceNow();
+  const teacherDrawn = teacher !== undefined && isTeacherAway(teacher, now) ? 'away' : 'here';
 
   const submitJoin = async (rawNickname: string) => {
     setJoin({ phase: 'submitting' });
@@ -99,9 +115,10 @@ export const RoomJoin = ({
     // nothing of the game to put either side of them. The street is drawn above
     // a column that starts under the frame's header, as the template's `join`
     // does (issue #226), and its three states stand in the same place.
-    <DoorColumn picture={<JoinStreet />}>
+    <DoorColumn picture={<JoinStreet teacher={teacher === undefined ? undefined : teacherDrawn} />}>
       <JoinRoomForm
         ownerNickname={ownerNickname}
+        mode={teacher === undefined ? 'pair' : 'lesson'}
         onJoin={(nickname) => void submitJoin(nickname)}
         isJoining={join.phase === 'submitting'}
         errorMessage={failureOf(join)}

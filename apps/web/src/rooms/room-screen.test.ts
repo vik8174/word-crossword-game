@@ -374,3 +374,128 @@ describe('hasSomebodyToInvite', () => {
     expect(hasSomebodyToInvite(roomScreenFor({ status: 'connecting' }, NOW), NOW)).toBe(false);
   });
 });
+
+/** A lesson: its owner is its teacher, in no entry of `players`, and the seats are the students'. */
+const lessonRoom = ({
+  students = [],
+  status = 'lobby',
+  teacherSilentForMs = 0,
+}: {
+  readonly students?: readonly string[];
+  readonly status?: RoomOptions['status'];
+  readonly teacherSilentForMs?: number;
+} = {}): RoomDocument =>
+  ({
+    ...roomWith({
+      status,
+      players: Object.fromEntries(
+        students.map((id, index) => [id, player(id.toUpperCase(), index + 1)]),
+      ),
+      words: status === 'lobby' ? OPEN_WORDS : DEALT_TO_STUDENTS,
+    }),
+    mode: 'lesson',
+    ownerId: 'teacher-uid',
+    teacher: { nickname: 'Carmen', lastSeenAt: at(NOW.getTime() - teacherSilentForMs) },
+  }) as unknown as RoomDocument;
+
+const DEALT_TO_STUDENTS = {
+  w0: { hiddenFromPlayerId: 'a', guessedByPlayerId: null },
+  w1: { hiddenFromPlayerId: 'b', guessedByPlayerId: null },
+};
+
+describe('roomScreenFor, in a lesson', () => {
+  const STUDENT_SETS: readonly (readonly string[])[] = [[], ['a'], ['a', 'b']];
+
+  it.each(STUDENT_SETS.map((students) => [students]))(
+    'takes the teacher to the lobby with %j in, and never offers them the join form',
+    (students) => {
+      const room = lessonRoom({ students });
+
+      expect(roomScreenFor(ready(room, 'teacher-uid'), NOW)).toEqual({
+        kind: 'lobby',
+        room,
+        viewerId: 'teacher-uid',
+      });
+    },
+  );
+
+  it('takes the teacher into the room once the words are dealt', () => {
+    const room = lessonRoom({ students: ['a', 'b'], status: 'playing' });
+
+    expect(roomScreenFor(ready(room, 'teacher-uid'), NOW)).toEqual({
+      kind: 'playing',
+      room,
+      viewerId: 'teacher-uid',
+    });
+  });
+
+  it.each(['completed', 'closed'] as const)(
+    'takes the teacher to an end screen of a lesson that is %s, not to the join form or a refusal',
+    (status) => {
+      const room = lessonRoom({ students: ['a', 'b'], status });
+
+      expect(['finished', 'closed-early']).toContain(
+        roomScreenFor(ready(room, 'teacher-uid'), NOW).kind,
+      );
+    },
+  );
+
+  it('offers a student the join form with the teacher on it, and a pair game none', () => {
+    const lesson = lessonRoom({ students: ['a'] });
+    const screen = roomScreenFor(ready(lesson, 'newcomer'), NOW);
+
+    expect(screen).toEqual({
+      kind: 'join',
+      playerId: 'newcomer',
+      ownerNickname: 'Carmen',
+      seatToRelease: null,
+      teacher: lesson.teacher,
+    });
+    expect(roomScreenFor(ready(roomWith(), 'newcomer'), NOW)).not.toHaveProperty('teacher');
+  });
+
+  it('names the lesson in the notice of a third student, and one arriving after the deal', () => {
+    expect(roomScreenFor(ready(lessonRoom({ students: ['a', 'b'] }), 'newcomer'), NOW)).toEqual({
+      kind: 'unavailable',
+      reason: 'full',
+      mode: 'lesson',
+    });
+    expect(
+      roomScreenFor(
+        ready(lessonRoom({ students: ['a', 'b'], status: 'playing' }), 'newcomer'),
+        NOW,
+      ),
+    ).toEqual({ kind: 'unavailable', reason: 'started', mode: 'lesson' });
+  });
+
+  it('leaves the mode off the notice of a pair game, which has no wording of its own', () => {
+    expect(
+      roomScreenFor(ready(roomWith({ players: strangersInBothSeats }), 'newcomer'), NOW),
+    ).toEqual({
+      kind: 'unavailable',
+      reason: 'full',
+    });
+  });
+
+  it('offers the link to the teacher while a seat is free, with 0 and with 1 student, and not with 2', () => {
+    const lobbyOf = (students: readonly string[]): RoomScreen => ({
+      kind: 'lobby',
+      room: lessonRoom({ students }),
+      viewerId: 'teacher-uid',
+    });
+
+    expect(hasSomebodyToInvite(lobbyOf([]), NOW)).toBe(true);
+    expect(hasSomebodyToInvite(lobbyOf(['a']), NOW)).toBe(true);
+    expect(hasSomebodyToInvite(lobbyOf(['a', 'b']), NOW)).toBe(false);
+  });
+
+  it('never offers the link to a student', () => {
+    const lobby: RoomScreen = {
+      kind: 'lobby',
+      room: lessonRoom({ students: ['a'] }),
+      viewerId: 'a',
+    };
+
+    expect(hasSomebodyToInvite(lobby, NOW)).toBe(false);
+  });
+});

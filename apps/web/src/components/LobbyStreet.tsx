@@ -1,62 +1,77 @@
 import { Street } from './Street';
+import { type LessonView, lobbyStreetLabel, teacherDrawnFor } from './street-labels';
 
 interface LobbyStreetProps {
-  /** The host is alone: one seat has never been taken. */
-  readonly waiting: boolean;
+  /** How many players are in: the two who play. A lesson's teacher is not one. */
+  readonly players: number;
   /** Two players in, and the second has been silent so long that the seat is free. */
   readonly seatFreedBySilence: boolean;
+  /**
+   * Who is reading a lesson's lobby, which is what adds the teacher's house to
+   * the drawing. Left out for a pair game, where its shutters stay closed.
+   */
+  readonly lesson?: LessonView;
 }
 
 /**
- * The drawing over the lobby, which says who is in (`lobby` and `lobby/waiting`
- * of the template, lines 940-947), with its three labels:
+ * The drawing over the lobby, which says who is in (`lobby`, `lobby/waiting`
+ * and, in a lesson, `lobby/nostudent` and `lobby/teacheraway` of the template,
+ * lines 940-947), with its labels (`street-labels.ts`):
  *
- * - the host alone: the second balcony empty and the line loose, the neighbour
- *   waiting;
+ * - nobody in (a lesson's first lobby): both balconies dark, no neighbour on
+ *   either, no line strung yet;
+ * - one in: the other balcony empty and the line loose, the neighbour waiting;
  * - both in: both balconies taken and the line taut, the neighbours waving;
  * - a seat freed by silence: both are still in the room, but the curtains of the
  *   second are drawn (`right="away"`) while the line stays taut.
  *
- * Cropped to the top, and with no teacher: the lesson's lobby is #234's.
+ * In a lesson the teacher is at the end of the street, at their window while
+ * their mark is fresh as this reader sees it and with the curtains drawn when it
+ * is old. On the teacher's own screen they are always at it.
  *
- * @param props.waiting - The host is alone
+ * Cropped to the top.
+ *
+ * @param props.players - How many players are in
  * @param props.seatFreedBySilence - The second player's seat has been freed by silence
+ * @param props.lesson - Who is reading, in a lesson
  *
  * @example
- * <LobbyStreet waiting={false} seatFreedBySilence={false} />
+ * <LobbyStreet players={2} seatFreedBySilence={false} />
+ * <LobbyStreet players={0} seatFreedBySilence={false} lesson={{ viewer: 'teacher' }} />
  */
-export const LobbyStreet = ({ waiting, seatFreedBySilence }: LobbyStreetProps) => {
-  if (waiting) {
+export const LobbyStreet = ({ players, seatFreedBySilence, lesson }: LobbyStreetProps) => {
+  const label = lobbyStreetLabel({ players, seatFreedBySilence, lesson });
+  const teacher = lesson === undefined ? undefined : teacherDrawnFor(lesson);
+  const left = players === 0 ? 'empty' : 'here';
+
+  if (players === 0) {
     return (
       <Street
+        left={left}
         right="empty"
-        line="loose"
+        line="none"
         mood="wait"
         crop="top"
-        label="Your balcony, and the one across the street still empty"
+        teacher={teacher}
+        label={label}
       />
     );
   }
 
-  if (seatFreedBySilence) {
+  if (players < 2) {
     return (
-      <Street
-        right="away"
-        line="taut"
-        mood="wave"
-        crop="top"
-        label="Both balconies taken, the curtains drawn across the street"
-      />
+      <Street right="empty" line="loose" mood="wait" crop="top" teacher={teacher} label={label} />
     );
   }
 
   return (
     <Street
-      right="here"
+      right={seatFreedBySilence ? 'away' : 'here'}
       line="taut"
       mood="wave"
       crop="top"
-      label="Both balconies taken, the line strung between them"
+      teacher={teacher}
+      label={label}
     />
   );
 };

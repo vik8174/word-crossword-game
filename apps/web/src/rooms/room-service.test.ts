@@ -456,3 +456,47 @@ describe('keeping a room alive', () => {
     expect((expiresAt as Date).getTime()).toBeGreaterThanOrEqual(before + ROOM_LIFETIME_MS);
   });
 });
+
+describe('createRoom, as a lesson', () => {
+  const createLesson = () =>
+    createRoom({ layout: LAYOUT, ownerNickname: 'Carmen', mode: 'lesson' });
+
+  it('records the signed-in user as the teacher, with nobody in players', async () => {
+    await createLesson();
+
+    expect(addDoc).toHaveBeenCalledWith(
+      ROOMS_REFERENCE,
+      expect.objectContaining({
+        mode: 'lesson',
+        ownerId: 'owner-uid',
+        players: {},
+        teacher: { nickname: 'Carmen', lastSeenAt: expect.any(Date) },
+      }),
+    );
+  });
+
+  it('writes a pair game with its mode stated, when no mode is given', async () => {
+    await create();
+
+    expect(addDoc).toHaveBeenCalledWith(ROOMS_REFERENCE, expect.objectContaining({ mode: 'pair' }));
+    expect(vi.mocked(addDoc).mock.calls[0]?.[1]).not.toHaveProperty('teacher');
+  });
+});
+
+describe('markPresence, for the teacher of a lesson', () => {
+  it('writes the teacher’s mark alone, and never an entry of players', async () => {
+    await markPresence({ roomId: 'room-1', playerId: 'owner-uid', isTeacher: true });
+
+    expect(Object.keys(writtenUpdate()).sort()).toEqual(['expiresAt', 'teacher.lastSeenAt']);
+    expect(writtenUpdate()['teacher.lastSeenAt']).toBeInstanceOf(Date);
+  });
+
+  it('keeps the lesson alive as it does a pair game, with a fresh 24 hours', async () => {
+    const before = Date.now();
+    await markPresence({ roomId: 'room-1', playerId: 'owner-uid', isTeacher: true });
+
+    const expiresAt = writtenUpdate().expiresAt as Date;
+
+    expect(expiresAt.getTime() - before).toBeGreaterThanOrEqual(ROOM_LIFETIME_MS);
+  });
+});

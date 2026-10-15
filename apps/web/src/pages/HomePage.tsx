@@ -3,6 +3,8 @@ import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { belowFrame } from '../components/frame-height';
+import { gateHintSx } from '../components/gate-panel-styles';
+import { lobbyTightStackSx } from '../components/lobby-styles';
 import { PillButton } from '../components/PillButton';
 import { BLOCKS_PROPS } from '../components/screen-blocks';
 import { ScreenEnter } from '../components/ScreenEnter';
@@ -40,8 +42,9 @@ const FROM_TABLET = '@media (min-width: 768px)';
  * action. The screen is at least the window less the frame's header
  * (`belowFrame`), so the steps' place is measured from the window's bottom.
  *
- * The lesson hint under the action is not here: there is no lesson to run yet
- * (issue #234).
+ * Under the action stands the hint that a lesson can be run (template line 841,
+ * 10px under the button): plain text, since the way into `/create` with the
+ * lesson already chosen is the lesson summary's issue (#236).
  *
  * Joining an existing game does not start here: players arrive straight at
  * their room link (issue #5), so the only action this page offers is creating
@@ -103,10 +106,15 @@ export const HomePage = () => {
             the board fills up between you.
           </Typography>
 
-          <Box>
-            <PillButton component={RouterLink} to="/create">
-              Create a game
-            </PillButton>
+          <Box sx={lobbyTightStackSx}>
+            <Box>
+              <PillButton component={RouterLink} to="/create">
+                Create a game
+              </PillButton>
+            </Box>
+            <Box component="p" sx={gateHintSx}>
+              Teaching a language? Run it as a lesson for two of your students.
+            </Box>
           </Box>
         </Box>
 

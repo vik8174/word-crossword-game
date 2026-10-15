@@ -91,3 +91,20 @@ The alternatives considered on the grill:
 - A class of five pairs costs the teacher five rooms and five copies of the word
   list. That is accepted until lessons are seen being run; a class view is the
   next decision if they are
+
+## Addendum (2026-10-15, [#234](https://github.com/vik8174/word-crossword-game/issues/234)): the teacher's fields
+
+The decision left the names to the issue that builds it. They are these, and the rules and the client read them the same way.
+
+- **`mode`**: `'pair'` or `'lesson'`, set when the room is created and never changed. A room written before lessons has no `mode` and is a pair game, so every read goes through a default: `roomModeOf` in `room-document.ts`, and `modeOf` in `firestore.rules` (`room.get('mode', 'pair')`). The rules read the **stored** value (`resource.data`) for every decision that depends on it, so a client cannot write `lesson` over a pair game to leave its rules, and a write that changes the value of `mode` is refused. The client writes `mode` on every new room, `pair` included.
+- **`teacher`**: `{ nickname: string, lastSeenAt: timestamp }`, present in a lesson and in no other room (the rules refuse a pair game that carries one, and a lesson that lacks one). The teacher is the room's owner, so their UID is `ownerId` and the map holds nothing else. It is the lesson's own copy of what a player's entry in `players` holds, without `joinedAt`: the teacher is not ordered among anybody, and their mark is required, because every lesson is a room this app wrote.
+- **The teacher's mark** is `teacher.lastSeenAt`, written as a leaf field by the owner's client every 15 s while the lesson is waited in or played ([0022](0022-a-mark-a-player-writes-for-themselves.md)), by `buildTeacherPresenceUpdate`. The rules let only the owner change it, and nobody change `teacher.nickname` afterwards. A student sees the teacher as away after the same `AWAY_AFTER_MS` (45 s) as a player. `awayDurationsIn` lists the teacher under `ownerId`, which nobody else in a lesson has, so everything that asks who is away reads one map.
+
+What changes in the rules, and what does not:
+
+- **`players` holds the two students and nobody else.** A lesson is born with `players` empty, the lower bound of its size is 0 and not 1 (`hasRoomForPlayers`, so the teacher's mark lands on a room with no student), and the upper bound is still 2 ([0024](0024-two-players-are-the-product-not-the-algorithm.md), `PLAYERS_PER_GAME`). `keepsTheOwnerIn` keeps the owner inside `players` in a pair game and, in a lesson, keeps them **out**: the teacher has a place of their own, and being in both would give them a seat nobody can take.
+- **The deal is unchanged.** `isValidStart` asks that the owner writes it and that `players` holds at least two, so with the ceiling it is exactly two students; the deal writes `words.<id>.hiddenFromPlayerId` as in a pair game. That the teacher does not write words is about guessing, and is the game's issue.
+- **Who may write `closed` by mode** is not part of this addendum: the ending is built with the teacher's view of the game ([#235](https://github.com/vik8174/word-crossword-game/issues/235)).
+- Every rule that existed for a pair game is unchanged, and every test of it passes unchanged.
+
+On the client the teacher is **always in their own room**: `roomAccessFor` answers `joined` for the owner of a lesson in every status (after the expiry check, like for a player), so the teacher is never offered the join form, never told the room is full and never told it has begun.

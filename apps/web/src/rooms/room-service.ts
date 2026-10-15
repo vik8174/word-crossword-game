@@ -17,8 +17,10 @@ import {
   buildPresenceUpdate,
   buildRoomDocument,
   buildStartGameUpdate,
+  buildTeacherPresenceUpdate,
   parseRoomDocument,
   type RoomDocument,
+  type RoomMode,
   type RoomUpdate,
 } from './room-document';
 import { ROOMS_COLLECTION } from './room-link';
@@ -44,8 +46,13 @@ const writeToRoom = (roomId: string, update: RoomUpdate): Promise<void> =>
 export interface CreateRoomInput {
   /** Layout the owner already reviewed, including the words that were dropped. */
   readonly layout: CrosswordLayout;
-  /** Name the owner will be known by — they join their own room as its first player. */
+  /**
+   * Name the owner will be known by. In a pair game they join their own room as
+   * its first player; in a lesson they are its teacher and play nowhere.
+   */
   readonly ownerNickname: string;
+  /** What the room is for; `pair` unless given. */
+  readonly mode?: RoomMode;
 }
 
 /**
@@ -67,21 +74,28 @@ export const signInPlayer = async (): Promise<string> => {
 };
 
 /**
- * Creates a room in Firestore and puts the owner in it as the first player.
+ * Creates a room in Firestore. In a pair game the owner is put in it as the
+ * first player; in a lesson they are recorded as its teacher, outside `players`.
  *
- * @param input - The reviewed crossword layout and the owner's nickname
+ * @param input - The reviewed crossword layout, the owner's nickname and the mode
  * @returns Id of the created room — the part of the invite link players open
  * @throws Error from Firebase when sign-in or the write is rejected, and from
  * `buildRoomDocument` when the layout holds no placed word
  *
  * @example
  * const roomId = await createRoom({ layout, ownerNickname: 'Vik' });
+ * const lessonId = await createRoom({ layout, ownerNickname: 'Carmen', mode: 'lesson' });
  */
-export const createRoom = async ({ layout, ownerNickname }: CreateRoomInput): Promise<string> => {
+export const createRoom = async ({
+  layout,
+  ownerNickname,
+  mode = 'pair',
+}: CreateRoomInput): Promise<string> => {
   const ownerId = await signInPlayer();
   const room = buildRoomDocument({
     ownerId,
     ownerNickname,
+    mode,
     layout,
     createdAt: new Date(),
   });
@@ -171,6 +185,11 @@ export interface MarkPresenceInput {
   readonly roomId: string;
   /** Firebase Auth UID of the player writing about themselves. */
   readonly playerId: string;
+  /**
+   * Whether this is the teacher of a lesson, whose mark is in `teacher` and not
+   * in `players`. `false` unless given.
+   */
+  readonly isTeacher?: boolean;
 }
 
 /**
@@ -179,18 +198,28 @@ export interface MarkPresenceInput {
  * Called on a timer for as long as a client sits in a room that is being waited
  * in or played, so it is the most frequent write this app makes — and the
  * smallest: the one leaf field `players.<uid>.lastSeenAt` (see
- * {@link buildPresenceUpdate}). A client only ever writes its own mark; what
- * the others make of it is decided when they read it, never written down.
+ * {@link buildPresenceUpdate}), or a lesson teacher's `teacher.lastSeenAt` (see
+ * {@link buildTeacherPresenceUpdate}). A client only ever writes its own mark;
+ * what the others make of it is decided when they read it, never written down.
  *
- * @param input - The room and the player marking themselves present
+ * @param input - The room, the player marking themselves present, and whether they teach it
  * @throws Error from Firebase when the write is rejected — which, since the
  * rules refuse writes to nothing else here, means the room has expired
  *
  * @example
  * await markPresence({ roomId, playerId });
  */
-export const markPresence = async ({ roomId, playerId }: MarkPresenceInput): Promise<void> => {
-  await writeToRoom(roomId, buildPresenceUpdate(playerId, new Date()));
+export const markPresence = async ({
+  roomId,
+  playerId,
+  isTeacher = false,
+}: MarkPresenceInput): Promise<void> => {
+  const now = new Date();
+
+  await writeToRoom(
+    roomId,
+    isTeacher ? buildTeacherPresenceUpdate(now) : buildPresenceUpdate(playerId, now),
+  );
 };
 
 /** The room to start, as its owner currently sees it. */

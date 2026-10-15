@@ -29,6 +29,8 @@ const {
   hair: HAIR,
 } = DRAWING_PALETTE;
 
+/** The left-hand balcony: a neighbour, or nobody yet (a lesson's first lobby). */
+export type StreetLeft = 'here' | 'empty';
 /** The right-hand balcony: a neighbour, curtains drawn, nobody yet, or shutters closed. */
 export type StreetRight = 'here' | 'away' | 'empty' | 'shut';
 /** The line between the cans. */
@@ -63,6 +65,12 @@ type LineProps =
   | { readonly line: 'loose'; readonly thrown?: boolean };
 
 export type StreetProps = LineProps & {
+  /**
+   * The left-hand balcony. `here` unless given. `empty` is a balcony nobody has
+   * come out on yet: its window is dark and no neighbour stands in it, which is
+   * the teacher's first lobby, before the first student has joined.
+   */
+  readonly left?: StreetLeft;
   /** The right-hand balcony. `here` unless given. */
   readonly right?: StreetRight;
   /** How the neighbours behave. `talk` unless given. */
@@ -106,6 +114,7 @@ const SVG_STYLE: CSSProperties = { display: 'block', width: '100%', height: 'aut
  * <Street right="empty" line="loose" crop="top" mood="wave" label="A neighbour waiting" />
  */
 export const Street = ({
+  left = 'here',
   right = 'here',
   line = 'taut',
   thrown = false,
@@ -170,20 +179,22 @@ export const Street = ({
         <WallPot x={44} y={150} />
         <WallPot x={76} y={158} />
         <Shutters x1={118} x2={198} y1={168} y2={290} />
-        <path d={leftArch} fill={LIT} />
-        <g className="who" stroke="none">
-          <Person
-            x={160}
-            y={210}
-            facing={1}
-            face={mood.L[0]}
-            arm={mood.L[1]}
-            skin={SKIN[0]}
-            hair={HAIR[0]}
-            shirt={TERRA}
-            can={P0}
-          />
-        </g>
+        <path d={leftArch} fill={left === 'here' ? LIT : DARK} />
+        {left === 'here' && (
+          <g className="who" stroke="none">
+            <Person
+              x={160}
+              y={210}
+              facing={1}
+              face={mood.L[0]}
+              arm={mood.L[1]}
+              skin={SKIN[0]}
+              hair={HAIR[0]}
+              shirt={TERRA}
+              can={P0}
+            />
+          </g>
+        )}
         <Rail x1={112} x2={204} y={256} />
         <Geraniums x={124} y={256} />
         <Rejas x={44} y={340} lit={false} />

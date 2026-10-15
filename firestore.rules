@@ -19,13 +19,78 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Every field a room document may hold, and no other.
+    // Every field a room document must hold.
     function roomFields() {
       return ['status', 'ownerId', 'layout', 'words', 'players', 'createdAt', 'expiresAt'];
     }
 
+    // The two a room may hold besides: its mode, and a lesson's teacher. A room
+    // written before lessons existed has neither, so neither can be required —
+    // the same reason `mode` is always read with a default (see `modeOf`).
+    function lessonFields() {
+      return ['mode', 'teacher'];
+    }
+
     function hasExactlyRoomFields(room) {
-      return room.keys().hasOnly(roomFields()) && room.keys().hasAll(roomFields());
+      return room.keys().hasOnly(roomFields().concat(lessonFields()))
+        && room.keys().hasAll(roomFields());
+    }
+
+    // The mode a room is played in: 'pair' or 'lesson'
+    // (docs/decisions/0037-a-lesson-is-run-by-a-teacher-who-does-not-play.md).
+    // A room written before lessons existed has no `mode` field, and a bare
+    // `room.mode` fails on it, so every read goes through here and means 'pair'
+    // when the field is absent. Every rule below that depends on the mode reads
+    // it from the STORED document (`resource.data`) and never from what the
+    // client is writing: a client that could write 'lesson' to escape a pair
+    // game's rules would have escaped them.
+    function modeOf(room) {
+      return room.get('mode', 'pair');
+    }
+
+    function isLesson(room) {
+      return modeOf(room) == 'lesson';
+    }
+
+    // A lesson's teacher is not a player: a nickname and a presence mark of
+    // their own, outside `players`, so everything read from `players` (the seat
+    // count, the deal, the freeze) is unchanged. The ADR 0037 addendum records
+    // the names.
+    function isTeacherMark(teacher) {
+      return teacher is map
+        && teacher.keys().hasOnly(['nickname', 'lastSeenAt'])
+        && teacher.keys().hasAll(['nickname', 'lastSeenAt'])
+        && teacher.nickname is string
+        && teacher.lastSeenAt is timestamp;
+    }
+
+    // The mode is one of the two, a lesson carries its teacher, and a pair game
+    // carries none. Said of the document being written, so a client cannot
+    // dress a pair game as a lesson or the other way round.
+    function hasValidMode(room) {
+      return modeOf(room) in ['pair', 'lesson']
+        && (isLesson(room)
+          ? ('teacher' in room && isTeacherMark(room.teacher))
+          : !('teacher' in room));
+    }
+
+    // The mode is settled at creation and never changes: it decides who the
+    // seats are for, and switching it with somebody seated is a new race over a
+    // seat. A room without the field reads as 'pair', so writing 'pair' onto it
+    // changes nothing and writing 'lesson' onto it is refused.
+    function keepsMode(before, after) {
+      return modeOf(after) == modeOf(before);
+    }
+
+    // Only the teacher writes the teacher's mark, and only the mark: the
+    // nickname they arrived under stays. A student rewriting either would
+    // either impersonate the teacher or hold a lobby open by keeping their
+    // mark fresh from the wrong browser.
+    function keepsTheTeacher(before, after) {
+      return !isLesson(before)
+        || (after.teacher.nickname == before.teacher.nickname
+          && (after.teacher.lastSeenAt == before.teacher.lastSeenAt
+            || request.auth.uid == before.ownerId));
     }
 
     // A room must expire, must not be born already expired (a badly skewed
@@ -57,8 +122,16 @@ service cloud.firestore {
     // `players.<uid>` with no re-read behind it, so a client that stopped at a
     // size these rules had not stopped at yet would leave the seats between the
     // two numbers to a race, decided by nothing.
-    function hasRoomForPlayers(room) {
-      return room.players.size() >= 1 && room.players.size() <= 2;
+    //
+    // In a lesson the lower bound is 0, not 1: the owner is the teacher and is
+    // not a player, so the room is born with no one in `players` and every
+    // write the teacher makes before the first student arrives (their presence
+    // mark, every fifteen seconds) lands on such a room.
+    //
+    // The mode that counts is the stored one, so this takes the room as it
+    // stands and the room as it would be.
+    function hasRoomForPlayers(before, after) {
+      return after.players.size() <= 2 && (isLesson(before) || after.players.size() >= 1);
     }
 
     // The two ways a game ends: its crossword was finished, or a player ended it
@@ -141,18 +214,34 @@ service cloud.firestore {
     // owner is, not how long ago anybody wrote, so unlike the thresholds
     // presence is built on it needs no number kept in step with the client by
     // hand. Outside the lobby the freeze above already covers it.
+    //
+    // Only in a pair game. A lesson's owner is its teacher, who is not a player
+    // and is kept out of `players` instead: they have a place of their own in
+    // the document, and being in both would give them a seat nobody can take
+    // and a game they were also running.
     function keepsTheOwnerIn(before, after) {
-      return after.players.keys().hasAll([before.ownerId]);
+      return isLesson(before)
+        ? !after.players.keys().hasAny([before.ownerId])
+        : after.players.keys().hasAll([before.ownerId]);
+    }
+
+    // Who is in a room that has just been made: the owner alone in a pair game,
+    // where they also play, and nobody in a lesson, where they teach.
+    function hasValidFirstRoster(room) {
+      return isLesson(room)
+        ? room.players.size() == 0
+        : (room.players.keys().hasOnly([request.auth.uid])
+          && room.players.keys().hasAll([request.auth.uid]));
     }
 
     function isValidNewRoom() {
       let room = request.resource.data;
 
       return hasExactlyRoomFields(room)
+        && hasValidMode(room)
         && room.status == 'lobby'
         && room.ownerId == request.auth.uid
-        && room.players.keys().hasOnly([request.auth.uid])
-        && room.players.keys().hasAll([request.auth.uid])
+        && hasValidFirstRoster(room)
         && room.createdAt is timestamp
         && expiresWithinLifetime(room)
         // A room with no grid is unplayable, and one word state per placed
@@ -170,6 +259,9 @@ service cloud.firestore {
       let after = request.resource.data;
 
       return hasExactlyRoomFields(after)
+        && hasValidMode(after)
+        && keepsMode(before, after)
+        && keepsTheTeacher(before, after)
         && hasValidStatus(before, after)
         && isValidStart(before, after)
         && freezesPlayersOnceDealt(before, after)
@@ -178,7 +270,7 @@ service cloud.firestore {
         && after.ownerId == before.ownerId
         && after.createdAt == before.createdAt
         && after.words.size() == before.words.size()
-        && hasRoomForPlayers(after)
+        && hasRoomForPlayers(before, after)
         && isStillAlive(before)
         && expiresWithinLifetime(after);
     }

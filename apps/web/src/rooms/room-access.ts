@@ -1,5 +1,5 @@
 import { hasLeftTheSeat, silenceOf } from './presence';
-import { isTerminalStatus, type RoomDocumentShape } from './room-document';
+import { isTeacherOf, isTerminalStatus, type RoomDocumentShape, roomModeOf } from './room-document';
 
 /**
  * Who may do what in a room, decided from the room document alone.
@@ -97,7 +97,7 @@ export const roomAccessFor = (room: ReadableRoom, playerId: string, now: Date): 
     return 'expired';
   }
 
-  if (Object.hasOwn(room.players, playerId)) {
+  if (Object.hasOwn(room.players, playerId) || isTeacherOf(room, playerId)) {
     return 'joined';
   }
 
@@ -186,6 +186,27 @@ export const abandonedSeatIn = (room: ReadableRoom, now: Date): string | null =>
 
   return abandoned?.[0] ?? null;
 };
+
+/** What the invitation calls an owner whose name is missing from a room that should hold it. */
+const UNKNOWN_OWNER = 'Somebody';
+
+/**
+ * The name the person who made the room goes by in it.
+ *
+ * Where it is written depends on the mode: a pair game's owner is its first
+ * player, and a lesson's is its teacher, who is in no player's entry. The
+ * invitation names them, and a room that lacks the name — not one this app
+ * wrote — says "Somebody" rather than nothing.
+ *
+ * @param room - The room document as read from Firestore
+ * @returns The owner's nickname, or "Somebody"
+ *
+ * @example
+ * ownerNicknameOf(room); // 'Vik'
+ */
+export const ownerNicknameOf = (room: ReadableRoom): string =>
+  (roomModeOf(room) === 'lesson' ? room.teacher?.nickname : room.players[room.ownerId]?.nickname) ??
+  UNKNOWN_OWNER;
 
 /** A player as the player list shows them. */
 export interface RoomPlayerEntry {
