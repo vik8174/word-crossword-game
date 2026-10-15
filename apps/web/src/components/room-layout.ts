@@ -23,7 +23,13 @@ import { inRem } from '../scale';
  * move opens a virtual keyboard over half the screen, and `100dvh` on iOS Safari
  * is not the height that is visible.
  */
-const APP_SHELL_MIN_WIDTH = 768;
+export const APP_SHELL_MIN_WIDTH = 768;
+
+/** How far the room stands from either side of a phone's window, in pixels (`--pad`, 18). */
+export const PHONE_SIDE_PX = 18;
+
+/** The same on a tablet: 32. */
+export const TABLET_SIDE_PX = 32;
 
 /**
  * Shortest window the application layout is used in.

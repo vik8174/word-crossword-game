@@ -13,7 +13,14 @@
  */
 
 import { belowFrame, FRAME_HEADER_FALLBACK } from './frame-height';
-import { APP_SHELL_MIN_HEIGHT, middleWidthAt, THREE_ZONE_MIN_WIDTH } from './room-layout';
+import {
+  APP_SHELL_MIN_HEIGHT,
+  APP_SHELL_MIN_WIDTH,
+  middleWidthAt,
+  PHONE_SIDE_PX,
+  TABLET_SIDE_PX,
+  THREE_ZONE_MIN_WIDTH,
+} from './room-layout';
 
 /** A rectangle the board is drawn into, in CSS pixels. */
 export interface BoardBox {
@@ -200,6 +207,123 @@ export const bandIsShown = (window: BoardBox, shape: BoardShape): boolean => {
   const height = Math.min(share, rows * (MAX_CELL_SIZE + CELL_GAP) - CELL_GAP);
 
   return cellSizeIn({ width: middleWidthAt(window.width), height }, shape) >= BAND_MIN_CELL_SIZE;
+};
+
+/**
+ * What stands between the band and the board: nothing but the gap, or a line of
+ * text as well.
+ *
+ * Ended early says "Of the N words, the ones that were answered are in place;
+ * the rest stay blank." between the two (`state-tree.html`, line 1066), and that
+ * line is paid for out of the board's height like the band is.
+ */
+export type BandAbove = 'none' | 'band' | 'band-with-note';
+
+/**
+ * The space under the band on Ended early, in pixels: the 14 above the line, the
+ * line itself (16px text at a line height of 1.5, 24), and the 12 above the
+ * board (`state-tree.html`, lines 1065-1067).
+ */
+export const BAND_NOTE_GAP = 14 + 24 + 12;
+
+/** The space under the band, in pixels, for each way the band is shown. */
+const gapUnderBand = (above: BandAbove): number =>
+  above === 'band-with-note' ? BAND_NOTE_GAP : BAND_GAP;
+
+/**
+ * The height of the band and everything between it and the board, as the
+ * browser works it out: the middle zone is a size container in width
+ * (`RoomShell`), so `cqw` is that zone's width.
+ */
+const bandAboveCss = (above: BandAbove): string =>
+  `calc(100cqw * 226 / 640 + ${gapUnderBand(above)}px)`;
+
+/**
+ * The height of a board with the band above it, in a window where the board's
+ * share is `share`: the share less the band, never less than the squares at
+ * their floor ({@link MIN_CELL_SIZE}) need and never more than they could use.
+ *
+ * The floor is what keeps a tall board from being squeezed out altogether by a
+ * band on a wide, low window. Under it the zone scrolls rather than the squares
+ * shrinking further, which ADR 0029 allows.
+ */
+const heightBelowBand = (share: string, above: BandAbove): string =>
+  `max(calc(var(--board-rows) * ${MIN_CELL_SIZE + CELL_GAP}px - ${CELL_GAP}px), min(calc(${share} - ${bandAboveCss(above)}), calc(var(--board-rows) * ${MAX_CELL_SIZE + CELL_GAP}px - ${CELL_GAP}px)))`;
+
+/**
+ * The three heights a board takes, by the window it stands in: a phone, an
+ * application window, and a window wide enough for three zones.
+ */
+export interface BoardHeights {
+  readonly phone: string;
+  readonly appShell: string;
+  readonly wide: string;
+}
+
+/**
+ * The heights a board is given, for the drawing that stands above it.
+ *
+ * A phone is a page that scrolls, so the band costs the board nothing there and
+ * its height is the same with the band or without. From a tablet up the room is
+ * one window, and the band comes out of what the board has.
+ *
+ * @param above - What stands above the board
+ * @returns The CSS height for each of the three windows
+ *
+ * @example
+ * boardHeightsFor('band').wide; // the wide window's share, less the band
+ */
+export const boardHeightsFor = (above: BandAbove): BoardHeights =>
+  above === 'none'
+    ? {
+        phone: BOARD_HEIGHT_CSS,
+        appShell: APP_SHELL_BOARD_HEIGHT_CSS,
+        wide: WIDE_BOARD_HEIGHT_CSS,
+      }
+    : {
+        phone: BOARD_HEIGHT_CSS,
+        appShell: heightBelowBand(belowFrame(`${BOARD_HEIGHT_PERCENT}dvh`), above),
+        wide: heightBelowBand(belowFrame(`${WIDE_BOARD_HEIGHT_PERCENT}dvh`), above),
+      };
+
+/**
+ * The rectangle a board is drawn into, in pixels, in a window of this size with
+ * the band above it. The same arithmetic as {@link boardHeightsFor}, done in
+ * numbers so a test can pin it without a browser to lay anything out.
+ *
+ * The middle zone is the window less the room's padding on a phone and a
+ * tablet, and the third zone of a wide window (`middleWidthAt`). The height is
+ * never below what squares at their floor need: past that the zone scrolls.
+ *
+ * @param window - The window's width and height in pixels
+ * @param shape - The laid-out crossword's size in squares
+ * @param above - What stands above the board
+ * @returns The board's width and height
+ *
+ * @example
+ * boardBoxIn({ width: 1440, height: 900 }, { cols: 11, rows: 11 }, 'band'); // { width: 684, height: 378.5 }
+ */
+export const boardBoxIn = (window: BoardBox, shape: BoardShape, above: BandAbove): BoardBox => {
+  const rows = Math.max(1, shape.rows);
+  const tallest = rows * (MAX_CELL_SIZE + CELL_GAP) - CELL_GAP;
+  const lowest = rows * (MIN_CELL_SIZE + CELL_GAP) - CELL_GAP;
+  const isApplication =
+    window.width >= APP_SHELL_MIN_WIDTH && window.height >= APP_SHELL_MIN_HEIGHT;
+
+  if (!isApplication) {
+    const width = window.width - 2 * PHONE_SIDE_PX;
+    const height = Math.min((BOARD_HEIGHT_PERCENT / 100) * window.height, tallest);
+
+    return { width, height };
+  }
+
+  const isWide = window.width >= THREE_ZONE_MIN_WIDTH;
+  const width = isWide ? middleWidthAt(window.width) : window.width - 2 * TABLET_SIDE_PX;
+  const percent = isWide ? WIDE_BOARD_HEIGHT_PERCENT : BOARD_HEIGHT_PERCENT;
+  const share = (percent / 100) * window.height - FRAME_HEADER_FALLBACK;
+  const band = above === 'none' ? 0 : width * BAND_ASPECT + gapUnderBand(above);
+
+  return { width, height: Math.max(lowest, Math.min(share - band, tallest)) };
 };
 
 /** The custom property the side of a square is published as. */

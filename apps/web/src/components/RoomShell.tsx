@@ -103,11 +103,12 @@ const Zone = ({ area, phoneOrder, isEmpty, isColumn, isWidthContainer, children 
           ...(isColumn
             ? { display: 'flex', flexDirection: 'column', gap: inRem(18) }
             : { display: 'block' }),
+          // A size container in width, so that the board can take the drawing's
+          // height off its own: the drawing is as tall as this zone is wide
+          // (`board-geometry.ts`). From a tablet up, where the room is one window
+          // and the board has to give way to the drawing.
+          ...(isWidthContainer === true ? { containerType: 'inline-size' } : {}),
         },
-        // A size container in width, so that the board can take the drawing's
-        // height off its own: the drawing is as tall as this zone is wide
-        // (`board-geometry.ts`).
-        ...(isWidthContainer === true ? { [THREE_ZONES]: { containerType: 'inline-size' } } : {}),
       }}
     >
       {children}

@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
 import { answeredSpellings } from '../rooms/answered-spellings';
+import { answeredWordsOf } from '../rooms/answered-words';
 import { openGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
 import type { RoomDocument } from '../rooms/room-document';
@@ -211,24 +212,7 @@ export const RoomGame = ({
   );
   // Every answered word, in the order the board numbers them: the ones this
   // player explained and the ones they guessed.
-  const answeredWords = useMemo(() => {
-    if (wordView.kind !== 'dealt') {
-      return [];
-    }
-
-    return [
-      ...wordView.toExplain
-        .filter((word) => word.isSolved)
-        .map((word) => ({ number: word.number, word: word.word })),
-      ...wordView.toGuess.flatMap((word) => {
-        const spelling = spellings?.get(word.id);
-
-        return spelling === undefined ? [] : [{ number: word.number, word: spelling }];
-      }),
-    ]
-      .sort((one, other) => one.number - other.number)
-      .map((entry) => entry.word);
-  }, [wordView, spellings]);
+  const answeredWords = useMemo(() => answeredWordsOf(wordView, gridView), [wordView, gridView]);
 
   // The two zones the board sits between, and the one thing the deal can leave
   // a player with instead of them. Built as values rather than inline, so it is
