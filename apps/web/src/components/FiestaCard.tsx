@@ -26,7 +26,7 @@ const FLAG_COLOURS = [
   LEAF,
 ] as const;
 
-/** A property that sets `--k`, the index #230 delays each flag by. */
+/** A property that sets `--k`, the index that staggers each flag (`motion-play-styles.ts`). */
 const indexed = (k: number): CSSProperties => ({ '--k': k }) as CSSProperties;
 
 /**
@@ -56,7 +56,9 @@ interface FiestaCardProps {
  * lines 98-105 and 1035-1041).
  *
  * It is drawn at rest. The flags carry `--k` and the `flag` class, the hooks
- * #230 animates, and nothing here moves. White on fiesta red is 5.95:1, which is
+ * `motion-play-styles.ts` moves: the card springs up and the flags drop and sway
+ * only when the game finishes under the player's eyes (`ScreenEnter`), and
+ * nothing here moves by itself. White on fiesta red is 5.95:1, which is
  * computed from the card's `background-color` with the dots left out.
  *
  * @param props.headline - The shout

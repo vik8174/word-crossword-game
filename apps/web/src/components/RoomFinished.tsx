@@ -39,8 +39,9 @@ interface RoomFinishedProps {
  * and carries every word as a tile. The drawing above the board is the whole
  * street at a fiesta, with every word hanging on the line, and it is always
  * shown: nobody types here, so the board gives way to it
- * (`boardHeightsFor` in `board-geometry.ts`). Nothing in it moves; the
- * lanterns, the confetti and the card's spring are #230's.
+ * (`boardHeightsFor` in `board-geometry.ts`). The fiesta arrives when the game
+ * finishes under the player's eyes and stands, with only the flags and the
+ * lanterns swaying, when the room is opened finished (`ScreenEnter`).
  *
  * It takes no callbacks because there is nothing left to call. The room is
  * closed for good, since `completed` is terminal in the security rules, and the
