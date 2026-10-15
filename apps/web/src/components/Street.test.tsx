@@ -3,6 +3,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import { STREET } from '../street';
+import { DRAWING_PALETTE } from './street-drawing-palette';
 import { Street } from './Street';
 
 const LABEL = 'A street, as the screen words it';
@@ -62,6 +64,33 @@ describe('Street: who is on the balconies', () => {
     expect(people({ label: LABEL, right: 'empty' })).toBe(1);
     expect(people({ label: LABEL, right: 'away' })).toBe(1);
     expect(people({ label: LABEL, right: 'shut' })).toBe(1);
+  });
+
+  it('leaves the left balcony empty when nobody has come out on it yet', () => {
+    expect(people({ label: LABEL, left: 'here' })).toBe(2);
+    expect(people({ label: LABEL, left: 'empty' })).toBe(1);
+    expect(people({ label: LABEL, left: 'empty', right: 'empty' })).toBe(0);
+    expect(people({ label: LABEL, left: 'empty', right: 'empty', teacher: 'here' })).toBe(1);
+  });
+
+  it('shows an empty left balcony as a dark window and a lit one as a neighbour’s', () => {
+    const archFill = (left?: 'here' | 'empty') =>
+      svgOf(render(<Street label={LABEL} left={left} />).container)
+        .querySelector('path[d="M118 290V200a40 40 0 0 1 80 0v90Z"]')
+        ?.getAttribute('fill');
+
+    expect(archFill()).toBe(STREET.ochre);
+    expect(archFill('here')).toBe(STREET.ochre);
+    expect(archFill('empty')).toBe(DRAWING_PALETTE.dark);
+  });
+
+  it('draws no hand holding the line’s end on an empty left balcony', () => {
+    const cans = (left: 'here' | 'empty') =>
+      svgOf(render(<Street label={LABEL} left={left} line="none" />).container).querySelectorAll(
+        `rect[fill="${DRAWING_PALETTE.can}"]`,
+      ).length;
+
+    expect(cans('here')).toBe(cans('empty') + 1);
   });
 
   it('puts the teacher at the end of the street only when she is here', () => {
