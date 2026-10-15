@@ -574,6 +574,32 @@ describe('the board on a phone held upright', () => {
     expect(box.height).toBe(11 * (MAX_CELL_SIZE + CELL_GAP) - CELL_GAP);
   });
 
+  it('keeps the tablet’s box on an iPad on its side, which is not an application (1024 by 768)', () => {
+    const box = boardBoxIn({ width: 1024, height: 768 }, MANY_BOARD, 'none');
+
+    // The tablet's arrangement and sizing: 32 either side, and 62% of the window
+    // less the header. The phone's would be 988 wide and 62% of 768 high.
+    expect(box.width).toBe(1024 - 2 * 32);
+    expect(box.height).toBeCloseTo(0.62 * 768 - FRAME_HEADER_FALLBACK, 6);
+  });
+
+  it('draws the same box from 900 high, where the tablet is an application (1024 by 900)', () => {
+    const box = boardBoxIn({ width: 1024, height: 900 }, MANY_BOARD, 'none');
+
+    expect(box.width).toBe(1024 - 2 * 32);
+    expect(box.height).toBeCloseTo(0.62 * 900 - FRAME_HEADER_FALLBACK, 6);
+  });
+
+  it('keeps the wide window an application from 600 high, and a document under it (1200 by 600)', () => {
+    const application = boardBoxIn({ width: 1200, height: 600 }, MANY_BOARD, 'none');
+    const document = boardBoxIn({ width: 1200, height: 599 }, MANY_BOARD, 'none');
+
+    expect(application.width).toBe(middleWidthAt(1200));
+    expect(application.height).toBeCloseTo(0.78 * 600 - FRAME_HEADER_FALLBACK, 6);
+    expect(document.width).toBe(1200 - 2 * 18);
+    expect(document.height).toBeCloseTo(0.62 * 599, 6);
+  });
+
   it(
     'is exactly the grid’s height on every seeded layout whose grid fits at 375 by 812',
     () => {

@@ -2,7 +2,22 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { RoomShell, ZONE_RING_ROOM_PX } from './RoomShell';
+import { APP_SHELL, ARRANGED_ROOM } from './room-layout';
 import { OUTLINE_WIDTH } from './surface-styles';
+
+/** What the stylesheet declares for an element inside a media query. */
+const declaredIn = (query: string, element: Element): string => {
+  const sheet = [...document.querySelectorAll('style')]
+    .map((style) => style.textContent ?? '')
+    .join('\n');
+  // The stylesheet writes a list of queries without a space after the comma.
+  const escaped = query.replace(/, /g, ',').replace(/[().*+?^${}|[\]\\]/g, '\\$&');
+
+  return [...element.classList]
+    .map((name) => new RegExp(`${escaped}\\{\\.${name}\\{([^}]*)\\}`).exec(sheet))
+    .map((match) => match?.[1] ?? '')
+    .join(';');
+};
 
 describe('RoomShell', () => {
   it('names the room once, whatever the room is doing', () => {
@@ -80,22 +95,8 @@ describe('RoomShell', () => {
     });
   });
 
-  describe('where a zone scrolls, from a tablet up', () => {
-    /** What the stylesheet declares for an element inside the app shell's media query. */
-    const declaredInAppShell = (element: Element): string => {
-      const sheet = [...document.querySelectorAll('style')]
-        .map((style) => style.textContent ?? '')
-        .join('\n');
-
-      return [...element.classList]
-        .map((name) =>
-          new RegExp(
-            `@media \\(min-width: 768px\\) and \\(min-height: 600px\\)\\{\\.${name}\\{([^}]*)\\}`,
-          ).exec(sheet),
-        )
-        .map((match) => match?.[1] ?? '')
-        .join(';');
-    };
+  describe('where a zone scrolls, in an application', () => {
+    const declaredInAppShell = (element: Element): string => declaredIn(APP_SHELL, element);
 
     it('leaves room round what stands at its edge for the ring a message draws outside its box', () => {
       // A message's ring is an outer shadow, and a scroll container clips
@@ -131,6 +132,33 @@ describe('RoomShell', () => {
       expect(getComputedStyle(cell).overflow).not.toMatch(/auto|hidden|scroll/);
     });
   });
+  describe('a tablet too short to be an application (issue #274)', () => {
+    it('lays the zones out in the tablet’s arrangement from 600 high, with no scroll box and no fixed height', () => {
+      render(
+        <RoomShell left={<p>yours to explain</p>} right={<p>yours to guess</p>}>
+          <p>the board</p>
+        </RoomShell>,
+      );
+
+      const main = screen.getByRole('main');
+      const frame = main.parentElement as HTMLElement;
+      const zone = screen.getByText('yours to explain').parentElement as HTMLElement;
+
+      // The arrangement, asked for by the window's size alone.
+      expect(declaredIn(ARRANGED_ROOM, main)).toContain('grid-template-columns:1fr 1fr');
+      expect(declaredIn(ARRANGED_ROOM, main)).toContain(
+        'grid-template-areas:"board board" "left right"',
+      );
+      // What only an application has: the fixed height, the row that takes what
+      // the board leaves, and the scroll box.
+      expect(declaredIn(ARRANGED_ROOM, frame)).not.toMatch(/height|overflow/);
+      expect(declaredIn(ARRANGED_ROOM, main)).not.toMatch(/minmax|flex:1/);
+      expect(declaredIn(ARRANGED_ROOM, zone)).not.toMatch(/overflow/);
+      expect(declaredIn(APP_SHELL, frame)).toContain('overflow:hidden');
+      expect(declaredIn(APP_SHELL, main)).toContain('grid-template-rows:auto minmax(0, 1fr)');
+    });
+  });
+
   describe('on a phone, where the zones stand one under the other', () => {
     /** The `order` the zone round some content is laid out in: the page's own, before any width is asked. */
     const orderOf = (content: string): string =>

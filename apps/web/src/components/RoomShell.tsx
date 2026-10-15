@@ -6,7 +6,7 @@ import { inRem } from '../scale';
 import { belowFrame } from './frame-height';
 import { FROM_TABLET, FROM_WIDE } from './frame-styles';
 import { LobbyArrangement } from './LobbyArrangement';
-import { APP_SHELL, SIDE_ZONE_WIDTH, THREE_ZONES, ZONES_GAP } from './room-layout';
+import { APP_SHELL, ARRANGED_ROOM, SIDE_ZONE_WIDTH, THREE_ZONES, ZONES_GAP } from './room-layout';
 import { BLOCKS_PROPS } from './screen-blocks';
 import { UNSEEN_HEADING } from './surface-styles';
 
@@ -84,7 +84,7 @@ const Zone = ({ area, phoneOrder, isEmpty, isColumn, isWidthContainer, children 
       order: phoneOrder,
       minWidth: 0,
       ...(isEmpty ? { display: 'none' } : {}),
-      [APP_SHELL]: {
+      [ARRANGED_ROOM]: {
         order: 0,
         display: isEmpty ? 'block' : 'flex',
         flexDirection: 'column',
@@ -98,18 +98,23 @@ const Zone = ({ area, phoneOrder, isEmpty, isColumn, isWidthContainer, children 
         // A side is a column of blocks 18px apart at every width, a phone's
         // included (`.stack`, template line 115), not only inside the shell.
         ...(isColumn ? { display: 'flex', flexDirection: 'column', gap: inRem(18) } : {}),
-        [APP_SHELL]: {
+        [ARRANGED_ROOM]: {
           flex: '1 1 auto',
           minHeight: 0,
-          overflowY: 'auto',
-          margin: `-${ZONE_RING_ROOM_PX}px`,
-          padding: `${ZONE_RING_ROOM_PX}px`,
           ...(isColumn ? {} : { display: 'block' }),
           // A size container in width, so that the board can take the drawing's
           // height off its own: the drawing is as tall as this zone is wide
-          // (`board-geometry.ts`). From a tablet up, where the room is one window
-          // and the board has to give way to the drawing.
+          // (`board-geometry.ts`). From a tablet up, where the board has to give
+          // way to the drawing.
           ...(isWidthContainer === true ? { containerType: 'inline-size' } : {}),
+        },
+        // The scroll box is the application's alone. A tablet too short to be one
+        // keeps the arrangement above and lets every zone take its content's
+        // height, with the page doing the scrolling (issue #274).
+        [APP_SHELL]: {
+          overflowY: 'auto',
+          margin: `-${ZONE_RING_ROOM_PX}px`,
+          padding: `${ZONE_RING_ROOM_PX}px`,
         },
       }}
     >
@@ -179,13 +184,15 @@ type RoomShellProps = RoomZonesProps;
  * `room-layout.ts`), so the same elements are on the page whatever the screen:
  *
  * - a phone gets a document — one column, and the page scrolls
- * - a tablet gets the application, with the board across the top and the two
- *   indexes side by side underneath, because at that width a board with a column
- *   either side of it is narrower than the one the room has today
- * - a wide screen gets the three zones proper
+ * - a tablet gets the board across the top and the two indexes side by side
+ *   underneath, because at that width a board with a column either side of it is
+ *   narrower than the one the room has today. It is an application, with a fixed
+ *   height, only from 900 high; a tablet on its side (1024 by 768) is a document
+ *   that scrolls, with the same arrangement (ADR 0029, addendum of issue #274)
+ * - a wide screen gets the three zones proper, as an application from 600 high
  *
- * The height is fixed from a tablet up and nothing but a zone scrolls. That is
- * the whole point of the frame: every block above the board and below it was
+ * The height is fixed in an application and nothing but a zone scrolls. That is
+ * the whole point of that frame: every block above the board and below it was
  * taking the size of a square away from it, and a board that has to be scrolled
  * to is a board a player is not looking at.
  *
@@ -253,13 +260,17 @@ export const RoomShell = ({
           display: 'grid',
           gap: inRem(28),
           alignContent: 'start',
+          [ARRANGED_ROOM]: {
+            gap: inRem(28),
+            gridTemplateColumns: '1fr 1fr',
+            gridTemplateRows: 'auto auto',
+            gridTemplateAreas: '"board board" "left right"',
+          },
+          // The fixed height gives the second row what the board leaves.
           [APP_SHELL]: {
             flex: 1,
             minHeight: 0,
-            gap: inRem(28),
-            gridTemplateColumns: '1fr 1fr',
             gridTemplateRows: 'auto minmax(0, 1fr)',
-            gridTemplateAreas: '"board board" "left right"',
           },
           [THREE_ZONES]: {
             gap: ZONES_GAP,

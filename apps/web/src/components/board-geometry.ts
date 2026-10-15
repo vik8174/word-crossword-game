@@ -360,10 +360,12 @@ export const boardBoxIn = (window: BoardBox, shape: BoardShape, above: BandAbove
   const rows = Math.max(1, shape.rows);
   const tallest = rows * (MAX_CELL_SIZE + CELL_GAP) - CELL_GAP;
   const lowest = rows * (MIN_CELL_SIZE + CELL_GAP) - CELL_GAP;
-  const isApplication =
-    window.width >= APP_SHELL_MIN_WIDTH && window.height >= APP_SHELL_MIN_HEIGHT;
+  // The tablet's and the wide window's arrangement, which is the board's box
+  // whether or not the room has a fixed height. A tablet under 900 high is not
+  // an application but it is this: it keeps the sizing (issue #274).
+  const isArranged = window.width >= APP_SHELL_MIN_WIDTH && window.height >= APP_SHELL_MIN_HEIGHT;
 
-  if (!isApplication) {
+  if (!isArranged) {
     const width = window.width - 2 * PHONE_SIDE_PX;
     const height = Math.min((BOARD_HEIGHT_PERCENT / 100) * window.height, tallest);
 
