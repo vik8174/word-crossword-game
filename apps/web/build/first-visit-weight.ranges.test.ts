@@ -134,12 +134,26 @@ describe('the faces counted apart, by the range they are declared for', () => {
     expect(assetHrefs(html, notOnList)).toEqual(['/fonts/loose.woff2']);
   });
 
-  it('counts a file declared twice where it counts most heavily', () => {
+  it.each([
+    ['the latin-ext range first and the latin one second', LATIN_EXT, LATIN],
+    ['the latin range first and the latin-ext one second', LATIN, LATIN_EXT],
+  ])('counts a file declared twice against the first visit, with %s', (_order, first, second) => {
+    // Whichever declaration comes last, the heavier count wins: a file the first
+    // visit may fetch is not made free by a second rule that says otherwise.
     const html =
-      ranged('/fonts/twice.woff2', false, LATIN_EXT) + ranged('/fonts/twice.woff2', false, LATIN);
+      ranged('/fonts/twice.woff2', false, first) + ranged('/fonts/twice.woff2', false, second);
 
     expect(assetHrefs(html, notOnList)).toEqual(['/fonts/twice.woff2']);
     expect(latinExtHrefs(html, notOnList)).toEqual([]);
+  });
+
+  it('counts a file declared twice under the second ceiling when both declarations say so', () => {
+    const html =
+      ranged('/fonts/twice.woff2', false, LATIN_EXT) +
+      ranged('/fonts/twice.woff2', false, VIETNAMESE);
+
+    expect(latinExtHrefs(html, notOnList)).toEqual(['/fonts/twice.woff2']);
+    expect(assetHrefs(html, notOnList)).toEqual([]);
   });
 
   it('stops the build on a range it cannot read rather than counting the face somewhere', () => {
