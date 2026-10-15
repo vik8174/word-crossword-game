@@ -903,7 +903,7 @@ html.bare .dev-wrap{box-shadow:none}
       '<p class="lede">' + esc(lede) + '</p>' +
       '<div class="field-set"><label for="' + uid("nick2") + '">Your nickname</label><span class="field' + (locked ? " locked" : "") + '"><input id="' + uid("nick2") + '" type="text" value="Olena"' + (locked ? " disabled" : "") + '></span></div>' +
       (variant === "failed" ? msg("error", "Could not join the game", "Check your connection and try again. The room is still there.") : "") +
-      '<div class="row-btns">' + (locked ? btn("Joining the game", "loading") : go(lesson() ? "Join the lesson" : "Join the game", "lobby")) +
+      '<div class="row-btns">' + (locked ? btn(lesson() ? "Joining the lesson" : "Joining the game", "loading") : go(lesson() ? "Join the lesson" : "Join the game", "lobby")) +
       (variant === "plain" ? tplGo("…refused", "unavailable/refused") + tplGo("…wire failed", "join/failed") : "") + '</div>',
       scene({ right: "empty", line: "loose", crop: "top", mood: "wave", label: "A neighbour waving from her balcony, holding out a line to an empty balcony across the street" }));
   }
@@ -915,7 +915,7 @@ html.bare .dev-wrap{box-shadow:none}
       note: "All seven are normal things to run into, so none surfaces as a raw error and each leaves a way forward. The balcony across the street has its shutters closed and no line runs to it. In a lesson, “full” and “started” send the player back to their teacher rather than to a game of their own.",
       render: function () {
         var m = (lesson() && UNAVAILABLE_LESSON[reason]) || UNAVAILABLE[reason];
-        return column(msg(m[2], m[0], m[1]) + '<div>' + go("Start a new game", "home") + '</div>',
+        return column(msg(m[2], m[0], m[1]) + '<div>' + go(lesson() && UNAVAILABLE_LESSON[reason] ? "Go to the home page" : "Start a new game", "home") + '</div>',
           scene({ right: "shut", line: "none", crop: "top", mood: "calm", teacher: "", label: "A balcony across the street with its shutters closed" }));
       } };
   });
