@@ -1,13 +1,17 @@
 import Box from '@mui/material/Box';
+import GlobalStyles from '@mui/material/GlobalStyles';
 import Typography from '@mui/material/Typography';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type CrosswordLayout, generateCrossword, validateWordList } from 'shared';
 
 import { gateScreenSx, gateStackSx } from '../components/gate-panel-styles';
+import { BLOCK_PROPS } from '../components/screen-blocks';
+import { ScreenEnter } from '../components/ScreenEnter';
 import { stepTitleSx } from '../components/surface-styles';
 import { UnplacedWordsNotice } from '../components/UnplacedWordsNotice';
 import { WordListForm } from '../components/WordListForm';
+import { MOTION_PLAY_CSS } from '../motion-play-styles';
 import { normalizeNickname } from '../rooms/nickname';
 import { readRememberedNickname, rememberNickname } from '../rooms/nickname-store';
 import { roomPath } from '../rooms/room-link';
@@ -147,14 +151,22 @@ export const CreateRoomPage = () => {
     // The step is named at the top of a column that starts under the header, as
     // the template's `.column` does, so its title stands where it stands in
     // every state of the screen (issue #225).
-    <Box component="main" sx={gateScreenSx}>
-      <Box sx={gateStackSx}>
-        <Typography component="h1" variant="stepTitle" sx={{ ...stepTitleSx(), margin: 0 }}>
-          New game
-        </Typography>
+    <ScreenEnter>
+      <GlobalStyles styles={MOTION_PLAY_CSS} />
+      <Box component="main" sx={gateScreenSx}>
+        <Box sx={gateStackSx}>
+          <Typography
+            {...BLOCK_PROPS}
+            component="h1"
+            variant="stepTitle"
+            sx={{ ...stepTitleSx(), margin: 0 }}
+          >
+            New game
+          </Typography>
 
-        {renderPhase()}
+          {renderPhase()}
+        </Box>
       </Box>
-    </Box>
+    </ScreenEnter>
   );
 };

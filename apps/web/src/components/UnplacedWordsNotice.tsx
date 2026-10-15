@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import type { CrosswordLayout } from 'shared';
 
 import { gateButtonRowSx, gateStackSx } from './gate-panel-styles';
+import { BLOCKS_PROPS } from './screen-blocks';
 import { Message } from './Message';
 import { PillButton } from './PillButton';
 import { unplacedSentence } from './unplaced-sentence';
@@ -32,7 +33,7 @@ interface UnplacedWordsNoticeProps {
  */
 export const UnplacedWordsNotice = ({ layout, onConfirm, onBack }: UnplacedWordsNoticeProps) => {
   return (
-    <Box sx={gateStackSx}>
+    <Box {...BLOCKS_PROPS} sx={gateStackSx}>
       <Message
         kind="warning"
         heading="Some words did not fit into the crossword"

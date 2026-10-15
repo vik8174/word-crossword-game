@@ -9,7 +9,8 @@ import { Street } from './Street';
  * props and the label the template gives that state.
  *
  * The drawing has no state of its own: every story is a set of props. The
- * motion the template attaches to it (#230) is not a story of its own.
+ * motion the template attaches to it (`motion-styles.ts`) is not a story of its own:
+ * it is played by the screen that opens, and the stories stand still.
  */
 const meta: Meta<typeof Street> = {
   title: 'Components/Street',

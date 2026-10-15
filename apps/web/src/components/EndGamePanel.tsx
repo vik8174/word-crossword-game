@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import { useId, useState } from 'react';
 
+import { MOTION_DURATIONS_MS } from '../motion';
 import { inRem, TEXT_FONT_FAMILY } from '../scale';
 import { STREET } from '../street';
 import { PillButton } from './PillButton';
@@ -119,9 +120,17 @@ export const EndGamePanel = ({ onEnd, isEnding, errorMessage }: EndGamePanelProp
         open={isConfirming || hasFailed}
         onClose={keepPlaying}
         aria-labelledby={titleId}
+        // It arrives with the drawing's own lift and fade (`.dialog` and
+        // `.modal-veil` in `motion-styles.ts`), so MUI's fade-in is off; its
+        // fade-out stays, on the one curve and the quick duration `theme.ts`
+        // gives it.
+        transitionDuration={{ enter: 0, exit: MOTION_DURATIONS_MS.settle }}
         slotProps={{
-          paper: { sx: DIALOG_PAPER_SX },
-          backdrop: { sx: { backgroundColor: 'rgba(27, 45, 56, 0.45)' } },
+          paper: { className: 'dialog', sx: DIALOG_PAPER_SX },
+          backdrop: {
+            className: 'modal-veil',
+            sx: { backgroundColor: 'rgba(27, 45, 56, 0.45)' },
+          },
         }}
       >
         <Box component="h2" id={titleId} sx={{ margin: 0, fontSize: inRem(24), fontWeight: 700 }}>

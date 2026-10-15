@@ -151,7 +151,7 @@ interface ShuttersProps {
   readonly y2: number;
 }
 
-/** The two open shutters beside a window, `sl` and `sr` for #230 (line 531). */
+/** The two open shutters beside a window, `sl` and `sr`, the hinge each one swings from (line 531). */
 export const Shutters = ({ x1, x2, y1, y2 }: ShuttersProps) => (
   <>
     {(

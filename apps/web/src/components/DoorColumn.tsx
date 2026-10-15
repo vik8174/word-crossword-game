@@ -3,6 +3,7 @@ import Typography from '@mui/material/Typography';
 import type { ReactNode } from 'react';
 
 import { gateSceneSx, gateScreenSx, gateStackSx } from './gate-panel-styles';
+import { BLOCK_PROPS, BLOCKS_PROPS } from './screen-blocks';
 import { Street } from './Street';
 import { UNSEEN_HEADING } from './surface-styles';
 
@@ -45,9 +46,13 @@ export const DoorColumn = ({ picture, unseenHeading, children }: DoorColumnProps
       </Typography>
     )}
 
-    <Box sx={gateSceneSx}>{picture}</Box>
+    <Box {...BLOCK_PROPS} sx={gateSceneSx}>
+      {picture}
+    </Box>
 
-    <Box sx={gateStackSx}>{children}</Box>
+    <Box {...BLOCKS_PROPS} sx={gateStackSx}>
+      {children}
+    </Box>
   </Box>
 );
 

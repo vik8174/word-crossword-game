@@ -18,7 +18,7 @@ const along = (t: number, sag: number): readonly [number, number] => {
   ];
 };
 
-/** A property that sets `--k`, the index #230 delays each piece by. */
+/** A property that sets `--k`, the index that staggers each piece (`motion-play-styles.ts`). */
 const indexed = (k: number): CSSProperties => ({ '--k': k }) as CSSProperties;
 
 /** The letters of one word, each on a tile pegged to the line (line 552). */

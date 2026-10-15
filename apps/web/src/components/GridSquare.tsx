@@ -1,6 +1,12 @@
 import Box from '@mui/material/Box';
 import { type SxProps, type Theme } from '@mui/material/styles';
-import { type ChangeEvent, type FocusEvent, useLayoutEffect, useRef } from 'react';
+import {
+  type ChangeEvent,
+  type CSSProperties,
+  type FocusEvent,
+  useLayoutEffect,
+  useRef,
+} from 'react';
 
 import type { GuessEntryCell } from '../rooms/guess-board';
 import { STREET } from '../street';
@@ -201,6 +207,11 @@ interface GridSquareProps {
   readonly onTakenUp: () => void;
   /** Called as the square is pressed, before the focus has moved onto it. */
   readonly onPressed: () => void;
+  /**
+   * Where this square stands in the word that was answered while the board was
+   * on the screen, when it turned over because of it; absent otherwise.
+   */
+  readonly turnPlace?: number;
 }
 
 /**
@@ -233,6 +244,7 @@ export const GridSquare = ({
   onTyped,
   onTakenUp,
   onPressed,
+  turnPlace,
 }: GridSquareProps) => {
   const element = useRef<HTMLElement | null>(null);
   // What this square last was. A square is an `input` or it is not, so a change
@@ -326,8 +338,18 @@ export const GridSquare = ({
     element.current = node;
   };
 
+  // The drawing's `cell just` and `cell refused` (`state-tree.html`, lines
+  // 332 and 336): the classes `motion-styles.ts` moves. `--d` is the square's
+  // place in its word, which is what makes the word turn over one square after
+  // another.
+  const isTurning = cell.source === 'solved' && turnPlace !== undefined;
+  const motionClass = cell.isRefused ? 'cell refused' : isTurning ? 'cell just' : undefined;
+  const motionStyle = isTurning ? ({ '--d': turnPlace } as CSSProperties) : undefined;
+
   return (
     <Box
+      className={motionClass}
+      style={motionStyle}
       sx={{
         position: 'relative',
         height: CELL_SIDE,

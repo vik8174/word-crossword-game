@@ -1,5 +1,6 @@
 import type { SxProps, Theme } from '@mui/material/styles';
 
+import { MOTION_MS, OUT_CURVE } from '../motion';
 import { inRem } from '../scale';
 import { STREET } from '../street';
 
@@ -72,6 +73,13 @@ const surfaceOf = (state: ButtonStyleState) => {
   };
 };
 
+/** The system setting that means "move" rather than "do not"; the drawing puts all its motion in it. */
+const NO_REDUCED_MOTION = '@media (prefers-reduced-motion: no-preference)';
+
+/** The shadow of a control lifted by the pointer (template line 354), and of one pressed (line 355). */
+const LIFTED_SHADOW = `0 0 0 ${RING} ${STREET.ink}, 4px 4px 0 0 ${STREET.ink}`;
+const PRESSED_SHADOW = `0 0 0 ${RING} ${STREET.ink}, 1px 1px 0 0 ${STREET.ink}`;
+
 /** Size, padding and label weight of each kind (template lines 120, 128, 129). */
 const SIZE = {
   loud: { fontSize: 20, minHeight: 52, padding: '0 28px', fontWeight: 700 },
@@ -82,14 +90,20 @@ const SIZE = {
 /**
  * The control itself, as one `sx` object.
  *
- * It has no hover bloom and no press movement: the lift on hover and the press
- * are the motion issue's (#230). What it keeps is the template's focus ring.
+ * A live loud or quiet control lifts 1px up and left on hover, its shadow
+ * lengthening to 4px, and presses 2px down and right (template lines 353-355).
+ * A link is not lifted, and a control that is disabled or loading does not move.
+ * All of it is inside `no-preference`: with reduced motion the control is the
+ * same on hover as at rest. The shadow and the transform take 160ms on `--out`
+ * (60ms to press), the background colour 220ms on `ease`. It keeps the
+ * template's focus ring.
  *
  * @param state - Which kind and interaction state to draw
  */
 export const buttonSx = (state: ButtonStyleState): SxProps<Theme> => {
   const size = SIZE[state.kind];
   const surface = surfaceOf(state);
+  const isLive = state.kind !== 'link' && !state.disabled && !state.loading;
 
   return {
     display: 'inline-flex',
@@ -117,6 +131,17 @@ export const buttonSx = (state: ButtonStyleState): SxProps<Theme> => {
     }),
     cursor: state.loading ? 'progress' : state.disabled ? 'not-allowed' : 'pointer',
     '&:focus-visible': { outline: `3px solid ${STREET.ochre}`, outlineOffset: '4px' },
+    [NO_REDUCED_MOTION]: {
+      transition: `transform ${MOTION_MS.lift}ms ${OUT_CURVE}, box-shadow ${MOTION_MS.lift}ms ${OUT_CURVE}, background-color ${MOTION_MS.tone}ms ease`,
+      ...(isLive && {
+        '&:hover': { transform: 'translate(-1px, -1px)', boxShadow: LIFTED_SHADOW },
+        '&:active': {
+          transform: 'translate(2px, 2px)',
+          boxShadow: PRESSED_SHADOW,
+          transitionDuration: `${MOTION_MS.press}ms`,
+        },
+      }),
+    },
   };
 };
 

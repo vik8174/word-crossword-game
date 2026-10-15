@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import type { CSSObject } from '@mui/material/styles';
 
+import { MOTION_MS } from '../motion';
 import type { WordLocation } from '../rooms/word-visibility';
 import { inRem, TEXT_FONT_FAMILY, WEIGHTS } from '../scale';
 import { STREET } from '../street';
@@ -49,6 +50,13 @@ const ROW_SX: CSSObject = {
   // every row 6px taller than the drawing's 47 (`.word-list button`, line 182).
   lineHeight: 'normal',
   '&:focus-visible': { outline: `3px solid ${STREET.ochre}`, outlineOffset: '-3px' },
+  // The row's wash on hover (template lines 357-358), 200ms on `ease`, and only
+  // where the setting allows movement: with reduced motion the row is the same
+  // on hover as at rest.
+  '@media (prefers-reduced-motion: no-preference)': {
+    transition: `background-color ${MOTION_MS.row}ms ease`,
+    '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.5)' },
+  },
 };
 
 /**

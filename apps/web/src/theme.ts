@@ -6,16 +6,10 @@ import { STREET, STREET_TYPOGRAPHY } from './street';
 import { TYPOGRAPHY } from './typography';
 
 /**
- * The system setting that means no movement at all, spelled out again rather
- * than imported.
- *
- * `components/screen-shift.ts` declares the same string for the screen shift to
- * read with `useMediaQuery` — a check that runs in JavaScript, once, at the
- * moment the shift decides whether to move. A style block cannot ask a hook a
- * question; what it can do is hold the same query as a CSS `@media` rule, which
- * the browser re-evaluates on its own the moment the setting changes, with
- * nothing to import and nothing to grow stale. The two are the same query
- * written for two different readers, not two sources of truth.
+ * The system setting that means no movement at all, as the CSS `@media` rule
+ * the browser re-evaluates on its own the moment the setting changes. The rules
+ * in `motion-styles.ts` ask the opposite question (`no-preference`) and so are
+ * not applied at all when this one holds.
  */
 const REDUCED_MOTION_MEDIA = '@media (prefers-reduced-motion: reduce)';
 
@@ -169,7 +163,7 @@ export const theme = createTheme({
 
   // The row this interface moves on (`motion.ts`), and every one of MUI's own
   // duration and easing slots pointed at it rather than left at what MUI ships
-  // with. Every component below reads its motion from this object without
+  // with: all four easings are `--out`, so MUI's components use no third curve. Every component below reads its motion from this object without
   // being told about it — `Button`, `TextField`, `Dialog`, `Chip`, `Alert` and
   // everything else `theme.transitions.create()` is called for — which is what
   // makes this the widest-reaching change in the ticket that wrote it.
@@ -217,23 +211,24 @@ export const theme = createTheme({
     // media query is guaranteed to outrank whichever of the two happens to be
     // declared later. `*` is the whole document rather than a list of MUI's own
     // classes, because the rule this is answering
-    // (`docs/decisions/0030-where-movement-is-allowed.md`) is about every
-    // control in the app, not only the ones this file happens to style.
+    // (`docs/decisions/0039-the-street-wakes-up.md`) is about every control in
+    // the app, not only the ones this file happens to style.
     //
-    // The screen shift already asks the same question itself and skips its own
-    // animation when it is answered, so this rule and its own never race: the
-    // shift's stops a transform from being played, and this one stops a
-    // `transition` or `animation` CSS property from doing anything once
-    // painted.
+    // It zeroes delays as well as durations. A duration of 0.01 ms with the
+    // delay left alone would hold every element that waits for its turn (a
+    // card for 1250 ms, the last piece of confetti for 1.7 s) in the state it
+    // starts from, invisible, for the whole of that wait. The rules in
+    // `motion-styles.ts` are inside `no-preference` and so are not applied at
+    // all under reduced motion; this keeps whatever MUI draws, and anything
+    // added later, from waiting either.
     //
-    // `CircularProgress` is named out of it on purpose. ADR 0030 turns off
-    // movement that disorients — a screen sliding — and a spinner is not that:
-    // it is the one way this app says "wait" while a route's chunk arrives
-    // (`PageLoading.tsx`), where it is the only thing on the page. Frozen
-    // by `animation-iteration-count: 1`, it turns once and stops, which reads
-    // as broken rather than calm — a promise of "something is happening" that
-    // stops being true. So it keeps spinning under reduced motion; nothing
-    // else does.
+    // `CircularProgress` is named out of it on purpose. The rule turns off
+    // movement that disorients, and a spinner is not that: it is the one way
+    // this app says "wait" while a route's chunk arrives (`PageLoading.tsx`),
+    // where it is the only thing on the page. Frozen by
+    // `animation-iteration-count: 1`, it turns once and stops, which reads as
+    // broken rather than calm, a promise of "something is happening" that stops
+    // being true. So it keeps spinning under reduced motion; nothing else does.
     //
     // The button's loading dot (`components/button-styles.ts`) is not named
     // out: `design/templates/state-tree.html` line 95 stops it under reduced
@@ -253,8 +248,10 @@ export const theme = createTheme({
         [REDUCED_MOTION_MEDIA]: {
           ['*:not(.MuiCircularProgress-root):not(.MuiCircularProgress-circle), *::before, *::after']:
             {
+              animationDelay: '0s !important',
               animationDuration: '0.01ms !important',
               animationIterationCount: '1 !important',
+              transitionDelay: '0s !important',
               transitionDuration: '0.01ms !important',
             },
         },

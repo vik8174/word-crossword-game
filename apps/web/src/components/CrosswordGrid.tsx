@@ -6,6 +6,7 @@ import { type KeyboardEvent, useEffect, useMemo, useRef } from 'react';
 import type { GuessEntryCell } from '../rooms/guess-board';
 import { isArrowKey, useGridCursor } from '../rooms/use-grid-cursor';
 import { useGuessEntry } from '../rooms/use-guess-entry';
+import { useTurnedSquares } from '../rooms/use-turned-squares';
 import { cellKey, type GridView, type WordLocation } from '../rooms/word-visibility';
 import { inRem } from '../scale';
 import { STREET } from '../street';
@@ -40,6 +41,9 @@ const SPOKEN_ONLY: SxProps<Theme> = {
   whiteSpace: 'nowrap',
 };
 
+/** The same empty list every time, so a board with nothing to turn is not redrawn for it. */
+const NO_ANSWERED_WORDS: readonly (readonly string[])[] = [];
+
 const REFUSAL_MESSAGE =
   'That is not the word. The letters clear in a moment. Try again as often as you like.';
 
@@ -71,6 +75,13 @@ interface CrosswordGridProps {
    * `board-geometry.ts`).
    */
   readonly bandAbove?: BandAbove;
+  /**
+   * The squares of every word the group has answered, in the order each word
+   * runs. A word that appears here while the board is on the screen turns its
+   * squares over once (`useTurnedSquares`); one that was here when the board
+   * opened does not.
+   */
+  readonly answeredWords?: readonly (readonly string[])[];
 }
 
 /**
@@ -115,9 +126,11 @@ export const CrosswordGrid = ({
   onSolved,
   wordToReach,
   bandAbove = 'none',
+  answeredWords = NO_ANSWERED_WORDS,
 }: CrosswordGridProps) => {
   const heights = boardHeightsFor(bandAbove);
   const entry = useGuessEntry(view, onSolved);
+  const turned = useTurnedSquares(answeredWords);
   const cursor = useGridCursor(entry, view);
   // Held in a ref rather than watched as a dependency: what asks for a word is
   // the player tapping the panel, never the grid redrawing around them.
@@ -237,6 +250,7 @@ export const CrosswordGrid = ({
         number={numbers.get(key) ?? null}
         isCursor={cursor.key === key}
         isTabStop={cursor.key === null && firstTabStop === cell}
+        turnPlace={turned.get(key)}
         onTyped={handleTyped(cell)}
         onTakenUp={handleTakenUp(cell)}
         onPressed={handlePressed(cell)}

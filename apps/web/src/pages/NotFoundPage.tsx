@@ -4,6 +4,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { DoorColumn, RefusalStreet } from '../components/DoorColumn';
 import { Message } from '../components/Message';
 import { PillButton } from '../components/PillButton';
+import { ScreenEnter } from '../components/ScreenEnter';
 
 /**
  * Catch-all for addresses the app knows nothing about.
@@ -26,16 +27,18 @@ import { PillButton } from '../components/PillButton';
  * <Route path="*" element={<NotFoundPage />} />
  */
 export const NotFoundPage = () => (
-  <DoorColumn picture={<RefusalStreet />}>
-    <Message kind="info" heading="This page does not exist" headingLevel="h1">
-      The link may be incomplete or mistyped. If you were invited to a game, ask for the link again.
-      It looks like <code>/room/…</code>
-    </Message>
+  <ScreenEnter>
+    <DoorColumn picture={<RefusalStreet />}>
+      <Message kind="info" heading="This page does not exist" headingLevel="h1">
+        The link may be incomplete or mistyped. If you were invited to a game, ask for the link
+        again. It looks like <code>/room/…</code>
+      </Message>
 
-    <Box>
-      <PillButton component={RouterLink} to="/">
-        Go to the start
-      </PillButton>
-    </Box>
-  </DoorColumn>
+      <Box>
+        <PillButton component={RouterLink} to="/">
+          Go to the start
+        </PillButton>
+      </Box>
+    </DoorColumn>
+  </ScreenEnter>
 );

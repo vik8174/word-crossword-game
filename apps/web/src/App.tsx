@@ -1,4 +1,5 @@
 import CssBaseline from '@mui/material/CssBaseline';
+import GlobalStyles from '@mui/material/GlobalStyles';
 import { ThemeProvider } from '@mui/material/styles';
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
@@ -9,6 +10,7 @@ import { NotFoundPage } from './pages/NotFoundPage';
 import { PageLoading } from './pages/PageLoading';
 import { ROOM_ROUTE_PATTERN } from './rooms/room-link';
 import { usePageView } from './telemetry/use-page-view';
+import { MOTION_CSS } from './motion-styles';
 import { theme } from './theme';
 
 /**
@@ -70,6 +72,8 @@ export const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      {/* The street's movement, every rule inside `no-preference` (`motion-styles.ts`). */}
+      <GlobalStyles styles={MOTION_CSS} />
       <BrowserRouter>
         <FrameSlotProvider>
           <Frame />

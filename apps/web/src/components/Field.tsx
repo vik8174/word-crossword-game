@@ -100,7 +100,7 @@ export const Field = ({
           <Box component="input" type="text" autoFocus={autoFocus} {...shared} />
         )}
         {invalid && (
-          <Box component="ul" id={faultId} sx={fieldFaultSx}>
+          <Box component="ul" id={faultId} className="field-fault" sx={fieldFaultSx}>
             {faults.map((fault) => (
               <li key={fault}>{fault}</li>
             ))}

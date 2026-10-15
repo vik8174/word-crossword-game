@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import { type ReactNode, useMemo } from 'react';
 
 import type { RoomDocument } from '../rooms/room-document';
-import { gridViewFor, type WordLocation } from '../rooms/word-visibility';
+import { answeredWordCellKeys, gridViewFor, type WordLocation } from '../rooms/word-visibility';
 import { inRem } from '../scale';
 import { STREET } from '../street';
 import type { BandAbove } from './board-geometry';
@@ -111,6 +111,9 @@ export const RoomCrossword = ({
   // the letters this player has typed so far — is not judged afresh every time
   // React redraws for some other reason.
   const view = useMemo(() => gridViewFor(room, viewerId), [room, viewerId]);
+  // The answered words by their squares, for the board to turn over the ones
+  // that are answered while it is on the screen.
+  const answeredWords = useMemo(() => answeredWordCellKeys(room), [room]);
   const fits = useBandShown(view);
   const isBandShown = band !== undefined && (bandRule === 'always' || fits);
   const hasNote = isBandShown && bandNote !== undefined;
@@ -157,6 +160,7 @@ export const RoomCrossword = ({
         onSolved={onSolved ?? TAKES_NO_ANSWERS}
         wordToReach={wordToReach}
         bandAbove={bandAbove}
+        answeredWords={answeredWords}
       />
 
       {errorMessage !== undefined && (
