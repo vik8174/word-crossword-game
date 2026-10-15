@@ -44,10 +44,9 @@ const HOUR_MS = 60 * 60 * 1000;
 /**
  * Waits for the screen that was to be taken off the page.
  *
- * One screen gives way to the next over `SHIFT_DURATION_MS`, and both of them
- * are in the document while that lasts (issue #93). So a screen having gone is
- * something to wait for: read straight after the snapshot, what is found is the
- * one still on its way out.
+ * A screen is replaced as the next snapshot is drawn, not before, so a screen
+ * having gone is something to wait for rather than to read straight after the
+ * snapshot is emitted.
  */
 const untilGone = (find: () => HTMLElement | null): Promise<void> =>
   waitFor(() => {

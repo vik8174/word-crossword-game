@@ -6,9 +6,13 @@
 /** `${n}ms`. */
 export const ms = (value: number): string => `${value}ms`;
 
-/** `--name` times a step, plus a base, as the delay of the n-th element of a sequence. */
+/**
+ * `--name` times a step, plus a base, as the delay of the n-th element of a
+ * sequence. The spaces round the `+` are part of the syntax: without them the
+ * whole delay is invalid and is dropped.
+ */
 export const at = (name: string, step: number, base: number): string =>
-  `calc(var(${name},0)*${ms(step)}+${ms(base)})`;
+  `calc(var(${name},0)*${ms(step)} + ${ms(base)})`;
 
 /**
  * Wraps rules in the one setting that allows movement and takes the line breaks

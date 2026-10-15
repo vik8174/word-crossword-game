@@ -85,7 +85,7 @@ describe('motion rules', () => {
 
   it('rise a page block in 620ms on --out, 120ms plus 70ms for each place', () => {
     expect(rules.get('.enter [data-rise],.enter [data-rise-children]>*')).toBe(
-      `animation:s-rise ${MOTION_MS.rise}ms ${OUT_CURVE} both;animation-delay:calc(var(--i,0)*70ms+120ms)`,
+      `animation:s-rise ${MOTION_MS.rise}ms ${OUT_CURVE} both;animation-delay:calc(var(--i,0)*70ms + 120ms)`,
     );
   });
 
