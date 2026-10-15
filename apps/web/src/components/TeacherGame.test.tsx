@@ -1,5 +1,5 @@
 import { ThemeProvider } from '@mui/material/styles';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { logGameEvent } from '../telemetry/analytics';
@@ -323,7 +323,7 @@ describe('ending the lesson', () => {
     expect(within(dialog).getByRole('button', { name: 'Keep watching' })).toBeInTheDocument();
   });
 
-  it('writes the ending of this room once the teacher has said so, and sends no analytics event', async () => {
+  it('writes the ending of this room once the teacher has said so, and reports it as a lesson’s', async () => {
     const endGameEarly = vi.fn(() => Promise.resolve());
     renderTeacher(playingLesson(), endGameEarly);
 
@@ -331,11 +331,13 @@ describe('ending the lesson', () => {
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'End it' }));
 
     await waitFor(() => expect(endGameEarly).toHaveBeenCalledExactlyOnceWith(ROOM_ID));
-    // `game_closed` carries the mode and what a lesson's ending counts: #236's.
-    await act(async () => {
-      await Promise.resolve();
-    });
-    expect(logGameEvent).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(logGameEvent).toHaveBeenCalledExactlyOnceWith('game_closed', {
+        word_count: 6,
+        player_count: 2,
+        mode: 'lesson',
+      }),
+    );
   });
 
   it('writes nothing when the teacher keeps watching', () => {

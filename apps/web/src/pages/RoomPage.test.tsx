@@ -1422,7 +1422,7 @@ describe('RoomPage', () => {
 
       await waitFor(() => {
         expect(reportedActions()).toEqual([
-          { name: 'game_completed', params: { word_count: 2, player_count: 2 } },
+          { name: 'game_completed', params: { word_count: 2, player_count: 2, mode: 'pair' } },
         ]);
       });
       expect(JSON.stringify(reportedEvents())).not.toContain('room-1');
@@ -1663,7 +1663,7 @@ describe('RoomPage', () => {
 
       await waitFor(() => {
         expect(reportedActions()).toEqual([
-          { name: 'game_closed', params: { word_count: 2, player_count: 2 } },
+          { name: 'game_closed', params: { word_count: 2, player_count: 2, mode: 'pair' } },
         ]);
       });
       expect(JSON.stringify(reportedEvents())).not.toContain('room-1');
