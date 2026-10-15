@@ -24,12 +24,47 @@ const ROOM_HEADING = 'Game room';
 const BODY_PADDING = `${inRem(24)} ${inRem(18)} ${inRem(40)}`;
 
 /**
- * The zone a side of the room is, and what it does when it is empty.
+ * How much room, in pixels, a zone's scroll box keeps outside its content on
+ * every side: 2, for the ring of a message.
+ *
+ * A message draws its ring as an outer `box-shadow` of 1.5px (`Message`), and
+ * from a tablet up a zone is a scroll container, which clips whatever falls
+ * outside its padding box. A message standing at a zone's edge would lose its
+ * ring there, and with no padding on the zone every message does. The room is
+ * given back by padding the scroll box and pulling it out by the same amount
+ * with a negative margin, so the content stays exactly where the template has it
+ * (see {@link Zone}).
+ */
+export const ZONE_RING_ROOM_PX = 2;
+
+interface ZoneProps {
+  /** Which of the named areas of the shell's grid it fills. */
+  readonly area: 'left' | 'board' | 'right';
+  /** Where it stands on a phone: the board is first, then the right zone, then the left. */
+  readonly phoneOrder: number;
+  /** Whether this screen handed the zone anything. */
+  readonly isEmpty: boolean;
+  /** `true` for a side, a column of blocks 18px apart; `false` for the board's own block. */
+  readonly isColumn: boolean;
+  /** `true` for the zone the board's height is measured against (the middle, from 1200). */
+  readonly isWidthContainer?: boolean;
+  readonly children?: ReactNode;
+}
+
+/**
+ * A zone of the room, and what it does when it is empty.
  *
  * A zone is a column on the ground and nothing more: the drawing sets no
  * surface behind it (`.zone` has no rule of its own in `state-tree.html`; only
  * `.zones`, line 227, lays the three out). Everything in it is written in ink
  * on the page.
+ *
+ * It is two boxes. The outer one is the grid's cell and nothing else, so its
+ * rectangle is the template's (290, 684 and 290 at 1440). The inner one is the
+ * scroll box from a tablet up, and it is {@link ZONE_RING_ROOM_PX} larger than
+ * the cell on every side, with that much padding, so that what stands at the
+ * cell's edge keeps its ring. The outer box clips nothing, and the room it
+ * borrows is the frame's own padding.
  *
  * An empty zone is a column with nothing in it while the room is an
  * application, which is what keeps the board in the middle of the screen when
@@ -41,25 +76,44 @@ const BODY_PADDING = `${inRem(24)} ${inRem(18)} ${inRem(40)}`;
  * then the one on the left ("You explain"): `order` moves them and the document
  * keeps its own order, left, board, right, which is the order a reader of the
  * markup is walked through.
- *
- * @param area - Which of the named areas of the shell's grid it fills
- * @param isEmpty - Whether this screen handed the zone anything
- * @param phoneOrder - Where it stands on a phone, after the board's -1
  */
-const zoneSx = (area: string, isEmpty: boolean, phoneOrder: number) => ({
-  order: phoneOrder,
-  minWidth: 0,
-  ...(isEmpty ? { display: 'none' } : {}),
-  [APP_SHELL]: {
-    order: 0,
-    display: isEmpty ? 'block' : 'flex',
-    flexDirection: 'column',
-    gap: inRem(18),
-    gridArea: area,
-    minHeight: 0,
-    overflowY: 'auto',
-  },
-});
+const Zone = ({ area, phoneOrder, isEmpty, isColumn, isWidthContainer, children }: ZoneProps) => (
+  <Box
+    sx={{
+      order: phoneOrder,
+      minWidth: 0,
+      ...(isEmpty ? { display: 'none' } : {}),
+      [APP_SHELL]: {
+        order: 0,
+        display: isEmpty ? 'block' : 'flex',
+        flexDirection: 'column',
+        gridArea: area,
+        minHeight: 0,
+      },
+    }}
+  >
+    <Box
+      sx={{
+        [APP_SHELL]: {
+          flex: '1 1 auto',
+          minHeight: 0,
+          overflowY: 'auto',
+          margin: `-${ZONE_RING_ROOM_PX}px`,
+          padding: `${ZONE_RING_ROOM_PX}px`,
+          ...(isColumn
+            ? { display: 'flex', flexDirection: 'column', gap: inRem(18) }
+            : { display: 'block' }),
+        },
+        // A size container in width, so that the board can take the drawing's
+        // height off its own: the drawing is as tall as this zone is wide
+        // (`board-geometry.ts`).
+        ...(isWidthContainer === true ? { [THREE_ZONES]: { containerType: 'inline-size' } } : {}),
+      }}
+    >
+      {children}
+    </Box>
+  </Box>
+);
 
 interface RoomShellBaseProps {
   /**
@@ -195,34 +249,27 @@ export const RoomShell = ({ title, left, right, picture, children }: RoomShellPr
           },
         }}
       >
-        <Box sx={zoneSx('left', left === undefined, 2)}>{left}</Box>
+        <Zone area="left" phoneOrder={2} isEmpty={left === undefined} isColumn>
+          {left}
+        </Zone>
 
         {/* Nothing in a document when a screen puts nothing there, as the
             template's `.zone-middle` is not drawn empty. From a tablet up it is
             still the row the board would stand in, across the top. On a phone
             it is the first thing under the header. */}
-        <Box
-          sx={{
-            order: -1,
-            minWidth: 0,
-            ...(children === undefined && { display: 'none' }),
-            [APP_SHELL]: {
-              order: 0,
-              display: 'block',
-              gridArea: 'board',
-              minHeight: 0,
-              overflowY: 'auto',
-            },
-            // A size container in width, so that the board can take the
-            // drawing's height off its own: the drawing is as tall as this
-            // zone is wide (`board-geometry.ts`).
-            [THREE_ZONES]: { containerType: 'inline-size' },
-          }}
+        <Zone
+          area="board"
+          phoneOrder={-1}
+          isEmpty={children === undefined}
+          isColumn={false}
+          isWidthContainer
         >
           {children}
-        </Box>
+        </Zone>
 
-        <Box sx={zoneSx('right', right === undefined, 1)}>{right}</Box>
+        <Zone area="right" phoneOrder={1} isEmpty={right === undefined} isColumn>
+          {right}
+        </Zone>
       </Box>
     </Box>
   );

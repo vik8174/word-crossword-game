@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { RoomShell } from './RoomShell';
+import { RoomShell, ZONE_RING_ROOM_PX } from './RoomShell';
+import { OUTLINE_WIDTH } from './surface-styles';
 
 describe('RoomShell', () => {
   it('names the room once, whatever the room is doing', () => {
@@ -76,6 +77,58 @@ describe('RoomShell', () => {
 
     expect(screen.getByRole('main').parentElement).toHaveStyle({
       minHeight: 'calc(100dvh - var(--frame-header-height, 64px))',
+    });
+  });
+
+  describe('where a zone scrolls, from a tablet up', () => {
+    /** What the stylesheet declares for an element inside the app shell's media query. */
+    const declaredInAppShell = (element: Element): string => {
+      const sheet = [...document.querySelectorAll('style')]
+        .map((style) => style.textContent ?? '')
+        .join('\n');
+
+      return [...element.classList]
+        .map((name) =>
+          new RegExp(
+            `@media \\(min-width: 768px\\) and \\(min-height: 600px\\)\\{\\.${name}\\{([^}]*)\\}`,
+          ).exec(sheet),
+        )
+        .map((match) => match?.[1] ?? '')
+        .join(';');
+    };
+
+    it('leaves room round what stands at its edge for the ring a message draws outside its box', () => {
+      // A message's ring is an outer shadow, and a scroll container clips
+      // whatever is outside its padding box. With no padding on the zone every
+      // message at its edge lost the top, left and right of its ring (issue
+      // #228, round 1), so the scroll box is padded by more than the ring is
+      // thick and pulled out by the same amount, which leaves the content where
+      // the drawing puts it.
+      render(
+        <RoomShell left={<p>a message at the zone’s edge</p>} right={<p>and one on the right</p>}>
+          <p>the board</p>
+        </RoomShell>,
+      );
+
+      expect(ZONE_RING_ROOM_PX).toBeGreaterThanOrEqual(OUTLINE_WIDTH);
+
+      for (const text of ['a message at the zone’s edge', 'and one on the right', 'the board']) {
+        const scrollBox = screen.getByText(text).parentElement as HTMLElement;
+        const rules = declaredInAppShell(scrollBox);
+
+        expect(rules).toContain('overflow-y:auto');
+        expect(rules).toContain(`padding:${ZONE_RING_ROOM_PX}px`);
+        expect(rules).toContain(`margin:-${ZONE_RING_ROOM_PX}px`);
+      }
+    });
+
+    it('keeps the cell the zone stands in free of any clipping, so the ring has somewhere to go', () => {
+      render(<RoomShell left={<p>yours to explain</p>}>the board</RoomShell>);
+
+      const cell = screen.getByText('yours to explain').parentElement?.parentElement as HTMLElement;
+
+      expect(declaredInAppShell(cell)).not.toMatch(/overflow/);
+      expect(getComputedStyle(cell).overflow).not.toMatch(/auto|hidden|scroll/);
     });
   });
 });
