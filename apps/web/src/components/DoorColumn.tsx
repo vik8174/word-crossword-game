@@ -4,25 +4,7 @@ import type { ReactNode } from 'react';
 
 import { gateSceneSx, gateScreenSx, gateStackSx } from './gate-panel-styles';
 import { Street } from './Street';
-
-/**
- * A heading that is there to be read aloud and not to be looked at.
- *
- * Kept in step with the identical style `RoomShell` gives the same heading on
- * the screen a game is played on, rather than imported from there: that file
- * must export only components (`eslint-plugin-react-refresh`).
- */
-const UNSEEN_HEADING = {
-  position: 'absolute',
-  width: '1px',
-  height: '1px',
-  padding: 0,
-  margin: '-1px',
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-  border: 0,
-} as const;
+import { UNSEEN_HEADING } from './surface-styles';
 
 interface DoorColumnProps {
   /** The street drawn above the column: a `Street` with its own label. */

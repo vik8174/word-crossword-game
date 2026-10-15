@@ -7,6 +7,8 @@ import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { Frame } from '../components/Frame';
+import { FrameSlotProvider } from '../components/FrameSlotProvider';
 import { AWAY_AFTER_MS, SEAT_FREE_AFTER_MS } from '../rooms/presence';
 import { ROOM_ROUTE_PATTERN, roomPath, roomUrl } from '../rooms/room-link';
 import { theme } from '../theme';
@@ -198,20 +200,26 @@ const unsubscribe = vi.fn();
 
 // In the app's own theme, as `App.tsx` renders it: the board takes its surfaces
 // from `theme.palette.grid`, which MUI's stock theme does not have.
-const renderRoomPage = () =>
+//
+// `framed` puts the app's frame above the page, for the tests that read the
+// lobby's status line: it is the frame's header, not the page's.
+const renderRoomPage = (framed = false) =>
   render(
     <ThemeProvider theme={theme}>
-      <MemoryRouter initialEntries={[roomPath('room-1')]}>
-        <Routes>
-          <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
-        </Routes>
-      </MemoryRouter>
+      <FrameSlotProvider>
+        {framed && <Frame />}
+        <MemoryRouter initialEntries={[roomPath('room-1')]}>
+          <Routes>
+            <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
+          </Routes>
+        </MemoryRouter>
+      </FrameSlotProvider>
     </ThemeProvider>,
   );
 
 /** Opens the room screen and lets Firestore deliver the room behind the link. */
-const openRoom = async (room: unknown = storedRoom()) => {
-  renderRoomPage();
+const openRoom = async (room: unknown = storedRoom(), framed = false) => {
+  renderRoomPage(framed);
 
   await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
   await act(async () => {
@@ -445,7 +453,7 @@ describe('RoomPage', () => {
 
   describe('the link to the room', () => {
     const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
-    const inviteLink = () => screen.queryByLabelText(/room link/i);
+    const inviteLink = () => screen.queryByLabelText(/invite link/i);
     const linkToThisRoom = roomUrl('room-1', window.location.origin);
 
     /** Opens the room as its host rather than as the visitor everything else runs as. */
@@ -755,8 +763,7 @@ describe('RoomPage', () => {
       // not move when the game begins — is the doorway itself now, visible in
       // the picture and left empty, and the doorway is the middle of this
       // window (issue #152 removed the camera that used to travel through it).
-      expect(screen.getByRole('heading', { name: /the crossword/i })).toBeInTheDocument();
-      expect(screen.getByText(/words are hidden in this grid/i)).toBeInTheDocument();
+      expect(screen.getByText(/^The crossword: /)).toBeInTheDocument();
       expect(screen.queryByRole('group', { name: /crossword grid/i })).not.toBeInTheDocument();
       expect(screen.queryByText(/\bcat\b/i)).not.toBeInTheDocument();
     });
@@ -903,7 +910,7 @@ describe('RoomPage', () => {
     const openRoomAsOwner = async (room: unknown) => {
       vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
 
-      await openRoom(room);
+      await openRoom(room, true);
     };
 
     it('deals every word out to a player and opens the game', async () => {
