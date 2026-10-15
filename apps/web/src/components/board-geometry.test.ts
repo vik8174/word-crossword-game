@@ -566,6 +566,30 @@ describe('the board on a phone held upright', () => {
   });
 
   it(
+    'is exactly the grid’s height on every seeded layout whose grid fits at 375 by 812',
+    () => {
+      let fitted = 0;
+
+      for (const shape of gamesPlayed()) {
+        const box = boardBoxIn(PHONE, shape, 'none');
+        const side = cellSizeIn(box, shape);
+        const grid = shape.rows * side + (shape.rows - 1) * CELL_GAP;
+
+        if (fitsIn(box, shape)) {
+          fitted += 1;
+          expect(box.height).toBeCloseTo(grid, 6);
+        } else {
+          // Past the floor the grid scrolls inside a box that is its share of the window.
+          expect(box.height).toBeLessThanOrEqual(grid + 1e-9);
+        }
+      }
+
+      expect(fitted).toBeGreaterThan(0);
+    },
+    MEASUREMENT_TIMEOUT_MS,
+  );
+
+  it(
     'never changes the size of a square on any of the 45 seeded layouts, on three phones',
     () => {
       for (const window of [
