@@ -52,6 +52,15 @@ export const APP_SHELL_MIN_HEIGHT = 600;
  */
 export const THREE_ZONE_MIN_WIDTH = 1200;
 
+/**
+ * When the window is a phone held upright: narrower than {@link APP_SHELL_MIN_WIDTH}.
+ *
+ * Not the whole of the document layout. A phone on its side (844 by 390) is a
+ * document too, and it is wide enough to fall outside this query; the board
+ * keeps the fixed share of the window there (ADR 0029).
+ */
+export const NARROW_WINDOW = `@media (max-width: ${APP_SHELL_MIN_WIDTH - 1}px)`;
+
 /** When the room is an application: a fixed height with no page scroll. */
 export const APP_SHELL = `@media (min-width: ${APP_SHELL_MIN_WIDTH}px) and (min-height: ${APP_SHELL_MIN_HEIGHT}px)`;
 
