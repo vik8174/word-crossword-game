@@ -17,6 +17,9 @@ const finished = (words: readonly DrawnWord[] = FEW, rows = 7, cols = 9) =>
 const closed = (words: readonly DrawnWord[] = FEW, rows = 7, cols = 9) =>
   gameRoom(words, rows, cols, {}, false, 'closed');
 
+/** The eight words of `MANY`, in the order the board numbers them. */
+const BOARD_ORDER = ['bread', 'engine', 'cheese', 'apple', 'dinner', 'flower', 'ribbon', 'needle'];
+
 const FIESTA_LABEL =
   'A fiesta in the street: paper lanterns and confetti, both neighbours cheering, every word hanging on the line';
 const SAG_LABEL = 'A sagging line between the balconies, holding only the words that were answered';
@@ -50,6 +53,26 @@ describe('the finished ending', () => {
         .getAllByRole('listitem')
         .map((tile) => tile.textContent),
     ).toEqual(['bread', 'engine', 'cheese', 'apple', 'dinner', 'flower', 'ribbon', 'needle']);
+  });
+
+  it('puts the tiles and the words on the line in board order whatever order the list was in', () => {
+    // The list is reversed, so the order the room holds the words in is the
+    // opposite of the order the board numbers them in.
+    const reversed = [...MANY].reverse();
+
+    inRouter(<RoomFinished room={finished(reversed, 11, 11)} viewerId={OWNER_ID} />);
+
+    const card = screen.getByRole('status', { name: 'You did it!' });
+    const onTheLine = [
+      ...screen.getByRole('img', { name: FIESTA_LABEL }).querySelectorAll('.card'),
+    ];
+
+    expect(
+      within(card)
+        .getAllByRole('listitem')
+        .map((tile) => tile.textContent),
+    ).toEqual(BOARD_ORDER);
+    expect(onTheLine.map((card) => card.textContent)).toEqual(BOARD_ORDER);
   });
 
   it('draws the fiesta, with every word on the line, and says so to a reader who cannot see it', () => {
@@ -130,6 +153,27 @@ describe('the ending that was cut short', () => {
     expect(picture.textContent).toContain('ribbon');
     expect(picture.textContent).not.toContain('RIBBON');
     expect(picture.textContent).not.toContain('apple');
+  });
+
+  it('hangs the answered words in board order whatever order the list was in', () => {
+    // Reversed, so the room holds `ribbon` before `bread`. The owner explains
+    // `bread` and `dinner` and guesses `apple` and `ribbon`, all four answered.
+    const reversed = [...MANY]
+      .reverse()
+      .map((word) =>
+        ['apple', 'dinner'].includes(word.word) ? { ...word, isAnswered: true } : word,
+      );
+
+    inRouter(<RoomClosedEarly room={closed(reversed, 11, 11)} viewerId={OWNER_ID} />);
+
+    const picture = screen.getByRole('img', { name: SAG_LABEL });
+
+    expect([...picture.querySelectorAll('.card')].map((card) => card.textContent)).toEqual([
+      'bread',
+      'apple',
+      'dinner',
+      'ribbon',
+    ]);
   });
 
   it('says what was answered under the drawing, once', () => {
