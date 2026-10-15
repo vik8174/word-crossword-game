@@ -177,42 +177,45 @@ describe('theme', () => {
     expect(contrastBetween(warning.main, theme.palette.background.default)).toBeLessThan(3);
   });
 
-  it('tells the four states of a square apart with the colour taken out', () => {
-    // Empty, mine, the ones I explain, the ones the group answered. A player
-    // who reads a word they are explaining as one already answered stops
-    // explaining it, and the game stalls with both of them waiting
-    // (`docs/decisions/0015-explained-words-in-the-grid.md`), so this cannot be
-    // left to hue: the squares carry a dashed outline and a slanted letter as
-    // well, and the surfaces under them stand apart on their own.
-    const { empty, own, explained, guessed } = theme.palette.grid;
-    const states = { empty, own, explained, guessed };
-    const names = Object.keys(states) as (keyof typeof states)[];
+  it('draws the board from the street, each kind of square on its own token', () => {
+    // The surfaces are the drawing's (`design/templates/state-tree.html`, `.cell`
+    // and its kinds), named by the token and not by a value of their own.
+    const { grid, street } = theme.palette;
 
-    for (const one of names) {
-      for (const other of names.filter((name) => name !== one)) {
-        expect(greyscaleGapBetween(states[one], states[other])).toBeGreaterThanOrEqual(
-          A_VISIBLE_DIFFERENCE,
-        );
-      }
-    }
+    expect(grid).toEqual({
+      empty: street.tile,
+      own: street.tile,
+      ownFilling: street.wash,
+      guessed: street.sage,
+      explained: street.paper,
+      refused: street.rose,
+      rule: street.ink,
+    });
+    expect(grid.guessed).toBe('#D3E8DD');
+    expect(grid.explained).toBe('#EFE6D2');
   });
 
-  it("does not let a square of the player's own be read as a refused answer", () => {
-    // The trap this palette was built around. Both are tinted squares of the
-    // same board and one of them means the answer has already been thrown out,
-    // so they part company in lightness rather than only in hue — a player who
-    // read one as the other would go on believing a word the room had refused.
-    expect(
-      greyscaleGapBetween(theme.palette.grid.own, theme.palette.grid.refused),
-    ).toBeGreaterThanOrEqual(A_VISIBLE_DIFFERENCE);
-    expect(
-      greyscaleGapBetween(theme.palette.grid.ownFilling, theme.palette.grid.refused),
-    ).toBeGreaterThanOrEqual(A_VISIBLE_DIFFERENCE);
-    // And their outlines with them, since a refused square keeps the shape of
-    // the one it replaced and swaps only what it is drawn in.
-    expect(
-      greyscaleGapBetween(theme.palette.secondary.main, theme.palette.error.dark),
-    ).toBeGreaterThanOrEqual(A_VISIBLE_DIFFERENCE);
+  it('cannot tell an answered square from an explained one by the fill, and leaves that to the outline', () => {
+    // Sage and paper are 1.28 apart in lightness (CIE L*), too close to carry
+    // the difference on their own, so the two are told apart by their outline
+    // and their marks instead (a 2px spruce outline and a tick against a dashed
+    // ink outline and an italic letter), which `GridSquare.test.tsx` holds. The
+    // gap is asserted so that nobody leans on the fill without knowing it.
+    const { guessed, explained } = theme.palette.grid;
+
+    expect(greyscaleGapBetween(guessed, explained)).toBeLessThan(A_VISIBLE_DIFFERENCE);
+  });
+
+  it('reads the letters of the board on the surface they stand on', () => {
+    const { grid, street } = theme.palette;
+
+    // Answered letters on sage, explained letters on paper, and the corner
+    // number in slate on sage, the surface it has the least contrast on.
+    expect(contrastBetween(street.ink, grid.guessed)).toBeGreaterThanOrEqual(11);
+    expect(contrastBetween(street.ink, grid.explained)).toBeGreaterThanOrEqual(11);
+    expect(contrastBetween(street.slate, grid.guessed)).toBeGreaterThanOrEqual(5);
+    expect(contrastBetween(street.ink, grid.refused)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastBetween(street.ink, grid.ownFilling)).toBeGreaterThanOrEqual(4.5);
   });
 
   it('rules the board in a line that can be seen on either paper it is drawn on', () => {
@@ -256,20 +259,6 @@ describe('theme', () => {
     expect(contrastBetween(theme.palette.street.onAccent, error.dark)).toBeGreaterThan(
       contrastBetween(theme.palette.street.onAccent, error.main),
     );
-  });
-
-  it("leaves the board's surfaces as they were, as literal values", () => {
-    // #228 replaces them together with the outlines; until then the board is
-    // the one thing that has not moved onto the street's colours.
-    expect(theme.palette.grid).toEqual({
-      empty: '#FFFDF7',
-      guessed: '#F4EFE3',
-      own: '#DCE8C6',
-      explained: '#DED4BB',
-      ownFilling: '#BDC7AA',
-      refused: '#E29880',
-      rule: 'rgba(43, 38, 32, 0.55)',
-    });
   });
 
   it('reads everything in one family, headings told apart from text by weight alone', () => {

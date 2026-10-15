@@ -48,22 +48,25 @@ export interface GridSurfaces {
 }
 
 /**
- * The board's surfaces, exactly as they were before the garden went.
+ * The board's surfaces: the drawing's squares, by the tokens that name them
+ * (`design/templates/state-tree.html`, `.cell` and its kinds, lines 192-205).
  *
- * Literal values on purpose: the board is the one thing that does not move onto
- * the street's colours in the issue that removed the garden (#222). Issue #228
- * replaces these with the drawing's squares (`tile`, `sage`, `paper`, `wash` and
- * `rose`) together with their outlines, and the test that tells the four states
- * apart with the colour taken out keeps holding the new ones to the same bar.
+ * An empty square and one this player types into are both `tile`; the word
+ * being filled is `wash`; an answered square is `sage`; one this player
+ * explains is `paper`; a refused one is `rose`; the rule round a square is
+ * `ink`. The fills alone do not tell the kinds apart (sage and paper are 1.28
+ * apart in lightness), and are not asked to: every kind also carries an outline
+ * or a mark of its own, drawn in `GridSquare`, and `theme.test.ts` holds the
+ * kinds apart by those.
  */
 const GRID: GridSurfaces = {
-  empty: '#FFFDF7',
-  guessed: '#F4EFE3',
-  own: '#DCE8C6',
-  explained: '#DED4BB',
-  ownFilling: '#BDC7AA',
-  refused: '#E29880',
-  rule: 'rgba(43, 38, 32, 0.55)',
+  empty: STREET.tile,
+  guessed: STREET.sage,
+  own: STREET.tile,
+  explained: STREET.paper,
+  ownFilling: STREET.wash,
+  refused: STREET.rose,
+  rule: STREET.ink,
 };
 
 declare module '@mui/material/styles' {
@@ -189,20 +192,6 @@ export const theme = createTheme({
   },
 
   components: {
-    // A raised button casts a shadow onto the page, and nothing in this design
-    // is above it.
-    //
-    // `styleOverrides.sizeLarge` used to set the large button's font size here
-    // — removed by issue #184, which moved every button in the app onto
-    // `components/PillButton.tsx`, a component of its own rather than MUI's
-    // `Button`. `disableElevation` stays: the two dialog buttons in
-    // `components/EndGamePanel.tsx` are still MUI's own `Button` (issue #184
-    // leaves them out on purpose) and rely on it for their flat, shadowless
-    // look.
-    MuiButton: {
-      defaultProps: { disableElevation: true },
-    },
-
     // `MuiFormHelperText` used to be styled here — the hint under a field,
     // moved three pixels closer than MUI's own default. Issue #193 moved
     // every field that rendered one, `WordListForm`'s nickname and words,
