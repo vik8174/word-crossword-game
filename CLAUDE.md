@@ -168,21 +168,23 @@ because a permission rule matches a command by its prefix: one name is one rule.
 
 ### Budgets an issue may cite
 
-| ceiling                            | where it is enforced                                        | measured on `cd0fb44`         |
+| ceiling                            | where it is enforced                                        | measured on `4144fda`         |
 | ---------------------------------- | ----------------------------------------------------------- | ----------------------------- |
-| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **213.6 KiB** without a token |
+| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **197.4 KiB** without a token |
 
-Measured by the Architect on `cd0fb44` (#224 merged: Home rebuilt, the `Street`
-drawing now on the first visit) in a clean worktree with no `apps/web/.env`, by
-`SENTRY_AUTH_TOKEN= pnpm exec vite build` in `apps/web`. It was 208.3 on
-`195c4bb` before #245, #223 and #224. #224's Inspector read **215.8 KiB for the
-production build** (with `.env` and its Sentry token) on the same code: **2.2 KiB
-are left** for the screens still to come. The scene-image ceiling went with the
-garden in #222.
+Measured on `4144fda` (#263 merged: the latin italic is no longer preloaded and
+`NOT_ON_FIRST_VISIT` counts it against no ceiling, ADR 0032 addendum). CI's build,
+with no `apps/web/.env` and no token, prints **197.4 KiB**. With `.env` present and
+`SENTRY_AUTH_TOKEN=` set empty it is **198.0** (#263's Worker and Inspector). The
+production build is about 1.7 KiB more, so about **199.7**. The italic's 17.3 KiB
+is printed on its own line and counted against no ceiling.
+
+**Only `SENTRY_AUTH_TOKEN=` set empty is safe to measure with.** An unset variable
+lets `loadEnv` take `.env`'s token, and that build uploads source maps to Sentry.
 
 **CI weighs a lighter bundle than the one that reaches a player**: a production
 build carries a Sentry token that a CI build does not, and that adds roughly
-1.7 KiB (measured on #244: 211.8 in CI's build, 213.5 with `.env`). The
+1.7 KiB (measured on #224's `ca8fcb3`: 214.1 without the token, 215.8 with it). The
 difference is in the artefact, not in the moment of measuring, so a pull request
 sitting 1 KiB under the ceiling in CI is not under it in production. Say which
 build produced any figure quoted in an issue, and quote the command and the
