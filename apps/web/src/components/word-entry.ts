@@ -10,15 +10,15 @@ import type { WordLocation } from '../rooms/word-visibility';
  * the one on the right holds words hidden from them, and neither hands its
  * list anything but this
  * (`docs/decisions/0016-the-cursor-lives-in-the-grid.md`). A word that reads as
- * text does so inside {@link WordEntry.word}, which the panel that owns it
+ * text does so inside {@link WordEntry.shown}, which the panel that owns it
  * builds and nothing downstream takes apart.
  *
- * {@link WordEntry.reference} and {@link WordEntry.word} are what the row
+ * {@link WordEntry.reference} and {@link WordEntry.shown} are what the row
  * draws in its two visual tracks; {@link WordEntry.name} is the whole sentence
  * behind them, including whether the word has been answered, and is never
  * drawn — it is the row's accessible name and nothing else reads it. The two
- * are kept apart because the row's third track, the mark, says "answered" to
- * the eye and not out loud (issue #150).
+ * are kept apart because the row's third track says "answered" to the eye and
+ * the name says it out loud (issue #150).
  */
 export interface WordEntry {
   /** Key of the word in the room's `words` map — stable across renders and updates. */
@@ -29,20 +29,22 @@ export interface WordEntry {
    */
   readonly reference: string;
   /**
-   * The word itself, where this half of the game has one to show — `null` on
-   * the side that guesses, which has nothing to write here without handing the
-   * spelling away.
+   * What the row's middle track shows: the word itself on the side that
+   * explains, and on the side that guesses one underscore for each letter, or
+   * the word once it has been answered (it is then in everybody's grid).
    */
-  readonly word: string | null;
+  readonly shown: string;
+  /** `word` draws {@link WordEntry.shown} as a word, `slots` as the blanks of one. */
+  readonly look: 'word' | 'slots';
   /**
    * The whole line, in the words it is read in: its crossword number, the way
-   * it runs, the word if this half has one, and whether it has been answered.
+   * it runs, the word or its letter count, and whether it has been answered.
    * Never drawn on screen — see {@link WordEntry}.
    */
   readonly name: string;
   /** Where the word runs, for taking the player to it. */
   readonly location: WordLocation;
-  /** `true` once it has been answered — marked, struck through and said. */
+  /** `true` once it has been answered — ticked in the row and said in its name. */
   readonly isSolved: boolean;
 }
 

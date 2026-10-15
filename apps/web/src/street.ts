@@ -10,8 +10,7 @@ import { inRem, TEXT_FONT_FAMILY } from './scale';
  * module that draws in a colour reads one of these, through `theme.palette`
  * or by import from here. The four derived values are the ones the drawing
  * computes rather than names (its contrast table, lines 27-43). The board's
- * squares are the one exception, and keep their own values in `theme.ts`
- * until #228.
+ * squares read these tokens too (`theme.ts`, issue #228).
  */
 export interface StreetPalette {
   /** The ground. */

@@ -300,12 +300,16 @@ describe('CrosswordGrid', () => {
 
       // A dashed outline and a slanted letter, either of which survives a
       // screen read in greyscale by somebody who cannot tell the tints apart.
-      expect(screen.getByText('T')).toHaveStyle({ borderStyle: 'dashed', fontStyle: 'italic' });
+      expect(getComputedStyle(screen.getByText('T')).outline).toMatch(/dashed/);
+      expect(screen.getByText('T')).toHaveStyle({ fontStyle: 'italic' });
       unmount();
 
       renderGrid(solvedCat());
 
-      expect(screen.getByText('T')).toHaveStyle({ borderStyle: 'solid', fontStyle: 'normal' });
+      // The answered square has the heavier outline, upright bold letters and
+      // a tick instead (see `GridSquare.test.tsx`).
+      expect(getComputedStyle(screen.getByText('T')).outline).not.toMatch(/dashed/);
+      expect(screen.getByText('T')).toHaveStyle({ fontStyle: 'normal' });
     });
 
     it('keeps the number of the square readable over it', () => {
@@ -329,7 +333,7 @@ describe('CrosswordGrid', () => {
       // being this player's alone, which is what tells them to stop explaining.
       expect(boardLetters()).toBe('CAT');
       expect(screen.queryByLabelText(/yours to explain/i)).not.toBeInTheDocument();
-      expect(screen.getByText('T')).toHaveStyle({ borderStyle: 'solid' });
+      expect(getComputedStyle(screen.getByText('T')).outline).not.toMatch(/dashed/);
     });
   });
 
@@ -810,8 +814,8 @@ describe('CrosswordGrid', () => {
 
       // Both squares are of the word being filled and are tinted alike; only
       // the one the letter is about to land in carries the ring.
-      expect(squareAt(1, 0)).toHaveStyle({ outlineStyle: 'solid', outlineWidth: '3px' });
-      expect(squareAt(1, 2)).not.toHaveStyle({ outlineStyle: 'solid' });
+      expect(getComputedStyle(squareAt(1, 0)).boxShadow).toMatch(/inset 0 0 0 3px/);
+      expect(getComputedStyle(squareAt(1, 2)).boxShadow).not.toMatch(/inset 0 0 0 3px/);
       expect(getComputedStyle(squareAt(1, 2)).backgroundColor).toBe(
         getComputedStyle(squareAt(1, 0)).backgroundColor,
       );

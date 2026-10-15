@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   APP_SHELL_BOARD_HEIGHT_CSS,
+  BAND_MIN_CELL_SIZE,
+  bandIsShown,
   BOARD_HEIGHT_CSS,
   BOARD_HEIGHT_PERCENT,
   type BoardBox,
@@ -16,6 +18,7 @@ import {
   WIDE_BOARD_HEIGHT_PERCENT,
 } from './board-geometry';
 import { FRAME_HEADER_FALLBACK } from './frame-height';
+import { middleWidthAt } from './room-layout';
 
 /**
  * Words a game is played with, in the proportions a real list has: most of them
@@ -109,7 +112,8 @@ interface Screen {
  * board in the middle of it, and the widths below were read off the board's own
  * box in Chrome — 915 pixels in a 1440 by 900 window, where the two indexes
  * stand either side of it, and 802 in a 834 by 1112 one, where they stand
- * underneath and the board has the width to itself.
+ * underneath and the board has the width to itself. Issue #228 gave the zones
+ * the template's 290 and 40 and the sides 48 and 32, which leaves 684 and 770.
  *
  * The height each of them gives the board differs for the same reason, and the
  * one that matters is the desktop's: a crossword comes out nearly square, so
@@ -127,14 +131,14 @@ const SCREENS: readonly Screen[] = [
   {
     name: 'desktop, 1440 by 900',
     windowHeight: 900,
-    boardWidth: 915,
+    boardWidth: middleWidthAt(1440),
     heightPercent: WIDE_BOARD_HEIGHT_PERCENT,
     promise: 0.8,
   },
   {
     name: 'tablet, 834 by 1112',
     windowHeight: 1112,
-    boardWidth: 802,
+    boardWidth: 834 - 2 * 32,
     heightPercent: BOARD_HEIGHT_PERCENT,
     promise: 0.6,
   },
@@ -331,5 +335,74 @@ describe('the board and the frame’s header', () => {
     expect(WIDE_BOARD_HEIGHT_CSS).toContain(
       `calc(${WIDE_BOARD_HEIGHT_PERCENT}dvh - var(--frame-header-height, 64px))`,
     );
+  });
+});
+
+describe('the band above the board', () => {
+  /** The ten-word list of `docs/manual-checks.md`: roughly 14 squares by 11. */
+  const SHORT_LIST: BoardShape = { cols: 14, rows: 11 };
+  /** A board of the drawing's six words. */
+  const DRAWING: BoardShape = { cols: 9, rows: 7 };
+
+  it('is never shown under 1200 wide, however small the board is', () => {
+    expect(bandIsShown({ width: 1199, height: 1400 }, { cols: 5, rows: 5 })).toBe(false);
+    expect(bandIsShown({ width: 834, height: 1112 }, DRAWING)).toBe(false);
+    expect(bandIsShown({ width: 375, height: 812 }, DRAWING)).toBe(false);
+  });
+
+  it('is never shown in a window too short to be an application', () => {
+    expect(bandIsShown({ width: 1440, height: 599 }, { cols: 5, rows: 5 })).toBe(false);
+  });
+
+  it('is shown where the board it leaves still has squares of 36px and up', () => {
+    expect(bandIsShown({ width: 1440, height: 900 }, DRAWING)).toBe(true);
+  });
+
+  it('is left out for the short reference list at 1440 by 900, which it would shrink below 36px', () => {
+    // 638 for the board less the band's 241.5 and the 18 under it leaves 378.5,
+    // and eleven rows of that are squares of about 32.6.
+    expect(bandIsShown({ width: 1440, height: 900 }, SHORT_LIST)).toBe(false);
+    expect(
+      cellSizeIn({ width: 684, height: 0.78 * 900 - 64 - (684 * (226 / 640) + 18) }, SHORT_LIST),
+    ).toBeLessThan(BAND_MIN_CELL_SIZE);
+  });
+
+  it(
+    'decides every 10- and 20-word board at 1440 by 900 by the squares it would leave',
+    () => {
+      // The lists the app accepts are 10 to 20 words. At 1440 by 900 the band
+      // leaves the board 378.5px of height and 684 of width, and a square of 36px
+      // needs 38 per row and 38 per column less the last gap: ten rows and
+      // eighteen columns are the most that still get one.
+      const decide = ({ rows, cols }: BoardShape) => rows <= 10 && cols <= 18;
+
+      for (const shape of layoutsOf(MIN_WORDS)) {
+        expect(bandIsShown({ width: 1440, height: 900 }, shape)).toBe(decide(shape));
+      }
+
+      for (const shape of layoutsOf(MAX_WORDS)) {
+        expect(bandIsShown({ width: 1440, height: 900 }, shape)).toBe(false);
+      }
+    },
+    MEASUREMENT_TIMEOUT_MS,
+  );
+
+  it('turns on at the first height where the squares it leaves are 36px, and not a pixel before', () => {
+    const bandAt = 684 * (226 / 640) + 18;
+    const squareAt = (height: number) =>
+      cellSizeIn({ width: 684, height: 0.78 * height - 64 - bandAt }, SHORT_LIST);
+    let height = 600;
+
+    while (!bandIsShown({ width: 1440, height }, SHORT_LIST) && height < 4000) {
+      height += 1;
+    }
+
+    expect(squareAt(height)).toBeGreaterThanOrEqual(BAND_MIN_CELL_SIZE);
+    expect(squareAt(height - 1)).toBeLessThan(BAND_MIN_CELL_SIZE);
+  });
+
+  it('leaves a board that is too wide for the window out whatever the height is', () => {
+    // At 1200 the middle zone is 444 wide: fourteen columns cannot be 36px there.
+    expect(bandIsShown({ width: 1200, height: 4000 }, SHORT_LIST)).toBe(false);
   });
 });

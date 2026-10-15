@@ -12,7 +12,8 @@
  * the board had stopped making.
  */
 
-import { belowFrame } from './frame-height';
+import { belowFrame, FRAME_HEADER_FALLBACK } from './frame-height';
+import { APP_SHELL_MIN_HEIGHT, middleWidthAt, THREE_ZONE_MIN_WIDTH } from './room-layout';
 
 /** A rectangle the board is drawn into, in CSS pixels. */
 export interface BoardBox {
@@ -115,6 +116,91 @@ export const APP_SHELL_BOARD_HEIGHT_CSS = boardHeightCss(BOARD_HEIGHT_PERCENT, t
 
 /** The same, for the screen where the board has a column of its own. */
 export const WIDE_BOARD_HEIGHT_CSS = boardHeightCss(WIDE_BOARD_HEIGHT_PERCENT, true);
+
+/**
+ * The drawing above the board, the "band": the street cropped to the strip
+ * between the balconies, with the answered words hanging on the line
+ * (`state-tree.html`, `scene({ crop: "band" })`). Its viewBox is 640 by 226, so
+ * it is as tall as 226/640 of the width it is given.
+ */
+const BAND_ASPECT = 226 / 640;
+
+/** The space between the band and the board (`margin-top: 18px` on the board, line 1021). */
+const BAND_GAP = 18;
+
+/**
+ * The smallest square the band is allowed to leave the board.
+ *
+ * The band is a picture, and the board is the thing the screen is for: the band
+ * is shown only when the squares the board has left are still comfortable ones,
+ * 36px and up (Viktor's ruling, 2026-10-14), and is left out when showing it
+ * would cost the board more than that. Nothing is shrunk to make room for it.
+ */
+export const BAND_MIN_CELL_SIZE = 36;
+
+/**
+ * How much height the band takes in a window `width` pixels wide, gap included.
+ * It fills the middle zone, so it is as tall as that zone is wide.
+ *
+ * @param width - The window's width in pixels
+ * @returns The band's height and the space under it, in pixels
+ */
+const bandExtentAt = (width: number): number => middleWidthAt(width) * BAND_ASPECT + BAND_GAP;
+
+/**
+ * The band's height as the browser works it out, for the board's own height to
+ * subtract: the middle zone is a size container in width (`RoomShell`), so
+ * `cqw` is that zone's width.
+ */
+const BAND_EXTENT_CSS = `calc(100cqw * 226 / 640 + ${BAND_GAP}px)`;
+
+/**
+ * The same board height with the band above it: its share of the window less
+ * the header and less the band, never more than the squares could use.
+ *
+ * The band is only ever shown from {@link THREE_ZONE_MIN_WIDTH} up, where the
+ * board has a column to itself, so this is the wide screen's height and no
+ * other's.
+ */
+export const WIDE_BOARD_HEIGHT_BELOW_BAND_CSS = `min(calc(${belowFrame(`${WIDE_BOARD_HEIGHT_PERCENT}dvh`)} - ${BAND_EXTENT_CSS}), calc(var(--board-rows) * ${MAX_CELL_SIZE + CELL_GAP}px - ${CELL_GAP}px))`;
+
+/**
+ * Whether the band is shown above a board of this shape in a window of this size.
+ *
+ * One rule: from 1200 wide (where the board has a column to itself), and only
+ * where the board, given the share of the window that is left once the band
+ * has taken its height, still has squares of at least
+ * {@link BAND_MIN_CELL_SIZE}. Under 1200 it is never shown, and neither is it in
+ * a window too short to be an application. A list of 10 words comes out at
+ * roughly 14 by 11 (`docs/manual-checks.md`) and one of 20 at about 22 by 23
+ * (ADR 0029): at 1440 by 900 both come out without the band, and a game of six
+ * words, which the app does not deal but the drawing does, shows it.
+ *
+ * The same arithmetic as {@link cellSizeIn}, done once for the whole decision
+ * and in numbers, so it can be tested without a browser to lay anything out.
+ *
+ * @param window - The window's width and height in pixels
+ * @param shape - The laid-out crossword's size in squares
+ * @returns `true` when the band is drawn
+ *
+ * @example
+ * bandIsShown({ width: 1440, height: 900 }, { cols: 9, rows: 7 }); // true
+ * bandIsShown({ width: 1440, height: 900 }, { cols: 14, rows: 11 }); // false
+ */
+export const bandIsShown = (window: BoardBox, shape: BoardShape): boolean => {
+  if (window.width < THREE_ZONE_MIN_WIDTH || window.height < APP_SHELL_MIN_HEIGHT) {
+    return false;
+  }
+
+  const rows = Math.max(1, shape.rows);
+  const share =
+    (WIDE_BOARD_HEIGHT_PERCENT / 100) * window.height -
+    FRAME_HEADER_FALLBACK -
+    bandExtentAt(window.width);
+  const height = Math.min(share, rows * (MAX_CELL_SIZE + CELL_GAP) - CELL_GAP);
+
+  return cellSizeIn({ width: middleWidthAt(window.width), height }, shape) >= BAND_MIN_CELL_SIZE;
+};
 
 /** The custom property the side of a square is published as. */
 const CELL_PROPERTY = '--board-cell';

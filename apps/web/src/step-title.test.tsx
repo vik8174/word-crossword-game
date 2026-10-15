@@ -29,13 +29,13 @@ vi.mock('firebase/analytics', () => ({
 }));
 
 /**
- * The name of a step is one drawing shared by `/create` inside its panel, and
- * join, the lobby, `finished` and `closed-early` at the top of their frame
- * (`design/templates/state-tree.html`'s `.step-title`, line 112): sentence case
+ * The name of a step is one drawing shared by `/create` inside its panel and
+ * join at the top of its column (`design/templates/state-tree.html`'s
+ * `.step-title`, line 112): sentence case
  * as written, 700 at 34px, a line height of 1.1, no capitals and no tracking,
  * and in ink with no shadow under the letters now the garden is gone (#222).
  *
- * It is guarded where it is drawn, at its two sites, and not in a test that
+ * It is guarded where it is drawn, at its sites, and not in a test that
  * builds its own heading: putting the sign variant back at either site, or a
  * shadow, a capital or a tracking back on it, left every test passing once
  * (#244, round 1).
@@ -60,7 +60,7 @@ const expectAStepTitle = (heading: HTMLElement, margin = '0px 0px 6px') => {
 };
 
 describe('the name of a step', () => {
-  it('is set as the template draws it where the room frame puts it', () => {
+  it('is not drawn where the room frame puts it: the room keeps its name for a reader and shows none', () => {
     render(
       <ThemeProvider theme={theme}>
         <MemoryRouter>
@@ -71,11 +71,17 @@ describe('the name of a step', () => {
       </ThemeProvider>,
     );
 
+    // The status and the action of a room are the frame's header
+    // (`useFrameSlot`), and a screen in a room is named by its letters and its
+    // drawing rather than by a title (`state-tree.html`'s `playing`, `lobby` and
+    // `finished` carry none), so the room's `h1` is read aloud and not shown.
     const heading = screen.getByRole('heading', { level: 1, name: 'Lobby' });
+    const style = getComputedStyle(heading);
 
-    expectAStepTitle(heading);
-    // Its heading level is the page's, so a reader moving by headings finds it.
     expect(heading.tagName).toBe('H1');
+    expect(style.position).toBe('absolute');
+    expect(style.width).toBe('1px');
+    expect(style.height).toBe('1px');
   });
 
   it('is set as the template draws it where /create puts it', () => {
@@ -109,7 +115,7 @@ describe('the name of a step', () => {
     expect(heading.tagName).toBe('H1');
   });
 
-  it('is set by the same recipe at all three sites, which draws no rule and no shadow', () => {
+  it('is set by the same recipe at both sites, which draws no rule and no shadow', () => {
     const title = stepTitleSx();
 
     expect(title.color).toBe(theme.palette.street.ink);
