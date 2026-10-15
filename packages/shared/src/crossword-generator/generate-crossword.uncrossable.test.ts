@@ -32,7 +32,11 @@ const applePlum = layoutOf([
   { answer: 'PLUM', clue: '', orientation: 'down', startx: 2, starty: 1 },
 ]);
 
-/** The words a call handed the library, in the order it handed them over. */
+/**
+ * The words a call handed the library, in the order it handed them over. They
+ * are the letters the grid holds (`gridLettersOf`), upper case, and not the
+ * words as the caller wrote them.
+ */
 const wordsGivenToLibrary = (call: number): readonly string[] =>
   layoutMock.mock.calls[call][0].map(({ answer }) => answer);
 
@@ -45,7 +49,7 @@ describe('generateCrossword with a word that has nothing to cross', () => {
   it('keeps the word out of the library', () => {
     generateCrossword(['apple', 'plum', 'jjj']);
 
-    expect(wordsGivenToLibrary(0)).toEqual(['apple', 'plum']);
+    expect(wordsGivenToLibrary(0)).toEqual(['APPLE', 'PLUM']);
   });
 
   it('reports it unplaced, in the position it was passed in at', () => {
@@ -78,13 +82,13 @@ describe('generateCrossword with a word that has nothing to cross', () => {
   it('judges a word by the list it is in, not by how unlikely its letters look', () => {
     generateCrossword(['characterization', 'zzz']);
 
-    expect(wordsGivenToLibrary(0)).toEqual(['characterization', 'zzz']);
+    expect(wordsGivenToLibrary(0)).toEqual(['CHARACTERIZATION', 'ZZZ']);
   });
 
   it('counts a word that shares a letter with a repetition of itself', () => {
     generateCrossword(['jjj', 'jjj']);
 
-    expect(wordsGivenToLibrary(0)).toEqual(['jjj', 'jjj']);
+    expect(wordsGivenToLibrary(0)).toEqual(['JJJ', 'JJJ']);
   });
 
   it('leaves a pair that can only cross each other to the library', () => {
@@ -93,6 +97,6 @@ describe('generateCrossword with a word that has nothing to cross', () => {
     // tell apart from a crossing that would work.
     generateCrossword(['apple', 'plum', 'xyz', 'zbd']);
 
-    expect(wordsGivenToLibrary(0)).toEqual(['apple', 'plum', 'xyz', 'zbd']);
+    expect(wordsGivenToLibrary(0)).toEqual(['APPLE', 'PLUM', 'XYZ', 'ZBD']);
   });
 });

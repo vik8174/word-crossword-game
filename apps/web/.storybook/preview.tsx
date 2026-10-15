@@ -3,8 +3,10 @@ import type { Preview } from '@storybook/react-vite';
 import { withGround, withMemoryRouter, withTheme } from './decorators';
 
 /**
- * The three files `preview-head.html` declares, in the exact weight and style
- * strings `FontFaceSet.load` needs to match a `@font-face`.
+ * The three latin faces `preview-head.html` declares, in the exact weight and
+ * style strings `FontFaceSet.load` needs to match a `@font-face`. The latin-ext
+ * faces are left out on purpose: `load` asks for a space, which they do not
+ * cover, and they are fetched when a story draws a letter in them (`BoardDiacritics`).
  *
  * `<link rel="preload">` fetches the bytes but a preloaded face is not
  * "loaded" in `document.fonts` until something actually renders with it —

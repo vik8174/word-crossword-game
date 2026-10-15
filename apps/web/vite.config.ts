@@ -10,6 +10,9 @@ import {
   type FetchedFile,
   FIRST_VISIT_CEILING_BYTES,
   firstVisitWeight,
+  LATIN_EXT_CEILING_BYTES,
+  latinExtHrefs,
+  latinExtTooHeavyReport,
   notCountedHrefs,
   tooHeavyReport,
 } from './build/first-visit-weight.ts';
@@ -129,7 +132,8 @@ const preloadRoomRoute = (): Plugin => {
 const HTML_FILE = 'index.html';
 
 /**
- * Fails the build when a first visit to the landing page has got too heavy.
+ * Fails the build when a first visit to the landing page has got too heavy, or
+ * when the faces fetched only for a letter beyond the latin range have.
  *
  * Why there is a ceiling at all, and what counts as a first visit, is in
  * `build/first-visit-weight.ts`. The plugin's own part is small: it is the only
@@ -137,6 +141,11 @@ const HTML_FILE = 'index.html';
  * for up front, which is what the measurement needs — the chunks come off the
  * bundle, and the font comes off a `<link rel="preload">` written by hand,
  * because a file copied out of `public/` is in no bundle at all.
+ *
+ * The second ceiling is for the latin-ext faces, which a browser fetches only
+ * when a page draws a letter in their `unicode-range` (#232). Which face is
+ * counted where is decided in `build/first-visit-weight.ts`, by the range each
+ * `@font-face` declares.
  *
  * It runs after the files are written rather than while they are being made, so
  * what it weighs is what a browser would actually be sent.
@@ -192,10 +201,28 @@ const capFirstVisit = (): Plugin => {
         return;
       }
 
+      // The faces a browser fetches only for a letter beyond the latin range:
+      // not part of a first visit, and counted under a ceiling of their own.
+      const latinExt: readonly FetchedFile[] = latinExtHrefs(page).map(withoutBase).map(weigh);
+      const latinExtComplaint = latinExtTooHeavyReport(latinExt, LATIN_EXT_CEILING_BYTES);
+
+      if (latinExtComplaint !== null) {
+        this.error(latinExtComplaint);
+
+        return;
+      }
+
       console.log(
         `First visit: ${(firstVisitWeight(files) / 1024).toFixed(1)} KiB gzipped, of ${(
           FIRST_VISIT_CEILING_BYTES / 1024
         ).toFixed(1)} KiB allowed.`,
+      );
+      console.log(
+        `Latin-ext, fetched only for a letter that needs it: ${(
+          firstVisitWeight(latinExt) / 1024
+        ).toFixed(
+          1,
+        )} KiB gzipped in ${latinExt.length} files, of ${(LATIN_EXT_CEILING_BYTES / 1024).toFixed(1)} KiB allowed.`,
       );
 
       for (const { fileName, gzipBytes } of notCountedHrefs(page).map(withoutBase).map(weigh)) {

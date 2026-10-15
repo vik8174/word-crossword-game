@@ -95,3 +95,32 @@ describe('generateCrossword against a misbehaving layout library', () => {
     expect(layout.unplacedWords).toEqual([]);
   });
 });
+
+describe('generateCrossword and what the library is shown', () => {
+  beforeEach(() => {
+    layoutMock.mockReset();
+  });
+
+  it('hands the library the letters of the grid, with ẞ for ß and the accents kept', () => {
+    layoutMock.mockReturnValue(
+      layoutOf([
+        { answer: 'STRAẞE', clue: '', orientation: 'across', startx: 1, starty: 1 },
+        { answer: 'TEA', clue: '', orientation: 'down', startx: 2, starty: 1 },
+      ]),
+    );
+
+    const layout = generateCrossword(['straße', 'tea']);
+
+    expect(layoutMock.mock.calls[0]?.[0]).toEqual([{ answer: 'STRAẞE' }, { answer: 'TEA' }]);
+    expect(layout.placedWords.map(({ word }) => word)).toEqual(['straße', 'tea']);
+    expect(layout.cells.map(({ letter }) => letter).join('')).toBe('STRAẞE' + 'EA');
+  });
+
+  it('hands it a decomposed word composed, one letter to a square', () => {
+    layoutMock.mockReturnValue(layoutOf([]));
+
+    generateCrossword(['café', 'épée']);
+
+    expect(layoutMock.mock.calls[0]?.[0]).toEqual([{ answer: 'CAFÉ' }, { answer: 'ÉPÉE' }]);
+  });
+});

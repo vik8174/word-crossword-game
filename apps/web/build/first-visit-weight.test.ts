@@ -7,6 +7,8 @@ import {
   assetHrefs,
   FIRST_VISIT_CEILING_BYTES,
   firstVisitWeight,
+  LATIN_EXT_CEILING_BYTES,
+  latinExtTooHeavyReport,
   NOT_ON_FIRST_VISIT,
   notCountedHrefs,
   tooHeavyReport,
@@ -198,11 +200,42 @@ describe('tooHeavyReport', () => {
   });
 });
 
+describe('latinExtTooHeavyReport', () => {
+  it('says nothing about faces under the ceiling, or exactly on it', () => {
+    const files = [{ fileName: 'fonts/a.woff2', gzipBytes: 30 * KIB }];
+
+    expect(latinExtTooHeavyReport(files, 60 * KIB)).toBeNull();
+    expect(latinExtTooHeavyReport([{ ...files[0]!, gzipBytes: 60 * KIB }], 60 * KIB)).toBeNull();
+  });
+
+  it('adds the faces up, names each and puts the heaviest first', () => {
+    const report = latinExtTooHeavyReport(
+      [
+        { fileName: 'fonts/light.woff2', gzipBytes: 20 * KIB },
+        { fileName: 'fonts/heavy.woff2', gzipBytes: 41 * KIB },
+      ],
+      60 * KIB,
+    );
+
+    expect(report).not.toBeNull();
+    expect(report).toContain('61.0 KiB');
+    expect(report).toContain('60.0 KiB');
+    expect(report?.indexOf('fonts/heavy.woff2')).toBeLessThan(
+      report?.indexOf('fonts/light.woff2') ?? 0,
+    );
+  });
+});
+
 describe('the ceiling itself', () => {
   it('is the number the ticket set, said in bytes', () => {
     // Written down as a test because the number is a decision rather than a
     // measurement: changing it is somebody deciding the landing page may cost
     // more, which is a thing a reviewer should have to see.
     expect(FIRST_VISIT_CEILING_BYTES).toBe(218 * KIB);
+  });
+
+  it('is joined by a second, for the latin-ext faces, of sixty kibibytes gzipped', () => {
+    // Viktor's decision of 2026-10-14, said in bytes for the same reason.
+    expect(LATIN_EXT_CEILING_BYTES).toBe(60 * KIB);
   });
 });

@@ -1,3 +1,8 @@
+import {
+  LATIN_RANGE,
+  rangesShareACodePoint,
+} from '../../../packages/shared/src/font-ranges/font-ranges.ts';
+
 /**
  * What a first visit to the landing page costs, and the ceiling it may not go
  * over.
@@ -18,8 +23,9 @@
  * before anybody has done anything: the HTML, every chunk reachable from the
  * entry by static import, and every file the HTML asks for on its own account —
  * which is the typefaces, preloaded or merely declared, bar the ones named in
- * {@link NOT_ON_FIRST_VISIT}. Chunks behind a lazy route are not on it and
- * neither is anything a click causes.
+ * {@link NOT_ON_FIRST_VISIT} and the ones that only a letter beyond the latin
+ * range fetches ({@link LATIN_EXT_CEILING_BYTES}). Chunks behind a lazy route
+ * are not on it and neither is anything a click causes.
  *
  * There used to be a second ceiling beside this one, for the garden's pictures
  * (`docs/decisions/0033-a-second-ceiling-for-a-picture.md`). The pictures went
@@ -70,6 +76,23 @@
  */
 export const FIRST_VISIT_CEILING_BYTES = 218 * 1024;
 
+/**
+ * The most the faces that only a letter beyond the latin range fetches may cost
+ * together, in bytes over the wire: sixty kibibytes, gzipped, summed over the
+ * files, as {@link FIRST_VISIT_CEILING_BYTES} is.
+ *
+ * A face with a `unicode-range` is fetched when a page draws a letter in it, and
+ * the landing page draws none from latin-ext. So those faces are not part of
+ * what a first visit costs, and they are not free either: a game in Polish,
+ * Turkish or Hungarian fetches up to all three. This is the number that says how
+ * much of that the app may carry (`docs/decisions/0032-what-the-first-visit-ceiling-measures.md`,
+ * the addendum of #232). Viktor chose it on 2026-10-14.
+ *
+ * Raising it is a decision made on purpose, in a pull request with a reason, as
+ * raising the first-visit ceiling is.
+ */
+export const LATIN_EXT_CEILING_BYTES = 60 * 1024;
+
 /** One file a first visit fetches, and what it weighs compressed. */
 export interface FetchedFile {
   /** What it is called in `dist`. */
@@ -116,37 +139,130 @@ const preloadedHrefs = (html: string): readonly string[] =>
     .map((tag) => /\bhref=["']([^"']+)["']/.exec(tag)?.[1])
     .filter((href): href is string => href !== undefined);
 
+/** One font file the HTML declares, and the `unicode-range` it declares it for, if any. */
+export interface DeclaredFace {
+  /** The path of the file as written in the HTML. */
+  readonly href: string;
+  /** The face's `unicode-range`, or `null` when it declares none and so covers every letter. */
+  readonly range: string | null;
+}
+
+/** A `url(...)` that names a font file, in a minified or a formatted stylesheet. */
+const FONT_URL = /url\(['"]?([^'")]+\.woff2?)['"]?\)/g;
+
 /**
- * What the HTML declares a face for, preloaded or not.
+ * What the HTML declares a face for, preloaded or not, with the range each is
+ * declared for.
  *
  * Counted as well as the preloads, and that is the whole of why this is not
  * one function. A `@font-face` with nothing asking for it costs nothing — and
  * whether anything asks for it is a line of CSS in a component, which no build
  * step can see. A face declared here is a face the app may use, so it is a cost
  * the ceiling is measured against; the alternative is a font that becomes free
- * by having its `<link>` deleted. The one exception is a face on
- * {@link NOT_ON_FIRST_VISIT}, applied in {@link assetHrefs}.
+ * by having its `<link>` deleted. The exceptions are the faces on
+ * {@link NOT_ON_FIRST_VISIT} and the ones counted under
+ * {@link LATIN_EXT_CEILING_BYTES}, applied in {@link assetHrefs}.
+ *
+ * Read per `@font-face`, because the range belongs to the rule and not to the
+ * file name. A font file named outside any `@font-face` is declared with no
+ * range, which counts it with the first visit.
  *
  * @param html - The built `index.html`
- * @returns The files behind every face it declares
+ * @returns The files behind every face it declares, with their ranges
  */
-const declaredFontHrefs = (html: string): readonly string[] =>
-  [...html.matchAll(/url\(['"]?([^'")]+\.woff2?)['"]?\)/g)]
-    .map(([, href]) => href)
-    .filter((href): href is string => href !== undefined);
+export const declaredFaces = (html: string): readonly DeclaredFace[] => {
+  const faces: DeclaredFace[] = [];
+  const inBlocks = new Set<string>();
+
+  for (const [block] of html.matchAll(/@font-face\s*\{[^}]*\}/g)) {
+    const range = /unicode-range\s*:\s*([^;}]*)/i.exec(block)?.[1]?.trim() ?? null;
+
+    for (const [, href] of block.matchAll(FONT_URL)) {
+      if (href !== undefined) {
+        faces.push({ href, range: range === '' ? null : range });
+        inBlocks.add(href);
+      }
+    }
+  }
+
+  for (const [, href] of html.matchAll(FONT_URL)) {
+    if (href !== undefined && !inBlocks.has(href)) {
+      faces.push({ href, range: null });
+      inBlocks.add(href);
+    }
+  }
+
+  return faces;
+};
+
+/**
+ * Whether a face is fetched with the first visit by the nature of its range: it
+ * declares none, or its range shares a code point with {@link LATIN_RANGE}, the
+ * letters every page draws. Only a face wholly beyond that range is fetched on
+ * demand.
+ */
+const sharesTheLatinRange = (face: DeclaredFace): boolean =>
+  face.range === null || rangesShareACodePoint(face.range, LATIN_RANGE);
+
+/** Where a declared face is counted: the first visit, the latin-ext ceiling, or nowhere. */
+type Counted = 'first-visit' | 'latin-ext' | 'nowhere';
+
+/**
+ * Which ceiling a declared font file counts against.
+ *
+ * The rule, in this order. A face the HTML preloads counts against the first
+ * visit, whatever else is said of it. A face that is on
+ * {@link NOT_ON_FIRST_VISIT} and is not preloaded counts against nothing. Every
+ * other face counts against the first visit if it declares no range or its range
+ * shares a code point with {@link LATIN_RANGE}, and against the latin-ext
+ * ceiling if it does not. A file declared twice counts where it counts most
+ * heavily.
+ */
+const countedAgainst = (
+  html: string,
+  notOnFirstVisit: readonly string[],
+): ReadonlyMap<string, Counted> => {
+  const preloaded = preloadedHrefs(html);
+  const counted = new Map<string, Counted>(preloaded.map((href) => [href, 'first-visit']));
+
+  for (const face of declaredFaces(html)) {
+    if (counted.get(face.href) === 'first-visit') continue;
+
+    let where: Counted;
+
+    if (notOnFirstVisit.includes(face.href)) where = 'nowhere';
+    else if (sharesTheLatinRange(face)) where = 'first-visit';
+    else where = 'latin-ext';
+
+    // A file declared twice is counted where it counts most heavily.
+    if (where === 'first-visit' || !counted.has(face.href)) counted.set(face.href, where);
+  }
+
+  return counted;
+};
+
+/** The files that count where they count, as the paths written in the HTML. */
+const hrefsCounted = (
+  html: string,
+  notOnFirstVisit: readonly string[],
+  where: Counted,
+): readonly string[] =>
+  [...countedAgainst(html, notOnFirstVisit)].filter(([, at]) => at === where).map(([href]) => href);
 
 /**
  * Everything the HTML itself asks for, before a byte of the app has run, that
- * counts against the ceiling.
+ * counts against the first-visit ceiling.
  *
- * These are the files a bundler never sees: they are copied out of `public/`
- * and named by hand, so a measurement taken off the bundle alone would miss
+ * These are the files a bundler never sees: they are copied out of `public/` and
+ * named by hand, so a measurement taken off the bundle alone would miss
  * twenty-five kilobytes of typeface that every first visit pays for.
  *
  * The rule, in this order. A face the HTML preloads counts, whatever
  * `notOnFirstVisit` says. A face that is declared, is not preloaded and is on
- * the list is left out here and returned by {@link notCountedHrefs}. Every
- * other declared face counts.
+ * the list is left out here and returned by {@link notCountedHrefs}. Of the
+ * rest, a face counts here if it declares no `unicode-range` or its range shares
+ * a code point with {@link LATIN_RANGE}; the others are returned by
+ * {@link latinExtHrefs}.
  *
  * @param html - The built `index.html`
  * @param notOnFirstVisit - The list of faces not counted; the exported one unless a test says otherwise
@@ -158,21 +274,31 @@ const declaredFontHrefs = (html: string): readonly string[] =>
 export const assetHrefs = (
   html: string,
   notOnFirstVisit: readonly string[] = NOT_ON_FIRST_VISIT,
-): readonly string[] => {
-  const preloaded = preloadedHrefs(html);
-
-  return [
-    ...new Set([
-      ...preloaded,
-      ...declaredFontHrefs(html).filter((href) => !notOnFirstVisit.includes(href)),
-    ]),
-  ];
-};
+): readonly string[] => hrefsCounted(html, notOnFirstVisit, 'first-visit');
 
 /**
- * The faces the HTML declares that the first visit does not count: declared,
- * not preloaded, and on {@link NOT_ON_FIRST_VISIT}. The build weighs them and
- * says so, on a line of their own.
+ * The faces counted under {@link LATIN_EXT_CEILING_BYTES}: declared, not
+ * preloaded, not on {@link NOT_ON_FIRST_VISIT}, and with a `unicode-range` that
+ * shares nothing with {@link LATIN_RANGE}. A browser fetches one only when a
+ * page draws a letter in its range.
+ *
+ * Named for the files that are in it today and decided by the range, never by
+ * the name: a face with the range `U+1EA0-1EF9` lands here, and a latin-ext
+ * face that were preloaded, or declared without a range, would not.
+ *
+ * @param html - The built `index.html`
+ * @param notOnFirstVisit - The list of faces not counted; the exported one unless a test says otherwise
+ * @returns Each of them once, as the paths written in it
+ */
+export const latinExtHrefs = (
+  html: string,
+  notOnFirstVisit: readonly string[] = NOT_ON_FIRST_VISIT,
+): readonly string[] => hrefsCounted(html, notOnFirstVisit, 'latin-ext');
+
+/**
+ * The faces the HTML declares that no ceiling counts: declared, not preloaded,
+ * and on {@link NOT_ON_FIRST_VISIT}. The build weighs them and says so, on a
+ * line of their own.
  *
  * @param html - The built `index.html`
  * @param notOnFirstVisit - The list of faces not counted; the exported one unless a test says otherwise
@@ -181,17 +307,7 @@ export const assetHrefs = (
 export const notCountedHrefs = (
   html: string,
   notOnFirstVisit: readonly string[] = NOT_ON_FIRST_VISIT,
-): readonly string[] => {
-  const preloaded = preloadedHrefs(html);
-
-  return [
-    ...new Set(
-      declaredFontHrefs(html).filter(
-        (href) => notOnFirstVisit.includes(href) && !preloaded.includes(href),
-      ),
-    ),
-  ];
-};
+): readonly string[] => hrefsCounted(html, notOnFirstVisit, 'nowhere');
 
 /**
  * What the whole of a first visit weighs.
@@ -204,6 +320,13 @@ export const firstVisitWeight = (files: readonly FetchedFile[]): number =>
 
 /** How a size reads to somebody looking at a failed build. */
 const inKibibytes = (bytes: number): string => `${(bytes / 1024).toFixed(1)} KiB`;
+
+/** The files named, heaviest first, one to a line. */
+const listedHeaviestFirst = (files: readonly FetchedFile[]): string =>
+  [...files]
+    .sort((one, other) => other.gzipBytes - one.gzipBytes)
+    .map((file) => `  ${inKibibytes(file.gzipBytes).padStart(10)}  ${file.fileName}`)
+    .join('\n');
 
 /**
  * The complaint a build makes when the landing page has got too heavy, or
@@ -227,19 +350,46 @@ export const tooHeavyReport = (files: readonly FetchedFile[], ceiling: number): 
     return null;
   }
 
-  const listed = [...files]
-    .sort((one, other) => other.gzipBytes - one.gzipBytes)
-    .map((file) => `  ${inKibibytes(file.gzipBytes).padStart(10)}  ${file.fileName}`)
-    .join('\n');
-
   return [
     `A first visit to the landing page is ${inKibibytes(total)} gzipped, over the ceiling of ${inKibibytes(ceiling)}.`,
     '',
     'What a visitor fetches before they have done anything:',
-    listed,
+    listedHeaviestFirst(files),
     '',
     'Either take something off the first screen — a route loaded on demand pays',
     'for itself the moment it is not the landing page — or raise the ceiling in',
     'apps/web/build/first-visit-weight.ts, on purpose and with a reason.',
+  ].join('\n');
+};
+
+/**
+ * The complaint a build makes when the faces fetched only for a letter beyond
+ * the latin range have got too heavy, or nothing at all when they have not.
+ *
+ * @param files - The faces counted under {@link LATIN_EXT_CEILING_BYTES}
+ * @param ceiling - The most they may weigh together, in bytes
+ * @returns What to fail the build with, or `null` when they are under
+ *
+ * @example
+ * const complaint = latinExtTooHeavyReport(files, LATIN_EXT_CEILING_BYTES);
+ */
+export const latinExtTooHeavyReport = (
+  files: readonly FetchedFile[],
+  ceiling: number,
+): string | null => {
+  const total = firstVisitWeight(files);
+
+  if (total <= ceiling) {
+    return null;
+  }
+
+  return [
+    `The faces fetched only for a letter beyond the latin range are ${inKibibytes(total)} gzipped together, over the ceiling of ${inKibibytes(ceiling)}.`,
+    '',
+    'What a page that draws such a letter may fetch:',
+    listedHeaviestFirst(files),
+    '',
+    'Either take a face out, or raise the ceiling in apps/web/build/first-visit-weight.ts,',
+    'on purpose and with a reason (docs/decisions/0032-what-the-first-visit-ceiling-measures.md).',
   ].join('\n');
 };

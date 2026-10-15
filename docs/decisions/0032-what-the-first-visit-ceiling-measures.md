@@ -63,3 +63,24 @@ Text wants two weights and no face worth having offers two for the twelve kibiby
 **How this sits beside the second ceiling.** [#232](https://github.com/vik8174/word-crossword-game/issues/232) counts the latin-ext faces against a second ceiling of 60 KiB, by their unicode range. A face on `NOT_ON_FIRST_VISIT` is outside both ceilings, and #232 inherits this rule in the same order. The latin-ext italic is not on the list, so it is counted by its range.
 
 **The figures.** Measured by `SENTRY_AUTH_TOKEN= pnpm exec vite build` in `apps/web`, with `apps/web/.env` present: **215.1 KiB** on `295c78e` before this change and **198.0 KiB** after it. CI builds without `apps/web/.env` and no token, and its Build log on `461906b` prints **197.4 KiB**. A production build is about 1.7 KiB heavier (the debug ids of the source-map upload), so **216.8** before and about **199.7** after.
+
+## Addendum (2026-10-15, [#232](https://github.com/vik8174/word-crossword-game/issues/232)): the latin-ext faces are counted apart, under a second ceiling
+
+**What changed.** The three latin-ext files of Alegreya Sans (400, 700 and 400 italic) are self-hosted, declared with their own `unicode-range` (`LATIN_EXT_RANGE`) and never preloaded. The first-visit check no longer counts them. It weighs them against a **second ceiling of 60.0 KiB gzipped, summed over those faces** (`LATIN_EXT_CEILING_BYTES` in `apps/web/build/first-visit-weight.ts`), and prints that sum on a line of its own. A build over either ceiling fails. The first-visit ceiling stays at 218 KiB. Viktor chose to count them apart on 2026-10-14, with the alternative turned down: counting every declared face against the one ceiling, which would have put the first visit at 255.0 KiB with six files.
+
+**Why.** A face with a `unicode-range` is fetched when a page draws a letter in it. The landing page draws none from latin-ext, so a first visit does not pay for those files. A game in Polish, Turkish or Hungarian does, up to all three. The second ceiling says how much of that the app may carry. The words of a game may use any letter of the two ranges ([0040](0040-words-in-any-latin-alphabet.md)).
+
+**The rule, in this order.** The check reads each `@font-face` of the built `index.html`, with its `unicode-range`, and the rule of the addendum above comes first:
+
+1. A face that the HTML preloads counts against the first visit, whatever else is said of it.
+2. A face on `NOT_ON_FIRST_VISIT` that is not preloaded counts against no ceiling. It is weighed and reported, as before.
+3. Every other face counts against the first visit if it declares **no** `unicode-range` or its range **shares any code point with `LATIN_RANGE`**.
+4. Every other declared face counts against the second ceiling, whatever its name or its range.
+
+No declared face is counted by neither ceiling, except a face on `NOT_ON_FIRST_VISIT`. A range the check cannot read stops the build rather than being counted somewhere.
+
+**The guard holds, and it is decided by the range and not by the name.** A latin-ext file that is preloaded, or declared without a range, counts against the first visit. A face whose range overlaps the latin one by a single code point does too: that is why `LATIN_EXT_RANGE` is Google's stock latin-ext range less the seven code points it shares with the latin one (U+0131, U+0152, U+0153, U+0304, U+0308, U+0329, U+2020). A face with the range `U+1EA0-1EF9` lands under the second ceiling; Google's own vietnamese range shares U+0304, U+0308 and U+0329 with the latin one and would land under the first. The unit tests carry both.
+
+**Where the ranges live.** `LATIN_RANGE` and `LATIN_EXT_RANGE` are written once, in `packages/shared/src/font-ranges/font-ranges.ts`, with the small parser the check uses. The build imports that file by its relative `.ts` path, because Vite's config loader leaves `from 'shared'` to Node, and Node 22 cannot load the package's `src/index.ts`.
+
+**The figures.** Measured by `SENTRY_AUTH_TOKEN= pnpm exec vite build` in `apps/web`, with `apps/web/.env` present: the first visit weighs **198.0 KiB** on `c3eabdc` and **198.3 KiB** on `e074d79`, and the three latin-ext files weigh **46.2 KiB** gzipped together (15.2, 15.2 and 15.7), which is 13.8 KiB under the second ceiling. The first visit grows by the three `@font-face` rules and a longer comment in the HTML, 0.3 KiB, and not by a font file. A build in CI has no `apps/web/.env` and weighs about 0.5 KiB less (198.3 with it and 197.8 without, on `4350fe0`), and a production build about 1.7 KiB more (the debug ids of the source-map upload): the second ceiling is not affected by either, since a font file is the same in all three.

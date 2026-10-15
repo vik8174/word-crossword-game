@@ -28,6 +28,6 @@ There is a second question underneath, and it is the one that will take the time
 
 ## Languages other than English
 
-The game is described as a tool for practising a spoken language, and it accepts one alphabet. `word-list-validator` refuses anything that is not Latin, by name, with `word-not-latin`.
+The game is described as a tool for practising a spoken language, and it accepts one alphabet: the Latin one, with its accents ([0040](decisions/0040-words-in-any-latin-alphabet.md), [#232](https://github.com/vik8174/word-crossword-game/issues/232)). `word-list-validator` refuses any other alphabet, by name, with `word-not-latin`.
 
 Lifting it is more than the validator. The crossword is built on letters as single characters, which the alphabets worth adding next do not all agree with; the font is loaded with a Latin subset because a face carrying Cyrillic as well costs many times the bytes ([0028](decisions/0028-a-design-system-inside-the-mui-theme.md)); and a language that is written right to left is a layout question rather than a validation one. The positioning of the project is already wider than English. The code is not, and this is where that gap is written down instead of being implied.

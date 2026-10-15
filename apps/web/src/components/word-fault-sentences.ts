@@ -1,4 +1,5 @@
 import {
+  boardFormOf,
   MAX_WORD_LENGTH,
   MAX_WORDS,
   MIN_WORD_LENGTH,
@@ -21,7 +22,10 @@ export const FAULT_SENTENCES: Record<WordListErrorCode, (word: string) => string
     `“${word}” is too short. A word needs ${MIN_WORD_LENGTH} letters or more.`,
   'word-too-long': (word) =>
     `“${word}” is too long. A word can have ${MAX_WORD_LENGTH} letters at most.`,
-  'word-not-latin': (word) => `“${word}” has a character that is not a letter. Use letters only.`,
+  'word-has-digit': (word) => `“${word}” has a digit in it. Use letters only.`,
+  'word-not-latin': (word) =>
+    `“${word}” is not written in Latin letters. Use a Latin alphabet only.`,
+  'word-has-symbol': (word) => `“${word}” has a character that is not a letter. Use letters only.`,
   'duplicate-word': (word) => `“${word}” is in the list twice. Keep one of them.`,
   'too-few-words': () => `Add at least ${MIN_WORDS} words to go on.`,
   'too-many-words': () => `Remove words to go on: at most ${MAX_WORDS}.`,
@@ -54,10 +58,14 @@ export const sentenceFor = (error: WordListError): string =>
  * The line beside the button while the strip is showing: how many distinct
  * words it names, singular given.
  *
+ * Words are told apart as the game tells them apart, by their board form: "café"
+ * and "Cafe" are one word, so a strip that names both says "the word", not "2
+ * words".
+ *
  * @param errors - The word faults the strip carries
  */
 export const changeSentence = (errors: readonly WordListError[]): string => {
-  const named = new Set(errors.map((error) => (error.word ?? '').toLowerCase()));
+  const named = new Set(errors.map((error) => boardFormOf(error.word ?? '')));
 
   return named.size === 1
     ? 'Change the word above to go on.'

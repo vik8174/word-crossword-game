@@ -2,13 +2,15 @@ import Box from '@mui/material/Box';
 import { type SxProps, type Theme } from '@mui/material/styles';
 import {
   type ChangeEvent,
+  type CompositionEvent,
   type CSSProperties,
   type FocusEvent,
   useLayoutEffect,
   useRef,
+  useState,
 } from 'react';
 
-import type { GuessEntryCell } from '../rooms/guess-board';
+import { type GuessEntryCell, letterTyped } from '../rooms/guess-board';
 import { STREET } from '../street';
 import { type GridSurfaces, TEXT_FONT_FAMILY } from '../theme';
 import { CELL_SIDE } from './board-geometry';
@@ -275,6 +277,39 @@ export const GridSquare = ({
     }
   });
 
+  // What a composing keyboard has put in the square that is not yet a letter: a
+  // dead key's bare accent, on its way to becoming the é it is typed for. Held
+  // here and not handed up, because handing it up clears the square and the
+  // square then rewrites the input, which ends the composition on the spot.
+  const [held, setHeld] = useState<string | null>(null);
+  const isComposing = useRef(false);
+
+  const handleInput = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+
+    if (isComposing.current && letterTyped(value) === '') {
+      setHeld(value);
+
+      return;
+    }
+
+    setHeld(null);
+    onTyped(value);
+  };
+
+  const handleCompositionEnd = (event: CompositionEvent<HTMLInputElement>) => {
+    isComposing.current = false;
+
+    // The composition ended on something that never became a letter (the dead
+    // key was pressed twice, or abandoned): the square takes it as it takes any
+    // other input, which clears it. When it did become a letter it was handed up
+    // as it arrived, and there is nothing left to say.
+    if (held !== null) {
+      setHeld(null);
+      onTyped(event.currentTarget.value);
+    }
+  };
+
   const label = labelFor(cell, number);
   const tabIndex = isCursor || isTabStop ? 0 : -1;
 
@@ -318,8 +353,10 @@ export const GridSquare = ({
     lineHeight: 1,
     padding: 0,
     paddingBottom: '6%',
-    // Upper-case as the board has always been and as #232 decides; the drawing
-    // sets them lower-case, and this is its one allowed difference.
+    // Upper-case as the board has always been; the drawing sets them lower-case,
+    // and this is its one allowed difference. The letters themselves are upper
+    // case already (`gridLettersOf`: É, and ẞ for ß); this keeps a letter a
+    // keyboard is still composing drawn as the rest are.
     textTransform: 'uppercase',
     ...(kindSx as object),
     ...(isCursor ? (CURSOR_SX as object) : {}),
@@ -370,11 +407,18 @@ export const GridSquare = ({
           component="input"
           inputMode="text"
           autoComplete="off"
-          maxLength={1}
-          value={cell.letter}
+          // No `maxLength`: a limit of one cuts an é that arrives as an `e` and a
+          // separate accent down to the `e` before `onChange` ever runs. The
+          // square keeps one letter by taking the last one of what it holds
+          // (`letterTyped`), composed.
+          value={held ?? cell.letter}
           aria-label={label}
           tabIndex={tabIndex}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => onTyped(event.target.value)}
+          onChange={handleInput}
+          onCompositionStart={() => {
+            isComposing.current = true;
+          }}
+          onCompositionEnd={handleCompositionEnd}
           onMouseDown={onPressed}
           onFocus={(event: FocusEvent<HTMLInputElement>) => {
             onTakenUp();

@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Across the Street</title>
 
-    <!-- Alegreya Sans, the one face of the app, in three files: 400, 700 and
-      400 italic, latin only. Which role each plays, and why the face is worth
-      its bytes, is in src/scale.ts.
+    <!-- Alegreya Sans, the one face of the app, in six files: 400, 700 and
+      400 italic, each in the latin range and in the latin-ext range. Which role
+      each plays, and why the face is worth its bytes, is in src/scale.ts.
 
-      Two of them are preloaded: the 400 and the 700. The text face is read on
-      every screen after the landing page, and a face that lands after that
+      Two of them are preloaded: the latin 400 and the latin 700. The text face
+      is read on every screen after the landing page, and a face that lands after that
       screen has been laid out moves what somebody has already begun reading
       (issue #124); on the landing page itself the name of the game is set in
       the 700, so a request that only started after first paint would swap it
@@ -20,12 +20,20 @@
       endings, street cards, the info glyph of a message), and that text may
       show in a system face for a moment first (issue #263).
 
-      Every declared face is counted against the ceiling a first visit may not
-      go over, except the ones named in NOT_ON_FIRST_VISIT, which is the italic
-      alone, and only while it is not preloaded
-      (apps/web/build/first-visit-weight.ts). Every unicode-range below is
-      LATIN_RANGE (src/font-faces.ts); the test beside it fails when they
-      differ. -->
+      The three latin-ext files are declared and never preloaded. A browser
+      fetches one only when a page draws a letter of LATIN_EXT_RANGE in its
+      weight and style (a word like "łódź" or "ősz"), and the landing page draws
+      none. The words of a game may use any letter of the two ranges (issue
+      #232).
+
+      Every declared face is counted against a ceiling, by its range
+      (apps/web/build/first-visit-weight.ts): a face that shares a code point
+      with LATIN_RANGE, or declares no range, or is preloaded, against the
+      ceiling a first visit may not go over; the latin-ext faces against a
+      ceiling of their own. The one exception is NOT_ON_FIRST_VISIT, the latin
+      italic alone, and only while it is not preloaded. Every unicode-range
+      below is LATIN_RANGE or LATIN_EXT_RANGE (packages/shared/src/font-ranges);
+      src/font-faces.test.ts fails when they differ. -->
     <link
       rel="preload"
       href="/fonts/alegreya-sans-v28-latin-400.woff2"
@@ -73,6 +81,42 @@
         unicode-range:
           U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
           U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+
+      @font-face {
+        font-family: 'Alegreya Sans';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/alegreya-sans-v28-latin-ext-400.woff2') format('woff2');
+        unicode-range:
+          U+0100-0130, U+0132-0151, U+0154-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+          U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F,
+          U+A720-A7FF;
+      }
+
+      @font-face {
+        font-family: 'Alegreya Sans';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('/fonts/alegreya-sans-v28-latin-ext-700.woff2') format('woff2');
+        unicode-range:
+          U+0100-0130, U+0132-0151, U+0154-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+          U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F,
+          U+A720-A7FF;
+      }
+
+      @font-face {
+        font-family: 'Alegreya Sans';
+        font-style: italic;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/alegreya-sans-v28-latin-ext-400italic.woff2') format('woff2');
+        unicode-range:
+          U+0100-0130, U+0132-0151, U+0154-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+          U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F,
+          U+A720-A7FF;
       }
     </style>
   </head>

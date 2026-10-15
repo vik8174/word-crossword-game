@@ -994,3 +994,86 @@ describe('CrosswordGrid', () => {
     expect(squareAt(0, 0)).toHaveValue('');
   });
 });
+
+describe('CrosswordGrid with letters that carry accents', () => {
+  /** One word across a single row, one empty square to a letter of it. */
+  const acrossView = (length: number, word: string): GridView => {
+    const cells = Array.from({ length }, (_unused, col): GridPosition => ({ row: 0, col }));
+
+    return {
+      rows: 1,
+      cols: length,
+      cells: cells.map((cell): GridCellView => ({
+        ...cell,
+        content: { kind: 'empty' },
+        number: null,
+      })),
+      toGuess: [guessable('w0', cells, word)],
+    };
+  };
+
+  /** Types each letter into the next square, as a player does along a word. */
+  const typeAlong = (letters: readonly string[]) =>
+    letters.forEach((letter, col) => typeInto(0, col, letter));
+
+  it('draws an é typed into a square as É, one letter', () => {
+    renderGrid(acrossView(4, 'café'));
+
+    typeInto(0, 3, 'é');
+
+    expect(squareAt(0, 3)).toHaveValue('É');
+  });
+
+  it('composes an é that arrives as an e and a separate accent into the one letter', () => {
+    renderGrid(acrossView(4, 'café'));
+
+    typeInto(0, 3, 'e\u0301');
+
+    expect(squareAt(0, 3)).toHaveValue('\u00C9');
+  });
+
+  it('answers café by c-a-f-é and by c-a-f-e', async () => {
+    const withAccent = renderGrid(acrossView(4, 'café'));
+
+    typeAlong(['c', 'a', 'f', 'é']);
+    expect(onSolved).toHaveBeenCalledWith('w0');
+
+    withAccent.unmount();
+    onSolved.mockClear();
+    renderGrid(acrossView(4, 'café'));
+
+    typeAlong(['c', 'a', 'f', 'e']);
+    expect(onSolved).toHaveBeenCalledWith('w0');
+  });
+
+  it('answers café, stored without its accent, by the é', () => {
+    renderGrid(acrossView(4, 'cafe'));
+
+    typeAlong(['c', 'a', 'f', 'é']);
+
+    expect(onSolved).toHaveBeenCalledWith('w0');
+  });
+
+  it('answers straße by ß, drawn as ẞ in the fifth square, and not by an s there', () => {
+    const withEszett = renderGrid(acrossView(6, 'straße'));
+
+    typeAlong(['s', 't', 'r', 'a', 'ß', 'e']);
+    expect(squareAt(0, 4)).toHaveValue('ẞ');
+    expect(onSolved).toHaveBeenCalledWith('w0');
+
+    withEszett.unmount();
+    onSolved.mockClear();
+    renderGrid(acrossView(6, 'straße'));
+
+    typeAlong(['s', 't', 'r', 'a', 's', 'e']);
+    expect(onSolved).not.toHaveBeenCalled();
+  });
+
+  it('draws ł as Ł and refuses it where an l would do: łódź is not lodz', () => {
+    renderGrid(acrossView(4, 'łódź'));
+
+    typeAlong(['l', 'o', 'd', 'z']);
+
+    expect(onSolved).not.toHaveBeenCalled();
+  });
+});

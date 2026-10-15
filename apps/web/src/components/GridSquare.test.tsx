@@ -1,7 +1,7 @@
 import { ThemeProvider } from '@mui/material/styles';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import type { GuessEntryCell } from '../rooms/guess-board';
 import { theme } from '../theme';
@@ -220,5 +220,89 @@ describe('GridSquare', () => {
     expect(style.left).toBe('4px');
     expect(style.color).toBe('rgb(76, 97, 112)');
     expect(style.fontWeight).toBe('700');
+  });
+
+  describe('what a square this player types into takes in', () => {
+    const typedSquare = () => {
+      const onTyped = vi.fn();
+
+      renderSquare({ cell: cellAt({ source: 'own', direction: 'across' }), onTyped });
+
+      return { onTyped, input: screen.getByRole('textbox') as HTMLInputElement };
+    };
+
+    it('carries no limit of one character, which would cut é typed as e and an accent to the e', () => {
+      const { input } = typedSquare();
+
+      expect(input).not.toHaveAttribute('maxlength');
+    });
+
+    it('hands up an é that arrived as two characters whole, for the entry layer to compose', () => {
+      const { onTyped, input } = typedSquare();
+
+      fireEvent.change(input, { target: { value: 'e\u0301' } });
+
+      expect(onTyped).toHaveBeenCalledTimes(1);
+      expect(onTyped).toHaveBeenCalledWith('e\u0301');
+    });
+
+    it('hands up a precomposed é and an ß as they are', () => {
+      const { onTyped, input } = typedSquare();
+
+      fireEvent.change(input, { target: { value: 'é' } });
+      fireEvent.change(input, { target: { value: 'ß' } });
+
+      expect(onTyped.mock.calls).toEqual([['é'], ['ß']]);
+    });
+
+    it('hands up a letter at once while a keyboard is composing it, as it always did', () => {
+      const { onTyped, input } = typedSquare();
+
+      fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: 'a' } });
+
+      expect(onTyped).toHaveBeenCalledWith('a');
+    });
+
+    it('keeps a dead key’s bare accent in the square and hands nothing up until it becomes a letter', () => {
+      const { onTyped, input } = typedSquare();
+
+      fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: '´' } });
+
+      // Nothing is handed up, so nothing clears the square and ends the composition.
+      expect(onTyped).not.toHaveBeenCalled();
+      expect(input.value).toBe('´');
+
+      fireEvent.change(input, { target: { value: 'é' } });
+      fireEvent.compositionEnd(input, { data: 'é' });
+
+      expect(onTyped).toHaveBeenCalledTimes(1);
+      expect(onTyped).toHaveBeenCalledWith('é');
+    });
+
+    it('clears the square when the dead key ends without a letter', () => {
+      const { onTyped, input } = typedSquare();
+
+      fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: '´' } });
+      fireEvent.compositionEnd(input, { data: '´' });
+
+      // The entry layer clears a square that is handed no letter.
+      expect(onTyped).toHaveBeenCalledTimes(1);
+      expect(onTyped).toHaveBeenCalledWith('´');
+    });
+
+    it('goes back to handing every change up once the composition has ended', () => {
+      const { onTyped, input } = typedSquare();
+
+      fireEvent.compositionStart(input);
+      fireEvent.change(input, { target: { value: '´' } });
+      fireEvent.compositionEnd(input, { data: '´' });
+      onTyped.mockClear();
+      fireEvent.change(input, { target: { value: 'x' } });
+
+      expect(onTyped).toHaveBeenCalledWith('x');
+    });
   });
 });
