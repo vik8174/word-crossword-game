@@ -424,6 +424,7 @@ html.bare .dev-wrap{box-shadow:none}
      from its balcony.
      The people react to the room: the one who explains talks and gestures, the one who
      listens smiles, both cheer when the crossword is full.
+       left:   "here" | "empty" (nobody yet: a lesson's first lobby)
        right:  "here" | "away" (curtains drawn) | "empty" (nobody yet) | "shut" (shutters closed)
        line:   "taut" | "slack" (ended early) | "loose" (one end only) | "none"
        mood:   "talk" | "wave" | "wait" | "cheer" | "calm"
@@ -598,7 +599,7 @@ html.bare .dev-wrap{box-shadow:none}
     return out;
   }
   function scene(o) {
-    var right = o.right || "here", line = o.line || "taut", sag = line === "slack" ? 48 : 0;
+    var right = o.right || "here", left = o.left || "here", line = o.line || "taut", sag = line === "slack" ? 48 : 0;
     var mood = MOODS[o.mood || "talk"], teacher = o.teacher === undefined ? (lesson() ? "here" : "") : o.teacher;
     var label = o.label || "Two neighbours on facing balconies in a white Andalusian street, with a line strung between them";
     if (teacher === "here") { label += ", and the teacher watching from the house at the end of the street"; }
@@ -619,8 +620,8 @@ html.bare .dev-wrap{box-shadow:none}
     s += '<rect x="46" y="78" width="24" height="34" fill="' + WHITE + '"/><rect x="42" y="72" width="32" height="8" fill="' + TERRA + '"/>' +
       '<rect x="24" y="112" width="196" height="412" fill="' + WHITE + '"/>' + eave(14, 100, 216) +
       wallPot(44, 150) + wallPot(76, 158) +
-      shutters(118, 198, 168, 290) + '<path d="' + leftArch + '" fill="' + LIT + '"/>';
-    s += '<g class="who" stroke="none">' + person({ x: 160, y: 210, facing: 1, face: mood.L[0], arm: mood.L[1], skin: SKIN[0], hair: HAIR[0], shirt: TERRA, can: P0 }) + '</g>';
+      shutters(118, 198, 168, 290) + '<path d="' + leftArch + '" fill="' + (left === "here" ? LIT : DARK) + '"/>';
+    if (left === "here") { s += '<g class="who" stroke="none">' + person({ x: 160, y: 210, facing: 1, face: mood.L[0], arm: mood.L[1], skin: SKIN[0], hair: HAIR[0], shirt: TERRA, can: P0 }) + '</g>'; }
     s += rail(112, 204, 256) + geraniums(124, 256) +
       rejas(44, 340, false) + rejas(134, 340, true) + azulejoDoor(70, 466);
     /* the right house */
@@ -670,14 +671,14 @@ html.bare .dev-wrap{box-shadow:none}
     return '<li><span class="mk' + (away ? " away" : "") + '"></span><span class="nm">' + esc(name) + '</span>' +
       (tags ? '<span class="tag">' + tags + '</span>' : '') + (away ? '<span class="away-t">away for ' + (awayFor || "2 min") + '</span>' : '') + '</li>';
   }
-  function openRow() { return '<li><span class="mk empty"></span><span class="open">A free seat. Waiting for the second player</span></li>'; }
+  function openRow(which) { return '<li><span class="mk empty"></span><span class="open">A free seat. Waiting for the ' + (which || "second") + ' player</span></li>'; }
   function players(o) {
     o = o || {};
     var rows, hint;
     if (lesson()) {
       rows = [playerRow(TEACHER, "teacher" + (isHost() ? ", you" : ""), (o.away === "self" && isHost()) || o.away === "teacher", "3 min"),
-        playerRow("Olena", isHost() ? "" : "you", o.away === "self" && !isHost()),
-        o.open ? openRow() : playerRow("Taras", "", false)];
+        o.none ? openRow("first") : playerRow("Olena", isHost() ? "" : "you", o.away === "self" && !isHost()),
+        o.open || o.none ? openRow() : playerRow("Taras", "", false)];
       hint = isHost() ? "A lesson is played by 2 players. You deal the words and watch; you do not play."
                       : "A lesson is played by 2 players. " + TEACHER + ", the teacher, deals the words and watches.";
     } else {
@@ -921,11 +922,12 @@ html.bare .dev-wrap{box-shadow:none}
 
   /* ---- the lobby ---- */
   function lobby(variant) {
-    var waiting = variant === "waiting" || variant === "copied" || variant === "copyfailed";
+    var none = variant === "nostudent";
+    var waiting = none || variant === "waiting" || variant === "copied" || variant === "copyfailed";
     var noun = lesson() ? "A lesson" : "A game", starter = lesson() ? TEACHER : "The host";
     var status, panel = "";
     if (waiting) {
-      status = isHost() ? noun + " takes 2 players, so this room needs 1 more before you can start it. Share the room link."
+      status = isHost() ? noun + " takes 2 players, so this room needs " + (none ? 2 : 1) + " more before you can start it. Share the room link."
                         : noun + " takes 2 players, so this room needs 1 more. " + starter + " starts the game once they are in.";
     } else if (variant === "crowded") {
       status = "This crossword holds 1 word and the room holds 2 players, so somebody would have nothing to guess. " +
@@ -954,11 +956,12 @@ html.bare .dev-wrap{box-shadow:none}
     var notice = variant === "away" ? presenceNotice() : "";
     if (variant === "teacheraway") { notice = msg("info", TEACHER + " is away", "The room has not heard from your teacher for 3 min. Only the teacher can start a lesson, so it waits here until they are back."); }
 
-    var label = waiting ? "Your balcony, and the one across the street still empty" : "Both balconies taken, the line strung between them";
-    var pic = '<div class="lobby-picture stack-tight">' + scene({ right: waiting ? "empty" : "here", line: waiting ? "loose" : "taut", crop: "top", mood: waiting ? "wait" : "wave",
+    var label = none ? "Both balconies still empty, the teacher watching from the house at the end of the street"
+      : (waiting ? "Your balcony, and the one across the street still empty" : "Both balconies taken, the line strung between them");
+    var pic = '<div class="lobby-picture stack-tight">' + scene({ left: none ? "empty" : "here", right: waiting ? "empty" : "here", line: none ? "none" : (waiting ? "loose" : "taut"), crop: "top", mood: waiting ? "wait" : "wave",
         teacher: lesson() ? (variant === "teacheraway" ? "away" : "here") : "", label: label }) +
       '<p class="hint" style="text-align:center">The crossword: ' + roomWords().length + ' words, half of them for each ' + (lesson() ? "player" : "of you") + '.</p></div>';
-    var left = '<div class="stack">' + notice + players({ away: variant === "away" ? "self" : (variant === "teacheraway" ? "teacher" : ""), open: waiting }) + panel + '</div>';
+    var left = '<div class="stack">' + notice + players({ away: variant === "away" ? "self" : (variant === "teacheraway" ? "teacher" : ""), open: waiting, none: none }) + panel + '</div>';
     return head({ status: esc(status) }) + '<div class="body"><div class="lobby-grid">' + left + pic + '</div></div>';
   }
   var LOBBY_NOTE = "The board is not shown before the deal: which words are whose is decided by it. The drawing says who is in: the second balcony fills when the second player arrives, and in a lesson the teacher is at the end of the street. In a lesson the action is named for what it does, “Deal the words”.";
@@ -970,6 +973,7 @@ html.bare .dev-wrap{box-shadow:none}
   S["lobby/starting"] = { group: "The lobby", sub: true, label: "…dealing the words", note: "The button's dot beats while the words are dealt. Nothing else moves.", render: function () { return lobby("starting"); } };
   S["lobby/failed"] = { group: "The lobby", sub: true, label: "…deal refused", note: "Nothing has been dealt out, so the room is where it was and the control stays live.", render: function () { return lobby("failed"); } };
   S["lobby/away"] = { group: "The lobby", sub: true, label: "…you are away", note: "The room has not heard from this player. The notice comes first, and they carry the away mark in the list: a hollow ring and the words, never a colour alone.", render: function () { return lobby("away"); } };
+  S["lobby/nostudent"] = { group: "The lobby", sub: true, label: "…no student yet (lesson)", teacherOnly: true, note: "A lesson only, seen by the teacher, and the first lobby every teacher sees: the room is made and nobody has joined. Both seats are free, both balconies are dark and no line is strung yet; the teacher is already at the end of the street. The invite is offered, as in any lobby with a free seat.", render: function () { return lobby("nostudent"); } };
   S["lobby/teacheraway"] = { group: "The lobby", sub: true, label: "…teacher away (lesson)", lessonOnly: true, note: "A lesson only, seen by a player. Only the teacher deals, so a lobby whose teacher left waits for nobody, and this is how the players learn it. The teacher's balcony has its curtains drawn.", render: function () { return lobby("teacheraway"); } };
 
   /* ---- the game ---- */
@@ -1072,7 +1076,7 @@ html.bare .dev-wrap{box-shadow:none}
   var ORDER = ["home", "create", "create/errors", "create/nogrid", "create/unplaced", "create/creating", "create/failed",
     "connecting", "join", "join/joining", "join/failed",
     "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection",
-    "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/teacheraway",
+    "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/nostudent", "lobby/teacheraway",
     "playing", "playing/answered", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
     "finished", "closed-early"];
   var mapEl = document.getElementById("map"), stageEl = document.getElementById("stage");
@@ -1118,6 +1122,7 @@ html.bare .dev-wrap{box-shadow:none}
   function render() {
     var s = S[state.key] || S.home, saved = { mode: state.mode, role: state.role };
     if (s.lessonOnly) { state.mode = "lesson"; state.role = "guest"; }
+    if (s.teacherOnly) { state.mode = "lesson"; state.role = "host"; }
     var scr = state.key.split("/")[0], anim = lastScreen !== scr ? " enter" : "";
     var wins = windows(), scale = isBare ? 1 : Math.min(1, (stageEl.clientWidth - 2) / wins[0].w);
     var html = wins.map(function (win, i) {
