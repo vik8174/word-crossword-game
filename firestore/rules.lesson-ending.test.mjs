@@ -218,9 +218,7 @@ describe('the teacher dealing the words of a lesson', () => {
   it('is allowed to set who each word is hidden from, and nothing else under words', async () => {
     await seed(lesson());
 
-    await assertSucceeds(
-      update(TEACHER, deal({ w0: STUDENT_A, w1: STUDENT_B, w2: STUDENT_A })),
-    );
+    await assertSucceeds(update(TEACHER, deal({ w0: STUDENT_A, w1: STUDENT_B, w2: STUDENT_A })));
   });
 
   it('is refused when the deal also sets who answered a word', async () => {
