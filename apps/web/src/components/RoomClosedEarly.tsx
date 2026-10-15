@@ -148,6 +148,7 @@ export const RoomClosedEarly = ({ room, viewerId }: RoomClosedEarlyProps) => {
   return (
     <RoomShell
       title="Game ended"
+      isTeachers={isTeacher}
       left={
         isTeacher ? (
           <>
@@ -195,6 +196,7 @@ export const RoomClosedEarly = ({ room, viewerId }: RoomClosedEarlyProps) => {
           hasVisibleHeading={false}
           bandRule="always"
           watching={watchedNames}
+          hasTightBoard
           band={street}
         />
       ) : (

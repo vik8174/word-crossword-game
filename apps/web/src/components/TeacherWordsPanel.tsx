@@ -61,7 +61,7 @@ export const TeacherWordsPanel = ({
         {`${guesserName} guesses these. You see every word in full; each player sees only the ones they explain.`}
       </Box>
 
-      <WatchedWordList labelledBy={headingId} words={words} unansweredLabel="not yet" />
+      <WatchedWordList labelledBy={headingId} words={words} kind="playing" />
 
       <Box
         component="p"

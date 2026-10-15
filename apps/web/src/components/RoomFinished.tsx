@@ -85,6 +85,7 @@ export const RoomFinished = ({ room, viewerId }: RoomFinishedProps) => {
   return (
     <RoomShell
       title="Finished"
+      isTeachers={isTeacher}
       left={
         isTeacher ? (
           <>

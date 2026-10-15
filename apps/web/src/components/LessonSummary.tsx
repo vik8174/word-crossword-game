@@ -45,7 +45,7 @@ const SummaryPart = ({ explainerName, guesserName, explanation }: SummaryPartPro
         <Box
           component="h3"
           id={headingId}
-          sx={{ ...lobbyHeadingSx, fontSize: inRem(19), fontWeight: 700 }}
+          sx={{ ...lobbyHeadingSx, fontSize: inRem(19), fontWeight: 700, lineHeight: 1.5 }}
         >
           {`${explainerName} explained`}
         </Box>
@@ -54,11 +54,7 @@ const SummaryPart = ({ explainerName, guesserName, explanation }: SummaryPartPro
         </Box>
       </Box>
 
-      <WatchedWordList
-        labelledBy={headingId}
-        words={explanation.words}
-        unansweredLabel="not answered"
-      />
+      <WatchedWordList labelledBy={headingId} words={explanation.words} kind="summary" />
     </Box>
   );
 };
@@ -115,7 +111,7 @@ export const LessonSummary = ({ room, viewerId }: LessonSummaryProps) => {
       <Box component="h2" id={headingId} sx={lobbyHeadingSx}>
         Lesson summary
       </Box>
-      <Box component="p" sx={{ ...gateHintSx, marginTop: inRem(10) }}>
+      <Box component="p" sx={gateHintSx}>
         {SUMMARY_HINT}
       </Box>
 
