@@ -168,30 +168,32 @@ because a permission rule matches a command by its prefix: one name is one rule.
 
 ### Budgets an issue may cite
 
-| ceiling                            | where it is enforced                                        | measured on `4144fda`         |
-| ---------------------------------- | ----------------------------------------------------------- | ----------------------------- |
-| first visit, **218.0 KiB gzipped** | `apps/web/build/first-visit-weight.ts`, run by `vite build` | **197.4 KiB** without a token |
+| ceiling                               | where it is enforced                                         | measured on `f18aae2`      |
+| ------------------------------------- | ------------------------------------------------------------ | -------------------------- |
+| first visit, **218.0 KiB gzipped**    | `apps/web/build/first-visit-weight.ts`, run by `vite build`  | **198.2 KiB**, plain build |
+| latin-ext faces, **60.0 KiB gzipped** | the same check, summed over the three latin-ext faces (#232) | **46.2 KiB**               |
 
-Measured on `4144fda` (#263 merged: the latin italic is no longer preloaded and
-`NOT_ON_FIRST_VISIT` counts it against no ceiling, ADR 0032 addendum). CI's build,
-with no `apps/web/.env` and no token, prints **197.4 KiB**. With `.env` present and
-`SENTRY_AUTH_TOKEN=` set empty it is **198.0** (#263's Worker and Inspector). The
-production build is about 1.7 KiB more, so about **199.7**. The italic's 17.3 KiB
-is printed on its own line and counted against no ceiling.
+Measured on the tree of `f18aae2` (#270 merged; the figures are #270's Inspector's, on
+`33c769d`, which `f18aae2` squashes), with no `apps/web/.env` and `SENTRY_UPLOAD` unset.
+The italic's 17.3 KiB is printed on its own line and counted against no ceiling
+(`NOT_ON_FIRST_VISIT`, ADR 0032 addendum). `.env` present adds its embedded config:
+**198.3** against 197.8 on #232's `4350fe0`.
 
-**Only `SENTRY_AUTH_TOKEN=` set empty is safe to measure with.** An unset variable
-lets `loadEnv` take `.env`'s token, and that build uploads source maps to Sentry.
+**Every build is safe to measure with since #270.** A build uploads source maps only
+with `SENTRY_UPLOAD=1` and a token (ADR 0018 addendum); a token alone, such as
+`.env`'s, gives a plain build. Only `deploy.yml` sets the switch. **No seat ever sets
+`SENTRY_UPLOAD=1` with a real token.** To prove the upload path, use a dummy token
+and a Sentry address nothing listens on, in a tree without `.env`:
+`SENTRY_AUTH_TOKEN=dummy-not-a-token SENTRY_URL=http://127.0.0.1:9 SENTRY_UPLOAD=1`.
+Before #270 an unset variable uploaded, twice (#224, #234).
 
-**CI weighs a lighter bundle than the one that reaches a player**: a production
-build carries a Sentry token that a CI build does not, and that adds roughly
-1.7 KiB (measured on #224's `ca8fcb3`: 214.1 without the token, 215.8 with it). The
-difference is in the artefact, not in the moment of measuring, so a pull request
-sitting 1 KiB under the ceiling in CI is not under it in production. Say which
-build produced any figure quoted in an issue, and quote the command and the
-commit with it, never the row alone.
-
-**A second ceiling is coming with #232**: the latin-ext faces, counted apart
-under 60.0 KiB gzipped (Viktor, 2026-10-14). It is not enforced until #232 merges.
+**CI weighs a lighter bundle than the one that reaches a player**: a deploy build
+runs the Sentry plugin, which a plain build does not, and that adds roughly 1.6 KiB
+(measured with the dummy method on `c6eb564`: 197.8 plain, 199.4 with the plugin).
+So a production first visit is about **199.8**. The difference is in the artefact,
+not in the moment of measuring, so a pull request sitting 1 KiB under the ceiling
+in CI is not under it in production. Say which build produced any figure quoted in
+an issue, and quote the command and the commit with it, never the row alone.
 
 **This row goes stale faster than anything else here.** It said 190.7 on
 `bc02ded` for two releases' worth of issues, and a stale figure has been quoted
