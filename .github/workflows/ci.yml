@@ -129,3 +129,41 @@ jobs:
             apps/web/test-results/
             apps/web/playwright-report/
           retention-days: 7
+
+  visual:
+    name: Visual
+    runs-on: ubuntu-latest
+    # Baselines are made in this image and only in this image (see CONTRIBUTING.md):
+    # the tag must be the Playwright version in apps/web/package.json, which the
+    # first step checks.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
+    steps:
+      - uses: actions/checkout@v7.0.1
+      # `job.container.image` is not available to a step, so the image line is
+      # read from this file, the one the job was started from.
+      - name: Image matches the Playwright version
+        run: |
+          want="mcr.microsoft.com/playwright:v$(node -p "require('./apps/web/package.json').devDependencies['@playwright/test']")-noble"
+          have="$(awk '$1 == "image:" && $2 ~ /^mcr.microsoft.com\/playwright:/ {print $2}' .github/workflows/ci.yml)"
+          if [ "$want" != "$have" ]; then
+            echo "::error::the job runs '$have' but apps/web/package.json needs '$want'"
+            exit 1
+          fi
+      - uses: pnpm/action-setup@v6.0.10
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter web build-storybook
+      - run: pnpm --filter web test:visual
+      - if: failure()
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: visual-diffs
+          path: |
+            apps/web/test-results-visual/
+            apps/web/playwright-report/
+          retention-days: 14
