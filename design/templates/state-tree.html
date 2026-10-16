@@ -930,6 +930,15 @@ html.bare .dev-wrap{box-shadow:none}
         '<div>' + go("Reload the page", "home") + '</div>',
         scene({ left: "shut", right: "shut", line: "none", crop: "top", mood: "calm", teacher: "", label: "A quiet street, the shutters closed on both balconies" }));
     } };
+  /* anything else that breaks the app while it draws a screen (issue #294): the one page a
+     crash ends on, wherever it happened, instead of a white page */
+  S.crash = { group: "Turned away", sub: true, label: "something broke",
+    note: "Any error the app did not expect while drawing a screen, on any page, ends here instead of on a white page. The street keeps its good humour: both neighbours are still at their balconies and the line between them sags under four tiles that spell “oops”. The fault is ours, so it says so, and it is reported to us without the player doing anything. Two ways forward: reload where they were (loud), or go back to the home page (quiet). A page that could not be fetched is the state above, not this one.",
+    render: function () {
+      return column(msg("error", "Something went wrong on our side", "The game ran into a problem it could not get past. We have been told about it. Reload the page to carry on; a room you are in is still there.") +
+        '<div class="row-btns">' + go("Reload the page", "home") + go("Go to the home page", "home", "quiet") + '</div>',
+        scene({ line: "slack", letters: ["o", "o", "p", "s"], crop: "top", mood: "wave", teacher: "", label: "Two neighbours on facing balconies, the line between them sagging under four tiles that spell oops" }));
+    } };
 
   /* ---- the lobby ---- */
   function lobby(variant) {
@@ -1086,7 +1095,7 @@ html.bare .dev-wrap{box-shadow:none}
   /* ============================ the map ============================ */
   var ORDER = ["home", "create", "create/errors", "create/nogrid", "create/unplaced", "create/creating", "create/failed",
     "connecting", "join", "join/joining", "join/failed",
-    "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection", "reload",
+    "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection", "reload", "crash",
     "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/nostudent", "lobby/teacheraway",
     "playing", "playing/answered", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
     "finished", "closed-early"];
