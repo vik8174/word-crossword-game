@@ -64,19 +64,58 @@ const waitForStoryRendered = (page: Page) =>
     POLL,
   );
 
-/** Refuses to write a baseline anywhere but inside the Playwright image. */
-const refuseOutsideImage = (updateSnapshots: string) => {
-  if (updateSnapshots !== 'none' && !process.env.VISUAL_CONTAINER) {
+/** Refuses `--update-snapshots`: a baseline is only ever one CI rendered. */
+const refuseUpdate = (updateSnapshots: string) => {
+  if (updateSnapshots !== 'none') {
     throw new Error(
-      'Baselines are made only inside the Playwright image: run `pnpm test:visual:update`',
+      'Baselines are rendered only by CI: take them with `pnpm test:visual:accept <run-id>`',
     );
   }
 };
 
+/**
+ * Waits until every Emotion class on the story has its rule in a stylesheet.
+ *
+ * The signal: MUI marks each styled element with a `css-<hash>` class, and
+ * Emotion inserts the rule for it into a `<style data-emotion>` sheet. A shot
+ * taken when an element carries the class and the sheet does not hold the rule
+ * is a shot of an unstyled element, which is what an emulated, slow CPU
+ * produced (no padding, no radius). Checking the rule for the very class on the
+ * element, rather than a fixed delay or one known element, covers every story,
+ * and a story with no Emotion class (the SVG-only ones) passes at once.
+ */
+const waitForStylesApplied = (page: Page) =>
+  page.waitForFunction(
+    () => {
+      const rules: string[] = [];
+
+      for (const sheet of Array.from(document.styleSheets)) {
+        try {
+          rules.push(Array.from(sheet.cssRules, (rule) => rule.cssText).join('\n'));
+        } catch {
+          // A cross-origin sheet cannot be read, and holds no Emotion rules.
+        }
+      }
+
+      const css = rules.join('\n');
+      const classes = new Set<string>();
+
+      document.querySelectorAll('#storybook-root *').forEach((element) => {
+        element.classList.forEach((name) => {
+          if (/^css-/.test(name)) classes.add(name);
+        });
+      });
+
+      return Array.from(classes).every((name) => css.includes(`.${name}`));
+    },
+    undefined,
+    POLL,
+  );
+
 for (const id of readStoryIds()) {
   for (const { width, height } of WIDTHS) {
     test(`${id} at ${width}`, async ({ page }, testInfo) => {
-      refuseOutsideImage(testInfo.config.updateSnapshots);
+      refuseUpdate(testInfo.config.updateSnapshots);
       await page.setViewportSize({ width, height });
       // Anything that is not the local preview is refused: a story has no
       // business reaching out.
@@ -87,6 +126,7 @@ for (const id of readStoryIds()) {
       await page.clock.install({ time: FIXED_TIME });
       await page.goto(`/iframe.html?id=${id}&viewMode=story`);
       await waitForStoryRendered(page);
+      await waitForStylesApplied(page);
       await page.evaluate(() => document.fonts.ready);
       // Run the screen-enter timer out, then hold the clock still.
       await page.clock.runFor(ENTER_MS + 500);

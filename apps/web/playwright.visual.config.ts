@@ -6,9 +6,11 @@ import { defineConfig } from '@playwright/test';
  *
  * Chromium serves `storybook-static` through `vite preview`, so `pnpm
  * build-storybook` must have run first (`pnpm test:visual` at the repository
- * root does both). The baselines are made only inside the Playwright image, see
- * `scripts/visual-docker.sh`: a baseline made on a Mac fails every CI run,
- * because the font rendering differs.
+ * root does both). The baselines are rendered only by CI, in the `Visual` job's
+ * image on GitHub's amd64 runner, and taken from its artifact with `pnpm
+ * test:visual:accept <run-id>`: a baseline rendered anywhere else fails every CI
+ * run (a Mac's fonts differ, and an emulated amd64 image rendered without the
+ * MUI styles at all).
  */
 const port = Number(process.env.VISUAL_PORT ?? 4174);
 
@@ -30,8 +32,9 @@ export default defineConfig({
   workers: process.env.CI ? 4 : 2,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
-  // `none`: a missing baseline fails instead of being written. Only an explicit
-  // `--update-snapshots`, from `pnpm test:visual:update`, writes.
+  // `none`: a missing baseline fails and leaves its `actual` image in the
+  // artifact, which `pnpm test:visual:accept` turns into a baseline. Nothing
+  // writes a baseline in place.
   updateSnapshots: 'none',
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   expect: {

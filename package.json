@@ -12,8 +12,7 @@
     "test:rules": "firebase emulators:exec --only firestore --project demo-word-crossword \"node --test firestore/*.test.mjs\"",
     "test:e2e": "node scripts/run-e2e.mjs",
     "test:visual": "pnpm --filter web build-storybook && pnpm --filter web test:visual",
-    "test:visual:docker": "bash scripts/visual-docker.sh test",
-    "test:visual:update": "bash scripts/visual-docker.sh update",
+    "test:visual:accept": "node scripts/visual-accept.mjs",
     "check:emulator-leak": "node scripts/check-emulator-leak.mjs"
   },
   "devDependencies": {
