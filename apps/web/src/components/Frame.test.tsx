@@ -75,6 +75,10 @@ describe('Frame', () => {
     expect(STATUS_SX['@media (max-width: 767.95px)']).toEqual({ display: 'none' });
   });
 
+  it('balances the status line so a wrap leaves no word alone', () => {
+    expect(STATUS_SX.textWrap).toBe('balance');
+  });
+
   it('publishes its header’s border-box height, and takes it back when it goes', () => {
     let observed: ResizeObserverCallback | undefined;
 
