@@ -326,9 +326,11 @@ html.bare .dev-wrap{box-shadow:none}
    One language for every movement, taken from the drawing rather than from a library.
    A screen opens the way a balcony does in the morning: the shutters swing open, the
    neighbours lean out, the line is thrown across, and the page settles in from below,
-   one block after another. An answered word turns over square by square, like a tile
-   flipped to its other face, and its card is pegged on the line and swings until it
-   hangs still. A wrong answer shakes once, as a head does. A dialog lifts off the page.
+   one block after another. An answered word lifts off the board: its letters gather
+   into the word and fly up an arc onto the line, where its card is pegged and swings
+   until it hangs still, while both neighbours cheer and the line twangs once (Viktor,
+   2026-10-16, variant 1 + 2 of the motion study). Its squares settle to their answered
+   face where they are. A wrong answer shakes once, as a head does. A dialog lifts off the page.
    A filled crossword is a fiesta: lanterns drop in one by one and sway, confetti falls,
    the card springs up. Two curves only: --out for arriving, --spring for celebrating.
    Every rule lives inside no-preference: with reduced motion the page is simply there. */
@@ -346,9 +348,9 @@ html.bare .dev-wrap{box-shadow:none}
   @keyframes lean{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   .enter .line-draw{stroke-dasharray:1;animation:draw 1000ms var(--out) 700ms both}
   @keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
-  .cell.just{animation:turn 560ms var(--out) both;animation-delay:calc(var(--d,0) * 80ms)}
-  @keyframes turn{from{transform:perspective(300px) rotateX(-95deg);background:var(--tile)}55%{background:var(--sage)}to{transform:none}}
-  .scene .pegged{transform-box:fill-box;transform-origin:50% 0;animation:peg 1100ms var(--out) 420ms both}
+  .cell.just{animation:settle 420ms ease both;animation-delay:calc(var(--t0,0ms) + var(--d,0) * 50ms)}
+  @keyframes settle{from{background:var(--wash)}to{background:var(--sage)}}
+  .scene .pegged{transform-box:fill-box;transform-origin:50% 0;animation:peg 1100ms var(--out) both;animation-delay:calc(var(--t0,0ms) + 1600ms)}
   @keyframes peg{0%{opacity:0;transform:translateY(-26px) rotate(-16deg)}45%{opacity:1;transform:translateY(0) rotate(9deg)}70%{transform:rotate(-4deg)}88%{transform:rotate(1.5deg)}100%{transform:none}}
   .cell.refused{animation:shake 420ms var(--out) both}
   @keyframes shake{0%,100%{transform:none}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(1px)}}
@@ -374,39 +376,19 @@ html.bare .dev-wrap{box-shadow:none}
   .word-list button{transition:background-color 200ms ease}
   .word-list button:hover{background:rgba(255,255,255,.5)}
 
-  /* ---- the answered word: six variants to choose from (a motion study; the default above is the square-by-square turn) ---- */
-  /* 1 lift: the squares settle quietly while their letters fly; the card is pegged when they land */
-  .m-lift .cell.just{animation:settle 420ms ease both;animation-delay:calc(var(--t0,0ms) + var(--d,0) * 50ms)}
-  @keyframes settle{from{background:var(--wash)}to{background:var(--sage)}}
-  .m-lift .scene .pegged{animation-delay:calc(var(--t0,0ms) + 1600ms)}
+  /* the answered word's letters, in flight from the board to the line (or to the word's row in the list) */
   .flyer{position:absolute;z-index:30;display:grid;place-items:center;border-radius:5px;background:var(--tile);color:var(--ink);font-family:var(--face);font-weight:700;line-height:1;padding-bottom:2px;
     box-shadow:inset 0 0 0 1.5px var(--ink),3px 4px 0 0 rgba(27,45,56,.28);pointer-events:none;will-change:transform}
   .word-list button.arrive{animation:arrive 900ms ease both}
   @keyframes arrive{from{background:var(--wash)}to{background:transparent}}
-  /* 2 cheer: both neighbours cheer for about 1.5 s; the line twangs (SMIL, in the drawing) */
-  .scene .face-b{animation:cheerOn 1700ms ease both;animation-delay:calc(var(--t0,0ms) + 450ms)}
-  .scene .face-a{animation:cheerOff 1700ms ease both;animation-delay:calc(var(--t0,0ms) + 450ms)}
-  .m-lift .scene .face-b,.m-lift .scene .face-a{animation-delay:calc(var(--t0,0ms) + 1650ms)}
+  /* both neighbours cheer for about 1.5 s as the letters land; the line twangs (SMIL, in the drawing) */
+  .scene .face-b{animation:cheerOn 1700ms ease both;animation-delay:calc(var(--t0,0ms) + 1650ms)}
+  .scene .face-a{animation:cheerOff 1700ms ease both;animation-delay:calc(var(--t0,0ms) + 1650ms)}
   @keyframes cheerOn{0%{opacity:0}10%,86%{opacity:1}100%{opacity:0}}
   @keyframes cheerOff{0%{opacity:1}10%,86%{opacity:0}100%{opacity:1}}
-  /* 3 wave: the squares rise and drop one after another with a small bounce, each turning green as it lands */
-  .m-wave .cell.just{z-index:1;animation:wave 760ms ease both;animation-delay:calc(var(--t0,0ms) + var(--d,0) * 90ms)}
-  @keyframes wave{0%{transform:none;background:var(--wash)}35%{transform:translateY(-14px);background:var(--wash)}62%{transform:translateY(3px);background:var(--sage)}80%{transform:translateY(-3px)}100%{transform:none}}
-  /* 4 stamp: each letter swells to 1.15 and comes back, as if pressed in */
-  .m-stamp .cell.just{z-index:1;animation:stamp 420ms var(--spring) both;animation-delay:calc(var(--t0,0ms) + var(--d,0) * 90ms)}
-  @keyframes stamp{0%{transform:none;background:var(--wash)}45%{transform:scale(1.15);background:var(--sage)}100%{transform:none}}
-  /* 5 pencil: an ochre stroke runs through the word, then fades, and the squares take their answered face under it */
-  .m-pencil .cell.just{animation:underPencil 1900ms ease both;animation-delay:var(--t0,0ms)}
-  @keyframes underPencil{0%,62%{background:var(--wash)}100%{background:var(--sage)}}
-  .pencil{position:absolute;left:0;top:0;pointer-events:none;overflow:visible;z-index:2;mix-blend-mode:multiply}
-  .pencil path{fill:none;stroke:var(--ochre);stroke-linecap:round;opacity:.9;stroke-dasharray:1;animation:draw 560ms var(--out) both,fadeOut 600ms ease forwards;animation-delay:calc(var(--t0,0ms) + 120ms),calc(var(--t0,0ms) + 1250ms)}
-  @keyframes fadeOut{to{opacity:0}}
-  /* 6 petals: a few geranium petals fall from the balconies and the wall pots */
-  .scene .petal{transform-box:fill-box;transform-origin:50% 50%;animation:petal 2200ms ease-in both;animation-delay:calc(var(--t0,0ms) + 300ms + var(--k) * 90ms)}
-  @keyframes petal{0%{opacity:0;transform:none}12%{opacity:1}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--r))}}
 }
-/* outside the motion rules: what a variant draws only for the moment is never seen with reduced motion */
-.scene .face-b,.scene .petal{opacity:0}
+/* outside the motion rules: the cheering faces are drawn only for the moment, and never seen with reduced motion */
+.scene .face-b{opacity:0}
 .screen.enter{--t0:800ms}
 </style>
 </head>
@@ -704,17 +686,13 @@ html.bare .dev-wrap{box-shadow:none}
     if (o.fiesta) { s += fiesta(); }
     if (o.letters) { s += letterTiles(o.letters, sag); }
     if (o.cards) { s += '<g>' + twang(null) + wordCards(o.cards, sag) + '</g>'; }
-    if (motionHas("petals")) { s += petals(); }
     return '<div class="scene">' + s + '</svg></div>';
   }
 
-  /* ============================ the answered word: a motion study (template only, not yet chosen) ============================ */
-  /* MOTION names the variant being shown, or null for the app as drawn: "lift", "cheer", "lift cheer", "wave", "stamp", "pencil", "petals" */
-  var MOTION = null;
-  function motionHas(name) { return !!MOTION && MOTION.split(" ").indexOf(name) > -1; }
-  /* a neighbour on her balcony; while the variant cheers, a second, cheering face is drawn over the first and shown for a moment */
+  /* ============================ the answered word ============================ */
+  /* a neighbour on her balcony; while a word is just answered, a second, cheering face is drawn over the first and shown for a moment */
   function neighbour(spec) {
-    if (!motionHas("cheer")) { return '<g class="who" stroke="none">' + person(spec) + '</g>'; }
+    if (!JUST) { return '<g class="who" stroke="none">' + person(spec) + '</g>'; }
     var glad = {}, k;
     for (k in spec) { glad[k] = spec[k]; }
     glad.face = "grin"; glad.arm = "cheer";
@@ -722,20 +700,11 @@ html.bare .dev-wrap{box-shadow:none}
   }
   /* the line twangs once when the card lands on it: SMIL, so the curve itself moves; left out under reduced motion */
   function twang(lineAt) {
-    if (!motionHas("cheer") || reduced.matches) { return ""; }
-    var entering = lastScreen !== state.key.split("/")[0], begin = ((motionHas("lift") ? 1.65 : 0.6) + (entering ? 0.8 : 0)) + "s", dips = [0, 26, -14, 8, -4, 0];
+    if (!JUST || reduced.matches) { return ""; }
+    var entering = lastScreen !== state.key.split("/")[0], begin = (1.65 + (entering ? 0.8 : 0)) + "s", dips = [0, 26, -14, 8, -4, 0];
     if (lineAt) { return '<animate attributeName="d" begin="' + begin + '" dur="0.9s" fill="freeze" values="' + dips.map(lineAt).join(";") + '"/>'; }
     return '<animateTransform attributeName="transform" type="translate" begin="' + begin + '" dur="0.9s" fill="freeze" values="' +
       dips.map(function (d) { return "0 " + d / 2; }).join(";") + '"/>';
-  }
-  /* geranium petals, let go by the pots on the balconies and the walls */
-  function petals() {
-    var from = [[124, 248], [118, 252], [130, 244], [516, 262], [510, 266], [522, 258], [340, 204], [346, 208], [44, 146], [76, 154], [566, 180], [596, 172], [128, 250], [512, 264]];
-    return from.map(function (p, i) {
-      var dx = (i % 2 ? 1 : -1) * (14 + (i * 7) % 26), dy = 70 + (i * 13) % 60, r = (i % 3 - 1) * 220;
-      return '<ellipse class="petal" cx="' + p[0] + '" cy="' + p[1] + '" rx="4.6" ry="2.8" fill="' + (i % 3 ? GERA : "#E06A5A") + '" ' +
-        'style="--k:' + i + ';--dx:' + dx + 'px;--dy:' + dy + 'px;--r:' + r + 'deg"/>';
-    }).join("");
   }
   /* the letters lift off the board, gather into a word, and fly up an arc onto the line; with no drawing, into the word's row in the list */
   function flyLetters(screen) {
@@ -780,19 +749,6 @@ html.bare .dev-wrap{box-shadow:none}
       });
       if (slots) { setTimeout(function () { slots.style.opacity = ""; slots.closest("button").classList.add("arrive"); }, 1700 + n * 50); }
     }, t0);
-  }
-  /* an ochre pencil stroke runs through the word, as in a paper crossword, then fades */
-  function pencilStroke(screen) {
-    var cells = Array.prototype.slice.call(screen.querySelectorAll(".cell.just"));
-    if (!cells.length) { return; }
-    var grid = cells[0].parentNode, a = cells[0], z = cells[cells.length - 1], sq = a.offsetWidth;
-    grid.style.position = "relative";
-    var x1 = a.offsetLeft + sq / 2, y1 = a.offsetTop + sq / 2, x2 = z.offsetLeft + sq / 2, y2 = z.offsetTop + sq / 2;
-    var across = Math.abs(x2 - x1) > Math.abs(y2 - y1), ext = sq * 0.35;
-    if (across) { x1 -= ext; x2 += ext; } else { y1 -= ext; y2 += ext; }
-    var mx = (x1 + x2) / 2 + (across ? 0 : sq * 0.12), my = (y1 + y2) / 2 + (across ? sq * 0.12 : 0);
-    grid.insertAdjacentHTML("beforeend", '<svg class="pencil" aria-hidden="true" width="' + grid.offsetWidth + '" height="' + grid.offsetHeight + '">' +
-      '<path d="M' + x1 + ' ' + y1 + 'Q' + mx + ' ' + my + ' ' + x2 + ' ' + y2 + '" pathLength="1" stroke-width="' + (sq * 0.3) + '"/></svg>');
   }
 
   /* ============================ pieces ============================ */
@@ -1197,21 +1153,9 @@ html.bare .dev-wrap{box-shadow:none}
     return room({ fill: !showPic, status: esc(status), action: action, left: left, right: right, middle: middle, overlay: lesson() ? "" : endDialog(variant) });
   }
   S.playing = { group: "The game", label: "Playing", note: "No title: the letters say what this is. The drawing is a band above the board: one neighbour explaining with her hands, the other listening, every answered word hanging on the line. At 375 the drawing is left out so the board is the first thing under the header; with the long word list it is left out at every width. The teacher (lesson, host) sees every word, coloured and outlined by who explains it, and the only thing they can do is end the lesson. A player in a lesson has no “End the game”.", render: function () { return playing("plain"); } };
-  S["playing/answered"] = { group: "The game", sub: true, label: "…a word answered", note: "The moment “apple” is answered: its squares turn over one by one to their answered face, and its card is pegged on the line between the balconies and swings until it hangs still. The list marks it answered. Click it again to replay. With reduced motion it is simply answered.",
-    render: function () { JUST = "apple"; try { return playing("plain"); } finally { JUST = null; } } };
-  /* the motion study: the same moment, six ways, plus the recommended pair. Each is a state so it can be replayed by clicking it again */
   var JUST_SHOWN = "apple";
-  function variant(motion, label, note, after) {
-    return { group: "The game", sub: true, label: label, motion: motion, after: after, note: "Motion study, not yet chosen (Viktor asked to see them all). " + note + " With reduced motion every variant is simply answered, as the app is today. Click it again to replay.",
-      render: function () { JUST = JUST_SHOWN; MOTION = motion; try { return playing("plain"); } finally { JUST = null; MOTION = null; } } };
-  }
-  S["answered/lift"] = variant("lift", "…answered: 1 letters fly to the line", "The letters lift off the board, gather into the word and fly up an arc onto the line, where its card is pegged as they land. On a screen with no drawing (375, or the long word list) they fly into the word's row in the list.", flyLetters);
-  S["answered/cheer"] = variant("cheer", "…answered: 2 neighbours cheer", "The squares turn over as today; both neighbours cheer for about 1.5 s and the line twangs once as the card lands. Nothing happens on a screen with no drawing beyond the squares.");
-  S["answered/lift-cheer"] = variant("lift cheer", "…answered: 1 + 2, recommended", "The letters fly onto the line, and as they land both neighbours cheer and the line twangs once. The Architect's recommendation.", flyLetters);
-  S["answered/wave"] = variant("wave", "…answered: 3 a wave", "The squares rise and drop one after another with a small bounce, each turning green as it lands.");
-  S["answered/stamp"] = variant("stamp", "…answered: 4 a stamp", "Each letter swells from 1 to 1.15 and back, one after another, as if pressed in, and turns green at the peak.");
-  S["answered/pencil"] = variant("pencil", "…answered: 5 a pencil stroke", "An ochre pencil stroke runs through the word, as in a paper crossword, then fades, and the squares take their answered face under it.", pencilStroke);
-  S["answered/petals"] = variant("petals", "…answered: 6 geranium petals", "The squares turn over as today, and a few geranium petals fall from the balconies and the wall pots. Nothing falls on a screen with no drawing.");
+  S["playing/answered"] = { group: "The game", sub: true, label: "…a word answered", after: flyLetters, note: "The moment “apple” is answered (Viktor chose this on 2026-10-16, variant 1 + 2 of the motion study). Its letters lift off the board, gather into the word for a moment and fly up an arc onto the line, where its card is pegged and swings until it hangs still; as they land both neighbours cheer for about 1.5 s and the line twangs once. Its squares settle to their answered face where they are. With no drawing (375, or the long word list) the letters fly into the word's row in the list; when that row is below the fold, the word rises and fades above the board. The list marks it answered. Click it again to replay. With reduced motion it is simply answered.",
+    render: function () { JUST = JUST_SHOWN; try { return playing("plain"); } finally { JUST = null; } } };
   S["playing/leftout"] = { group: "The game", sub: true, label: "…dealt out without you", note: "Joined in the instant before the deal. Every word would read as theirs, so they are shown none.", render: function () { return playing("leftout"); } };
   S["playing/refused"] = { group: "The game", sub: true, label: "…answer refused", note: "A wrong answer turns its squares to the refused surface, struck through, and says so under the board, where the player was looking when they typed it.", render: function () { return playing("refused"); } };
   S["playing/guessfail"] = { group: "The game", sub: true, label: "…answer not saved", note: "The database refused the write outright, most likely an expired room.", render: function () { return playing("guessfail"); } };
@@ -1262,7 +1206,7 @@ html.bare .dev-wrap{box-shadow:none}
     "connecting", "join", "join/joining", "join/failed",
     "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection", "reload", "crash",
     "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/nostudent", "lobby/teacheraway",
-    "playing", "playing/answered", "answered/lift", "answered/cheer", "answered/lift-cheer", "answered/wave", "answered/stamp", "answered/pencil", "answered/petals", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
+    "playing", "playing/answered", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
     "finished", "closed-early", "link-card", "link-card/stage"];
   var mapEl = document.getElementById("map"), stageEl = document.getElementById("stage");
   var whereEl = document.getElementById("where"), noteEl = document.getElementById("stateNote");
@@ -1317,7 +1261,7 @@ html.bare .dev-wrap{box-shadow:none}
       var w = Math.round(win.w * scale), h = Math.round(win.h * scale);
       return '<figure class="frame"><figcaption>' + esc(win.name) + '</figcaption><div class="dev-wrap" style="width:' + w + 'px;height:' + h + 'px">' +
         '<div class="device" data-layout="' + ctx.layout + '" style="--device-w:' + win.w + 'px;--device-h:' + win.h + 'px;--device-scale:' + scale + '">' +
-        '<div class="screens"><div class="screen' + anim + (s.motion ? " m-" + s.motion.split(" ")[0] : "") + '">' + s.render() + '</div></div></div></div></figure>';
+        '<div class="screens"><div class="screen' + anim + '">' + s.render() + '</div></div></div></div></figure>';
     }).join("");
     state.mode = saved.mode; state.role = saved.role;
     stageEl.innerHTML = html;
