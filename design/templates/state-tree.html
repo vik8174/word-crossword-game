@@ -919,6 +919,16 @@ html.bare .dev-wrap{box-shadow:none}
           scene({ right: "shut", line: "none", crop: "top", mood: "calm", teacher: "", label: "A balcony across the street with its shutters closed" }));
       } };
   });
+  /* a page of the app could not be fetched, most often because a new version went online
+     while this tab held the old one (issue #294). The first failure reloads the page once,
+     with nothing drawn; this is what shows if the reload did not help */
+  S.reload = { group: "Turned away", sub: true, label: "page did not load",
+    note: "Not the room's doing: the browser could not fetch this part of the app, most often because a new version went online while the tab was open. The app first reloads by itself, once, and nothing is drawn for that. This shows only when the reload did not help. It is an error, but the way forward is the same reload, by hand, and nothing in a room is lost by it. The frame above stays, because it never left the screen.",
+    render: function () {
+      return column(msg("error", "This page could not be opened", "The game may have been updated while this tab was open, or the connection dropped. Reload the page to get the current version. A room you are in is still there.") +
+        '<div>' + go("Reload the page", "home") + '</div>',
+        scene({ right: "shut", line: "none", crop: "top", mood: "calm", teacher: "", label: "A balcony across the street with its shutters closed" }));
+    } };
 
   /* ---- the lobby ---- */
   function lobby(variant) {
@@ -1075,7 +1085,7 @@ html.bare .dev-wrap{box-shadow:none}
   /* ============================ the map ============================ */
   var ORDER = ["home", "create", "create/errors", "create/nogrid", "create/unplaced", "create/creating", "create/failed",
     "connecting", "join", "join/joining", "join/failed",
-    "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection",
+    "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection", "reload",
     "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/nostudent", "lobby/teacheraway",
     "playing", "playing/answered", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
     "finished", "closed-early"];
