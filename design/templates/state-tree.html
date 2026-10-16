@@ -220,6 +220,9 @@ h1,h2,h3,p{margin:0}
 .board-head h3{font-size:20px;font-weight:700}
 .board-head p{font-size:16px;color:var(--slate)}
 .board-notes{max-width:560px;margin:16px auto 0;display:flex;flex-direction:column;gap:6px}
+/* a game with no drawing on a wide window: the board stands in the middle of the zone's height, the notes at its foot */
+.device[data-layout="wide"] .zone-middle.fill{display:flex;flex-direction:column;min-height:calc(var(--device-h) - 130px)}
+.device[data-layout="wide"] .zone-middle.fill > .board-wrap{margin:auto 0}
 .board-note{font-size:15px;color:var(--slate);text-align:center}
 .board-note.refusal{color:var(--brick);font-weight:700;font-size:17px}
 
@@ -838,7 +841,7 @@ html.bare .dev-wrap{box-shadow:none}
   function room(o) {
     return head(o) + '<div class="body"><div class="zones' + (isTeacher() ? " teacher" : "") + '">' +
       '<div class="zone left' + (o.left ? "" : " empty") + '">' + (o.left || "") + '</div>' +
-      '<div class="zone-middle">' + (o.middle || "") + '</div>' +
+      '<div class="zone-middle' + (o.fill ? " fill" : "") + '">' + (o.middle || "") + '</div>' +
       '<div class="zone right' + (o.right ? "" : " empty") + '">' + (o.right || "") + '</div>' +
       '</div></div>' + (o.overlay || "");
   }
@@ -1044,11 +1047,11 @@ html.bare .dev-wrap{box-shadow:none}
   function teacherPlaying(variant) {
     var action = variant === "ending" ? btn("Ending the lesson", "link loading") : go("End the lesson", "playing/confirm", "link");
     var showPic = layout() !== "phone" && state.size === "few";
-    return room({ status: "Olena and Taras are playing. You are watching.", action: action,
+    return room({ fill: !showPic, status: "Olena and Taras are playing. You are watching.", action: action,
       left: '<div class="stack">' + (variant === "away" ? presenceNotice() : "") + explainerSection("Olena", "Taras", "explain", "a") + '</div>',
       right: '<div class="stack">' + players({ away: variant === "away" ? "self" : "" }) + explainerSection("Taras", "Olena", "guess", "b") + '</div>',
       middle: (showPic ? scene({ crop: "band", cards: answeredWords(), mood: "talk", label: "The answered words hanging on the line, the teacher watching from the end of the street" }) : "") +
-        '<div style="margin-top:' + (showPic ? 18 : 0) + 'px">' + board("teacher", squareSize(layout())) + '</div>' + teacherLegend() +
+        '<div class="board-wrap"' + (showPic ? ' style="margin-top:18px"' : '') + '>' + board("teacher", squareSize(layout())) + '</div>' + teacherLegend() +
         '<div class="row-btns" style="justify-content:center;margin-top:14px">' + tplGo("→ finish it", "finished") + tplGo("→ end it", "playing/confirm") + '</div>',
       overlay: endDialog(variant) });
   }
@@ -1064,13 +1067,13 @@ html.bare .dev-wrap{box-shadow:none}
         '<p class="count-line" role="status">' + guessCount() + '</p></section>') + '</div>';
     var showPic = layout() !== "phone" && state.size === "few";
     var middle = (showPic ? scene({ crop: "band", cards: answeredWords(), mood: "talk", teacher: lesson() ? (variant === "teacheraway" ? "away" : "here") : "", label: "The answered words hanging on the line between the two balconies" }) : "") +
-      '<div style="margin-top:' + (showPic ? 18 : 0) + 'px">' + board(mode, squareSize(layout())) + '</div>' + (leftOut ? "" : boardNotes(mode)) +
+      '<div class="board-wrap"' + (showPic ? ' style="margin-top:18px"' : '') + '>' + board(mode, squareSize(layout())) + '</div>' + (leftOut ? "" : boardNotes(mode)) +
       (variant === "guessfail" ? '<div style="margin-top:14px">' + msg("error", "Your answer was not saved", "It was right, but the other player could not be told. The room may have expired. Reload the page to see where the game stands.") + '</div>' : "") +
       '<div class="row-btns" style="justify-content:center;margin-top:14px">' + tplGo("→ answer apple", "playing/answered") + tplGo("→ finish it", "finished") + tplGo("→ left out", "playing/leftout") + tplGo("→ answer refused", "playing/refused") + tplGo("→ answer failed", "playing/guessfail") + '</div>';
     /* in a lesson a player cannot end the game: only the teacher can */
     var action = (leftOut || lesson()) ? "" : (variant === "ending" ? btn("Ending the game", "link loading") : go("End the game", "playing/confirm", "link"));
     var status = leftOut ? "" : (lesson() ? "Playing with " + other() + ". " + TEACHER + " is watching." : "Playing with " + other());
-    return room({ status: esc(status), action: action, left: left, right: right, middle: middle, overlay: lesson() ? "" : endDialog(variant) });
+    return room({ fill: !showPic, status: esc(status), action: action, left: left, right: right, middle: middle, overlay: lesson() ? "" : endDialog(variant) });
   }
   S.playing = { group: "The game", label: "Playing", note: "No title: the letters say what this is. The drawing is a band above the board: one neighbour explaining with her hands, the other listening, every answered word hanging on the line. At 375 the drawing is left out so the board is the first thing under the header; with the long word list it is left out at every width. The teacher (lesson, host) sees every word, coloured and outlined by who explains it, and the only thing they can do is end the lesson. A player in a lesson has no “End the game”.", render: function () { return playing("plain"); } };
   S["playing/answered"] = { group: "The game", sub: true, label: "…a word answered", note: "The moment “apple” is answered: its squares turn over one by one to their answered face, and its card is pegged on the line between the balconies and swings until it hangs still. The list marks it answered. Click it again to replay. With reduced motion it is simply answered.",
