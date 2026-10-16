@@ -69,7 +69,11 @@ export const fieldSx = (state: FieldStyleState): SxProps<Theme> => ({
   },
   // The example in an empty field: slate, which reads 6.23:1 on a tile.
   '& input::placeholder, & textarea::placeholder': { color: STREET.slate, opacity: 1 },
-  '& input:focus-visible, & textarea:focus-visible': {
+  // The focus ring belongs to the field, not to the control (`.field:has(...)`,
+  // line 159): the control is shorter than the field by its descender room, so
+  // a ring on it covered the bottom of the ink ring.
+  '& input:focus-visible, & textarea:focus-visible': { outline: 'none' },
+  '&:has(input:focus-visible), &:has(textarea:focus-visible)': {
     outline: `3px solid ${STREET.ochre}`,
     outlineOffset: '3px',
   },
