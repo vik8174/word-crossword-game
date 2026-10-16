@@ -19,7 +19,10 @@ import {
   type RoomScreen,
   roomScreenFor,
   screenAfterRefusedJoin,
+  screenWhileDealing,
 } from '../rooms/room-screen';
+import type { StartGameInput } from '../rooms/room-service';
+import { useHeldDeal } from '../rooms/use-held-deal';
 import { usePresenceHeartbeat } from '../rooms/use-presence-heartbeat';
 import { useRoomConnection } from '../rooms/use-room-connection';
 import { funnelScreenFor } from '../telemetry/funnel';
@@ -63,11 +66,13 @@ const RoomScreenView = ({
   screen,
   invitation,
   onJoinRefused,
+  deal,
 }: {
   readonly roomId: string;
   readonly screen: RoomScreen;
   readonly invitation?: ReactNode;
   readonly onJoinRefused: () => void;
+  readonly deal: (input: StartGameInput) => Promise<void>;
 }): ReactElement => {
   switch (screen.kind) {
     case 'connecting':
@@ -92,6 +97,7 @@ const RoomScreenView = ({
           room={screen.room}
           viewerId={screen.viewerId}
           invitation={invitation}
+          deal={deal}
         />
       );
     case 'playing':
@@ -171,9 +177,15 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
   // and the screen goes back to being what the document says. A flag would have
   // to be cleared by hand, and a visitor whose seat freed up again would sit
   // behind a stale notice.
-  const screen = screenAfterRefusedJoin(
-    roomScreenFor(connection, now),
-    room !== null && room === refusedRoom,
+  //
+  // A deal is the one write whose screen waits for the server (issue #282): the
+  // room goes to `playing` the moment it is sent and back to `lobby` after the
+  // refusal if the rules turn it down, so the game screen is not shown until the
+  // deal is confirmed.
+  const { heldLobby, deal } = useHeldDeal(room);
+  const screen = screenWhileDealing(
+    screenAfterRefusedJoin(roomScreenFor(connection, now), room !== null && room === refusedRoom),
+    heldLobby,
   );
 
   usePresenceHeartbeat(roomId, connection);
@@ -211,6 +223,7 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
             ) : undefined
           }
           onJoinRefused={() => setRefusedRoom(latestRoom.current)}
+          deal={deal}
         />
       </ScreenEnter>
     </>

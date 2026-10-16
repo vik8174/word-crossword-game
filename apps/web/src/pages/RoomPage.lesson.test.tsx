@@ -1,6 +1,7 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { type Analytics, initializeAnalytics, isSupported } from 'firebase/analytics';
+import { FirebaseError } from 'firebase/app';
 import { signInAnonymously } from 'firebase/auth';
 import { onSnapshot, updateDoc } from 'firebase/firestore';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -365,5 +366,118 @@ describe('a student arriving by the lesson’s link', () => {
     await openLessonAs(STRANGER_ID, pair);
 
     expect(screen.getByRole('alert')).toHaveTextContent('The room is full');
+  });
+});
+
+describe('a lesson deal the rules refuse', () => {
+  const REFUSED_BY_RULES = new FirebaseError(
+    'permission-denied',
+    'Missing or insufficient permissions.',
+  );
+  /** Both students have marked every word answered, in the lobby, where the rules let them. */
+  const MARKED_IN_THE_LOBBY = {
+    w0: { hiddenFromPlayerId: null, guessedByPlayerId: OLENA_ID },
+    w1: { hiddenFromPlayerId: null, guessedByPlayerId: TARAS_ID },
+  };
+  const markedLobby = () => storedLesson(BOTH_STUDENTS, { words: MARKED_IN_THE_LOBBY });
+  /** The deal applied at once, as the SDK shows the teacher before the server has judged it. */
+  const optimisticallyPlaying = () =>
+    storedLesson(BOTH_STUDENTS, {
+      status: 'playing',
+      words: {
+        w0: { hiddenFromPlayerId: OLENA_ID, guessedByPlayerId: OLENA_ID },
+        w1: { hiddenFromPlayerId: TARAS_ID, guessedByPlayerId: TARAS_ID },
+      },
+    });
+  const emit = (room: unknown) =>
+    act(async () => {
+      emitRoom({ exists: () => true, data: () => room });
+    });
+
+  /** The deal waits for the server; the teacher's presence marks do not. Answered by hand. */
+  const holdTheDeal = () => {
+    const answers: { resolve: () => void; reject: (error: unknown) => void }[] = [];
+
+    vi.mocked(updateDoc).mockImplementation(((_reference: unknown, update: object) =>
+      isPresenceMark(update as Record<string, unknown>)
+        ? Promise.resolve()
+        : new Promise<void>((resolve, reject) => {
+            answers.push({ resolve, reject });
+          })) as never);
+
+    return answers;
+  };
+
+  const boardIsOnScreen = () => document.querySelector('[aria-label*="crossword grid" i]') !== null;
+
+  it('shows the teacher the refusal, and never the game, in the order the SDK was measured to use', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const answers = holdTheDeal();
+    let gameSeen = false;
+    const observer = new MutationObserver(() => {
+      gameSeen ||= boardIsOnScreen();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    await openLessonAs(TEACHER_ID, markedLobby());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deal the words' }));
+    await waitFor(() => expect(writes().filter((write) => !isPresenceMark(write))).toHaveLength(1));
+    await emit(optimisticallyPlaying());
+
+    expect(screen.getByRole('button', { name: 'Dealing the words' })).toBeInTheDocument();
+
+    await act(async () => {
+      answers[0]?.reject(REFUSED_BY_RULES);
+    });
+    await emit(markedLobby());
+
+    expect(await screen.findByText('Could not start the game')).toBeInTheDocument();
+    expect(
+      screen.getByText('Check your connection and try again. Nothing has been dealt out yet.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Deal the words' })).toBeEnabled();
+    expect(gameSeen).toBe(false);
+    expect(boardIsOnScreen()).toBe(false);
+    observer.disconnect();
+  });
+
+  it('writes no completion for the words the students marked, since nothing was dealt', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const answers = holdTheDeal();
+    await openLessonAs(TEACHER_ID, markedLobby());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deal the words' }));
+    await waitFor(() => expect(writes().filter((write) => !isPresenceMark(write))).toHaveLength(1));
+    await emit(optimisticallyPlaying());
+    await act(async () => {
+      answers[0]?.reject(REFUSED_BY_RULES);
+    });
+    await emit(markedLobby());
+    await screen.findByText('Could not start the game');
+
+    const gameWrites = writes().filter((write) => !isPresenceMark(write));
+
+    expect(gameWrites).toHaveLength(1);
+    expect(gameWrites[0]).toHaveProperty('status', 'playing');
+    expect(writes().filter((write) => write.status === 'completed')).toEqual([]);
+  });
+
+  it('opens the lesson once the server confirms the deal, with "Dealing the words" until then', async () => {
+    const answers = holdTheDeal();
+    await openLessonAs(TEACHER_ID, storedLesson(BOTH_STUDENTS));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deal the words' }));
+    await waitFor(() => expect(writes().filter((write) => !isPresenceMark(write))).toHaveLength(1));
+    await emit(storedLesson(BOTH_STUDENTS, { status: 'playing', words: DEALT }));
+
+    expect(screen.getByRole('button', { name: 'Dealing the words' })).toBeInTheDocument();
+    expect(boardIsOnScreen()).toBe(false);
+
+    await act(async () => {
+      answers[0]?.resolve();
+    });
+
+    await waitFor(() => expect(boardIsOnScreen()).toBe(true));
+    expect(screen.queryByText('Could not start the game')).toBeNull();
   });
 });

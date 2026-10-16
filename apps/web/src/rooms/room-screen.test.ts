@@ -7,6 +7,7 @@ import {
   type RoomScreen,
   roomScreenFor,
   screenAfterRefusedJoin,
+  screenWhileDealing,
 } from './room-screen';
 import type { RoomConnection } from './use-room-connection';
 
@@ -497,5 +498,32 @@ describe('roomScreenFor, in a lesson', () => {
     };
 
     expect(hasSomebodyToInvite(lobby, NOW)).toBe(false);
+  });
+});
+
+describe('screenWhileDealing', () => {
+  const lobbyRoom = roomWith({});
+  const playingRoom = roomWith({ status: 'playing' });
+  const playing: RoomScreen = { kind: 'playing', room: playingRoom, viewerId: 'owner-uid' };
+
+  it('keeps the lobby the deal was sent from in place of the game that is not confirmed yet', () => {
+    expect(screenWhileDealing(playing, lobbyRoom)).toEqual({
+      kind: 'lobby',
+      room: lobbyRoom,
+      viewerId: 'owner-uid',
+    });
+  });
+
+  it('shows the game as it arrives when no deal is waiting', () => {
+    expect(screenWhileDealing(playing, null)).toBe(playing);
+  });
+
+  it.each<RoomScreen>([
+    { kind: 'lobby', room: lobbyRoom, viewerId: 'owner-uid' },
+    { kind: 'finished', room: playingRoom, viewerId: 'owner-uid' },
+    { kind: 'closed-early', room: playingRoom, viewerId: 'owner-uid' },
+    { kind: 'connecting' },
+  ])('passes the $kind screen over, whatever is held', (screen) => {
+    expect(screenWhileDealing(screen, lobbyRoom)).toBe(screen);
   });
 });
