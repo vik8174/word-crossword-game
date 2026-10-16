@@ -32,8 +32,26 @@ Opening or updating a pull request against `main` automatically runs:
 - **Coverage** — 80% threshold; a pull request below it cannot be merged
 - **Build** — `pnpm build` for both packages
 - **Rules** — `pnpm test:rules`: `firestore.rules` checked against the Firestore emulator (needs a JDK, which the job installs)
+- **E2E** — `pnpm test:e2e`: a real browser against the app and the Firebase emulators
+- **Visual** — `pnpm test:visual`: every Storybook story at 1440, 834 and 375 px, compared with the committed baselines in `apps/web/visual/baselines/`
 
-All five are required status checks in branch protection. A pull request cannot be merged until they are green.
+The first five are required status checks in branch protection. A pull request cannot be merged until they are green.
+
+## Visual regression
+
+The **Visual** job screenshots every story and fails when a shot differs from its baseline by more than `maxDiffPixelRatio` (`apps/web/playwright.visual.config.ts`, one value for every shot). A failed run uploads the expected, actual and diff images as the `visual-diffs` artifact, kept 14 days.
+
+**The setting, and what it was measured against.** The per-pixel `threshold` is Playwright's default 0.2 and `maxDiffPixelRatio` is **0.001**. Measured on the Visual job on unchanged commits: five runs at this setting had a largest ratio of 6.6e-6 (one shot of 2 pixels in four runs, none in the fifth), and the threshold is more than 100 times that. The ratio was also read against deliberate regressions: one pixel of padding on the main button gave a largest ratio of 2.7e-3, and one hidden button kind 2.3e-3, both above 0.001, so both fail the job.
+
+**A known blind spot.** The per-pixel threshold 0.2 is a colour distance, and a change of 8 in one colour channel (the page colour `duck` from `#E6EEEC` to `#EEEEEC` was tried) is far below it: **no pixel is counted and the job passes.** A colour change of that size is not caught by Visual. It was measured with `threshold: 0` as well, and that setting does catch it (ratios 0.35 to 1.0), but its noise did not hold: five runs on one unchanged commit had a largest ratio of 8.9e-5, 6.9e-5, 7.9e-5, 5.9e-5 and 6.5e-4 (the last one is a 198-pixel difference in one shot), and the fifth is above 1e-4, so the stricter setting was not adopted. Review colour changes by eye.
+
+**A pull request that changes the look updates its baselines in the same pull request.** Baselines are rendered **only by CI**, in the Visual job's image (`mcr.microsoft.com/playwright:v<version>-noble`, the Playwright version of `apps/web/package.json`) on GitHub's amd64 runner. Never make one on your machine and never commit one that you did: a Mac's fonts differ, and an emulated amd64 image rendered the pages without their MUI styles. No workflow commits anything.
+
+1. Push the change. **Visual** fails on every shot that moved, and on every new story that has no baseline yet.
+2. Run `pnpm test:visual:accept <run-id>` (the number in the run's URL; it needs the `gh` CLI, signed in). It downloads the `visual-diffs` artifact and writes the `actual` image of every failed shot into `apps/web/visual/baselines/`.
+3. Look at the changed PNGs in the diff: a baseline that changed is a change of the look, and it must be the one the pull request meant. Commit and push them. **Visual** is green on the new commit.
+
+`pnpm test:visual` also runs the check locally, but a local render is never a baseline: expect it to differ from CI's. A new story fails until its three baselines are committed. A story that shows the time or a random layout must be made deterministic. When Playwright is upgraded, the image tag in the **Visual** job moves with it (a step fails the job if they differ) and every baseline is taken again the same way.
 
 ## Deploying (GitHub Actions)
 
