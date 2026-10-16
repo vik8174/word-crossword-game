@@ -20,3 +20,9 @@ handoffs/
 # Dev-server configs for the in-app browser, written per issue with absolute
 # paths into that issue's worktree.
 .claude/launch.json
+
+# Written and removed by `pnpm test:e2e` (scripts/run-e2e.mjs); the run's own ports.
+firebase.e2e.*.generated.json
+# Playwright output
+apps/web/test-results/
+apps/web/playwright-report/
