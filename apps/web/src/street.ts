@@ -52,7 +52,7 @@ export interface StreetPalette {
 }
 
 export const STREET: StreetPalette = {
-  duck: '#E6EEEC',
+  duck: '#EEEEEC',
   tile: '#FAFBFA',
   ink: '#1B2D38',
   slate: '#4C6170',
