@@ -11,6 +11,7 @@
     "test:coverage": "pnpm -r test:coverage",
     "test:rules": "firebase emulators:exec --only firestore --project demo-word-crossword \"node --test firestore/*.test.mjs\"",
     "test:e2e": "node scripts/run-e2e.mjs",
+    "test:lighthouse": "node scripts/run-e2e.mjs --lighthouse",
     "test:visual": "pnpm --filter web build-storybook && pnpm --filter web test:visual",
     "test:visual:accept": "node scripts/visual-accept.mjs",
     "check:emulator-leak": "node scripts/check-emulator-leak.mjs"

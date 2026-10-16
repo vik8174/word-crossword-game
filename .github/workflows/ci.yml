@@ -167,3 +167,44 @@ jobs:
             apps/web/test-results-visual/
             apps/web/playwright-report/
           retention-days: 14
+
+  lighthouse:
+    name: Lighthouse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.0.10
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      # The Firestore and Auth emulators run on the JVM, as in the E2E job.
+      - uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: pnpm install --frozen-lockfile
+      # The browser is the Playwright Chromium of the E2E job (same cache key),
+      # so its version moves only with Playwright.
+      - id: playwright
+        run: echo "version=$(pnpm --filter web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v5.0.0
+        id: browser-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.playwright.outputs.version }}
+      - if: steps.browser-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter web exec playwright install --with-deps chromium
+      - if: steps.browser-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter web exec playwright install-deps chromium
+      - name: Lighthouse CI
+        run: |
+          export CHROME_PATH="$(cd apps/web && node -p "require('@playwright/test').chromium.executablePath()")"
+          "$CHROME_PATH" --version
+          pnpm test:lighthouse
+      - if: always()
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: lighthouse-reports
+          path: apps/web/.lighthouseci/
+          retention-days: 14

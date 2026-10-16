@@ -28,3 +28,7 @@ apps/web/test-results/
 apps/web/playwright-report/
 dist-e2e-*/
 apps/web/test-results-visual/
+
+# Lighthouse CI build and reports (apps/web/lighthouserc.cjs)
+apps/web/dist-lhci/
+apps/web/.lighthouseci/
