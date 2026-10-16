@@ -116,7 +116,7 @@ A release is what moves production, and the order it goes in — the version, th
 
 One name decides everything about a deploy — `stage` or `production`, worked out from the ref that triggered it. It is the GitHub environment whose secrets the build is given, the `.firebaserc` alias the deploy names, and the value of `VITE_SENTRY_ENVIRONMENT` the errors are tagged with. There is one of it, so the three cannot drift apart. See [ADR 0020](docs/decisions/0020-two-environments-and-a-deploy-that-runs-itself.md).
 
-An invite link points straight at `/room/<id>`, a route that exists only in the browser, so `firebase.json` rewrites every path to `index.html`. Without that rewrite an invite opened in a fresh tab is a 404 rather than a room. Both addresses are the standard `*.web.app` one; nothing in the app hard-codes an origin, so a custom domain attaches later without a rebuild.
+An invite link points straight at `/room/<id>`, a route that exists only in the browser, so `firebase.json` rewrites every path **except `/assets/**`** to `index.html`. Without that rewrite an invite opened in a fresh tab is a 404 rather than a room. Assets are left out so that a chunk a deploy removed answers 404 instead of an HTML page the browser cannot run (issue #294). Headers go with it: `/assets/**` (hashed names) is cached for a year and `immutable`, and everything else is `no-cache`, so a tab always learns of a new release. Both addresses are the standard `*.web.app` one; nothing in the app hard-codes an origin, so a custom domain attaches later without a rebuild.
 
 ### Deploying by hand
 
