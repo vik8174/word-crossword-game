@@ -326,9 +326,9 @@ html.bare .dev-wrap{box-shadow:none}
    One language for every movement, taken from the drawing rather than from a library.
    A screen opens the way a balcony does in the morning: the shutters swing open, the
    neighbours lean out, the line is thrown across, and the page settles in from below,
-   one block after another. An answered word turns over square by square, like a tile
-   flipped to its other face, and its card is pegged on the line and swings until it
-   hangs still. A wrong answer shakes once, as a head does. A dialog lifts off the page.
+   one block after another. An answered word runs a wave through its squares: each one
+   rises, drops with a small bounce and lands on its answered face, one after another
+   (Viktor, 2026-10-16, variant 3 of the motion study). A wrong answer shakes once, as a head does. A dialog lifts off the page.
    A filled crossword is a fiesta: lanterns drop in one by one and sway, confetti falls,
    the card springs up. Two curves only: --out for arriving, --spring for celebrating.
    Every rule lives inside no-preference: with reduced motion the page is simply there. */
@@ -346,8 +346,8 @@ html.bare .dev-wrap{box-shadow:none}
   @keyframes lean{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   .enter .line-draw{stroke-dasharray:1;animation:draw 1000ms var(--out) 700ms both}
   @keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
-  .cell.just{animation:turn 560ms var(--out) both;animation-delay:calc(var(--d,0) * 80ms)}
-  @keyframes turn{from{transform:perspective(300px) rotateX(-95deg);background:var(--tile)}55%{background:var(--sage)}to{transform:none}}
+  .cell.just{z-index:1;animation:wave 760ms ease both;animation-delay:calc(var(--d,0) * 90ms)}
+  @keyframes wave{0%{transform:none;background:var(--wash)}35%{transform:translateY(-14px);background:var(--wash)}62%{transform:translateY(3px);background:var(--sage)}80%{transform:translateY(-3px)}100%{transform:none}}
   .scene .pegged{transform-box:fill-box;transform-origin:50% 0;animation:peg 1100ms var(--out) 420ms both}
   @keyframes peg{0%{opacity:0;transform:translateY(-26px) rotate(-16deg)}45%{opacity:1;transform:translateY(0) rotate(9deg)}70%{transform:rotate(-4deg)}88%{transform:rotate(1.5deg)}100%{transform:none}}
   .cell.refused{animation:shake 420ms var(--out) both}
@@ -1044,12 +1044,10 @@ html.bare .dev-wrap{box-shadow:none}
   }
   function teacherPlaying(variant) {
     var action = variant === "ending" ? btn("Ending the lesson", "link loading") : go("End the lesson", "playing/confirm", "link");
-    var showPic = layout() !== "phone" && state.size === "few";
-    return room({ fill: !showPic, status: "Olena and Taras are playing. You are watching.", action: action,
+    return room({ fill: true, status: "Olena and Taras are playing. You are watching.", action: action,
       left: '<div class="stack">' + (variant === "away" ? presenceNotice() : "") + explainerSection("Olena", "Taras", "explain", "a") + '</div>',
       right: '<div class="stack">' + players({ away: variant === "away" ? "self" : "" }) + explainerSection("Taras", "Olena", "guess", "b") + '</div>',
-      middle: (showPic ? scene({ crop: "band", cards: answeredWords(), mood: "talk", label: "The answered words hanging on the line, the teacher watching from the end of the street" }) : "") +
-        '<div class="board-wrap"' + (showPic ? ' style="margin-top:18px"' : '') + '>' + board("teacher", squareSize(layout())) + '</div>' + teacherLegend() +
+      middle: '<div class="board-wrap">' + board("teacher", squareSize(layout())) + '</div>' + teacherLegend() +
         '<div class="row-btns" style="justify-content:center;margin-top:14px">' + tplGo("→ finish it", "finished") + tplGo("→ end it", "playing/confirm") + '</div>',
       overlay: endDialog(variant) });
   }
@@ -1063,18 +1061,17 @@ html.bare .dev-wrap{box-shadow:none}
     var right = '<div class="stack">' + notice + players({ away: variant === "away" ? "self" : (variant === "teacheraway" ? "teacher" : "") }) +
       (leftOut ? "" : '<section><h2 class="h3">You guess</h2><p class="hint">' + esc(GUESS_HINT) + '</p>' + wordRows("guess") +
         '<p class="count-line" role="status">' + guessCount() + '</p></section>') + '</div>';
-    var showPic = layout() !== "phone" && state.size === "few";
-    var middle = (showPic ? scene({ crop: "band", cards: answeredWords(), mood: "talk", teacher: lesson() ? (variant === "teacheraway" ? "away" : "here") : "", label: "The answered words hanging on the line between the two balconies" }) : "") +
-      '<div class="board-wrap"' + (showPic ? ' style="margin-top:18px"' : '') + '>' + board(mode, squareSize(layout())) + '</div>' + (leftOut ? "" : boardNotes(mode)) +
+    /* no drawing while the game is played: the board has the middle zone to itself (Viktor, 2026-10-16) */
+    var middle = '<div class="board-wrap">' + board(mode, squareSize(layout())) + '</div>' + (leftOut ? "" : boardNotes(mode)) +
       (variant === "guessfail" ? '<div style="margin-top:14px">' + msg("error", "Your answer was not saved", "It was right, but the other player could not be told. The room may have expired. Reload the page to see where the game stands.") + '</div>' : "") +
       '<div class="row-btns" style="justify-content:center;margin-top:14px">' + tplGo("→ answer apple", "playing/answered") + tplGo("→ finish it", "finished") + tplGo("→ left out", "playing/leftout") + tplGo("→ answer refused", "playing/refused") + tplGo("→ answer failed", "playing/guessfail") + '</div>';
     /* in a lesson a player cannot end the game: only the teacher can */
     var action = (leftOut || lesson()) ? "" : (variant === "ending" ? btn("Ending the game", "link loading") : go("End the game", "playing/confirm", "link"));
     var status = leftOut ? "" : (lesson() ? "Playing with " + other() + ". " + TEACHER + " is watching." : "Playing with " + other());
-    return room({ fill: !showPic, status: esc(status), action: action, left: left, right: right, middle: middle, overlay: lesson() ? "" : endDialog(variant) });
+    return room({ fill: true, status: esc(status), action: action, left: left, right: right, middle: middle, overlay: lesson() ? "" : endDialog(variant) });
   }
-  S.playing = { group: "The game", label: "Playing", note: "No title: the letters say what this is. The drawing is a band above the board: one neighbour explaining with her hands, the other listening, every answered word hanging on the line. At 375 the drawing is left out so the board is the first thing under the header; with the long word list it is left out at every width. The teacher (lesson, host) sees every word, coloured and outlined by who explains it, and the only thing they can do is end the lesson. A player in a lesson has no “End the game”.", render: function () { return playing("plain"); } };
-  S["playing/answered"] = { group: "The game", sub: true, label: "…a word answered", note: "The moment “apple” is answered: its squares turn over one by one to their answered face, and its card is pegged on the line between the balconies and swings until it hangs still. The list marks it answered. Click it again to replay. With reduced motion it is simply answered.",
+  S.playing = { group: "The game", label: "Playing", note: "No title: the letters say what this is. No drawing while the game is played (Viktor, 2026-10-16): the board has the middle zone to itself, standing in the middle of its height on a wide window with the notes at its foot. The street comes back when the game ends. The teacher (lesson, host) sees every word, coloured and outlined by who explains it, and the only thing they can do is end the lesson. A player in a lesson has no “End the game”.", render: function () { return playing("plain"); } };
+  S["playing/answered"] = { group: "The game", sub: true, label: "…a word answered", note: "The moment “apple” is answered: a wave runs through its squares, first to last. Each rises 14 px, drops 3 px below its place, bounces 3 px up and lands, 760 ms, the next one starting 90 ms after the one before; it turns from wash to its answered face as it comes down (Viktor, 2026-10-16, variant 3 of the motion study). The list marks it answered. Click it again to replay. With reduced motion it is simply answered.",
     render: function () { JUST = "apple"; try { return playing("plain"); } finally { JUST = null; } } };
   S["playing/leftout"] = { group: "The game", sub: true, label: "…dealt out without you", note: "Joined in the instant before the deal. Every word would read as theirs, so they are shown none.", render: function () { return playing("leftout"); } };
   S["playing/refused"] = { group: "The game", sub: true, label: "…answer refused", note: "A wrong answer turns its squares to the refused surface, struck through, and says so under the board, where the player was looking when they typed it.", render: function () { return playing("refused"); } };
