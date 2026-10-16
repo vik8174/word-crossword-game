@@ -62,6 +62,7 @@ pnpm workspace over `apps/*` and `packages/*`.
 | coverage   | `pnpm test:coverage`                               | 22 s, 99.56 % of statements (web)      |
 | build      | `pnpm build`                                       | 14 s                                   |
 | rules      | `pnpm test:rules`                                  | 7 s                                    |
+| e2e        | `pnpm test:e2e`                                    | about 43 s locally, 1m42s in CI (#303) |
 
 The test count is the sum of two packages: 877 tests in 78 files in `apps/web` and 90 in 9 in `packages/shared`. Coverage is that of `apps/web` (1597 of 1604 statements); `packages/shared` is at 100 %.
 
@@ -75,8 +76,11 @@ that lands, this is the check that breaks first.
 
 ### The checks that must be green before a merge
 
-Five, and these are the names CI gives them: **Lint, Test, Coverage, Build,
-Rules**. All five passed on `81361ea` from a clean worktree.
+Six, and these are the names CI gives them: **Lint, Test, Coverage, Build,
+Rules, E2E**. The first five passed on `81361ea` from a clean worktree; E2E
+was added by #303 (`979b399`) and passed there. Until Viktor adds it to the
+branch protection, E2E is not a required check, but a red E2E is still a red
+pull request: do not merge it.
 
 The merge is gated by a hook rather than by anyone's eye: `gh pr merge` here is
 refused for a pull request that is red, still running, draft, conflicting, or
@@ -93,6 +97,16 @@ They must not collide, because a crew and its Inspector run at the same time.
 | Worker             | 5174                         | 6006     | 8174            |
 | Inspector          | 5175 (and 5176 for a second) | 6007     | 8175            |
 | an issue inspector | 5178                         | —        | 8176            |
+
+An E2E run (`pnpm test:e2e`, #292) takes six ports from the environment
+(`E2E_FIRESTORE_PORT`, `E2E_AUTH_PORT`, `E2E_HUB_PORT`, `E2E_LOGGING_PORT`,
+`E2E_FIRESTORE_WS_PORT`, `E2E_PREVIEW_PORT`), so two runs can share a machine:
+
+| who                 | Firestore / Auth / hub / logging / websocket / preview |
+| ------------------- | ------------------------------------------------------ |
+| CI and the defaults | 8080 / 9099 / 4400 / 4500 / 9150 / 4173                |
+| Worker              | 8180 / 9190 / 4410 / 4510 / 9160 / 5184                |
+| Inspector           | 8181 / 9191 / 4411 / 4511 / 9161 / 5185                |
 
 Vite's own default is 5173; leave it free for whoever is working by hand.
 
