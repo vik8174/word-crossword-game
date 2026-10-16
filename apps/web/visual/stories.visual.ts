@@ -26,6 +26,9 @@ const ENTER_MS = 2000;
 /** Poll on an interval: the default polls on animation frames, which the fake clock holds back. */
 const POLL = { polling: 50 };
 
+/** How long a story may take to render and style before the test says which step stalled. */
+const STEP_TIMEOUT_MS = 15_000;
+
 interface IndexEntry {
   readonly id: string;
   readonly type: string;
@@ -61,7 +64,7 @@ const waitForStoryRendered = (page: Page) =>
       return phase === 'finished' || phase === 'errored' || phase === 'aborted';
     },
     undefined,
-    POLL,
+    { ...POLL, timeout: STEP_TIMEOUT_MS },
   );
 
 /** Refuses `--update-snapshots`: a baseline is only ever one CI rendered. */
@@ -74,43 +77,66 @@ const refuseUpdate = (updateSnapshots: string) => {
 };
 
 /**
+ * The Emotion classes on the story that have no rule in any stylesheet.
+ *
+ * MUI marks each styled element with a `css-<hash>` class, and Emotion inserts
+ * the rule for it into a `<style data-emotion>` sheet. `css-0` is the class
+ * Emotion gives an empty style (a `Box` with no props): it has no rule and
+ * never will, so it is not a missing one.
+ */
+const classesWithoutRule = (page: Page): Promise<string[]> =>
+  page.evaluate(() => {
+    const rules: string[] = [];
+
+    for (const sheet of Array.from(document.styleSheets)) {
+      try {
+        rules.push(Array.from(sheet.cssRules, (rule) => rule.cssText).join('\n'));
+      } catch {
+        // A cross-origin sheet cannot be read, and holds no Emotion rules.
+      }
+    }
+
+    const css = rules.join('\n');
+    const missing = new Set<string>();
+
+    document.querySelectorAll('#storybook-root *').forEach((element) => {
+      element.classList.forEach((name) => {
+        if (/^css-/.test(name) && name !== 'css-0' && !css.includes(`.${name}`)) {
+          missing.add(name);
+        }
+      });
+    });
+
+    return Array.from(missing);
+  });
+
+/**
  * Waits until every Emotion class on the story has its rule in a stylesheet.
  *
- * The signal: MUI marks each styled element with a `css-<hash>` class, and
- * Emotion inserts the rule for it into a `<style data-emotion>` sheet. A shot
- * taken when an element carries the class and the sheet does not hold the rule
- * is a shot of an unstyled element, which is what an emulated, slow CPU
- * produced (no padding, no radius). Checking the rule for the very class on the
- * element, rather than a fixed delay or one known element, covers every story,
- * and a story with no Emotion class (the SVG-only ones) passes at once.
+ * A shot taken when an element carries the class and the sheet does not hold
+ * the rule is a shot of an unstyled element, which is what an emulated, slow
+ * CPU produced (no padding, no radius). Checking the rule for the very class on
+ * the element, rather than a fixed delay or one known element, covers every
+ * story, and a story with no Emotion class (the SVG-only ones) passes at once.
+ * It fails after `STEP_TIMEOUT_MS`, naming the classes that never got a rule,
+ * rather than holding the test until the test timeout.
  */
-const waitForStylesApplied = (page: Page) =>
-  page.waitForFunction(
-    () => {
-      const rules: string[] = [];
+const waitForStylesApplied = async (page: Page) => {
+  const deadline = Date.now() + STEP_TIMEOUT_MS;
+  let missing = await classesWithoutRule(page);
 
-      for (const sheet of Array.from(document.styleSheets)) {
-        try {
-          rules.push(Array.from(sheet.cssRules, (rule) => rule.cssText).join('\n'));
-        } catch {
-          // A cross-origin sheet cannot be read, and holds no Emotion rules.
-        }
-      }
+  while (missing.length > 0 && Date.now() < deadline) {
+    // Real time, not the page's fake clock: the wait is for the browser, not the story.
+    await new Promise((done) => setTimeout(done, 50));
+    missing = await classesWithoutRule(page);
+  }
 
-      const css = rules.join('\n');
-      const classes = new Set<string>();
-
-      document.querySelectorAll('#storybook-root *').forEach((element) => {
-        element.classList.forEach((name) => {
-          if (/^css-/.test(name)) classes.add(name);
-        });
-      });
-
-      return Array.from(classes).every((name) => css.includes(`.${name}`));
-    },
-    undefined,
-    POLL,
-  );
+  if (missing.length > 0) {
+    throw new Error(
+      `${missing.length} Emotion class(es) have no rule after ${STEP_TIMEOUT_MS} ms: ${missing.join(', ')}`,
+    );
+  }
+};
 
 for (const id of readStoryIds()) {
   for (const { width, height } of WIDTHS) {
@@ -130,7 +156,10 @@ for (const id of readStoryIds()) {
       await page.evaluate(() => document.fonts.ready);
       // Run the screen-enter timer out, then hold the clock still.
       await page.clock.runFor(ENTER_MS + 500);
-      await page.waitForFunction(() => document.querySelector('.enter') === null, undefined, POLL);
+      await page.waitForFunction(() => document.querySelector('.enter') === null, undefined, {
+        ...POLL,
+        timeout: STEP_TIMEOUT_MS,
+      });
       await page.clock.setFixedTime(FIXED_TIME);
       await page.evaluate(() => document.fonts.ready);
 
