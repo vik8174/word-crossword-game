@@ -31,6 +31,20 @@ afterEach(() => {
 });
 
 describe('App', () => {
+  it('ends a render error on the crash page with the frame still above it, on every route', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    for (const path of ['/', '/create', '/room/abc']) {
+      const { unmount } = open(`${path}?__crash_probe__`);
+
+      expect(
+        screen.getByRole('heading', { name: 'Something went wrong on our side' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('banner')).toBeInTheDocument();
+      unmount();
+    }
+  });
+
   it('renders the home route by default, called Across the Street', () => {
     render(<App />);
 
