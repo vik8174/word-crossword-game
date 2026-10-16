@@ -192,7 +192,10 @@ h1,h2,h3,p{margin:0}
 .word-list button{display:flex;align-items:baseline;gap:12px;width:100%;background:none;border:0;padding:10px 2px;text-align:left;cursor:pointer;color:var(--ink);min-height:44px}
 .word-list .ref{width:74px;flex:none;color:var(--slate);font-size:15px}
 .word-list .word{font-style:italic;font-size:22px}
-.word-list .state{margin-left:auto;font-size:15px;color:var(--slate)}
+.word-list .ref{margin-right:auto}
+.word-list .word,.word-list .slots{order:2;text-align:right}
+.word-list .state{order:1;font-size:15px;color:var(--slate)}
+.word-list .state:empty{display:none}
 .word-list .done .state{color:var(--spruce);font-weight:700}
 .word-list .done .state::before{content:"✓ "}
 .word-list .slots{letter-spacing:.2em;font-size:20px}
