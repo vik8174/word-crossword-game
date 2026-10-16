@@ -53,8 +53,16 @@ writeFileSync(
   ),
 );
 
-const args = process.argv.slice(2).map((arg) => `'${arg.replaceAll("'", "'\\''")}'`);
-const inner = `pnpm --filter web run test:e2e ${args.join(' ')}`;
+// `--lighthouse` runs the Lighthouse CI job (apps/web/lighthouserc.cjs, #290)
+// inside the same emulators instead of the Playwright tests.
+const [first, ...rest] = process.argv.slice(2);
+const lighthouse = first === '--lighthouse';
+const args = (lighthouse ? rest : process.argv.slice(2)).map(
+  (arg) => `'${arg.replaceAll("'", "'\\''")}'`,
+);
+const inner = lighthouse
+  ? `pnpm --filter web run lighthouse ${args.join(' ')}`
+  : `pnpm --filter web run test:e2e ${args.join(' ')}`;
 
 let status = 1;
 
