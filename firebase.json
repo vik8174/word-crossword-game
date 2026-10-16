@@ -21,7 +21,11 @@
         "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
       },
       {
-        "source": "{/room/**,/create}",
+        "source": "/room/**",
+        "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
+      },
+      {
+        "source": "/create",
         "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }]
       }
     ]

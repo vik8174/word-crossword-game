@@ -27,8 +27,10 @@ const sourcesOf = (rule: HeaderRule): string[] => {
 
 describe('firebase.json X-Robots-Tag', () => {
   it('is noindex, on rooms and on /create', () => {
-    expect(noindexRules).toHaveLength(1);
-    expect(noindexRules[0]?.headers).toEqual([{ key: 'X-Robots-Tag', value: 'noindex' }]);
+    expect(noindexRules).toHaveLength(2);
+    for (const rule of noindexRules) {
+      expect(rule.headers).toEqual([{ key: 'X-Robots-Tag', value: 'noindex' }]);
+    }
     expect(noindexRules.flatMap(sourcesOf).sort()).toEqual(['/create', '/room/**']);
   });
 
