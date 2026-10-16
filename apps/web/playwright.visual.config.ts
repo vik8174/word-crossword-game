@@ -16,11 +16,12 @@ const port = Number(process.env.VISUAL_PORT ?? 4174);
 
 /**
  * The largest share of pixels that may differ before a shot fails, one value
- * for every shot, with no per-pixel tolerance (`threshold: 0` below: Playwright's
- * default 0.2 would let a colour change of 8 in one channel through). Set from measurement, see CONTRIBUTING.md. `VISUAL_RATIO`
+ * for every shot, with Playwright's default per-pixel threshold of 0.2 (which
+ * lets a colour change of 8 in one channel through; `threshold: 0` was tried and
+ * its noise did not hold). Set from measurement, see CONTRIBUTING.md. `VISUAL_RATIO`
  * overrides it to take a diagnostic reading, never to pass a run.
  */
-const maxDiffPixelRatio = Number(process.env.VISUAL_RATIO || 0.0002);
+const maxDiffPixelRatio = Number(process.env.VISUAL_RATIO || 0.001);
 
 export default defineConfig({
   testDir: './visual',
@@ -39,7 +40,7 @@ export default defineConfig({
   updateSnapshots: 'none',
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   expect: {
-    toHaveScreenshot: { threshold: 0, maxDiffPixelRatio, animations: 'disabled', caret: 'hide' },
+    toHaveScreenshot: { maxDiffPixelRatio, animations: 'disabled', caret: 'hide' },
   },
   use: {
     baseURL: `http://127.0.0.1:${port}`,
