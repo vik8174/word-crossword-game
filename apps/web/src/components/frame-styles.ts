@@ -66,5 +66,6 @@ export const STATUS_SX = {
   minWidth: 0,
   color: STREET.slate,
   textAlign: 'center',
+  textWrap: 'balance',
   [FRAME_PHONE]: { display: 'none' },
 } as const;
