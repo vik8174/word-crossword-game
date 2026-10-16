@@ -40,11 +40,11 @@ if (
 
 let status = 0;
 for (const preset of ['mobile', 'desktop']) {
-  status ||= run('pnpm', ['exec', 'lhci', 'autorun', '--config=./lighthouserc.cjs'], {
+  // Not `status ||= run(...)`: that skips the run once an earlier preset has failed.
+  const failed = run('pnpm', ['exec', 'lhci', 'autorun', '--config=./lighthouserc.cjs'], {
     LH_PRESET: preset,
-  })
-    ? 1
-    : 0;
+  });
+  if (failed) status = 1;
   try {
     const manifest = JSON.parse(
       readFileSync(resolve(web, `.lighthouseci/${preset}/manifest.json`), 'utf8'),
