@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The wordmark's tile (design/templates/state-tree.html, .wordmark::before): a tile with an ink ring and an ink shadow, turned -6 degrees. -->
+  <g transform="translate(15.7 15.7) rotate(-6) scale(1.35)">
+    <rect x="-6" y="-6" width="16" height="16" rx="3" fill="#1B2D38"/>
+    <rect x="-9.5" y="-9.5" width="19" height="19" rx="4.5" fill="#1B2D38"/>
+    <rect x="-8" y="-8" width="16" height="16" rx="3" fill="#FAFBFA"/>
+  </g>
+</svg>
