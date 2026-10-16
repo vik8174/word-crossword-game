@@ -213,32 +213,6 @@ export const screenAfterRefusedJoin = (screen: RoomScreen, wasRefused: boolean):
   wasRefused && screen.kind === 'join' ? { kind: 'unavailable', reason: 'refused' } : screen;
 
 /**
- * The screen to show while the owner's deal has not been answered.
- *
- * The database shows a write to the client that made it before the server has
- * judged it, so a deal the rules will refuse still arrives first as a room that
- * is `playing`. The game screen is not shown for it: the lobby stays, as it was
- * when the deal was sent, so that the deal's outcome has a screen to be shown
- * on. Only a `playing` screen is held, and only for the lobby the deal came
- * from: any other screen is passed over (issue #282).
- *
- * @param screen - The screen the room document alone calls for
- * @param heldLobby - The lobby room a deal is waiting on, or `null` if none is
- * @returns The screen to render
- *
- * @example
- * screenWhileDealing({ kind: 'playing', room, viewerId }, lobbyRoom);
- * // { kind: 'lobby', room: lobbyRoom, viewerId }
- */
-export const screenWhileDealing = (
-  screen: RoomScreen,
-  heldLobby: RoomDocument | null,
-): RoomScreen =>
-  heldLobby !== null && screen.kind === 'playing'
-    ? { kind: 'lobby', room: heldLobby, viewerId: screen.viewerId }
-    : screen;
-
-/**
  * Whether the viewer of this screen has a seat left to invite somebody into.
  *
  * Two facts, and the link is worth showing only when both hold: the viewer is

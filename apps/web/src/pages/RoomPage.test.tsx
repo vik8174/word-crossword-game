@@ -1075,6 +1075,45 @@ describe('RoomPage', () => {
       expect(screen.queryByRole('group', { name: /crossword grid/i })).not.toBeInTheDocument();
     });
 
+    it('is not opened by a refusal that lands before the optimistic room has been drawn', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const answers = holdTheDeal();
+      const game = watchForTheGame();
+      await openAsOwnerAndPress();
+
+      // The room and the refusal in the same turn, so that the refusal is
+      // handled before the optimistic `playing` has rendered, and before any
+      // effect of that render has run.
+      await act(async () => {
+        emitRoom({ exists: () => true, data: () => optimisticallyPlaying() });
+        answers[0]?.reject(REFUSED_BY_RULES);
+      });
+      await emit(lobbyRoom());
+
+      expect(await screen.findByText(/could not start the game/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /start the game/i })).toBeEnabled();
+      expect(game.seen()).toBe(false);
+      game.stop();
+    });
+
+    it('is not opened either when the refusal is handled before the optimistic room arrives', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const answers = holdTheDeal();
+      const game = watchForTheGame();
+      await openAsOwnerAndPress();
+
+      await act(async () => {
+        answers[0]?.reject(REFUSED_BY_RULES);
+      });
+      await emit(optimisticallyPlaying());
+      await emit(lobbyRoom());
+
+      expect(await screen.findByText(/could not start the game/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /start the game/i })).toBeEnabled();
+      expect(game.seen()).toBe(false);
+      game.stop();
+    });
+
     it('deals again after a refusal, and opens the game once the server has confirmed it', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
       const answers = holdTheDeal();

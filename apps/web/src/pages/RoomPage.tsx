@@ -13,16 +13,15 @@ import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import { ScreenEnter } from '../components/ScreenEnter';
 import { WaitingMark } from '../components/WaitingMark';
 import { MOTION_PLAY_CSS } from '../motion-play-styles';
+import { createDealGate } from '../rooms/deal-gate';
 import { isTeacherOf, type RoomDocument } from '../rooms/room-document';
 import {
   hasSomebodyToInvite,
   type RoomScreen,
   roomScreenFor,
   screenAfterRefusedJoin,
-  screenWhileDealing,
 } from '../rooms/room-screen';
 import type { StartGameInput } from '../rooms/room-service';
-import { useHeldDeal } from '../rooms/use-held-deal';
 import { usePresenceHeartbeat } from '../rooms/use-presence-heartbeat';
 import { useRoomConnection } from '../rooms/use-room-connection';
 import { funnelScreenFor } from '../telemetry/funnel';
@@ -151,7 +150,10 @@ const RoomScreenView = ({
  * a snapshot lands (issue #50).
  */
 const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
-  const connection = useRoomConnection(roomId);
+  // One gate for the life of this screen: it sits between the room subscription
+  // and what is shown, so a deal the server has not answered cannot open the game.
+  const [gate] = useState(() => createDealGate());
+  const connection = useRoomConnection(roomId, gate);
   const [refusedRoom, setRefusedRoom] = useState<RoomDocument | null>(null);
   const room = connection.status === 'ready' ? connection.room : null;
 
@@ -177,15 +179,9 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
   // and the screen goes back to being what the document says. A flag would have
   // to be cleared by hand, and a visitor whose seat freed up again would sit
   // behind a stale notice.
-  //
-  // A deal is the one write whose screen waits for the server (issue #282): the
-  // room goes to `playing` the moment it is sent and back to `lobby` after the
-  // refusal if the rules turn it down, so the game screen is not shown until the
-  // deal is confirmed.
-  const { heldLobby, deal } = useHeldDeal(room);
-  const screen = screenWhileDealing(
-    screenAfterRefusedJoin(roomScreenFor(connection, now), room !== null && room === refusedRoom),
-    heldLobby,
+  const screen = screenAfterRefusedJoin(
+    roomScreenFor(connection, now),
+    room !== null && room === refusedRoom,
   );
 
   usePresenceHeartbeat(roomId, connection);
@@ -223,7 +219,7 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
             ) : undefined
           }
           onJoinRefused={() => setRefusedRoom(latestRoom.current)}
-          deal={deal}
+          deal={gate.deal}
         />
       </ScreenEnter>
     </>

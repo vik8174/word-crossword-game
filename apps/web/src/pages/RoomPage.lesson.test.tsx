@@ -462,6 +462,34 @@ describe('a lesson deal the rules refuse', () => {
     expect(writes().filter((write) => write.status === 'completed')).toEqual([]);
   });
 
+  it('sends no completion when the refusal lands before the optimistic room has been drawn', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const answers = holdTheDeal();
+    let gameSeen = false;
+    const observer = new MutationObserver(() => {
+      gameSeen ||= boardIsOnScreen();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    await openLessonAs(TEACHER_ID, markedLobby());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Deal the words' }));
+    await waitFor(() => expect(writes().filter((write) => !isPresenceMark(write))).toHaveLength(1));
+
+    // The optimistic room and the refusal in the same turn: the refusal is
+    // handled before that room has rendered, and before its effects have run.
+    await act(async () => {
+      emitRoom({ exists: () => true, data: () => optimisticallyPlaying() });
+      answers[0]?.reject(REFUSED_BY_RULES);
+    });
+    await emit(markedLobby());
+
+    expect(await screen.findByText('Could not start the game')).toBeInTheDocument();
+    expect(gameSeen).toBe(false);
+    expect(writes().filter((write) => !isPresenceMark(write))).toHaveLength(1);
+    expect(writes().filter((write) => write.status === 'completed')).toEqual([]);
+    observer.disconnect();
+  });
+
   it('opens the lesson once the server confirms the deal, with "Dealing the words" until then', async () => {
     const answers = holdTheDeal();
     await openLessonAs(TEACHER_ID, storedLesson(BOTH_STUDENTS));

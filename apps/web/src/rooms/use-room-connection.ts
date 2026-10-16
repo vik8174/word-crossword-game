@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import type { DealGate } from './deal-gate';
 import type { RoomDocument } from './room-document';
 import { signInPlayer, subscribeToRoom } from './room-service';
 
@@ -26,12 +27,14 @@ export type RoomConnection =
  * would make the very first read fail.
  *
  * @param roomId - Id of the room from the invite link
+ * @param gate - Every snapshot passes through it, so a deal that is not answered yet
+ * keeps the game from opening (see {@link DealGate})
  * @returns The current state of the connection, re-rendering on every update
  *
  * @example
- * const connection = useRoomConnection(roomId);
+ * const connection = useRoomConnection(roomId, gate);
  */
-export const useRoomConnection = (roomId: string): RoomConnection => {
+export const useRoomConnection = (roomId: string, gate: DealGate): RoomConnection => {
   const [playerId, setPlayerId] = useState<string | null>(null);
   const [connection, setConnection] = useState<RoomConnection>({ status: 'connecting' });
 
@@ -67,13 +70,17 @@ export const useRoomConnection = (roomId: string): RoomConnection => {
 
     return subscribeToRoom(roomId, {
       onRoom: (room) =>
-        setConnection(room === null ? { status: 'missing' } : { status: 'ready', playerId, room }),
+        gate.admit(room, (shown) =>
+          setConnection(
+            shown === null ? { status: 'missing' } : { status: 'ready', playerId, room: shown },
+          ),
+        ),
       onError: (error) => {
         console.error('Following the room failed', error);
         setConnection({ status: 'failed' });
       },
     });
-  }, [playerId, roomId]);
+  }, [playerId, roomId, gate]);
 
   return connection;
 };
