@@ -241,6 +241,7 @@ h1,h2,h3,p{margin:0}
 .zone.empty{display:block}
 .device[data-layout="phone"] .zone.empty{display:none}
 .lobby-grid{display:grid;gap:56px;grid-template-columns:420px minmax(0,1fr);align-items:start}
+.device[data-layout="wide"] .lobby-picture svg{width:auto;max-width:100%;max-height:calc(var(--device-h) - 200px);margin:0 auto}
 .device[data-layout="tablet"] .lobby-grid,.device[data-layout="phone"] .lobby-grid{grid-template-columns:minmax(0,1fr);gap:28px}
 .device[data-layout="tablet"] .lobby-grid .lobby-picture,.device[data-layout="phone"] .lobby-grid .lobby-picture{order:-1}
 
@@ -438,7 +439,7 @@ html.bare .dev-wrap{box-shadow:none}
   var WHITE = "#FBF7EE", SHADE = "#EDE3D2", TERRA = "#C2603A", AZUL = "#2E5C8A", GERA = "#C8412E", POT = "#B4643C", LEAF = "#3F7A4E";
   var SKIN = ["#E9B892", "#C08A62", "#8E5E40"], HAIR = ["#3B2A20", "#1B2D38", "#A8AFB2"];
   var P0 = [196, 222], P2 = [444, 236];
-  var CROPS = { full: "0 30 640 490", top: "0 40 640 312", band: "0 130 640 226" };
+  var CROPS = { full: "0 30 640 490", ground: "0 30 640 498", top: "0 40 640 312", band: "0 130 640 226" };
 
   function along(t, sag) {
     var P1 = [320, 300 + sag], u = 1 - t;
@@ -982,13 +983,13 @@ html.bare .dev-wrap{box-shadow:none}
 
     var label = none ? "Both balconies still empty, the teacher watching from the house at the end of the street"
       : (waiting ? "Your balcony, and the one across the street still empty" : "Both balconies taken, the line strung between them");
-    var pic = '<div class="lobby-picture stack-tight">' + scene({ left: none ? "empty" : "here", right: waiting ? "empty" : "here", line: none ? "none" : (waiting ? "loose" : "taut"), crop: "top", mood: waiting ? "wait" : "wave",
+    var pic = '<div class="lobby-picture stack-tight">' + scene({ left: none ? "empty" : "here", right: waiting ? "empty" : "here", line: none ? "none" : (waiting ? "loose" : "taut"), crop: layout() === "wide" ? "ground" : "top", mood: waiting ? "wait" : "wave",
         teacher: lesson() ? (variant === "teacheraway" ? "away" : "here") : "", label: label }) +
       '<p class="hint" style="text-align:center">The crossword: ' + roomWords().length + ' words, half of them for each ' + (lesson() ? "player" : "of you") + '.</p></div>';
     var left = '<div class="stack">' + notice + players({ away: variant === "away" ? "self" : (variant === "teacheraway" ? "teacher" : ""), open: waiting, none: none }) + panel + '</div>';
     return head({ status: esc(status) }) + '<div class="body"><div class="lobby-grid">' + left + pic + '</div></div>';
   }
-  var LOBBY_NOTE = "The board is not shown before the deal: which words are whose is decided by it. The drawing says who is in: the second balcony fills when the second player arrives, and in a lesson the teacher is at the end of the street. In a lesson the action is named for what it does, “Deal the words”.";
+  var LOBBY_NOTE = "The board is not shown before the deal: which words are whose is decided by it. The drawing says who is in: the second balcony fills when the second player arrives, and in a lesson the teacher is at the end of the street. In a lesson the action is named for what it does, “Deal the words”. On a wide window the drawing shows the houses whole, down to the street, and grows to the height the window has (it never makes the page scroll); on a tablet and a phone it keeps the top crop, above the players.";
   S.lobby = { group: "The lobby", label: "Lobby · ready", note: LOBBY_NOTE, render: function () { return lobby("ready"); } };
   S["lobby/waiting"] = { group: "The lobby", sub: true, label: "…one more needed", note: "The invite link is offered to the owner alone, and only while there is a free seat. The balcony across the street is empty and the line hangs loose.", render: function () { return lobby("waiting"); } };
   S["lobby/copied"] = { group: "The lobby", sub: true, label: "…link copied", note: "The copy answers beside its own button, in a line read out as it appears.", render: function () { return lobby("copied"); } };
