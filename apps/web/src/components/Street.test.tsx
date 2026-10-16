@@ -73,6 +73,14 @@ describe('Street: who is on the balconies', () => {
     expect(people({ label: LABEL, left: 'empty', right: 'empty', teacher: 'here' })).toBe(1);
   });
 
+  it('shuts the left balcony as it shuts the right: nobody on it and no swinging shutters', () => {
+    expect(people({ label: LABEL, left: 'shut' })).toBe(1);
+    expect(people({ label: LABEL, left: 'shut', right: 'shut' })).toBe(0);
+
+    const svg = svgOf(render(<Street label={LABEL} left="shut" right="shut" />).container);
+    expect(svg.querySelectorAll('.shutter')).toHaveLength(0);
+  });
+
   it('shows an empty left balcony as a dark window and a lit one as a neighbour’s', () => {
     const archFill = (left?: 'here' | 'empty') =>
       svgOf(render(<Street label={LABEL} left={left} />).container)

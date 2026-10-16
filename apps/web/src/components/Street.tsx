@@ -29,8 +29,11 @@ const {
   hair: HAIR,
 } = DRAWING_PALETTE;
 
-/** The left-hand balcony: a neighbour, or nobody yet (a lesson's first lobby). */
-export type StreetLeft = 'here' | 'empty';
+/**
+ * The left-hand balcony: a neighbour, nobody yet (a lesson's first lobby), or
+ * shutters closed (a page that could not be opened or drawn, issue #294).
+ */
+export type StreetLeft = 'here' | 'empty' | 'shut';
 /** The right-hand balcony: a neighbour, curtains drawn, nobody yet, or shutters closed. */
 export type StreetRight = 'here' | 'away' | 'empty' | 'shut';
 /** The line between the cans. */
@@ -68,7 +71,8 @@ export type StreetProps = LineProps & {
   /**
    * The left-hand balcony. `here` unless given. `empty` is a balcony nobody has
    * come out on yet: its window is dark and no neighbour stands in it, which is
-   * the teacher's first lobby, before the first student has joined.
+   * the teacher's first lobby, before the first student has joined. `shut` is
+   * its shutters closed over the window, as on `right`.
    */
   readonly left?: StreetLeft;
   /** The right-hand balcony. `here` unless given. */
@@ -178,8 +182,14 @@ export const Street = ({
         <Eave x={14} y={100} w={216} />
         <WallPot x={44} y={150} />
         <WallPot x={76} y={158} />
-        <Shutters x1={118} x2={198} y1={168} y2={290} />
-        <path d={leftArch} fill={left === 'here' ? LIT : DARK} />
+        {left === 'shut' ? (
+          <ClosedShutters path={leftArch} cx={158} y1={160} y2={290} />
+        ) : (
+          <>
+            <Shutters x1={118} x2={198} y1={168} y2={290} />
+            <path d={leftArch} fill={left === 'here' ? LIT : DARK} />
+          </>
+        )}
         {left === 'here' && (
           <g className="who" stroke="none">
             <Person

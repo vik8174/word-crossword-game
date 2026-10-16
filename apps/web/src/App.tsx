@@ -1,14 +1,18 @@
 import CssBaseline from '@mui/material/CssBaseline';
 import GlobalStyles from '@mui/material/GlobalStyles';
 import { ThemeProvider } from '@mui/material/styles';
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { Suspense } from 'react';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { Frame } from './components/Frame';
 import { FrameSlotProvider } from './components/FrameSlotProvider';
+import { RouteErrorBoundary } from './components/RouteErrorBoundary';
 import { HomePage } from './pages/HomePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PageLoading } from './pages/PageLoading';
 import { ROOM_ROUTE_PATTERN } from './rooms/room-link';
+import { lazyRoute } from './routing/chunk-load';
+import { CrashProbe } from './routing/CrashProbe';
+import { routePatternOf } from './routing/route-pattern';
 import { usePageView } from './telemetry/use-page-view';
 import { MOTION_CSS } from './motion-styles';
 import { theme } from './theme';
@@ -21,11 +25,15 @@ import { theme } from './theme';
  * which the landing page has any use for (issue #92). The landing page and the
  * catch-all stay in the first chunk — they are a heading and a button each, and
  * the catch-all is what an address nobody planned for falls back to.
+ *
+ * `lazyRoute`, not `lazy`: a chunk that cannot be fetched (a deploy took it
+ * away from a tab that still wants it) is then a `ChunkLoadError`, which the
+ * boundary in `RoutedPages` answers instead of leaving a white page (issue #294).
  */
-const CreateRoomPage = lazy(() =>
+const CreateRoomPage = lazyRoute(() =>
   import('./pages/CreateRoomPage').then((module) => ({ default: module.CreateRoomPage })),
 );
-const RoomPage = lazy(() =>
+const RoomPage = lazyRoute(() =>
   import('./pages/RoomPage').then((module) => ({ default: module.RoomPage })),
 );
 
@@ -44,19 +52,30 @@ const GATE_PATH = '/';
  * where each page claimed the picture it stood in front of. The frame is not
  * in here either: it is mounted beside this, once, so it is on screen while a
  * page is fetched and does not move with the routes (issue #245).
+ *
+ * The error boundary stands around the routes and under the frame, so a screen
+ * that cannot be fetched or breaks while it draws ends on a page of its own
+ * with the frame still above it, instead of a white one (issue #294).
  */
 const RoutedPages = () => {
   usePageView();
+  const { pathname } = useLocation();
 
   return (
-    <Suspense fallback={<PageLoading />}>
-      <Routes>
-        <Route path={GATE_PATH} element={<HomePage />} />
-        <Route path="/create" element={<CreateRoomPage />} />
-        <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
+    <RouteErrorBoundary
+      route={routePatternOf(pathname)}
+      release={import.meta.env.VITE_SENTRY_RELEASE}
+    >
+      <Suspense fallback={<PageLoading />}>
+        <CrashProbe />
+        <Routes>
+          <Route path={GATE_PATH} element={<HomePage />} />
+          <Route path="/create" element={<CreateRoomPage />} />
+          <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </RouteErrorBoundary>
   );
 };
 
