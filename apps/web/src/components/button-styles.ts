@@ -82,7 +82,7 @@ const PRESSED_SHADOW = `0 0 0 ${RING} ${STREET.ink}, 1px 1px 0 0 ${STREET.ink}`;
 
 /** Size, padding and label weight of each kind (template lines 120, 128, 129). */
 const SIZE = {
-  loud: { fontSize: 20, minHeight: 52, padding: '0 28px', fontWeight: 700 },
+  loud: { fontSize: 20, minHeight: 52, padding: '0 29px', fontWeight: 700 },
   quiet: { fontSize: 17, minHeight: 44, padding: '0 18px', fontWeight: 700 },
   link: { fontSize: 17, minHeight: 44, padding: '0 4px', fontWeight: 400 },
 } as const;
