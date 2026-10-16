@@ -26,3 +26,4 @@ firebase.e2e.*.generated.json
 # Playwright output
 apps/web/test-results/
 apps/web/playwright-report/
+dist-e2e-*/

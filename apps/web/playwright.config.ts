@@ -10,6 +10,8 @@ import { defineConfig } from '@playwright/test';
  * server built from a real `.env`.
  */
 const previewPort = Number(process.env.E2E_PREVIEW_PORT ?? 4173);
+/** Keyed by the preview port, so two runs from one worktree do not share a build. */
+const outDir = `dist-e2e-${previewPort}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -29,7 +31,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { browserName: 'chromium' } }],
   webServer: {
-    command: `pnpm exec vite build --mode e2e && pnpm exec vite preview --mode e2e --host 127.0.0.1 --port ${previewPort} --strictPort`,
+    command: `pnpm exec vite build --mode e2e --outDir ${outDir} --emptyOutDir && pnpm exec vite preview --mode e2e --outDir ${outDir} --host 127.0.0.1 --port ${previewPort} --strictPort`,
     url: `http://127.0.0.1:${previewPort}`,
     reuseExistingServer: false,
     timeout: 240_000,

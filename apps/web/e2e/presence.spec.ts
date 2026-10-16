@@ -75,9 +75,15 @@ test.describe('presence, in a pair lobby', () => {
     await owner.page.clock.fastForward(SILENCE_WHEN_AWAY_MS - 40_000);
     await expect(bobRow.getByText(/away for/)).toBeVisible();
 
-    // The guest comes back, and the owner's clock is set back to the real time,
-    // so the guest's fresh mark is judged against the moment it was written.
+    // The guest comes back. Its page writes a fresh mark as soon as the queued
+    // write lands (within one 15 s period), and only then is the owner's clock
+    // set back to real time: the line must clear because the guest is back, not
+    // because the clock was reset. If the guest stays offline no newer mark ever
+    // appears, and this wait fails the test.
     await guest.context.setOffline(false);
+    await expect
+      .poll(() => lastMarkOf(roomId, 'Bob'), { timeout: 30_000, intervals: [1000] })
+      .toBeGreaterThan(lastMark);
     await owner.page.clock.setSystemTime(Date.now());
     await expect(bobRow.getByText(/away for/)).toBeHidden({ timeout: 30_000 });
   });
