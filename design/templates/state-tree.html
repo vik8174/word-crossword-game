@@ -424,7 +424,7 @@ html.bare .dev-wrap{box-shadow:none}
      from its balcony.
      The people react to the room: the one who explains talks and gestures, the one who
      listens smiles, both cheer when the crossword is full.
-       left:   "here" | "empty" (nobody yet: a lesson's first lobby)
+       left:   "here" | "empty" (nobody yet: a lesson's first lobby) | "shut" (shutters closed: a page that could not be opened)
        right:  "here" | "away" (curtains drawn) | "empty" (nobody yet) | "shut" (shutters closed)
        line:   "taut" | "slack" (ended early) | "loose" (one end only) | "none"
        mood:   "talk" | "wave" | "wait" | "cheer" | "calm"
@@ -620,7 +620,8 @@ html.bare .dev-wrap{box-shadow:none}
     s += '<rect x="46" y="78" width="24" height="34" fill="' + WHITE + '"/><rect x="42" y="72" width="32" height="8" fill="' + TERRA + '"/>' +
       '<rect x="24" y="112" width="196" height="412" fill="' + WHITE + '"/>' + eave(14, 100, 216) +
       wallPot(44, 150) + wallPot(76, 158) +
-      shutters(118, 198, 168, 290) + '<path d="' + leftArch + '" fill="' + (left === "here" ? LIT : DARK) + '"/>';
+      (left === "shut" ? closedShutters(leftArch, 158, 160, 290)
+        : shutters(118, 198, 168, 290) + '<path d="' + leftArch + '" fill="' + (left === "here" ? LIT : DARK) + '"/>');
     if (left === "here") { s += '<g class="who" stroke="none">' + person({ x: 160, y: 210, facing: 1, face: mood.L[0], arm: mood.L[1], skin: SKIN[0], hair: HAIR[0], shirt: TERRA, can: P0 }) + '</g>'; }
     s += rail(112, 204, 256) + geraniums(124, 256) +
       rejas(44, 340, false) + rejas(134, 340, true) + azulejoDoor(70, 466);
@@ -919,6 +920,25 @@ html.bare .dev-wrap{box-shadow:none}
           scene({ right: "shut", line: "none", crop: "top", mood: "calm", teacher: "", label: "A balcony across the street with its shutters closed" }));
       } };
   });
+  /* a page of the app could not be fetched, most often because a new version went online
+     while this tab held the old one (issue #294). The first failure reloads the page once,
+     with nothing drawn; this is what shows if the reload did not help */
+  S.reload = { group: "Turned away", sub: true, label: "page did not load",
+    note: "Not the room's doing: the browser could not fetch this part of the app, most often because a new version went online while the tab was open. The app first reloads by itself, once, and nothing is drawn for that. This shows only when the reload did not help. It is an error, but the way forward is the same reload, by hand, and nothing in a room is lost by it. The frame above stays, because it never left the screen.",
+    render: function () {
+      return column(msg("error", "This page could not be opened", "The game may have been updated while this tab was open, or the connection dropped. Reload the page to get the current version. A room you are in is still there.") +
+        '<div>' + go("Reload the page", "home") + '</div>',
+        scene({ left: "shut", right: "shut", line: "none", crop: "top", mood: "calm", teacher: "", label: "A quiet street, the shutters closed on both balconies" }));
+    } };
+  /* anything else that breaks the app while it draws a screen (issue #294): the one page a
+     crash ends on, wherever it happened, instead of a white page */
+  S.crash = { group: "Turned away", sub: true, label: "something broke",
+    note: "Any error the app did not expect while drawing a screen, on any page, ends here instead of on a white page. The street keeps its good humour: both balconies are shuttered, as on the state above, but the line between them is still strung and sags under four tiles that spell “oops”. The fault is ours, so it says so, and it is reported to us without the player doing anything. Two ways forward: reload where they were (loud), or go back to the home page (quiet). A page that could not be fetched is the state above, not this one.",
+    render: function () {
+      return column(msg("error", "Something went wrong on our side", "The game ran into a problem it could not get past. We have been told about it. Reload the page to carry on; a room you are in is still there.") +
+        '<div class="row-btns">' + go("Reload the page", "home") + go("Go to the home page", "home", "quiet") + '</div>',
+        scene({ left: "shut", right: "shut", line: "slack", letters: ["o", "o", "p", "s"], crop: "top", mood: "calm", teacher: "", label: "Both balconies shuttered, the line between them sagging under four tiles that spell oops" }));
+    } };
 
   /* ---- the lobby ---- */
   function lobby(variant) {
@@ -1075,7 +1095,7 @@ html.bare .dev-wrap{box-shadow:none}
   /* ============================ the map ============================ */
   var ORDER = ["home", "create", "create/errors", "create/nogrid", "create/unplaced", "create/creating", "create/failed",
     "connecting", "join", "join/joining", "join/failed",
-    "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection",
+    "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection", "reload", "crash",
     "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/nostudent", "lobby/teacheraway",
     "playing", "playing/answered", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
     "finished", "closed-early"];
