@@ -1,3 +1,6 @@
+import useMediaQuery from '@mui/material/useMediaQuery';
+
+import { FROM_WIDE } from './frame-styles';
 import { Street } from './Street';
 import { type LessonView, lobbyStreetLabel, teacherDrawnFor } from './street-labels';
 
@@ -29,7 +32,9 @@ interface LobbyStreetProps {
  * their mark is fresh as this reader sees it and with the curtains drawn when it
  * is old. On the teacher's own screen they are always at it.
  *
- * Cropped to the top.
+ * Cropped to the top, and on a wide window (`FROM_WIDE`, width only) to the
+ * ground: the houses whole, down to the street. One drawing in the DOM, whose
+ * crop follows the window.
  *
  * @param props.players - How many players are in
  * @param props.seatFreedBySilence - The second player's seat has been freed by silence
@@ -42,6 +47,7 @@ interface LobbyStreetProps {
 export const LobbyStreet = ({ players, seatFreedBySilence, lesson }: LobbyStreetProps) => {
   const label = lobbyStreetLabel({ players, seatFreedBySilence, lesson });
   const teacher = lesson === undefined ? undefined : teacherDrawnFor(lesson);
+  const crop = useMediaQuery(FROM_WIDE.replace('@media ', '')) ? 'ground' : 'top';
   const left = players === 0 ? 'empty' : 'here';
 
   if (players === 0) {
@@ -51,7 +57,7 @@ export const LobbyStreet = ({ players, seatFreedBySilence, lesson }: LobbyStreet
         right="empty"
         line="none"
         mood="wait"
-        crop="top"
+        crop={crop}
         teacher={teacher}
         label={label}
       />
@@ -60,7 +66,7 @@ export const LobbyStreet = ({ players, seatFreedBySilence, lesson }: LobbyStreet
 
   if (players < 2) {
     return (
-      <Street right="empty" line="loose" mood="wait" crop="top" teacher={teacher} label={label} />
+      <Street right="empty" line="loose" mood="wait" crop={crop} teacher={teacher} label={label} />
     );
   }
 
@@ -69,7 +75,7 @@ export const LobbyStreet = ({ players, seatFreedBySilence, lesson }: LobbyStreet
       right={seatFreedBySilence ? 'away' : 'here'}
       line="taut"
       mood="wave"
-      crop="top"
+      crop={crop}
       teacher={teacher}
       label={label}
     />
