@@ -127,6 +127,7 @@ export const buttonSx = (state: ButtonStyleState): SxProps<Theme> => {
     textDecoration: state.kind === 'link' ? 'underline' : 'none',
     ...(state.kind === 'link' && {
       textUnderlineOffset: '4px',
+      visibility: 'hidden',
       textDecorationThickness: '1px',
     }),
     cursor: state.loading ? 'progress' : state.disabled ? 'not-allowed' : 'pointer',
