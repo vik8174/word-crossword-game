@@ -15,21 +15,35 @@
  * file with the new measurement beside it; LOWERING one needs Viktor's word on
  * that pull request (CONTRIBUTING.md, "Lighthouse").
  *
- * CALIBRATION (filled in from CI, see below): PENDING.
+ * CALIBRATION. Five runs of the Lighthouse job on one unchanged commit,
+ * abc3543 (2026-10-16, GitHub's ubuntu-latest runner, Playwright Chromium
+ * 156.0.8078.4, Lighthouse 12.6.1 from @lhci/cli 0.15.1, the `e2e` build with
+ * Sentry and Analytics off), the median-run score of each, as the job printed
+ * them (`SCORES` lines) :
+ *
+ *   mobile  /        performance .92 .92 .92 .92 .92   accessibility 1 (x5)  best-practices .96 (x5)  seo .82 (x5)
+ *   mobile  /create  performance .73 .73 .73 .74 .73   accessibility 1 (x5)  best-practices .96 (x5)  seo .82 (x5)
+ *   desktop /        performance 1 (x5)                accessibility 1 (x5)  best-practices .96 (x5)  seo .82 (x5)
+ *   desktop /create  performance .99 (x5)              accessibility 1 (x5)  best-practices .96 (x5)  seo .82 (x5)
+ *
+ * Each threshold below is the lowest of the five minus .05. The scores did not
+ * move between runs, so the margin is the whole allowance. The best-practices
+ * .96 includes a console error that is an artefact of the `e2e` build (the
+ * Analytics SDK reaching Google with a placeholder key); it is not the app's.
  */
 const preset = process.env.LH_PRESET === 'desktop' ? 'desktop' : 'mobile';
 const port = Number(process.env.LHCI_PORT ?? 4175);
 const origin = `http://127.0.0.1:${port}`;
 
-/** Minimum median-run score per page and preset, 0 to 1. PENDING calibration. */
+/** Minimum median-run score per page and preset, 0 to 1. */
 const THRESHOLDS = {
   mobile: {
-    '/': { performance: 0, accessibility: 0, 'best-practices': 0, seo: 0 },
-    '/create': { performance: 0, accessibility: 0, 'best-practices': 0, seo: 0 },
+    '/': { performance: 0.87, accessibility: 0.95, 'best-practices': 0.91, seo: 0.77 },
+    '/create': { performance: 0.68, accessibility: 0.95, 'best-practices': 0.91, seo: 0.77 },
   },
   desktop: {
-    '/': { performance: 0, accessibility: 0, 'best-practices': 0, seo: 0 },
-    '/create': { performance: 0, accessibility: 0, 'best-practices': 0, seo: 0 },
+    '/': { performance: 0.95, accessibility: 0.95, 'best-practices': 0.91, seo: 0.77 },
+    '/create': { performance: 0.94, accessibility: 0.95, 'best-practices': 0.91, seo: 0.77 },
   },
 };
 

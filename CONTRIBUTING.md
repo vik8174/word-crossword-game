@@ -34,8 +34,19 @@ Opening or updating a pull request against `main` automatically runs:
 - **Rules** — `pnpm test:rules`: `firestore.rules` checked against the Firestore emulator (needs a JDK, which the job installs)
 - **E2E** — `pnpm test:e2e`: a real browser against the app and the Firebase emulators
 - **Visual** — `pnpm test:visual`: every Storybook story at 1440, 834 and 375 px, compared with the committed baselines in `apps/web/visual/baselines/`
+- **Lighthouse** — `pnpm test:lighthouse`: Lighthouse CI on `/` and `/create`, mobile and desktop, against the `e2e` build
 
 The first five are required status checks in branch protection. A pull request cannot be merged until they are green.
+
+## Lighthouse
+
+The **Lighthouse** job runs Lighthouse CI (`@lhci/cli`) on `/` and `/create` at the mobile and the desktop preset, three runs each, and fails when the **median-run** score of a category (performance, accessibility, best practices, SEO) is under its threshold. The config is `apps/web/lighthouserc.cjs`. The page is the `e2e` build served by `vite preview` inside the same emulator wrapper as E2E (`scripts/run-e2e.mjs --lighthouse`), and the browser is the Playwright Chromium (`CHROME_PATH`), so it moves only with Playwright. A run uploads its reports as the `lighthouse-reports` artifact, kept 14 days. Locally: `CHROME_PATH=<a Chromium> pnpm test:lighthouse` (ports: `LHCI_PORT`, 4175 by default, and the `E2E_*` ports).
+
+**What the scores are.** The `e2e` build has Sentry and Analytics off but fake Firebase values, so its scores are not production's: `best-practices` carries a console error from Analytics reaching Google with a placeholder key, and a Mac's scores are not CI's. The thresholds come from the job on GitHub's runner only.
+
+**How a threshold was set.** Five runs of the job on one unchanged commit; for each category, page and preset, the lowest median-run score of the five, minus 5 points. The runs, the commit and the build are written as comments beside the thresholds in `lighthouserc.cjs`.
+
+**Changing a threshold.** Only a pull request that edits `lighthouserc.cjs` with the new measurement (five runs of the job on one commit) written beside the number may change one. **Lowering a threshold needs Viktor's word on that pull request.** Raising one does not. A red job is not retried: the score either fell or the threshold is wrong, and either way someone looks.
 
 ## Visual regression
 
