@@ -112,6 +112,12 @@ h1,h2,h3,p{margin:0}
 .wordmark::before{content:"";width:16px;height:16px;border-radius:3px;background:var(--tile);box-shadow:0 0 0 1.5px var(--ink),2px 2px 0 0 var(--ink);transform:rotate(-6deg)}
 .title{font-weight:700;font-size:88px;line-height:.95;letter-spacing:-.015em}
 .lede{font-size:24px;color:var(--slate);line-height:1.4}
+/* the link card (#289): an image, 1200 x 630, not a screen of the app */
+.card{display:grid;grid-template-columns:520px minmax(0,1fr);gap:32px;align-items:center;height:100%;padding:40px 48px 40px 64px;box-sizing:border-box;background:var(--duck)}
+.card .title{font-size:84px}
+.card .lede{font-size:30px;margin-top:22px}
+.card .scene svg{display:block;height:550px;width:auto;max-width:100%;margin:0 auto}
+.card-tag{display:inline-block;margin-bottom:22px;font-weight:700;font-size:22px;letter-spacing:.12em;color:var(--tile);background:var(--brick);padding:6px 14px;border-radius:6px}
 .step-title{font-size:34px;font-weight:700;line-height:1.1}
 .h3{font-size:22px;font-weight:700;line-height:1.3}
 .hint{color:var(--slate);font-size:16px}
@@ -186,7 +192,10 @@ h1,h2,h3,p{margin:0}
 .word-list button{display:flex;align-items:baseline;gap:12px;width:100%;background:none;border:0;padding:10px 2px;text-align:left;cursor:pointer;color:var(--ink);min-height:44px}
 .word-list .ref{width:74px;flex:none;color:var(--slate);font-size:15px}
 .word-list .word{font-style:italic;font-size:22px}
-.word-list .state{margin-left:auto;font-size:15px;color:var(--slate)}
+.word-list .ref{margin-right:auto}
+.word-list .word,.word-list .slots{order:2;text-align:right}
+.word-list .state{order:1;font-size:15px;color:var(--slate)}
+.word-list .state:empty{display:none}
 .word-list .done .state{color:var(--spruce);font-weight:700}
 .word-list .done .state::before{content:"✓ "}
 .word-list .slots{letter-spacing:.2em;font-size:20px}
@@ -211,6 +220,9 @@ h1,h2,h3,p{margin:0}
 .board-head h3{font-size:20px;font-weight:700}
 .board-head p{font-size:16px;color:var(--slate)}
 .board-notes{max-width:560px;margin:16px auto 0;display:flex;flex-direction:column;gap:6px}
+/* a game with no drawing on a wide window: the board stands in the middle of the zone's height, the notes at its foot */
+.device[data-layout="wide"] .zone-middle.fill{display:flex;flex-direction:column;min-height:calc(var(--device-h) - 130px)}
+.device[data-layout="wide"] .zone-middle.fill > .board-wrap{margin:auto 0}
 .board-note{font-size:15px;color:var(--slate);text-align:center}
 .board-note.refusal{color:var(--brick);font-weight:700;font-size:17px}
 
@@ -431,7 +443,7 @@ html.bare .dev-wrap{box-shadow:none}
      listens smiles, both cheer when the crossword is full.
        left:   "here" | "empty" (nobody yet: a lesson's first lobby) | "shut" (shutters closed: a page that could not be opened)
        right:  "here" | "away" (curtains drawn) | "empty" (nobody yet) | "shut" (shutters closed)
-       line:   "taut" | "slack" (ended early) | "loose" (one end only) | "none"
+       line:   "taut" | "slack" (ended early) | "none" (also whenever one neighbour is alone)
        mood:   "talk" | "wave" | "wait" | "cheer" | "calm"
        teacher: "here" | "away" | absent (a pair game) */
   var INK = "#1B2D38", LIT = "#F2C766", DARK = "#9DB3B6", ROSE = "#E9CBC1", STONE = "#C5D8D6",
@@ -652,8 +664,6 @@ html.bare .dev-wrap{box-shadow:none}
     if (line === "taut" || line === "slack") {
       var end = right === "here" ? P2 : [449, 258];
       s += '<path d="M' + P0[0] + ' ' + P0[1] + 'Q320 ' + (300 + sag) + ' ' + end[0] + ' ' + end[1] + '" fill="none" stroke-width="1.5" pathLength="1" class="line-draw"/>';
-    } else if (line === "loose") {
-      s += '<path d="M' + P0[0] + ' ' + P0[1] + 'Q236 330 ' + (o.thrown ? '330 290' : '214 300') + '" fill="none" stroke-width="1.5"' + (o.thrown ? ' stroke-dasharray="3 7"' : '') + '/>';
     }
     s += '</g>';
     if (o.fiesta) { s += fiesta(); }
@@ -829,7 +839,7 @@ html.bare .dev-wrap{box-shadow:none}
   function room(o) {
     return head(o) + '<div class="body"><div class="zones' + (isTeacher() ? " teacher" : "") + '">' +
       '<div class="zone left' + (o.left ? "" : " empty") + '">' + (o.left || "") + '</div>' +
-      '<div class="zone-middle">' + (o.middle || "") + '</div>' +
+      '<div class="zone-middle' + (o.fill ? " fill" : "") + '">' + (o.middle || "") + '</div>' +
       '<div class="zone right' + (o.right ? "" : " empty") + '">' + (o.right || "") + '</div>' +
       '</div></div>' + (o.overlay || "");
   }
@@ -848,6 +858,20 @@ html.bare .dev-wrap{box-shadow:none}
         scene({ letters: ["r", "a", "d", "i", "o"], mood: "talk", teacher: "" }) +
         '<ol class="steps"><li><b>1</b>Type 10 to 20 words</li><li><b>2</b>Send the link to one person</li><li><b>3</b>Explain and guess out loud</li></ol></div>';
     } };
+
+  function linkCard(stage) {
+    return '<div class="card">' +
+      '<div>' + (stage ? '<span class="card-tag">STAGE</span>' : '') +
+      '<h1 class="title">Across the Street</h1>' +
+      '<p class="lede">A cooperative crossword. You explain your words out loud, your friend guesses them.</p></div>' +
+      '<div class="scene">' + scene({ letters: ["r", "a", "d", "i", "o"], mood: "talk", teacher: "", crop: "ground" }) + '</div></div>';
+  }
+  S["link-card"] = { group: "Outside the app", label: "Link card", fixed: [1200, 630],
+    note: "The picture a messenger shows under a shared link (og:image, 1200 x 630). One card for every path: a room's words are secret and a room lives a day. The game's name, the line from Home's lede, and the street whole, with radio on the line. Not a screen: no header, no button, nothing to press.",
+    render: function () { return linkCard(false); } };
+  S["link-card/stage"] = { group: "Outside the app", sub: true, label: "…on stage", fixed: [1200, 630],
+    note: "The same card, marked STAGE in brick above the name, so a test link is never mistaken for the game. Stage is also hidden from search (noindex), Viktor's decision of 2026-10-16.",
+    render: function () { return linkCard(true); } };
 
   function modePick(locked) {
     function opt(mode, title, text) {
@@ -896,11 +920,11 @@ html.bare .dev-wrap{box-shadow:none}
   S["create/failed"] = { group: "Before a room", sub: true, label: "…write failed", note: "A failure of the wire, not of the list, so it stays a card: there is no field it belongs to.", render: function () { return createScreen("failed"); } };
 
   /* ---- the doors: connecting, joining, turned away ---- */
-  S.connecting = { group: "At the door", label: "Connecting", note: "No room frame yet, because there is no room yet. The line is being thrown across the street.",
+  S.connecting = { group: "At the door", label: "Connecting", note: "No room frame yet, because there is no room yet. No line yet: one neighbour alone holds none, until somebody is on the other balcony.",
     render: function () {
       return column('<p class="wait-line" role="status"><span class="dot"></span>Connecting to the game…</p>' +
         '<div class="row-btns" style="justify-content:center">' + tplGo("→ a free seat", "join") + tplGo("→ already in", "lobby") + tplGo("→ no room", "unavailable/missing") + '</div>',
-        scene({ right: "empty", line: "loose", thrown: true, crop: "top", mood: "wave", label: "A line being thrown across the street to an empty balcony" }));
+        scene({ right: "empty", line: "none", crop: "top", mood: "wave", label: "A neighbour waving across the street to an empty balcony" }));
     } };
   function joinScreen(variant) {
     var locked = variant === "joining";
@@ -911,7 +935,7 @@ html.bare .dev-wrap{box-shadow:none}
       (variant === "failed" ? msg("error", "Could not join the game", "Check your connection and try again. The room is still there.") : "") +
       '<div class="row-btns">' + (locked ? btn(lesson() ? "Joining the lesson" : "Joining the game", "loading") : go(lesson() ? "Join the lesson" : "Join the game", "lobby")) +
       (variant === "plain" ? tplGo("…refused", "unavailable/refused") + tplGo("…wire failed", "join/failed") : "") + '</div>',
-      scene({ right: "empty", line: "loose", crop: "top", mood: "wave", label: "A neighbour waving from her balcony, holding out a line to an empty balcony across the street" }));
+      scene({ right: "empty", line: "none", crop: "top", mood: "wave", label: "A neighbour waving from her balcony to an empty balcony across the street" }));
   }
   S.join = { group: "At the door", label: "Join", note: "Only somebody the room does not hold yet sees this. The empty balcony across the street is theirs; the line is waiting for them. In a lesson the teacher is already at the end of the street. A teacher never sees this screen: they made the room.", render: function () { return joinScreen("plain"); } };
   S["join/joining"] = { group: "At the door", sub: true, label: "…joining", note: "The name is frozen but readable, and the button's dot beats.", render: function () { return joinScreen("joining"); } };
@@ -983,7 +1007,7 @@ html.bare .dev-wrap{box-shadow:none}
 
     var label = none ? "Both balconies still empty, the teacher watching from the house at the end of the street"
       : (waiting ? "Your balcony, and the one across the street still empty" : "Both balconies taken, the line strung between them");
-    var pic = '<div class="lobby-picture stack-tight">' + scene({ left: none ? "empty" : "here", right: waiting ? "empty" : "here", line: none ? "none" : (waiting ? "loose" : "taut"), crop: layout() === "wide" ? "ground" : "top", mood: waiting ? "wait" : "wave",
+    var pic = '<div class="lobby-picture stack-tight">' + scene({ left: none ? "empty" : "here", right: waiting ? "empty" : "here", line: (none || waiting) ? "none" : "taut", crop: layout() === "wide" ? "ground" : "top", mood: waiting ? "wait" : "wave",
         teacher: lesson() ? (variant === "teacheraway" ? "away" : "here") : "", label: label }) +
       '<p class="hint" style="text-align:center">The crossword: ' + roomWords().length + ' words, half of them for each ' + (lesson() ? "player" : "of you") + '.</p></div>';
     var left = '<div class="stack">' + notice + players({ away: variant === "away" ? "self" : (variant === "teacheraway" ? "teacher" : ""), open: waiting, none: none }) + panel + '</div>';
@@ -991,7 +1015,7 @@ html.bare .dev-wrap{box-shadow:none}
   }
   var LOBBY_NOTE = "The board is not shown before the deal: which words are whose is decided by it. The drawing says who is in: the second balcony fills when the second player arrives, and in a lesson the teacher is at the end of the street. In a lesson the action is named for what it does, “Deal the words”. On a wide window the drawing shows the houses whole, down to the street, and grows to the height the window has (it never makes the page scroll); on a tablet and a phone it keeps the top crop, above the players.";
   S.lobby = { group: "The lobby", label: "Lobby · ready", note: LOBBY_NOTE, render: function () { return lobby("ready"); } };
-  S["lobby/waiting"] = { group: "The lobby", sub: true, label: "…one more needed", note: "The invite link is offered to the owner alone, and only while there is a free seat. The balcony across the street is empty and the line hangs loose.", render: function () { return lobby("waiting"); } };
+  S["lobby/waiting"] = { group: "The lobby", sub: true, label: "…one more needed", note: "The invite link is offered to the owner alone, and only while there is a free seat. The balcony across the street is empty and no line is strung: a neighbour alone holds none (Viktor, 2026-10-16).", render: function () { return lobby("waiting"); } };
   S["lobby/copied"] = { group: "The lobby", sub: true, label: "…link copied", note: "The copy answers beside its own button, in a line read out as it appears.", render: function () { return lobby("copied"); } };
   S["lobby/copyfailed"] = { group: "The lobby", sub: true, label: "…copy refused", note: "A browser may refuse the clipboard. The line says what to do instead.", render: function () { return lobby("copyfailed"); } };
   S["lobby/crowded"] = { group: "The lobby", sub: true, label: "…more players than words", note: "Somebody would have nothing to guess, so the deal refuses.", render: function () { return lobby("crowded"); } };
@@ -1021,11 +1045,11 @@ html.bare .dev-wrap{box-shadow:none}
   function teacherPlaying(variant) {
     var action = variant === "ending" ? btn("Ending the lesson", "link loading") : go("End the lesson", "playing/confirm", "link");
     var showPic = layout() !== "phone" && state.size === "few";
-    return room({ status: "Olena and Taras are playing. You are watching.", action: action,
+    return room({ fill: !showPic, status: "Olena and Taras are playing. You are watching.", action: action,
       left: '<div class="stack">' + (variant === "away" ? presenceNotice() : "") + explainerSection("Olena", "Taras", "explain", "a") + '</div>',
       right: '<div class="stack">' + players({ away: variant === "away" ? "self" : "" }) + explainerSection("Taras", "Olena", "guess", "b") + '</div>',
       middle: (showPic ? scene({ crop: "band", cards: answeredWords(), mood: "talk", label: "The answered words hanging on the line, the teacher watching from the end of the street" }) : "") +
-        '<div style="margin-top:' + (showPic ? 18 : 0) + 'px">' + board("teacher", squareSize(layout())) + '</div>' + teacherLegend() +
+        '<div class="board-wrap"' + (showPic ? ' style="margin-top:18px"' : '') + '>' + board("teacher", squareSize(layout())) + '</div>' + teacherLegend() +
         '<div class="row-btns" style="justify-content:center;margin-top:14px">' + tplGo("→ finish it", "finished") + tplGo("→ end it", "playing/confirm") + '</div>',
       overlay: endDialog(variant) });
   }
@@ -1041,13 +1065,13 @@ html.bare .dev-wrap{box-shadow:none}
         '<p class="count-line" role="status">' + guessCount() + '</p></section>') + '</div>';
     var showPic = layout() !== "phone" && state.size === "few";
     var middle = (showPic ? scene({ crop: "band", cards: answeredWords(), mood: "talk", teacher: lesson() ? (variant === "teacheraway" ? "away" : "here") : "", label: "The answered words hanging on the line between the two balconies" }) : "") +
-      '<div style="margin-top:' + (showPic ? 18 : 0) + 'px">' + board(mode, squareSize(layout())) + '</div>' + (leftOut ? "" : boardNotes(mode)) +
+      '<div class="board-wrap"' + (showPic ? ' style="margin-top:18px"' : '') + '>' + board(mode, squareSize(layout())) + '</div>' + (leftOut ? "" : boardNotes(mode)) +
       (variant === "guessfail" ? '<div style="margin-top:14px">' + msg("error", "Your answer was not saved", "It was right, but the other player could not be told. The room may have expired. Reload the page to see where the game stands.") + '</div>' : "") +
       '<div class="row-btns" style="justify-content:center;margin-top:14px">' + tplGo("→ answer apple", "playing/answered") + tplGo("→ finish it", "finished") + tplGo("→ left out", "playing/leftout") + tplGo("→ answer refused", "playing/refused") + tplGo("→ answer failed", "playing/guessfail") + '</div>';
     /* in a lesson a player cannot end the game: only the teacher can */
     var action = (leftOut || lesson()) ? "" : (variant === "ending" ? btn("Ending the game", "link loading") : go("End the game", "playing/confirm", "link"));
     var status = leftOut ? "" : (lesson() ? "Playing with " + other() + ". " + TEACHER + " is watching." : "Playing with " + other());
-    return room({ status: esc(status), action: action, left: left, right: right, middle: middle, overlay: lesson() ? "" : endDialog(variant) });
+    return room({ fill: !showPic, status: esc(status), action: action, left: left, right: right, middle: middle, overlay: lesson() ? "" : endDialog(variant) });
   }
   S.playing = { group: "The game", label: "Playing", note: "No title: the letters say what this is. The drawing is a band above the board: one neighbour explaining with her hands, the other listening, every answered word hanging on the line. At 375 the drawing is left out so the board is the first thing under the header; with the long word list it is left out at every width. The teacher (lesson, host) sees every word, coloured and outlined by who explains it, and the only thing they can do is end the lesson. A player in a lesson has no “End the game”.", render: function () { return playing("plain"); } };
   S["playing/answered"] = { group: "The game", sub: true, label: "…a word answered", note: "The moment “apple” is answered: its squares turn over one by one to their answered face, and its card is pegged on the line between the balconies and swings until it hangs still. The list marks it answered. Click it again to replay. With reduced motion it is simply answered.",
@@ -1103,7 +1127,7 @@ html.bare .dev-wrap{box-shadow:none}
     "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection", "reload", "crash",
     "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/nostudent", "lobby/teacheraway",
     "playing", "playing/answered", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
-    "finished", "closed-early"];
+    "finished", "closed-early", "link-card", "link-card/stage"];
   var mapEl = document.getElementById("map"), stageEl = document.getElementById("stage");
   var whereEl = document.getElementById("where"), noteEl = document.getElementById("stateNote");
   function buildMap() {
@@ -1128,6 +1152,8 @@ html.bare .dev-wrap{box-shadow:none}
   function layoutFor(w) { return w >= 1200 ? "wide" : (w >= 768 ? "tablet" : "phone"); }
   function windows() {
     if (isBare) { return [{ w: window.innerWidth, h: window.innerHeight, name: "" }]; }
+    var fixed = (S[state.key] || {}).fixed;
+    if (fixed) { return [{ w: fixed[0], h: fixed[1], name: fixed[0] + " × " + fixed[1] + " (link card)" }]; }
     var keys = state.width === "all" ? ["1440", "834", "375"] : [state.width];
     return keys.map(function (k) { return { w: WINDOWS[k][0], h: WINDOWS[k][1], name: k + " × " + WINDOWS[k][1] }; });
   }
