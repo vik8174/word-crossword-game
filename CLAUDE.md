@@ -78,9 +78,9 @@ that lands, this is the check that breaks first.
 
 Six, and these are the names CI gives them: **Lint, Test, Coverage, Build,
 Rules, E2E**. The first five passed on `81361ea` from a clean worktree; E2E
-was added by #303 (`979b399`) and passed there. Until Viktor adds it to the
-branch protection, E2E is not a required check, but a red E2E is still a red
-pull request: do not merge it.
+was added by #303 (`979b399`) and passed there. E2E is deliberately not a
+required check in the branch protection (Viktor, 2026-10-16), but a red E2E is
+still a red pull request: do not merge it.
 
 The merge is gated by a hook rather than by anyone's eye: `gh pr merge` here is
 refused for a pull request that is red, still running, draft, conflicting, or
