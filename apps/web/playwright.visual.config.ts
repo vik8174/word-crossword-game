@@ -38,7 +38,7 @@ export default defineConfig({
   updateSnapshots: 'none',
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   expect: {
-    toHaveScreenshot: { maxDiffPixelRatio, animations: 'disabled', caret: 'hide' },
+    toHaveScreenshot: { threshold: 0, maxDiffPixelRatio, animations: 'disabled', caret: 'hide' },
   },
   use: {
     baseURL: `http://127.0.0.1:${port}`,
