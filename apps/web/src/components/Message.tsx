@@ -102,7 +102,7 @@ export const Message = ({
         display: 'flex',
         gap: inRem(14),
         width: '100%',
-        padding: `${inRem(16)} ${inRem(18)}`,
+        padding: `${inRem(17)} ${inRem(18)}`,
         backgroundColor: STREET.tile,
         borderRadius: inRem(12),
         boxShadow: `0 0 0 1.5px ${STREET.ink}`,
