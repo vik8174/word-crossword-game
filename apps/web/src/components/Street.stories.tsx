@@ -89,6 +89,32 @@ export const UnavailableFull: Story = {
   },
 };
 
+/** `reload`: both balconies shuttered, no line. The left one is `left: 'shut'`, which only this state and `crash` ask for. */
+export const Reload: Story = {
+  args: {
+    left: 'shut',
+    right: 'shut',
+    line: 'none',
+    mood: 'calm',
+    crop: 'top',
+    label: 'A quiet street, the shutters closed on both balconies',
+  },
+};
+
+/** `crash`: both balconies shuttered, the line still strung and slack under four tiles that spell oops. */
+export const Crash: Story = {
+  args: {
+    left: 'shut',
+    right: 'shut',
+    line: 'slack',
+    letters: 'oops',
+    mood: 'calm',
+    crop: 'top',
+    label:
+      'Both balconies shuttered, the line between them sagging under four tiles that spell oops',
+  },
+};
+
 /** `lobby`: both balconies taken, a pair game. */
 export const Lobby: Story = {
   args: {
