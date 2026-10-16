@@ -976,6 +976,194 @@ describe('RoomPage', () => {
     });
   });
 
+  describe('a deal the database has not answered yet', () => {
+    const bothPlayers = { 'owner-uid': player('Vik'), 'guest-uid': player('Bob', 2000) };
+    const lobbyRoom = () => storedRoom({ layout: TWO_WORD_LAYOUT, players: bothPlayers });
+    const dealtWords = {
+      w0: { hiddenFromPlayerId: 'guest-uid', guessedByPlayerId: null },
+      w1: { hiddenFromPlayerId: 'owner-uid', guessedByPlayerId: null },
+    };
+    /** The room the SDK shows the dealer the instant the deal is sent: the deal, applied. */
+    const optimisticallyPlaying = () =>
+      storedRoom({
+        status: 'playing',
+        layout: TWO_WORD_LAYOUT,
+        players: bothPlayers,
+        words: dealtWords,
+      });
+    const emit = (room: unknown) =>
+      act(async () => {
+        emitRoom({ exists: () => true, data: () => room });
+      });
+
+    /** Whether the game screen's board has been on the page, at any moment since. */
+    const watchForTheGame = () => {
+      let seen = false;
+      const observer = new MutationObserver(() => {
+        seen ||= document.querySelector('[aria-label*="crossword grid" i]') !== null;
+      });
+
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      return { seen: () => seen, stop: () => observer.disconnect() };
+    };
+
+    /** The deal waits for the server; the presence marks do not. Answered by hand. */
+    const holdTheDeal = () => {
+      const answers: { resolve: () => void; reject: (error: unknown) => void }[] = [];
+
+      vi.mocked(updateDoc).mockImplementation(((_reference: unknown, update: object) =>
+        isPresenceMark(update as Record<string, unknown>)
+          ? Promise.resolve()
+          : new Promise<void>((resolve, reject) => {
+              answers.push({ resolve, reject });
+            })) as never);
+
+      return answers;
+    };
+
+    const openAsOwnerAndPress = async () => {
+      vi.mocked(signInAnonymously).mockResolvedValue({ user: { uid: 'owner-uid' } } as never);
+      await openRoom(lobbyRoom(), true);
+      fireEvent.click(screen.getByRole('button', { name: /start the game/i }));
+      await waitFor(() => expect(gameWrites()).toHaveLength(1));
+    };
+
+    it('keeps the lobby on the screen, saying the words are being dealt, until the server answers', async () => {
+      holdTheDeal();
+      await openAsOwnerAndPress();
+
+      await emit(optimisticallyPlaying());
+
+      expect(screen.getByRole('heading', { level: 1, name: 'Lobby' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /dealing the words/i })).toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: /crossword grid/i })).not.toBeInTheDocument();
+    });
+
+    it('tells the owner the deal was refused, never showing the game, and lets them try again', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const answers = holdTheDeal();
+      const game = watchForTheGame();
+      await openAsOwnerAndPress();
+
+      // The order the SDK was measured to use: the deal applied at once, the
+      // refusal some milliseconds on, and only after it the room put back.
+      await emit(optimisticallyPlaying());
+      await act(async () => {
+        answers[0]?.reject(REFUSED_BY_RULES);
+      });
+      await emit(lobbyRoom());
+
+      expect(await screen.findByText(/could not start the game/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: 'Lobby' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /start the game/i })).toBeEnabled();
+      expect(game.seen()).toBe(false);
+      game.stop();
+    });
+
+    it('says so already between the refusal and the room being put back', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const answers = holdTheDeal();
+      await openAsOwnerAndPress();
+
+      await emit(optimisticallyPlaying());
+      await act(async () => {
+        answers[0]?.reject(REFUSED_BY_RULES);
+      });
+
+      expect(await screen.findByText(/could not start the game/i)).toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: /crossword grid/i })).not.toBeInTheDocument();
+    });
+
+    it('is not opened by a refusal that lands before the optimistic room has been drawn', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const answers = holdTheDeal();
+      const game = watchForTheGame();
+      await openAsOwnerAndPress();
+
+      // The room and the refusal in the same turn, so that the refusal is
+      // handled before the optimistic `playing` has rendered, and before any
+      // effect of that render has run.
+      await act(async () => {
+        emitRoom({ exists: () => true, data: () => optimisticallyPlaying() });
+        answers[0]?.reject(REFUSED_BY_RULES);
+      });
+      await emit(lobbyRoom());
+
+      expect(await screen.findByText(/could not start the game/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /start the game/i })).toBeEnabled();
+      expect(game.seen()).toBe(false);
+      game.stop();
+    });
+
+    it('is not opened either when the refusal is handled before the optimistic room arrives', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const answers = holdTheDeal();
+      const game = watchForTheGame();
+      await openAsOwnerAndPress();
+
+      await act(async () => {
+        answers[0]?.reject(REFUSED_BY_RULES);
+      });
+      await emit(optimisticallyPlaying());
+      await emit(lobbyRoom());
+
+      expect(await screen.findByText(/could not start the game/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /start the game/i })).toBeEnabled();
+      expect(game.seen()).toBe(false);
+      game.stop();
+    });
+
+    it('deals again after a refusal, and opens the game once the server has confirmed it', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      const answers = holdTheDeal();
+      await openAsOwnerAndPress();
+      await emit(optimisticallyPlaying());
+      await act(async () => {
+        answers[0]?.reject(REFUSED_BY_RULES);
+      });
+      await emit(lobbyRoom());
+
+      fireEvent.click(screen.getByRole('button', { name: /start the game/i }));
+      await waitFor(() => expect(gameWrites()).toHaveLength(2));
+      await emit(optimisticallyPlaying());
+
+      expect(screen.queryByRole('group', { name: /crossword grid/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /dealing the words/i })).toBeInTheDocument();
+
+      await act(async () => {
+        answers[1]?.resolve();
+      });
+
+      expect(await screen.findByRole('group', { name: /crossword grid/i })).toBeInTheDocument();
+      expect(screen.queryByText(/could not start the game/i)).not.toBeInTheDocument();
+    });
+
+    it('opens the game, and never the message, once the server confirms the deal', async () => {
+      const answers = holdTheDeal();
+      await openAsOwnerAndPress();
+      await emit(optimisticallyPlaying());
+
+      expect(screen.queryByRole('group', { name: /crossword grid/i })).not.toBeInTheDocument();
+
+      await act(async () => {
+        answers[0]?.resolve();
+      });
+      await emit(optimisticallyPlaying());
+
+      expect(await screen.findByRole('group', { name: /crossword grid/i })).toBeInTheDocument();
+      expect(screen.queryByText(/could not start the game/i)).not.toBeInTheDocument();
+    });
+
+    it('shows the other player the game when the server says it, as it always did', async () => {
+      await openRoom(lobbyRoom());
+
+      await emit(optimisticallyPlaying());
+
+      expect(await screen.findByRole('group', { name: /crossword grid/i })).toBeInTheDocument();
+    });
+  });
+
   describe('once the words are dealt out', () => {
     const assignedRoom = storedRoom({
       status: 'playing',

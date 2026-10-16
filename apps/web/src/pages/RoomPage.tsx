@@ -13,6 +13,7 @@ import { RoomUnavailableNotice } from '../components/RoomUnavailableNotice';
 import { ScreenEnter } from '../components/ScreenEnter';
 import { WaitingMark } from '../components/WaitingMark';
 import { MOTION_PLAY_CSS } from '../motion-play-styles';
+import { createDealGate } from '../rooms/deal-gate';
 import { isTeacherOf, type RoomDocument } from '../rooms/room-document';
 import {
   hasSomebodyToInvite,
@@ -20,6 +21,7 @@ import {
   roomScreenFor,
   screenAfterRefusedJoin,
 } from '../rooms/room-screen';
+import type { StartGameInput } from '../rooms/room-service';
 import { usePresenceHeartbeat } from '../rooms/use-presence-heartbeat';
 import { useRoomConnection } from '../rooms/use-room-connection';
 import { funnelScreenFor } from '../telemetry/funnel';
@@ -63,11 +65,13 @@ const RoomScreenView = ({
   screen,
   invitation,
   onJoinRefused,
+  deal,
 }: {
   readonly roomId: string;
   readonly screen: RoomScreen;
   readonly invitation?: ReactNode;
   readonly onJoinRefused: () => void;
+  readonly deal: (input: StartGameInput) => Promise<void>;
 }): ReactElement => {
   switch (screen.kind) {
     case 'connecting':
@@ -92,6 +96,7 @@ const RoomScreenView = ({
           room={screen.room}
           viewerId={screen.viewerId}
           invitation={invitation}
+          deal={deal}
         />
       );
     case 'playing':
@@ -145,7 +150,10 @@ const RoomScreenView = ({
  * a snapshot lands (issue #50).
  */
 const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
-  const connection = useRoomConnection(roomId);
+  // One gate for the life of this screen: it sits between the room subscription
+  // and what is shown, so a deal the server has not answered cannot open the game.
+  const [gate] = useState(() => createDealGate());
+  const connection = useRoomConnection(roomId, gate);
   const [refusedRoom, setRefusedRoom] = useState<RoomDocument | null>(null);
   const room = connection.status === 'ready' ? connection.room : null;
 
@@ -211,6 +219,7 @@ const Room = ({ roomId }: { readonly roomId: string }): ReactElement => {
             ) : undefined
           }
           onJoinRefused={() => setRefusedRoom(latestRoom.current)}
+          deal={gate.deal}
         />
       </ScreenEnter>
     </>
