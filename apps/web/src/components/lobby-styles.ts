@@ -2,6 +2,7 @@ import type { CSSObject } from '@mui/material/styles';
 
 import { inRem, TEXT_FONT_FAMILY } from '../scale';
 import { STREET } from '../street';
+import { FROM_WIDE } from './frame-styles';
 import { OUTLINE_WIDTH } from './surface-styles';
 
 /**
@@ -52,4 +53,22 @@ export const playerRowSx: CSSObject = {
   padding: `${inRem(10)} 0`,
   borderTop: `${OUTLINE_WIDTH}px solid ${STREET.line}`,
   '&:last-of-type': { borderBottom: `${OUTLINE_WIDTH}px solid ${STREET.line}` },
+};
+
+/**
+ * The lobby drawing on a wide window: it grows to the height the window has and
+ * no further, so the page never scrolls (`.device[data-layout="wide"]
+ * .lobby-picture svg`, `design/templates/state-tree.html` line 244). The
+ * drawing's own inline `width: 100%` is overridden, because `width: auto` is what
+ * lets the cap on height set the width.
+ */
+export const lobbyPictureSx: CSSObject = {
+  [FROM_WIDE]: {
+    '& svg': {
+      width: 'auto !important',
+      maxWidth: '100%',
+      maxHeight: 'calc(100dvh - var(--frame-header-height, 64px) - 136px)',
+      margin: '0 auto',
+    },
+  },
 };

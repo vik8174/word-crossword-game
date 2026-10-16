@@ -41,12 +41,13 @@ export type StreetLine = 'taut' | 'slack' | 'loose' | 'none';
 /** How the neighbours behave. */
 export type StreetMood = 'talk' | 'wave' | 'wait' | 'cheer' | 'calm';
 /** How much of the street is shown. */
-export type StreetCrop = 'full' | 'top' | 'band';
+export type StreetCrop = 'full' | 'top' | 'band' | 'ground';
 
 /** The viewBox of each crop (template line 436). */
 const CROPS: Record<StreetCrop, string> = {
   full: '0 30 640 490',
   top: '0 40 640 312',
+  ground: '0 30 640 498',
   band: '0 130 640 226',
 };
 

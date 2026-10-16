@@ -42,13 +42,14 @@ describe('Street: what it is', () => {
   });
 
   it('shows as much of the street as the crop says', () => {
-    const viewBox = (crop?: 'full' | 'top' | 'band') =>
+    const viewBox = (crop?: 'full' | 'top' | 'band' | 'ground') =>
       svgOf(render(<Street label={LABEL} crop={crop} />).container).getAttribute('viewBox');
 
     expect(viewBox()).toBe('0 30 640 490');
     expect(viewBox('full')).toBe('0 30 640 490');
     expect(viewBox('top')).toBe('0 40 640 312');
     expect(viewBox('band')).toBe('0 130 640 226');
+    expect(viewBox('ground')).toBe('0 30 640 498');
   });
 });
 

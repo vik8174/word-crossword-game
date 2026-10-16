@@ -14,7 +14,7 @@ import { useFrameSlot } from './frame-slot';
 import { gateHintSx, gateStackSx } from './gate-panel-styles';
 import { LobbyPlayers } from './LobbyPlayers';
 import { LobbyStreet } from './LobbyStreet';
-import { lobbyTightStackSx } from './lobby-styles';
+import { lobbyPictureSx, lobbyTightStackSx } from './lobby-styles';
 import { Message } from './Message';
 import { OwnPresenceNotice } from './OwnPresenceNotice';
 import { RoomShell } from './RoomShell';
@@ -210,7 +210,7 @@ export const RoomLobby = ({
         </Box>
       }
       picture={
-        <Box sx={lobbyTightStackSx}>
+        <Box sx={{ ...lobbyTightStackSx, ...lobbyPictureSx }}>
           <LobbyStreet
             players={players.length}
             seatFreedBySilence={seatFreedBySilence}
