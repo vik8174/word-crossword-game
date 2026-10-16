@@ -141,11 +141,14 @@ jobs:
       options: --ipc=host
     steps:
       - uses: actions/checkout@v7.0.1
+      # `job.container.image` is not available to a step, so the image line is
+      # read from this file, the one the job was started from.
       - name: Image matches the Playwright version
         run: |
           want="mcr.microsoft.com/playwright:v$(node -p "require('./apps/web/package.json').devDependencies['@playwright/test']")-noble"
-          if [ "$want" != "${{ job.container.image }}" ]; then
-            echo "::error::the job runs ${{ job.container.image }} but apps/web/package.json needs $want"
+          have="$(awk '$1 == "image:" && $2 ~ /^mcr.microsoft.com\/playwright:/ {print $2}' .github/workflows/ci.yml)"
+          if [ "$want" != "$have" ]; then
+            echo "::error::the job runs '$have' but apps/web/package.json needs '$want'"
             exit 1
           fi
       - uses: pnpm/action-setup@v6.0.10
