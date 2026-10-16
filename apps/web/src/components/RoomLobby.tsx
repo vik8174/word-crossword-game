@@ -166,7 +166,7 @@ export const RoomLobby = ({
     ),
     [isOwner, players.length, wordCount, teacherName, teacherAway],
   );
-  useFrameSlot({ status });
+  useFrameSlot({ status, plainWordmark: true });
 
   return (
     <RoomShell

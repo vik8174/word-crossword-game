@@ -119,7 +119,7 @@ export const TeacherGame = ({
     ),
     [endGame, isEnding, endError],
   );
-  useFrameSlot({ status, action });
+  useFrameSlot({ status, action, plainWordmark: true });
 
   // The cards on the line: every answered word, the teacher having every word to name.
   const answeredWords = useMemo(() => answeredWordsOfWatched(wordView), [wordView]);

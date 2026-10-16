@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { updateDoc } from 'firebase/firestore';
 import type { ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 import { AWAY_AFTER_MS, PRESENCE_TICK_MS } from '../rooms/presence';
 import type { RoomDocument } from '../rooms/room-document';
@@ -96,7 +97,9 @@ const lobbyRoom = ({
 const renderLobby = (viewerId: string, room: RoomDocument, invitation?: ReactNode) =>
   render(
     <FrameSlotProvider>
-      <Frame />
+      <MemoryRouter>
+        <Frame />
+      </MemoryRouter>
       <RoomLobby roomId="room-1" room={room} viewerId={viewerId} invitation={invitation} />
     </FrameSlotProvider>,
   );

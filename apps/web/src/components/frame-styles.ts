@@ -42,6 +42,24 @@ export const WORDMARK_SX = {
   },
 } as const;
 
+/**
+ * What the name adds when it is a link (`.wordmark-link`, `design/templates/state-tree.html`
+ * lines 109-111): no colour change and no underline at rest, a 1.5px underline 5px
+ * off on hover, and the ochre ring (3px, 4px off) on keyboard focus. The box is
+ * the plain name's: no padding, so the rect does not move.
+ */
+export const WORDMARK_LINK_SX = {
+  color: 'inherit',
+  textDecoration: 'none',
+  borderRadius: '6px',
+  '&:hover': {
+    textDecoration: 'underline',
+    textDecorationThickness: '1.5px',
+    textUnderlineOffset: '5px',
+  },
+  '&:focus-visible': { outline: `3px solid ${STREET.ochre}`, outlineOffset: '4px' },
+} as const;
+
 /** The status line: slate, in the middle of the space the wordmark and the action leave, and gone on a phone. */
 export const STATUS_SX = {
   flex: 1,

@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 import { Frame } from './Frame';
 import { FRAME_HEADER_HEIGHT_PROPERTY } from './frame-height';
@@ -22,7 +23,9 @@ describe('Frame', () => {
   it('is the banner of the page, with the name in it', () => {
     render(
       <FrameSlotProvider>
-        <Frame />
+        <MemoryRouter>
+          <Frame />
+        </MemoryRouter>
       </FrameSlotProvider>,
     );
 
@@ -32,7 +35,9 @@ describe('Frame', () => {
   it('shows the status and the action a screen has put in the slot', () => {
     render(
       <FrameSlotProvider>
-        <Frame />
+        <MemoryRouter>
+          <Frame />
+        </MemoryRouter>
         <Filler />
       </FrameSlotProvider>,
     );
@@ -44,7 +49,9 @@ describe('Frame', () => {
   it('draws no status and no action while the slot is empty', () => {
     render(
       <FrameSlotProvider>
-        <Frame />
+        <MemoryRouter>
+          <Frame />
+        </MemoryRouter>
       </FrameSlotProvider>,
     );
 
@@ -84,7 +91,9 @@ describe('Frame', () => {
 
     const { unmount } = render(
       <FrameSlotProvider>
-        <Frame />
+        <MemoryRouter>
+          <Frame />
+        </MemoryRouter>
       </FrameSlotProvider>,
     );
 

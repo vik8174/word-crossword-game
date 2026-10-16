@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 import type { RoomDocument } from '../rooms/room-document';
 import { Frame } from './Frame';
@@ -92,7 +93,9 @@ const renderLobby = (
 ) =>
   render(
     <FrameSlotProvider>
-      <Frame />
+      <MemoryRouter>
+        <Frame />
+      </MemoryRouter>
       <RoomLobby roomId="room-1" room={room} viewerId={viewerId} {...extra} />
     </FrameSlotProvider>,
   );
@@ -232,7 +235,9 @@ describe("a lesson's lobby, for its teacher", () => {
 
       rerender(
         <FrameSlotProvider>
-          <Frame />
+          <MemoryRouter>
+            <Frame />
+          </MemoryRouter>
           <RoomLobby roomId="room-1" room={lesson({ students: 1 })} viewerId={TEACHER_ID} />
         </FrameSlotProvider>,
       );
