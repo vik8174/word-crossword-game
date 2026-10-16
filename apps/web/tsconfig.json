@@ -19,6 +19,14 @@
     "resolveJsonModule": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "build", "vite.config.ts", "vitest.config.ts", ".storybook"],
+  "include": [
+    "src",
+    "build",
+    "e2e",
+    "playwright.config.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    ".storybook"
+  ],
   "exclude": ["dist", "node_modules"]
 }

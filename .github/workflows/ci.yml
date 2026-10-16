@@ -86,3 +86,46 @@ jobs:
       # `pnpm test:rules` starts the emulator, runs firestore/rules.test.mjs
       # against firestore.rules and shuts the emulator down again.
       - run: pnpm test:rules
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.0.10
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      # The Firestore and Auth emulators run on the JVM, as in the Rules job.
+      - uses: actions/setup-java@v5.7.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: pnpm install --frozen-lockfile
+      # The browser is cached by the Playwright version, so a run downloads it
+      # only when the version moves. The system libraries are installed either way.
+      - id: playwright
+        run: echo "version=$(pnpm --filter web exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v5.0.0
+        id: browser-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ steps.playwright.outputs.version }}
+      - if: steps.browser-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter web exec playwright install --with-deps chromium
+      - if: steps.browser-cache.outputs.cache-hit == 'true'
+        run: pnpm --filter web exec playwright install-deps chromium
+      # The emulator hook must not reach a deployed bundle: three builds with
+      # dummy values (plain, stage, production) are searched for the emulator's
+      # addresses, and an e2e build is searched to show the search can see them.
+      - run: pnpm check:emulator-leak
+      - run: pnpm test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: e2e-traces
+          path: |
+            apps/web/test-results/
+            apps/web/playwright-report/
+          retention-days: 7

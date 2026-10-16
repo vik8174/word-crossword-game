@@ -1,10 +1,12 @@
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
+    // The end-to-end specs are Playwright's (`pnpm test:e2e`), not Vitest's.
+    exclude: [...configDefaults.exclude, 'e2e/**'],
     setupFiles: ['./src/setupTests.ts'],
     // Fake, non-secret values so firebase/config.ts initializes
     // deterministically in tests/CI without a real Firebase project.

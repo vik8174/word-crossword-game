@@ -9,7 +9,9 @@
     "lint": "eslint . && prettier --check .",
     "test": "pnpm -r test",
     "test:coverage": "pnpm -r test:coverage",
-    "test:rules": "firebase emulators:exec --only firestore --project demo-word-crossword \"node --test firestore/*.test.mjs\""
+    "test:rules": "firebase emulators:exec --only firestore --project demo-word-crossword \"node --test firestore/*.test.mjs\"",
+    "test:e2e": "node scripts/run-e2e.mjs",
+    "check:emulator-leak": "node scripts/check-emulator-leak.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
