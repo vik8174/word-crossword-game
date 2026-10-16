@@ -112,6 +112,12 @@ h1,h2,h3,p{margin:0}
 .wordmark::before{content:"";width:16px;height:16px;border-radius:3px;background:var(--tile);box-shadow:0 0 0 1.5px var(--ink),2px 2px 0 0 var(--ink);transform:rotate(-6deg)}
 .title{font-weight:700;font-size:88px;line-height:.95;letter-spacing:-.015em}
 .lede{font-size:24px;color:var(--slate);line-height:1.4}
+/* the link card (#289): an image, 1200 x 630, not a screen of the app */
+.card{display:grid;grid-template-columns:520px minmax(0,1fr);gap:32px;align-items:center;height:100%;padding:40px 48px 40px 64px;box-sizing:border-box;background:var(--duck)}
+.card .title{font-size:84px}
+.card .lede{font-size:30px;margin-top:22px}
+.card .scene svg{display:block;height:550px;width:auto;max-width:100%;margin:0 auto}
+.card-tag{display:inline-block;margin-bottom:22px;font-weight:700;font-size:22px;letter-spacing:.12em;color:var(--tile);background:var(--brick);padding:6px 14px;border-radius:6px}
 .step-title{font-size:34px;font-weight:700;line-height:1.1}
 .h3{font-size:22px;font-weight:700;line-height:1.3}
 .hint{color:var(--slate);font-size:16px}
@@ -849,6 +855,20 @@ html.bare .dev-wrap{box-shadow:none}
         '<ol class="steps"><li><b>1</b>Type 10 to 20 words</li><li><b>2</b>Send the link to one person</li><li><b>3</b>Explain and guess out loud</li></ol></div>';
     } };
 
+  function linkCard(stage) {
+    return '<div class="card">' +
+      '<div>' + (stage ? '<span class="card-tag">STAGE</span>' : '') +
+      '<h1 class="title">Across the Street</h1>' +
+      '<p class="lede">A cooperative crossword. You explain your words out loud, your friend guesses them.</p></div>' +
+      '<div class="scene">' + scene({ letters: ["r", "a", "d", "i", "o"], mood: "talk", teacher: "", crop: "ground" }) + '</div></div>';
+  }
+  S["link-card"] = { group: "Outside the app", label: "Link card", fixed: [1200, 630],
+    note: "The picture a messenger shows under a shared link (og:image, 1200 x 630). One card for every path: a room's words are secret and a room lives a day. The game's name, the line from Home's lede, and the street whole, with radio on the line. Not a screen: no header, no button, nothing to press.",
+    render: function () { return linkCard(false); } };
+  S["link-card/stage"] = { group: "Outside the app", sub: true, label: "…on stage", fixed: [1200, 630],
+    note: "The same card, marked STAGE in brick above the name, so a test link is never mistaken for the game. Stage is also hidden from search (noindex), Viktor's decision of 2026-10-16.",
+    render: function () { return linkCard(true); } };
+
   function modePick(locked) {
     function opt(mode, title, text) {
       return '<button type="button" class="mode-opt" role="radio" aria-checked="' + (state.mode === mode) + '" data-pick="' + mode + '"' + (locked ? " disabled" : "") + '><b>' + esc(title) + '</b><span>' + esc(text) + '</span></button>';
@@ -1103,7 +1123,7 @@ html.bare .dev-wrap{box-shadow:none}
     "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection", "reload", "crash",
     "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/nostudent", "lobby/teacheraway",
     "playing", "playing/answered", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
-    "finished", "closed-early"];
+    "finished", "closed-early", "link-card", "link-card/stage"];
   var mapEl = document.getElementById("map"), stageEl = document.getElementById("stage");
   var whereEl = document.getElementById("where"), noteEl = document.getElementById("stateNote");
   function buildMap() {
@@ -1128,6 +1148,8 @@ html.bare .dev-wrap{box-shadow:none}
   function layoutFor(w) { return w >= 1200 ? "wide" : (w >= 768 ? "tablet" : "phone"); }
   function windows() {
     if (isBare) { return [{ w: window.innerWidth, h: window.innerHeight, name: "" }]; }
+    var fixed = (S[state.key] || {}).fixed;
+    if (fixed) { return [{ w: fixed[0], h: fixed[1], name: fixed[0] + " × " + fixed[1] + " (link card)" }]; }
     var keys = state.width === "all" ? ["1440", "834", "375"] : [state.width];
     return keys.map(function (k) { return { w: WINDOWS[k][0], h: WINDOWS[k][1], name: k + " × " + WINDOWS[k][1] }; });
   }
