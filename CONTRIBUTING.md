@@ -32,8 +32,27 @@ Opening or updating a pull request against `main` automatically runs:
 - **Coverage** — 80% threshold; a pull request below it cannot be merged
 - **Build** — `pnpm build` for both packages
 - **Rules** — `pnpm test:rules`: `firestore.rules` checked against the Firestore emulator (needs a JDK, which the job installs)
+- **E2E** — `pnpm test:e2e`: a real browser against the app and the Firebase emulators
+- **Visual** — `pnpm test:visual`: every Storybook story at 1440, 834 and 375 px, compared with the committed baselines in `apps/web/visual/baselines/`
 
-All five are required status checks in branch protection. A pull request cannot be merged until they are green.
+The first five are required status checks in branch protection. A pull request cannot be merged until they are green.
+
+## Visual regression
+
+The **Visual** job screenshots every story and fails when a shot differs from its baseline by more than `maxDiffPixelRatio` (`apps/web/playwright.visual.config.ts`, one value for every shot). A failed run uploads the expected, actual and diff images as the `visual-diffs` artifact, kept 14 days.
+
+**A pull request that changes the look updates its baselines in the same pull request.** Run, from the repository root:
+
+```bash
+pnpm test:visual:docker   # compare, in CI's image
+pnpm test:visual:update   # rewrite the baselines, in CI's image
+```
+
+Both need Docker. They run in `mcr.microsoft.com/playwright:v<version>-noble` (the version is the Playwright version in `apps/web/package.json`) on `linux/amd64`, with the repository mounted. **Never make a baseline outside that image, and never commit one made on a Mac**: the font rendering differs, and such a baseline fails every CI run. `pnpm test:visual:update` is the only command that writes baselines, and the test refuses `--update-snapshots` anywhere else. On Apple Silicon the amd64 image runs under emulation and takes several minutes.
+
+Review the changed PNGs in the diff before committing them: a baseline that changed is a change of the look, and it should be the one the pull request meant. A new story fails until its three baselines are committed. A story that shows the time or a random layout must be made deterministic.
+
+When Playwright is upgraded, the image tag in the **Visual** job moves with it (a step fails the job if they differ) and every baseline is regenerated.
 
 ## Deploying (GitHub Actions)
 
