@@ -54,7 +54,7 @@ export interface StreetPalette {
 export const STREET: StreetPalette = {
   duck: '#E6EEEC',
   tile: '#FAFBFA',
-  ink: '#1B2D38',
+  ink: '#1B2D3E',
   slate: '#4C6170',
   spruce: '#2D6658',
   ochre: '#F2C766',
