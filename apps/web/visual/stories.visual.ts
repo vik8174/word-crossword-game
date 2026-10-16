@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
@@ -22,6 +22,9 @@ const FIXED_TIME = new Date('2026-01-15T12:00:00.000Z');
 
 /** `ENTER_MS` of `src/motion.ts`, with a margin: a screen's enter mark is on for this long. */
 const ENTER_MS = 2000;
+
+/** The shot options `toHaveScreenshot` is configured with, for a shot taken by hand. */
+const SHOT = { animations: 'disabled', caret: 'hide' } as const;
 
 /** Poll on an interval: the default polls on animation frames, which the fake clock holds back. */
 const POLL = { polling: 50 };
@@ -163,7 +166,20 @@ for (const id of readStoryIds()) {
       await page.clock.setFixedTime(FIXED_TIME);
       await page.evaluate(() => document.fonts.ready);
 
-      await expect(page).toHaveScreenshot(`${id}--${width}.png`);
+      const name = `${id}--${width}.png`;
+
+      // Playwright writes no image for a missing baseline when it may not
+      // update one, so the shot is taken here: it is what the job uploads and
+      // `pnpm test:visual:accept` turns into the baseline.
+      if (!existsSync(testInfo.snapshotPath(name))) {
+        await page.screenshot({
+          path: testInfo.outputPath(name.replace(/\.png$/, '-actual.png')),
+          ...SHOT,
+        });
+        throw new Error(`No baseline for ${name}: take it from a CI run with test:visual:accept`);
+      }
+
+      await expect(page).toHaveScreenshot(name);
     });
   }
 }
