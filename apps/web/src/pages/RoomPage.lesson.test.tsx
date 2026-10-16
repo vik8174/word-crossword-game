@@ -124,8 +124,8 @@ const renderRoomPage = () =>
   render(
     <ThemeProvider theme={theme}>
       <FrameSlotProvider>
-        <Frame />
         <MemoryRouter initialEntries={[roomPath('room-1')]}>
+          <Frame />
           <Routes>
             <Route path={ROOM_ROUTE_PATTERN} element={<RoomPage />} />
           </Routes>

@@ -1,6 +1,7 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 import { STREET } from '../street';
 import { theme } from '../theme';
@@ -31,7 +32,9 @@ const renderGame = (room: RoomDocument, viewerId: string) =>
   render(
     <ThemeProvider theme={theme}>
       <FrameSlotProvider>
-        <Frame />
+        <MemoryRouter>
+          <Frame />
+        </MemoryRouter>
         <RoomGame roomId="room-1" room={room} viewerId={viewerId} />
       </FrameSlotProvider>
     </ThemeProvider>,

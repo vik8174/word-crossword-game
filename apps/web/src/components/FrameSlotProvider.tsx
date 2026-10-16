@@ -41,8 +41,12 @@ export const FrameSlotProvider = ({ children }: { readonly children: ReactNode }
 
   const shown = entries.at(-1);
   const content = useMemo<FrameSlotContent>(
-    () => ({ status: shown?.status, action: shown?.action }),
-    [shown?.status, shown?.action],
+    () => ({
+      status: shown?.status,
+      action: shown?.action,
+      plainWordmark: shown?.plainWordmark,
+    }),
+    [shown?.status, shown?.action, shown?.plainWordmark],
   );
 
   return (

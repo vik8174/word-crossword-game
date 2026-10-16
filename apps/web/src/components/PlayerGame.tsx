@@ -192,7 +192,7 @@ export const PlayerGame = ({
       ) : undefined,
     [hasEnding, endGame, isEnding, endError],
   );
-  useFrameSlot({ status, action });
+  useFrameSlot({ status, action, plainWordmark: true });
 
   // The grid as this player may see it, for the spellings of the words they have
   // guessed and for the cards on the line: the same view the board is drawn from.

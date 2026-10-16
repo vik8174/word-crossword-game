@@ -1,12 +1,13 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { type RefObject, useEffect, useRef } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 
 import { inRem } from '../scale';
 import { STREET } from '../street';
 import { FRAME_HEADER_FALLBACK, FRAME_HEADER_HEIGHT_PROPERTY } from './frame-height';
 import { useFrameSlotContent } from './frame-slot';
-import { FROM_TABLET, FROM_WIDE, STATUS_SX, WORDMARK_SX } from './frame-styles';
+import { FROM_TABLET, FROM_WIDE, STATUS_SX, WORDMARK_LINK_SX, WORDMARK_SX } from './frame-styles';
 import { OUTLINE_WIDTH } from './surface-styles';
 
 /**
@@ -55,6 +56,10 @@ const usePublishedHeaderHeight = (header: RefObject<HTMLElement | null>): void =
  * sticky, and `min-height` 64px; the screen below it takes the rest of the
  * window (`frame-height.ts`).
  *
+ * The name is a link to the home page (a client-side navigation) on every
+ * screen except those that set `plainWordmark` in the slot: the lobby, the game
+ * and the home page, where a stray tap must not take a player out of a room.
+ *
  * @example
  * <FrameSlotProvider>
  *   <Frame />
@@ -62,7 +67,7 @@ const usePublishedHeaderHeight = (header: RefObject<HTMLElement | null>): void =
  * </FrameSlotProvider>
  */
 export const Frame = () => {
-  const { status, action } = useFrameSlotContent();
+  const { status, action, plainWordmark } = useFrameSlotContent();
   const header = useRef<HTMLElement>(null);
 
   usePublishedHeaderHeight(header);
@@ -86,9 +91,15 @@ export const Frame = () => {
         [FROM_WIDE]: { paddingInline: inRem(48) },
       }}
     >
-      <Typography component="span" sx={WORDMARK_SX}>
-        Across the Street
-      </Typography>
+      {plainWordmark === true ? (
+        <Typography component="span" sx={WORDMARK_SX}>
+          Across the Street
+        </Typography>
+      ) : (
+        <Typography component={RouterLink} to="/" sx={{ ...WORDMARK_SX, ...WORDMARK_LINK_SX }}>
+          Across the Street
+        </Typography>
+      )}
       {status === undefined ? null : (
         <Typography variant="hint" component="div" sx={STATUS_SX}>
           {status}

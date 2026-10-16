@@ -3,6 +3,7 @@ import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 
 import { belowFrame } from '../components/frame-height';
+import { useFrameSlot } from '../components/frame-slot';
 import { gateHintSx } from '../components/gate-panel-styles';
 import { lobbyTightStackSx } from '../components/lobby-styles';
 import { PillButton } from '../components/PillButton';
@@ -52,6 +53,7 @@ const FROM_TABLET = '@media (min-width: 768px)';
  */
 export const HomePage = () => {
   useScreenReached('home');
+  useFrameSlot({ plainWordmark: true });
 
   return (
     <ScreenEnter>

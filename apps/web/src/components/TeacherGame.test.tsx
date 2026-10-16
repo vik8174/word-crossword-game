@@ -1,6 +1,7 @@
 import { ThemeProvider } from '@mui/material/styles';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 
 import { logGameEvent } from '../telemetry/analytics';
 import { STREET } from '../street';
@@ -34,7 +35,9 @@ const renderTeacher = (room: RoomDocument, endGameEarly = vi.fn(() => Promise.re
   render(
     <ThemeProvider theme={theme}>
       <FrameSlotProvider>
-        <Frame />
+        <MemoryRouter>
+          <Frame />
+        </MemoryRouter>
         <RoomGame
           roomId={ROOM_ID}
           room={room}
@@ -241,7 +244,9 @@ describe('a word answered while the teacher is watching', () => {
       rerender(
         <ThemeProvider theme={theme}>
           <FrameSlotProvider>
-            <Frame />
+            <MemoryRouter>
+              <Frame />
+            </MemoryRouter>
             <RoomGame roomId={ROOM_ID} room={room} viewerId={TEACHER_ID} />
           </FrameSlotProvider>
         </ThemeProvider>,

@@ -29,7 +29,7 @@ export default meta;
 
 type Story = StoryObj<typeof Frame>;
 
-/** A screen that has put nothing in the slot: the name alone. */
+/** A screen that has put nothing in the slot: the name alone, as a link to the home page. */
 export const Empty: Story = {
   render: () => (
     <FrameSlotProvider>
@@ -45,6 +45,22 @@ export const Filled: Story = {
       <Frame />
       <SampleFiller />
       <Box sx={{ p: 4 }}>The screen stands below the header.</Box>
+    </FrameSlotProvider>
+  ),
+};
+
+const PlainFiller = () => {
+  useFrameSlot({ status: 'Playing with Ana', plainWordmark: true });
+
+  return null;
+};
+
+/** The lobby and the game: the name is plain text, so a stray tap cannot take a player out of the room. */
+export const PlainName: Story = {
+  render: () => (
+    <FrameSlotProvider>
+      <Frame />
+      <PlainFiller />
     </FrameSlotProvider>
   ),
 };
