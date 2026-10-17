@@ -5,6 +5,13 @@
  * failure does not hide the other. Prints the median-run scores of every page
  * and preset, which is what the thresholds are calibrated from.
  *
+ * The build runs with `ENVIRONMENT=production`. With `ENVIRONMENT` unset the
+ * build is the stage site, which carries `noindex` on purpose (#289), and the
+ * SEO audit `is-crawlable` then fails on every page. Lighthouse must measure
+ * the page a crawler is meant to index, so this build is the production one
+ * and the SEO threshold stays where it is. Only this build changes: the E2E
+ * job's own build stays stage.
+ *
  * Expects the emulator ports in VITE_EMULATOR_* (scripts/run-e2e.mjs sets them)
  * and CHROME_PATH.
  */
@@ -24,16 +31,11 @@ if (!process.env.CHROME_PATH) {
 }
 
 if (
-  run('pnpm', [
-    'exec',
-    'vite',
-    'build',
-    '--mode',
-    'e2e',
-    '--outDir',
-    'dist-lhci',
-    '--emptyOutDir',
-  ]) !== 0
+  run(
+    'pnpm',
+    ['exec', 'vite', 'build', '--mode', 'e2e', '--outDir', 'dist-lhci', '--emptyOutDir'],
+    { ENVIRONMENT: 'production' },
+  ) !== 0
 ) {
   process.exit(1);
 }

@@ -16,6 +16,7 @@ import {
   notCountedHrefs,
   tooHeavyReport,
 } from './build/first-visit-weight.ts';
+import { linkCard } from './build/link-card.ts';
 import { readGitRevision, readPackageVersion, resolveReleaseName } from './build/release-name.ts';
 import {
   type BundleChunk,
@@ -261,6 +262,7 @@ export default defineConfig(({ mode }) => {
     plugins: [
       react(),
       preloadRoomRoute(),
+      linkCard({ environment: process.env.ENVIRONMENT, root: import.meta.dirname }),
       capFirstVisit(),
       ...(uploadsSourceMaps
         ? [
