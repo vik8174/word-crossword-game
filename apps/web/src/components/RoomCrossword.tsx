@@ -14,6 +14,7 @@ import type { BandAbove } from './board-geometry';
 import { CrosswordGrid } from './CrosswordGrid';
 import { CROSSWORD_HEADING_ID, CrosswordHeading } from './CrosswordHeading';
 import { Message } from './Message';
+import { THREE_ZONES } from './room-layout';
 import { SENTENCE_BAND_SX, UNSEEN_HEADING } from './surface-styles';
 import { TeacherGrid } from './TeacherGrid';
 import { useBandShown } from './use-band-shown';
@@ -164,7 +165,18 @@ export const RoomCrossword = ({
   const bandAbove = bandAboveOf(isBandShown, hasNote);
 
   return (
-    <section aria-labelledby={CROSSWORD_HEADING_ID}>
+    <Box
+      component="section"
+      aria-labelledby={CROSSWORD_HEADING_ID}
+      // A board with nothing above it (the game) is a column that fills the
+      // middle zone's height from 1200 by 600, so that the board can stand in
+      // the middle of it (`BoardFrame`). The endings keep the block they had.
+      sx={
+        bandAbove === 'none'
+          ? { [THREE_ZONES]: { display: 'flex', flexDirection: 'column', flex: '1 0 auto' } }
+          : undefined
+      }
+    >
       {hasVisibleHeading ? (
         /* The middle of the window is the one part of the room with no zone of
           its own, so the line that names the board is given a tile. */
@@ -222,6 +234,6 @@ export const RoomCrossword = ({
           {errorMessage}
         </Message>
       )}
-    </section>
+    </Box>
   );
 };

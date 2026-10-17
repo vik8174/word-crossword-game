@@ -57,11 +57,26 @@ export const BoardFrame = ({
   children,
 }: BoardFrameProps) => {
   const heights = boardHeightsFor(bandAbove);
+  // No drawing above the board: the game. From 1200 by 600 the board stands in
+  // the middle of the zone's free height and the notes at its foot, as the
+  // template has it (`.zone-middle.fill > .board-wrap { margin: auto 0 }`).
+  const isCentred = bandAbove === 'none';
 
   return (
     <Box
       sx={{
         py: 2,
+        ...(isCentred
+          ? {
+              // The zone's own ring of padding is all the room the squares' shadows need.
+              [THREE_ZONES]: {
+                py: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                flex: '1 0 auto',
+              },
+            }
+          : {}),
         // On a phone held upright, or a tablet, the box below is as tall as its grid, which it
         // can only be if it knows its own width: this is the container whose
         // width that is (`NARROW_BOARD_HEIGHT_CSS`). A screen with nothing under
@@ -93,7 +108,16 @@ export const BoardFrame = ({
           [NARROW_WINDOW]: { height: heights.narrow },
           [APP_SHELL]: { height: heights.appShell },
           [TABLET_WINDOW]: { height: heights.tablet },
-          [THREE_ZONES]: { height: heights.wide },
+          [THREE_ZONES]: {
+            height: heights.wide,
+            // Automatic margins share what the column has left above and below
+            // the board, and come out as nothing when the board and its notes
+            // are taller than the zone: the board then starts at the top and
+            // the zone scrolls, as it always has.
+            ...(isCentred
+              ? { flexShrink: 0, marginBlock: 'auto', display: 'flex', flexDirection: 'column' }
+              : {}),
+          },
         }}
       >
         <Box
@@ -109,6 +133,12 @@ export const BoardFrame = ({
             // than what holds it come out as nothing, so the scroll still starts
             // at the first column rather than in the middle of the board.
             mx: 'auto',
+            // A box taller than its grid (the list is wide for the zone, so the
+            // squares are sized by the width and the box keeps its height) holds
+            // the grid in its middle, so the centring above is of the grid and
+            // not of an empty strip under it. Taller than the box, the margins
+            // come out as nothing and the box scrolls from its first row.
+            ...(isCentred ? { [THREE_ZONES]: { marginBlock: 'auto', flexShrink: 0 } } : {}),
           }}
         >
           {squares}

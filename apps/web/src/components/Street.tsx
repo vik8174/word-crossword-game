@@ -89,8 +89,6 @@ export type StreetProps = LineProps & {
   readonly fiesta?: boolean;
   /** The words hanging on the line, in the order given. */
   readonly cards?: readonly string[];
-  /** One of `cards`: that card carries the `pegged` class that is hung on the line and swings still. */
-  readonly justAnswered?: string;
   /** One word, drawn as tiles pegged to the line. */
   readonly letters?: string;
   /** How much of the street is shown. `full` unless given. */
@@ -127,7 +125,6 @@ export const Street = ({
   teacher,
   fiesta = false,
   cards,
-  justAnswered,
   letters,
   crop = 'full',
   label,
@@ -273,7 +270,7 @@ export const Street = ({
       </g>
       {fiesta && <Fiesta />}
       {letters && <LetterTiles letters={letters} sag={sag} />}
-      {cards && <WordCards words={cards} sag={sag} justAnswered={justAnswered} />}
+      {cards && <WordCards words={cards} sag={sag} />}
     </svg>
   );
 };

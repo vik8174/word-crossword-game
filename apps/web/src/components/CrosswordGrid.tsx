@@ -14,7 +14,7 @@ import { type BandAbove, CELL_SIDE } from './board-geometry';
 import { NOTE_SX, NOTES_SX } from './board-note-styles';
 import { BoardFrame } from './BoardFrame';
 import { GridSquare } from './GridSquare';
-import { BOX_AT_ITS_GRID } from './room-layout';
+import { BOX_AT_ITS_GRID, THREE_ZONES } from './room-layout';
 
 /** Text that is read out but not drawn — for what the grid says in colour alone. */
 const SPOKEN_ONLY: SxProps<Theme> = {
@@ -285,7 +285,13 @@ export const CrosswordGrid = ({
         sx={{
           ...NOTES_SX,
           // An empty line opens no gap of its own, so it opens no margin either.
-          ...(hasNotes ? {} : { [BOX_AT_ITS_GRID]: { marginTop: 0 } }),
+          ...(hasNotes
+            ? {}
+            : {
+                [BOX_AT_ITS_GRID]: { marginTop: 0 },
+                // Nothing under the board in a game: it is centred in the whole zone.
+                ...(bandAbove === 'none' ? { [THREE_ZONES]: { marginTop: 0 } } : {}),
+              }),
         }}
       >
         <Typography

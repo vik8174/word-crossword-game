@@ -2391,21 +2391,6 @@ describe('RoomPage', () => {
       await untilGone(() => screen.queryByText(/connecting to the game/i));
 
       expect(turning()).toEqual([]);
-      expect(document.querySelector('svg .pegged')).toBeNull();
-    });
-
-    it('pegs the card of the word on the line once, as it arrives', async () => {
-      // A window tall enough for the board to leave room for the drawing above it.
-      vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(2400);
-      vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1440);
-
-      await openRoom(gameWithCat(false));
-      await untilGone(() => screen.queryByText(/connecting to the game/i));
-      expect(document.querySelector('svg .pegged')).toBeNull();
-
-      await emit(gameWithCat(true));
-
-      expect(document.querySelectorAll('svg .pegged')).toHaveLength(1);
     });
   });
 

@@ -36,8 +36,6 @@ describe('motion', () => {
       cardsDelay: 1250,
       wave: 760,
       waveStep: 90,
-      peg: 1100,
-      pegDelay: 420,
       shake: 420,
       message: 520,
       dialog: 460,
