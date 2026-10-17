@@ -4,7 +4,7 @@ import type { ExplainedWord } from '../rooms/word-visibility';
 import { inRem, TEXT_FONT_FAMILY } from '../scale';
 import { STREET } from '../street';
 import { nameOf } from './word-entry';
-import { REFERENCE_SX, ROW_LAYOUT_SX, stateSx, WORD_RULE } from './word-row-styles';
+import { REFERENCE_SX, ROW_LAYOUT_SX, stateSx, WORD_END_SX, WORD_RULE } from './word-row-styles';
 
 /** What a word that has not been answered says. */
 const UNANSWERED = { playing: 'not yet', summary: 'not answered' } as const;
@@ -34,7 +34,7 @@ interface WatchedWordListProps {
  * another by a colour alone. The teacher's room lists these while the lesson is
  * on (`TeacherWordsPanel`) and its summary lists them when it has ended
  * (`LessonSummary`); the differences are what an unanswered word says and the
- * rows' line height (`.word-list .row`, template line 303).
+ * rows' line height (`.word-list .row`, template lines 320-321).
  *
  * @param props.labelledBy - Id of the list's heading
  * @param props.words - The words, from `wordViewFor`'s `watched` view
@@ -63,6 +63,7 @@ export const WatchedWordList = ({ labelledBy, words, kind }: WatchedWordListProp
           <Box
             component="span"
             sx={{
+              ...WORD_END_SX,
               minWidth: 0,
               fontFamily: TEXT_FONT_FAMILY,
               overflowWrap: 'anywhere',
