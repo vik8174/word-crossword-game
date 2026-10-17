@@ -102,15 +102,30 @@ describe('link card, built', () => {
 
       it('publishes its own card at link-card.png', () => {
         const { outDir } = built();
+        // The file is named here, not read from the table under test, so a swap
+        // of the two cards in `SITES` fails this test.
+        const expectedFile = {
+          production: 'link-card/production.png',
+          stage: 'link-card/stage.png',
+        }[name];
 
+        expect(site.cardFile).toBe(expectedFile);
         expect(
           readFileSync(join(outDir, 'link-card.png')).equals(
-            readFileSync(join(webRoot, site.cardFile)),
+            readFileSync(join(webRoot, expectedFile)),
           ),
         ).toBe(true);
       });
     });
   }
+
+  it('the two sites publish two different cards', () => {
+    expect(
+      readFileSync(join(production.outDir, 'link-card.png')).equals(
+        readFileSync(join(stage.outDir, 'link-card.png')),
+      ),
+    ).toBe(false);
+  });
 
   it('stage says noindex and production does not', () => {
     expect(stage.html).toContain('<meta name="robots" content="noindex">');
