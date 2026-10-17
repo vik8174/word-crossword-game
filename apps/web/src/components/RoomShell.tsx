@@ -116,6 +116,11 @@ const Zone = ({ area, phoneOrder, isEmpty, isColumn, isWidthContainer, children 
           margin: `-${ZONE_RING_ROOM_PX}px`,
           padding: `${ZONE_RING_ROOM_PX}px`,
         },
+        // The board's zone is a column in the three-zone window, so that a game
+        // with no drawing above its board can stand the board in the middle of
+        // the height and the notes at the foot (`BoardFrame`). What is in it
+        // otherwise stays at the top, as a block does.
+        ...(isColumn ? {} : { [THREE_ZONES]: { display: 'flex', flexDirection: 'column' } }),
       }}
     >
       {children}
