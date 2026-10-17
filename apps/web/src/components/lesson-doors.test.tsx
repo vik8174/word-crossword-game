@@ -38,8 +38,7 @@ vi.mock('firebase/analytics', () => ({
  */
 
 const CLAUSE = ', and the teacher watching from the house at the end of the street';
-const DOOR =
-  'A neighbour waving from her balcony, holding out a line to an empty balcony across the street';
+const DOOR = 'A neighbour waving from her balcony to an empty balcony across the street';
 
 describe('JoinRoomForm, in a lesson', () => {
   it('is titled "Join the lesson" and invites to a lesson, by the teacher’s name', () => {

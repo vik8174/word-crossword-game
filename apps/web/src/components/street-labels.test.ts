@@ -128,8 +128,7 @@ describe('the teacher on their own screen', () => {
 });
 
 describe('the label of the door (#226)', () => {
-  const DOOR =
-    'A neighbour waving from her balcony, holding out a line to an empty balcony across the street';
+  const DOOR = 'A neighbour waving from her balcony to an empty balcony across the street';
 
   it('is #226’s own for a pair game', () => {
     expect(joinStreetLabel()).toBe(DOOR);

@@ -58,17 +58,16 @@ export const DoorColumn = ({ picture, unseenHeading, children }: DoorColumnProps
 );
 
 /**
- * The drawing over `connecting`: a line being thrown across the street to an
+ * The drawing over `connecting`: a neighbour waving across the street to an
  * empty balcony (`?state=connecting` of the template, line 898).
  */
 export const ConnectingStreet = () => (
   <Street
     right="empty"
-    line="loose"
-    thrown
+    line="none"
     mood="wave"
     crop="top"
-    label="A line being thrown across the street to an empty balcony"
+    label="A neighbour waving across the street to an empty balcony"
   />
 );
 
@@ -84,7 +83,7 @@ interface JoinStreetProps {
 
 /**
  * The drawing over `join` in all three of its states: a neighbour waving from
- * her balcony with a line held out to the empty one across the street
+ * her balcony waving to the empty one across the street
  * (`?state=join` of the template, line 907).
  *
  * In a lesson the teacher is at the end of the street, and the label says so
@@ -95,7 +94,7 @@ interface JoinStreetProps {
 export const JoinStreet = ({ teacher }: JoinStreetProps) => (
   <Street
     right="empty"
-    line="loose"
+    line="none"
     mood="wave"
     crop="top"
     teacher={teacher}

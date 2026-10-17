@@ -37,7 +37,7 @@ export type StreetLeft = 'here' | 'empty' | 'shut';
 /** The right-hand balcony: a neighbour, curtains drawn, nobody yet, or shutters closed. */
 export type StreetRight = 'here' | 'away' | 'empty' | 'shut';
 /** The line between the cans. */
-export type StreetLine = 'taut' | 'slack' | 'loose' | 'none';
+export type StreetLine = 'taut' | 'slack' | 'none';
 /** How the neighbours behave. */
 export type StreetMood = 'talk' | 'wave' | 'wait' | 'cheer' | 'calm';
 /** How much of the street is shown. */
@@ -63,12 +63,7 @@ const MOODS: Record<StreetMood, { L: [Face, ArmPose]; R: [Face, ArmPose]; T: Fac
 /** How far the line sags once the game has ended early. */
 const SLACK_SAG = 48;
 
-/** What every line but `loose` agrees on: a dashed throw belongs to the loose line alone. */
-type LineProps =
-  | { readonly line?: Exclude<StreetLine, 'loose'>; readonly thrown?: never }
-  | { readonly line: 'loose'; readonly thrown?: boolean };
-
-export type StreetProps = LineProps & {
+export interface StreetProps {
   /**
    * The left-hand balcony. `here` unless given. `empty` is a balcony nobody has
    * come out on yet: its window is dark and no neighbour stands in it, which is
@@ -78,6 +73,8 @@ export type StreetProps = LineProps & {
   readonly left?: StreetLeft;
   /** The right-hand balcony. `here` unless given. */
   readonly right?: StreetRight;
+  /** The line between the cans. `taut` unless given. */
+  readonly line?: StreetLine;
   /** How the neighbours behave. `talk` unless given. */
   readonly mood?: StreetMood;
   /**
@@ -95,7 +92,7 @@ export type StreetProps = LineProps & {
   readonly crop?: StreetCrop;
   /** The accessible name of the picture, used exactly as given. */
   readonly label: string;
-};
+}
 
 const SVG_STYLE: CSSProperties = { display: 'block', width: '100%', height: 'auto' };
 
@@ -114,13 +111,12 @@ const SVG_STYLE: CSSProperties = { display: 'block', width: '100%', height: 'aut
  * staggers them; the flags of the fiesta card carry theirs (`FiestaCard`).
  *
  * @example
- * <Street right="empty" line="loose" crop="top" mood="wave" label="A neighbour waiting" />
+ * <Street right="empty" line="none" crop="top" mood="wave" label="A neighbour waiting" />
  */
 export const Street = ({
   left = 'here',
   right = 'here',
   line = 'taut',
-  thrown = false,
   mood: moodName = 'talk',
   teacher,
   fiesta = false,
@@ -257,14 +253,6 @@ export const Street = ({
             strokeWidth="1.5"
             pathLength="1"
             className="line-draw"
-          />
-        )}
-        {line === 'loose' && (
-          <path
-            d={`M${P0[0]} ${P0[1]}Q236 330 ${thrown ? '330 290' : '214 300'}`}
-            fill="none"
-            strokeWidth="1.5"
-            strokeDasharray={thrown ? '3 7' : undefined}
           />
         )}
       </g>

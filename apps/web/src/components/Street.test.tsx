@@ -102,24 +102,14 @@ describe('Street: who is on the balconies', () => {
 });
 
 describe('Street: the line', () => {
-  const dashed = (props: Parameters<typeof Street>[0]) =>
-    svgOf(render(<Street {...props} />).container).querySelectorAll('[stroke-dasharray]').length;
-
-  it('draws the taut and the slack line as a path to animate, and the loose one without', () => {
-    const lineDraw = (line: 'taut' | 'slack' | 'loose' | 'none') =>
+  it('draws the taut and the slack line as a path to animate, and none without', () => {
+    const lineDraw = (line: 'taut' | 'slack' | 'none') =>
       svgOf(render(<Street label={LABEL} line={line} />).container).querySelectorAll('.line-draw')
         .length;
 
     expect(lineDraw('taut')).toBe(1);
     expect(lineDraw('slack')).toBe(1);
-    expect(lineDraw('loose')).toBe(0);
     expect(lineDraw('none')).toBe(0);
-  });
-
-  it('dashes a loose line only while it is being thrown', () => {
-    expect(dashed({ label: LABEL, line: 'loose', thrown: true })).toBe(1);
-    expect(dashed({ label: LABEL, line: 'loose' })).toBe(0);
-    expect(dashed({ label: LABEL, line: 'taut' })).toBe(0);
   });
 
   it('sags a slack line and the cards on it, and no other', () => {
