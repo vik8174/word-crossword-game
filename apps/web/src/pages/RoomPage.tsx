@@ -39,7 +39,7 @@ const ROOM_HEADING = 'Game room';
  * so a guest opening an invite link cold saw that frame appear the moment the
  * visit began, then disappear and reappear a second later (issue #132).
  *
- * Built to `?state=connecting` (template lines 893-899): the line being thrown
+ * Built to `?state=connecting` (template lines 893-899): a neighbour waving
  * across the street to an empty balcony, then the dot and "Connecting to the
  * game…" centred under it. Named the same page a real room screen is, unseen
  * for the same reason `RoomShell` says it unseen on the screen a game is played

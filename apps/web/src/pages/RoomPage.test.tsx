@@ -420,15 +420,15 @@ describe('RoomPage', () => {
     });
 
     // This line has no zone of its own to stand in (issue #136). It stands in
-    // the column every screen at the doors stands in, under the line being
-    // thrown across the street to an empty balcony (issue #226).
-    it('draws the line being thrown across the street above the connecting line', async () => {
+    // the column every screen at the doors stands in, under the neighbour waving
+    // across the street to an empty balcony (issue #226).
+    it('draws the neighbour waving across the street above the connecting line', async () => {
       renderRoomPage();
 
       await waitFor(() => expect(onSnapshot).toHaveBeenCalled());
 
       const picture = screen.getByRole('img', {
-        name: 'A line being thrown across the street to an empty balcony',
+        name: 'A neighbour waving across the street to an empty balcony',
       });
 
       expect(

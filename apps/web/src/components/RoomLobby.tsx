@@ -77,7 +77,7 @@ interface RoomLobbyProps {
  * room has stopped hearing from the reader, who is in the room, the link that
  * brings the other one, the one control that starts the game) beside the street,
  * which says who is in. The street says it three ways: the second balcony empty
- * and the line loose while the host is alone, both taken with the line taut once
+ * and no line while the host is alone, both taken with the line taut once
  * they are two, and the second with its curtains drawn when a seat has been
  * freed by silence (the host is still offered the link, because `invitation` is
  * handed down only while a seat is free).

@@ -286,7 +286,7 @@ describe('a student arriving by the lesson’s link', () => {
 
     expect(
       screen.getByRole('img', {
-        name: `A neighbour waving from her balcony, holding out a line to an empty balcony across the street${CLAUSE}`,
+        name: `A neighbour waving from her balcony to an empty balcony across the street${CLAUSE}`,
       }),
     ).toBeInTheDocument();
   });
@@ -300,7 +300,7 @@ describe('a student arriving by the lesson’s link', () => {
 
     expect(
       screen.getByRole('img', {
-        name: 'A neighbour waving from her balcony, holding out a line to an empty balcony across the street',
+        name: 'A neighbour waving from her balcony to an empty balcony across the street',
       }),
     ).toBeInTheDocument();
   });

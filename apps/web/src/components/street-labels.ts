@@ -117,8 +117,7 @@ export const roomStreetLabel = (lesson?: LessonView): string =>
   BAND_LABEL + (lesson !== undefined && teacherDrawnFor(lesson) === 'here' ? TEACHER_CLAUSE : '');
 
 /** The neighbour at the door, in every room: #226's label. */
-const JOIN_LABEL =
-  'A neighbour waving from her balcony, holding out a line to an empty balcony across the street';
+const JOIN_LABEL = 'A neighbour waving from her balcony to an empty balcony across the street';
 
 /**
  * The label of the drawing over the door into a room.

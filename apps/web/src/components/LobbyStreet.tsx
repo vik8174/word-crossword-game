@@ -23,7 +23,7 @@ interface LobbyStreetProps {
  *
  * - nobody in (a lesson's first lobby): both balconies dark, no neighbour on
  *   either, no line strung yet;
- * - one in: the other balcony empty and the line loose, the neighbour waiting;
+ * - one in: the other balcony empty and no line, the neighbour waiting;
  * - both in: both balconies taken and the line taut, the neighbours waving;
  * - a seat freed by silence: both are still in the room, but the curtains of the
  *   second are drawn (`right="away"`) while the line stays taut.
@@ -66,7 +66,7 @@ export const LobbyStreet = ({ players, seatFreedBySilence, lesson }: LobbyStreet
 
   if (players < 2) {
     return (
-      <Street right="empty" line="loose" mood="wait" crop={crop} teacher={teacher} label={label} />
+      <Street right="empty" line="none" mood="wait" crop={crop} teacher={teacher} label={label} />
     );
   }
 

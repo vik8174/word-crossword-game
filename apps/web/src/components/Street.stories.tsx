@@ -43,27 +43,25 @@ export const Home: Story = {
   },
 };
 
-/** `connecting`: the line being thrown across to an empty balcony. */
+/** `connecting`: a neighbour waving to an empty balcony, no line. */
 export const Connecting: Story = {
   args: {
     right: 'empty',
-    line: 'loose',
-    thrown: true,
+    line: 'none',
     mood: 'wave',
     crop: 'top',
-    label: 'A line being thrown across the street to an empty balcony',
+    label: 'A neighbour waving across the street to an empty balcony',
   },
 };
 
-/** `join`: the neighbour holds out the line, unthrown. */
+/** `join`: a neighbour waves from her balcony, no line. */
 export const Join: Story = {
   args: {
     right: 'empty',
-    line: 'loose',
+    line: 'none',
     mood: 'wave',
     crop: 'top',
-    label:
-      'A neighbour waving from her balcony, holding out a line to an empty balcony across the street',
+    label: 'A neighbour waving from her balcony to an empty balcony across the street',
   },
 };
 
@@ -71,7 +69,7 @@ export const Join: Story = {
 export const LobbyWaiting: Story = {
   args: {
     right: 'empty',
-    line: 'loose',
+    line: 'none',
     mood: 'wait',
     crop: 'top',
     label: 'Your balcony, and the one across the street still empty',

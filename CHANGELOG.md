@@ -4,6 +4,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+### Changed
+
+- No line hangs from a lone neighbour's tin can ([#323](https://github.com/vik8174/word-crossword-game/issues/323)). While one person is on the street (the lobby waiting for the second player, the join form, connecting) the drawing shows no line; it appears when both balconies are taken, as before. The drawing's description no longer mentions a line in those states.
+
 ### Added
 
 - In the lists beside the board the word stands at the row's right edge, with its state just before it, "✓ answered bread" ([#316](https://github.com/vik8174/word-crossword-game/issues/316)). The reference stays on the left; an empty state takes no space.
