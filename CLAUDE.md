@@ -58,15 +58,15 @@ pnpm workspace over `apps/*` and `packages/*`.
 | dev server | `pnpm dev` (Vite, `--port` to move it)             | —                                      |
 | workshop   | `pnpm --filter web storybook`                      | port 6006 unless moved                 |
 | lint       | `pnpm lint` (`eslint .` then `prettier --check .`) | 6 s                                    |
-| tests      | `pnpm test`                                        | 16 s, 967 tests in 87 files            |
-| coverage   | `pnpm test:coverage`                               | 22 s, 99.56 % of statements (web)      |
+| tests      | `pnpm test`                                        | 22 s, 1611 tests in 112 files          |
+| coverage   | `pnpm test:coverage`                               | 51 s, 99.12 % of statements (web)      |
 | build      | `pnpm build`                                       | 14 s                                   |
 | rules      | `pnpm test:rules`                                  | 7 s                                    |
 | e2e        | `pnpm test:e2e`                                    | about 43 s locally, 1m42s in CI (#303) |
 | visual     | `pnpm test:visual` (baselines come from CI only)   | 3m26s in CI (#318)                     |
 | lighthouse | `pnpm test:lighthouse`                             | in CI (#345); not timed locally        |
 
-The test count is the sum of two packages: 877 tests in 78 files in `apps/web` and 90 in 9 in `packages/shared`. Coverage is that of `apps/web` (1597 of 1604 statements); `packages/shared` is at 100 %.
+The test and coverage rows were measured again on `11311fe`, on 2026-10-17, by the same commands: the test count is the sum of two packages, 1417 tests in 100 files in `apps/web` and 194 in 12 in `packages/shared`. Coverage is that of `apps/web` (2037 of 2055 statements); `packages/shared` is at 100 %.
 
 `pnpm build` is four things in a row: `tsc --noEmit`, `vite build`,
 `assert-no-source-maps.mjs`, and a Storybook build. A type error fails the build
