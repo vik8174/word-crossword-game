@@ -3,6 +3,8 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
+import { SQUARE_FACE_CLASS } from '../motion';
+import { MOTION_PLAY_CSS } from '../motion-play-styles';
 import { logGameEvent } from '../telemetry/analytics';
 import { STREET } from '../street';
 import { theme } from '../theme';
@@ -259,6 +261,10 @@ describe('a word answered while the teacher is watching', () => {
     // `engine`, six squares, one of them shared with `bread`, which was answered already.
     expect(board().querySelectorAll('.just').length).toBeGreaterThanOrEqual(5);
     expect(squareAt(0, 3).parentElement).not.toHaveClass('just');
+    // The wave's colour runs on the face by this class; the stylesheet must name it.
+    const wave = board().querySelector('.just');
+    expect(wave?.firstElementChild).toHaveClass(SQUARE_FACE_CLASS);
+    expect(MOTION_PLAY_CSS).toContain(`.cell.just>.${SQUARE_FACE_CLASS}{`);
   });
 });
 

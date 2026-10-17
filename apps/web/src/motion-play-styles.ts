@@ -1,4 +1,9 @@
-import { MOTION_MS as MS, OUT_CURVE as OUT, SPRING_CURVE as SPRING } from './motion';
+import {
+  MOTION_MS as MS,
+  SQUARE_FACE_CLASS,
+  OUT_CURVE as OUT,
+  SPRING_CURVE as SPRING,
+} from './motion';
 import { at, ms, noPreference } from './motion-css';
 import { STREET } from './street';
 
@@ -18,10 +23,10 @@ import { STREET } from './street';
 const sway = (duration: number): string => `s-sway ${ms(duration)} ease-in-out infinite alternate`;
 
 export const MOTION_PLAY_CSS = noPreference([
-  `.cell.just{animation:s-turn ${ms(MS.turn)} ${OUT} both;animation-delay:${at('--d', MS.turnStep, 0)}}`,
-  `.cell.just>[aria-label]{animation:s-tone ${ms(MS.turn)} ${OUT} both;animation-delay:${at('--d', MS.turnStep, 0)}}`,
-  `@keyframes s-turn{from{transform:perspective(300px) rotateX(-95deg)}to{transform:none}}`,
-  `@keyframes s-tone{from{background-color:${STREET.tile}}55%{background-color:${STREET.sage}}}`,
+  `.cell.just{z-index:1;animation:s-wave ${ms(MS.wave)} ease both;animation-delay:${at('--d', MS.waveStep, 0)}}`,
+  `.cell.just>.${SQUARE_FACE_CLASS}{animation:s-tone ${ms(MS.wave)} ease both;animation-delay:${at('--d', MS.waveStep, 0)}}`,
+  `@keyframes s-wave{0%{transform:none}35%{transform:translateY(-14px)}62%{transform:translateY(3px)}80%{transform:translateY(-3px)}100%{transform:none}}`,
+  `@keyframes s-tone{0%,35%{background-color:${STREET.wash}}62%{background-color:${STREET.sage}}}`,
   `svg .pegged{transform-box:fill-box;transform-origin:50% 0;animation:s-peg ${ms(MS.peg)} ${OUT} ${ms(MS.pegDelay)} both}`,
   `@keyframes s-peg{0%{opacity:0;transform:translateY(-26px) rotate(-16deg)}45%{opacity:1;transform:translateY(0) rotate(9deg)}70%{transform:rotate(-4deg)}88%{transform:rotate(1.5deg)}100%{transform:none}}`,
   `.cell.refused{animation:s-shake ${ms(MS.shake)} ${OUT} both}`,
