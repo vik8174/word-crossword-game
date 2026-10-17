@@ -6,7 +6,7 @@ import type { WordLocation } from '../rooms/word-visibility';
 import { inRem, TEXT_FONT_FAMILY } from '../scale';
 import { STREET } from '../street';
 import type { WordEntry } from './word-entry';
-import { REFERENCE_SX, ROW_LAYOUT_SX, stateSx, WORD_RULE } from './word-row-styles';
+import { REFERENCE_SX, ROW_LAYOUT_SX, stateSx, WORD_END_SX, WORD_RULE } from './word-row-styles';
 
 interface WordEntryListProps {
   /** Id of the heading this list belongs to, so it is named by its own half. */
@@ -22,7 +22,7 @@ interface WordEntryListProps {
   readonly onSelectWord: (location: WordLocation) => void;
 }
 
-/** One row, drawn as `.word-list button` is (template line 182): a row of three tracks. */
+/** One row, drawn as `.word-list button` is (template line 192): a row of three tracks. */
 const ROW_SX: CSSObject = {
   ...ROW_LAYOUT_SX,
   cursor: 'pointer',
@@ -87,6 +87,7 @@ export const WordEntryList = ({ labelledBy, entries, onSelectWord }: WordEntryLi
           <Box
             component="span"
             sx={{
+              ...WORD_END_SX,
               minWidth: 0,
               fontFamily: TEXT_FONT_FAMILY,
               overflowWrap: 'anywhere',
