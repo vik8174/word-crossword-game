@@ -63,6 +63,8 @@ pnpm workspace over `apps/*` and `packages/*`.
 | build      | `pnpm build`                                       | 14 s                                   |
 | rules      | `pnpm test:rules`                                  | 7 s                                    |
 | e2e        | `pnpm test:e2e`                                    | about 43 s locally, 1m42s in CI (#303) |
+| visual     | `pnpm test:visual` (baselines come from CI only)   | 3m26s in CI (#318)                     |
+| lighthouse | `pnpm test:lighthouse`                             | in CI (#345); not timed locally        |
 
 The test count is the sum of two packages: 877 tests in 78 files in `apps/web` and 90 in 9 in `packages/shared`. Coverage is that of `apps/web` (1597 of 1604 statements); `packages/shared` is at 100 %.
 
@@ -76,11 +78,20 @@ that lands, this is the check that breaks first.
 
 ### The checks that must be green before a merge
 
-Six, and these are the names CI gives them: **Lint, Test, Coverage, Build,
-Rules, E2E**. The first five passed on `81361ea` from a clean worktree; E2E
-was added by #303 (`979b399`) and passed there. E2E is deliberately not a
-required check in the branch protection (Viktor, 2026-10-16), but a red E2E is
-still a red pull request: do not merge it.
+Eight, and these are the names CI gives them: **Lint, Test, Coverage, Build,
+Rules, E2E, Visual, Lighthouse**. The first five passed on `81361ea` from a
+clean worktree; E2E was added by #303 (`979b399`), Visual by #318 (`2a179e6`)
+and Lighthouse by #345 (`0c4dc87`), and each passed there. Only the first five
+are required checks in the branch protection. E2E, Visual and Lighthouse are
+deliberately not (Viktor, 2026-10-16), but a red one is still a red pull
+request: do not merge it.
+
+Visual compares every story with a baseline rendered by CI; a pull request that
+changes the look updates its baselines with `pnpm test:visual:accept <run-id>`
+(CONTRIBUTING.md, "Visual regression"). Lighthouse runs `/` and `/create` on
+the E2E build against thresholds calibrated on CI (`apps/web/lighthouserc.cjs`);
+a threshold moves only by a pull request with the new measurement beside it,
+and lowering one needs Viktor's word.
 
 The merge is gated by a hook rather than by anyone's eye: `gh pr merge` here is
 refused for a pull request that is red, still running, draft, conflicting, or
