@@ -16,6 +16,12 @@
  */
 
 /** The curve of arriving: quick off the mark, settling softly (`--out`). */
+/**
+ * The class of the face of a square, on both boards. The wave's colour
+ * (`s-tone`) selects it, because the teacher's face has no `aria-label`.
+ */
+export const SQUARE_FACE_CLASS = 'face';
+
 export const OUT_CURVE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 
 /** The curve of celebrating: overshoots a little and comes back (`--spring`). */

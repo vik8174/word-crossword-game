@@ -2,6 +2,7 @@ import Box from '@mui/material/Box';
 import { type SxProps, type Theme } from '@mui/material/styles';
 import { type CSSProperties, useMemo } from 'react';
 
+import { SQUARE_FACE_CLASS } from '../motion';
 import { useTurnedSquares } from '../rooms/use-turned-squares';
 import {
   cellKey,
@@ -74,7 +75,12 @@ const TeacherSquare = ({ cell, turnPlace }: TeacherSquareProps) => {
         ...(cell.face === 'answered' ? { '&::after': TICK_SX } : {}),
       }}
     >
-      <Box sx={{ ...SQUARE_BASE_SX, ...(FACE_SX[cell.face] as object) }}>{cell.letter}</Box>
+      <Box
+        className={SQUARE_FACE_CLASS}
+        sx={{ ...SQUARE_BASE_SX, ...(FACE_SX[cell.face] as object) }}
+      >
+        {cell.letter}
+      </Box>
       {cell.number !== null && (
         <Box component="span" aria-hidden="true" sx={NUMBER_SX}>
           {cell.number}

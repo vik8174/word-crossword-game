@@ -1,4 +1,9 @@
-import { MOTION_MS as MS, OUT_CURVE as OUT, SPRING_CURVE as SPRING } from './motion';
+import {
+  MOTION_MS as MS,
+  SQUARE_FACE_CLASS,
+  OUT_CURVE as OUT,
+  SPRING_CURVE as SPRING,
+} from './motion';
 import { at, ms, noPreference } from './motion-css';
 import { STREET } from './street';
 
@@ -19,7 +24,7 @@ const sway = (duration: number): string => `s-sway ${ms(duration)} ease-in-out i
 
 export const MOTION_PLAY_CSS = noPreference([
   `.cell.just{z-index:1;animation:s-wave ${ms(MS.wave)} ease both;animation-delay:${at('--d', MS.waveStep, 0)}}`,
-  `.cell.just>[aria-label]{animation:s-tone ${ms(MS.wave)} ease both;animation-delay:${at('--d', MS.waveStep, 0)}}`,
+  `.cell.just>.${SQUARE_FACE_CLASS}{animation:s-tone ${ms(MS.wave)} ease both;animation-delay:${at('--d', MS.waveStep, 0)}}`,
   `@keyframes s-wave{0%{transform:none}35%{transform:translateY(-14px)}62%{transform:translateY(3px)}80%{transform:translateY(-3px)}100%{transform:none}}`,
   `@keyframes s-tone{0%,35%{background-color:${STREET.wash}}62%{background-color:${STREET.sage}}}`,
   `svg .pegged{transform-box:fill-box;transform-origin:50% 0;animation:s-peg ${ms(MS.peg)} ${OUT} ${ms(MS.pegDelay)} both}`,

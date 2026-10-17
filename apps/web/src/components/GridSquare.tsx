@@ -11,6 +11,7 @@ import {
 } from 'react';
 
 import { type GuessEntryCell, letterTyped } from '../rooms/guess-board';
+import { SQUARE_FACE_CLASS } from '../motion';
 import { STREET } from '../street';
 import { type GridSurfaces, TEXT_FONT_FAMILY } from '../theme';
 import { CELL_SIDE } from './board-geometry';
@@ -329,6 +330,7 @@ export const GridSquare = ({
           // square keeps one letter by taking the last one of what it holds
           // (`letterTyped`), composed.
           value={held ?? cell.letter}
+          className={SQUARE_FACE_CLASS}
           aria-label={label}
           tabIndex={tabIndex}
           onChange={handleInput}
@@ -359,6 +361,7 @@ export const GridSquare = ({
         />
       ) : (
         <Box
+          className={SQUARE_FACE_CLASS}
           aria-label={label}
           tabIndex={tabIndex}
           onMouseDown={onPressed}
