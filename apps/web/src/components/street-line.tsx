@@ -75,12 +75,10 @@ export const LetterTiles = ({
 interface WordCardsProps {
   readonly words: readonly string[];
   readonly sag: number;
-  /** The card that carries `pegged`: the word just answered. */
-  readonly justAnswered?: string;
 }
 
 /** The answered words, hung on the line in the order given (line 563). */
-export const WordCards = ({ words, sag, justAnswered }: WordCardsProps) => {
+export const WordCards = ({ words, sag }: WordCardsProps) => {
   const n = words.length;
   return (
     <>
@@ -96,7 +94,7 @@ export const WordCards = ({ words, sag, justAnswered }: WordCardsProps) => {
             className="card"
             transform={`translate(${p[0].toFixed(1)} ${p[1].toFixed(1)}) rotate(${rot})`}
           >
-            <g className={w === justAnswered ? 'pegged' : undefined}>
+            <g>
               {lift > 4 && <path d={`M0 0v${lift - 2}`} stroke={INK} strokeWidth="1.2" />}
               <rect
                 x={-wd / 2}

@@ -26,14 +26,7 @@ describe('Street: what it is', () => {
 
   it('draws no script, no foreignObject, no link and nothing a keyboard can reach', () => {
     const { container } = render(
-      <Street
-        label={LABEL}
-        teacher="here"
-        fiesta
-        letters="radio"
-        cards={['bread', 'apple']}
-        justAnswered="apple"
-      />,
+      <Street label={LABEL} teacher="here" fiesta letters="radio" cards={['bread', 'apple']} />,
     );
     const svg = svgOf(container);
 
@@ -141,11 +134,8 @@ describe('Street: the line', () => {
 });
 
 describe('Street: the words on the line', () => {
-  const cards = (words: string[], justAnswered?: string) =>
-    svgOf(
-      render(<Street label={LABEL} crop="band" cards={words} justAnswered={justAnswered} />)
-        .container,
-    );
+  const cards = (words: string[]) =>
+    svgOf(render(<Street label={LABEL} crop="band" cards={words} />).container);
 
   it('hangs the words in the order given', () => {
     const texts = [...cards(['bread', 'engine', 'cheese']).querySelectorAll('.card text')].map(
@@ -153,19 +143,6 @@ describe('Street: the words on the line', () => {
     );
 
     expect(texts).toEqual(['bread', 'engine', 'cheese']);
-  });
-
-  it('marks the word just answered, and only that one, for #230', () => {
-    const svg = cards(['bread', 'apple'], 'apple');
-    const pegged = [...svg.querySelectorAll('.pegged')];
-
-    expect(pegged).toHaveLength(1);
-    expect(pegged[0]?.textContent).toBe('apple');
-  });
-
-  it('marks nothing when no word is the one just answered', () => {
-    expect(cards(['bread', 'apple']).querySelectorAll('.pegged')).toHaveLength(0);
-    expect(cards(['bread'], 'apple').querySelectorAll('.pegged')).toHaveLength(0);
   });
 
   it('draws a word as a tile for each of its letters', () => {

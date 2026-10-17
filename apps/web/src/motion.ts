@@ -52,9 +52,6 @@ export const MOTION_MS = {
   /** An answered word's squares run a wave, one after another. */
   wave: 760,
   waveStep: 90,
-  /** Its card is pegged on the line and swings still. */
-  peg: 1100,
-  pegDelay: 420,
   /** A refused answer shakes once. */
   shake: 420,
   /** A message rises. */

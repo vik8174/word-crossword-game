@@ -184,15 +184,6 @@ export const Playing: Story = {
   },
 };
 
-/** `playing/answered`: a second word has just been pegged. */
-export const PlayingAnswered: Story = {
-  args: {
-    ...Playing.args,
-    cards: ['bread', 'apple'],
-    justAnswered: 'apple',
-  },
-};
-
 /** `finished`: six words, lanterns and confetti. */
 export const Finished: Story = {
   args: {

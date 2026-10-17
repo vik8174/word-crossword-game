@@ -2,8 +2,6 @@ import Box from '@mui/material/Box';
 import { type ReactNode, useCallback, useMemo, useState } from 'react';
 
 import { answeredSpellings } from '../rooms/answered-spellings';
-import { answeredWordsOf } from '../rooms/answered-words';
-import { useJustAnswered } from '../rooms/use-just-answered';
 import { openGridCaption } from '../rooms/grid-caption';
 import { playersInJoinOrder } from '../rooms/room-access';
 import { roomModeOf } from '../rooms/room-document';
@@ -22,8 +20,7 @@ import { OwnPresenceNotice } from './OwnPresenceNotice';
 import type { RoomGameProps } from './room-game-props';
 import { RoomCrossword } from './RoomCrossword';
 import { RoomShell } from './RoomShell';
-import { Street } from './Street';
-import { type LessonView, roomStreetLabel, teacherDrawnFor } from './street-labels';
+import type { LessonView } from './street-labels';
 import { WordsToExplainPanel } from './WordsToExplainPanel';
 import { WordsToGuessPanel } from './WordsToGuessPanel';
 
@@ -195,17 +192,12 @@ export const PlayerGame = ({
   useFrameSlot({ status, action, plainWordmark: true });
 
   // The grid as this player may see it, for the spellings of the words they have
-  // guessed and for the cards on the line: the same view the board is drawn from.
+  // guessed: the same view the board is drawn from.
   const gridView = useMemo(() => gridViewFor(room, viewerId), [room, viewerId]);
   const spellings = useMemo(
     () => (wordView.kind === 'dealt' ? answeredSpellings(gridView, wordView.toGuess) : undefined),
     [gridView, wordView],
   );
-  // Every answered word, in the order the board numbers them: the ones this
-  // player explained and the ones they guessed.
-  const answeredWords = useMemo(() => answeredWordsOf(wordView, gridView), [wordView, gridView]);
-  // The card of the word answered while this screen was open, pegged on the line.
-  const justAnswered = useJustAnswered(answeredWords);
 
   // The two zones the board sits between, and the one thing the deal can leave
   // a player with instead of them. Built as values rather than inline, so it is
@@ -263,16 +255,6 @@ export const PlayerGame = ({
         errorMessage={guessError ?? undefined}
         wordToReach={wordToReach}
         hasVisibleHeading={false}
-        band={
-          <Street
-            crop="band"
-            mood="talk"
-            cards={answeredWords}
-            justAnswered={justAnswered}
-            teacher={lesson === undefined ? undefined : teacherDrawnFor(lesson)}
-            label={roomStreetLabel(lesson)}
-          />
-        }
       />
     </RoomShell>
   );

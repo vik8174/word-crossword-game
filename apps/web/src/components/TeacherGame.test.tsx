@@ -12,7 +12,7 @@ import { FEW, lessonRoom, TEACHER_ID } from './drawn-room';
 import { Frame } from './Frame';
 import { FrameSlotProvider } from './FrameSlotProvider';
 import { RoomGame } from './RoomGame';
-import { roomStreetLabel } from './street-labels';
+import { BAND_LABEL } from './street-labels';
 import type { RoomDocument } from '../rooms/room-document';
 
 // The database is the boundary: the room is handed in and the writes are
@@ -268,39 +268,28 @@ describe('a word answered while the teacher is watching', () => {
   });
 });
 
-describe('the band over the teacher’s board', () => {
+describe('the teacher’s board', () => {
   beforeEach(() => {
-    // A window tall enough for the board to leave room for the drawing above it.
+    // A window tall enough for the drawing to have fitted above the board, so its
+    // absence is the game's rule and not a lack of room.
     vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1000);
     vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1440);
   });
 
-  it('is #228’s label with the teacher’s clause once, because the teacher is always at their window', () => {
-    renderTeacher(playingLesson());
+  it('has no drawing over it, whether or not the teacher’s own mark is old', () => {
+    for (const room of [
+      playingLesson(),
+      lessonRoom(FEW, 7, 9, { silentFor: { [TEACHER_ID]: 150_000 } }),
+    ]) {
+      const { unmount } = renderTeacher(room);
 
-    expect(
-      screen.getByRole('img', { name: roomStreetLabel({ viewer: 'teacher' }) }),
-    ).toBeInTheDocument();
-  });
+      expect(
+        screen.queryByRole('img', { name: (name) => name.startsWith(BAND_LABEL) }),
+      ).not.toBeInTheDocument();
+      expect(screen.getByRole('img', { name: /^Crossword grid/ })).toBeInTheDocument();
 
-  it('draws the teacher at the end of the street whatever the teacher’s own mark says', () => {
-    // The teacher's own mark is old: the notice says so, and the drawing does not.
-    renderTeacher(lessonRoom(FEW, 7, 9, { silentFor: { [TEACHER_ID]: 150_000 } }));
-
-    const street = screen.getByRole('img', { name: roomStreetLabel({ viewer: 'teacher' }) });
-
-    // Two neighbours and the teacher, each in a window of their own.
-    expect(street.querySelectorAll('.who')).toHaveLength(3);
-  });
-
-  it('hangs every answered word on the line, as the teacher may name them all', () => {
-    renderTeacher(playingLesson());
-
-    const street = screen.getByRole('img', { name: roomStreetLabel({ viewer: 'teacher' }) });
-
-    expect([...street.querySelectorAll('.card')].map((card) => card.textContent)).toEqual([
-      'bread',
-    ]);
+      unmount();
+    }
   });
 });
 

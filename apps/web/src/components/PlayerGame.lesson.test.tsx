@@ -3,13 +3,12 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
-import { STREET } from '../street';
 import { theme } from '../theme';
 import { FEW, gameRoom, lessonRoom, OLENA_ID, OWNER_ID, TARAS_ID, TEACHER_ID } from './drawn-room';
 import { Frame } from './Frame';
 import { FrameSlotProvider } from './FrameSlotProvider';
 import { RoomGame } from './RoomGame';
-import { BAND_LABEL, roomStreetLabel } from './street-labels';
+import { BAND_LABEL } from './street-labels';
 import type { RoomDocument } from '../rooms/room-document';
 
 // The database is the boundary, as it is for the teacher's room.
@@ -23,8 +22,7 @@ vi.mock('../telemetry/analytics', () => ({ logGameEvent: vi.fn(() => Promise.res
 /**
  * A student's room in a lesson (`playing` and `playing/teacheraway` of the
  * template, as a player): no way to end the game, a header that says who is
- * watching, the teacher among the people in the room and at the end of the
- * street. The teacher's half is `TeacherGame.test.tsx`, and the pair game's is
+ * watching, and the teacher among the people in the room. The teacher's half is `TeacherGame.test.tsx`, and the pair game's is
  * `RoomPage.test.tsx`, which asks the same screen for its End control.
  */
 
@@ -42,18 +40,12 @@ const renderGame = (room: RoomDocument, viewerId: string) =>
 
 const teacherAway = () => lessonRoom(FEW, 7, 9, { silentFor: { [TEACHER_ID]: 150_000 } });
 
-/** The band's own picture, found by the sentence it is named with. */
-const band = (name: string | RegExp) => screen.getByRole('img', { name });
-
-/** How many of the street's people are drawn: each neighbour, and the teacher when they are at their window. */
-const peopleOf = (street: HTMLElement) => street.querySelectorAll('.who').length;
-
-/** The curtains, which are the two paths of the street drawn in rose. */
-const curtainsOf = (street: HTMLElement) =>
-  street.querySelectorAll(`path[fill="${STREET.rose}"]`).length;
+/** The street over the board, which no game draws: found by the sentence it is named with. */
+const streetOver = () => screen.queryByRole('img', { name: (name) => name.startsWith(BAND_LABEL) });
 
 beforeEach(() => {
-  // A window tall enough for the board to leave room for the drawing above it.
+  // A window tall enough for the drawing to have fitted above the board, so its
+  // absence is the game's rule and not a lack of room.
   vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1000);
   vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1440);
 });
@@ -115,26 +107,11 @@ describe('a student’s room in a lesson', () => {
   });
 });
 
-describe('the band over a student’s board while the teacher is present', () => {
-  it('is #228’s label with the teacher’s clause once', () => {
+describe('a student’s board in a lesson', () => {
+  it('has no drawing over it, with the teacher present', () => {
     renderGame(lessonRoom(FEW, 7, 9), OLENA_ID);
 
-    expect(band(roomStreetLabel({ viewer: 'student', teacherAway: false }))).toBeInTheDocument();
-    expect(band(roomStreetLabel({ viewer: 'student', teacherAway: false }))).toHaveAccessibleName(
-      `${BAND_LABEL}, and the teacher watching from the house at the end of the street`,
-    );
-  });
-
-  it('draws the teacher at their window at the end of the street, besides the two neighbours', () => {
-    renderGame(lessonRoom(FEW, 7, 9), OLENA_ID);
-
-    // A build that handed the street no teacher would draw closed shutters instead.
-    expect(peopleOf(band(/the teacher watching/))).toBe(3);
-  });
-
-  it('says nothing about the teacher being away', () => {
-    renderGame(lessonRoom(FEW, 7, 9), OLENA_ID);
-
+    expect(streetOver()).not.toBeInTheDocument();
     expect(screen.queryByText('Carmen is away')).not.toBeInTheDocument();
   });
 });
@@ -157,15 +134,10 @@ describe('a student whose teacher is away', () => {
     expect(screen.getByText('away for 2 min')).toBeInTheDocument();
   });
 
-  it('has the teacher’s curtains drawn, and the clause left out of the band’s label', () => {
+  it('has no drawing over their board, so no curtains either', () => {
     renderGame(teacherAway(), OLENA_ID);
 
-    const street = band(BAND_LABEL);
-
-    // Two neighbours and nobody at the end of the street, where there are curtains.
-    expect(peopleOf(street)).toBe(2);
-    expect(curtainsOf(street)).toBeGreaterThanOrEqual(2);
-    expect(street).not.toHaveAccessibleName(/teacher/);
+    expect(streetOver()).not.toBeInTheDocument();
   });
 
   it('still has no control to end the game', () => {
@@ -189,7 +161,7 @@ describe('a pair game, which a lesson’s changes leave as it was', () => {
     expect(screen.getByRole('button', { name: 'End the game' })).toBeInTheDocument();
     expect(screen.getByText('Playing with Olena')).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/teacher/i);
-    expect(band(BAND_LABEL)).toBeInTheDocument();
+    expect(streetOver()).not.toBeInTheDocument();
   });
 
   it('asks the same question of the same dialog as before', () => {

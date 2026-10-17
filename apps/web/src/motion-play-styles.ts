@@ -27,8 +27,6 @@ export const MOTION_PLAY_CSS = noPreference([
   `.cell.just>.${SQUARE_FACE_CLASS}{animation:s-tone ${ms(MS.wave)} ease both;animation-delay:${at('--d', MS.waveStep, 0)}}`,
   `@keyframes s-wave{0%{transform:none}35%{transform:translateY(-14px)}62%{transform:translateY(3px)}80%{transform:translateY(-3px)}100%{transform:none}}`,
   `@keyframes s-tone{0%,35%{background-color:${STREET.wash}}62%{background-color:${STREET.sage}}}`,
-  `svg .pegged{transform-box:fill-box;transform-origin:50% 0;animation:s-peg ${ms(MS.peg)} ${OUT} ${ms(MS.pegDelay)} both}`,
-  `@keyframes s-peg{0%{opacity:0;transform:translateY(-26px) rotate(-16deg)}45%{opacity:1;transform:translateY(0) rotate(9deg)}70%{transform:rotate(-4deg)}88%{transform:rotate(1.5deg)}100%{transform:none}}`,
   `.cell.refused{animation:s-shake ${ms(MS.shake)} ${OUT} both}`,
   `@keyframes s-shake{0%,100%{transform:none}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-2px)}80%{transform:translateX(1px)}}`,
   `.modal-veil{animation:s-veil ${ms(MS.veil)} ease-out backwards}`,

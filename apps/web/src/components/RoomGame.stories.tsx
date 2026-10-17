@@ -151,15 +151,15 @@ export default meta;
 
 type Story = StoryObj<typeof RoomGame>;
 
-/** `playing`, `size=few`: the drawing's six words, the band over the board. */
+/** `playing`, `size=few`: the drawing's six words; the board stands in the middle of the zone, no drawing over it. */
 export const Playing: Story = {};
 
-/** `playing`, `size=many`: eight words on 11 by 11, the band left out. */
+/** `playing`, `size=many`: eight words on 11 by 11, the board still the only thing in the zone. */
 export const PlayingMany: Story = {
   args: { room: gameRoom(MANY, 11, 11) },
 };
 
-/** `playing` on the short reference list at the size of a real game (no band: 14 by 11 squares are too many). */
+/** `playing` on the short reference list at the size of a real game (14 by 11 squares). */
 export const ShortReferenceList: Story = {
   args: { room: shortListRoom() },
 };
@@ -239,17 +239,17 @@ export const EndingRefused: Story = {
 
 /**
  * A lesson, on the same six words: Carmen teaches, Olena and Taras play
- * (`?mode=lesson`). The three of them are the three variants the street with the
- * teacher is captured at 1440 by 1000, where the band shows.
+ * (`?mode=lesson`). No game draws the street any more, the teacher's presence or
+ * absence included; the lists and the header say who is watching.
  */
 const lesson = lessonRoom(FEW, 7, 9);
 
-/** `playing` as a student in a lesson, the teacher at their window: no "End the game", the teacher at the end of the street. */
+/** `playing` as a student in a lesson, the teacher at their window: no "End the game". */
 export const LessonStudent: Story = {
   args: { viewerId: OLENA_ID, room: lesson },
 };
 
-/** `playing/teacheraway` as a student: the curtains are drawn, and the room says the game goes on without the teacher. */
+/** `playing/teacheraway` as a student: the room says the game goes on without the teacher. */
 export const LessonStudentTeacherAway: Story = {
   args: {
     viewerId: OLENA_ID,
