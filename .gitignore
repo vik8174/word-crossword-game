@@ -20,6 +20,11 @@ handoffs/
 # Dev-server configs for the in-app browser, written per issue with absolute
 # paths into that issue's worktree.
 .claude/launch.json
+# Scratch files of agent sessions (inspector notes, browser profiles) and the
+# Playwright MCP's page snapshots. Prettier reads this file, so `pnpm lint`
+# would otherwise check them.
+scratchpad/
+.playwright-mcp/
 
 # Written and removed by `pnpm test:e2e` (scripts/run-e2e.mjs); the run's own ports.
 firebase.e2e.*.generated.json
