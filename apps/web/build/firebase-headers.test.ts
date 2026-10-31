@@ -11,9 +11,11 @@ interface HeaderRule {
 const config = JSON.parse(
   readFileSync(resolve(import.meta.dirname, '../../../firebase.json'), 'utf8'),
 ) as {
-  hosting: { headers: HeaderRule[] };
+  hosting: { headers: HeaderRule[] }[];
 };
-const rules = config.hosting.headers;
+// The entries are pinned equal apart from `target` (`hosting-targets.test.ts`),
+// so the first one stands for all of them.
+const rules = config.hosting[0]?.headers ?? [];
 const noindexRules = rules.filter((rule) =>
   rule.headers.some((header) => header.key.toLowerCase() === 'x-robots-tag'),
 );

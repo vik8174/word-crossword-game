@@ -6,6 +6,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ### Changed
 
+- Production moves to `https://across-the-street.web.app`, a second Hosting site of the production project, and is indexed there ([#366](https://github.com/vik8174/word-crossword-game/issues/366)). The build names the new address in `og:url`, the card's URLs, `robots.txt` and `sitemap.xml`, and the production head carries `<link rel="canonical">` to its root. `word-crossword-game-prod.web.app` keeps serving the game, with the same canonical, and is not redirected. `firebase.json` has two hosting entries (`app`, `legacy`), `.firebaserc` maps them to the sites, and `deploy.yml` deploys `hosting:app,hosting:legacy` on a tag and `hosting:app` on stage; a test resolves them with the Firebase CLI's own code. An `?internal=1` mark set on the old address does not carry over to the new one.
 - No line hangs from a lone neighbour's tin can ([#323](https://github.com/vik8174/word-crossword-game/issues/323)). While one person is on the street (the lobby waiting for the second player, the join form, connecting) the drawing shows no line; it appears when both balconies are taken, as before. The drawing's description no longer mentions a line in those states.
 
 ### Fixed

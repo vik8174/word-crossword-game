@@ -217,8 +217,22 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS="$credentials"
           # The project is always named. `.firebaserc` has no `default` alias,
           # so a command that forgot the flag would fail rather than pick one.
+          # Production has two Hosting sites, stage has one, and a target a
+          # project does not define fails the deploy. So the targets are named
+          # per environment: `app` is the site the game is found at, `legacy`
+          # is production's default site, which serves the same build and
+          # points at `app` with its canonical (issue #366). A test resolves
+          # these strings with the CLI's own code (`hosting-targets.test.ts`).
+          case "$ENVIRONMENT" in
+            production) only='hosting:app,hosting:legacy,firestore:rules' ;;
+            stage) only='hosting:app,firestore:rules' ;;
+            *)
+              echo "::error::No deploy targets are defined for '$ENVIRONMENT'."
+              exit 1
+              ;;
+          esac
           pnpm exec firebase deploy \
-            --only hosting,firestore:rules \
+            --only "$only" \
             --project "$ENVIRONMENT" \
             --non-interactive \
             --message "$GITHUB_SHA"
