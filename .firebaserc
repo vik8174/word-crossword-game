@@ -2,5 +2,24 @@
   "projects": {
     "stage": "word-crossword-game-stage",
     "production": "word-crossword-game-prod"
+  },
+  "targets": {
+    "word-crossword-game-prod": {
+      "hosting": {
+        "app": [
+          "across-the-street"
+        ],
+        "legacy": [
+          "word-crossword-game-prod"
+        ]
+      }
+    },
+    "word-crossword-game-stage": {
+      "hosting": {
+        "app": [
+          "word-crossword-game-stage"
+        ]
+      }
+    }
   }
 }

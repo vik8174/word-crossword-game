@@ -11,8 +11,9 @@ import type { HtmlTagDescriptor, Plugin } from 'vite';
  * run JavaScript, so the card is one for every path: the home page's. A room's
  * words are secret and a room lives a day, so a room has no card of its own.
  *
- * The two sites differ in four things only: the origin, the picture, whether the
- * page says `noindex`, and what `robots.txt` and `sitemap.xml` say. Everything
+ * The two sites differ in five things only: the origin, the picture, whether the
+ * page says `noindex` or names a canonical address, and what `robots.txt` and
+ * `sitemap.xml` say. Everything
  * else in the head is the same, and is written once here.
  */
 
@@ -32,12 +33,15 @@ export interface Site {
 
 /**
  * The two origins, written in the build and nowhere else (README, "Deployment").
- * A custom domain is a one-line change here and a rebuild.
+ * A custom domain is a one-line change here and a rebuild. Production is the
+ * second Hosting site `across-the-street`; the project's default site,
+ * `word-crossword-game-prod.web.app`, serves the same build and points here
+ * with its canonical (issue #366).
  */
 export const SITES: Readonly<Record<SiteName, Site>> = {
   production: {
     name: 'production',
-    origin: 'https://word-crossword-game-prod.web.app',
+    origin: 'https://across-the-street.web.app',
     cardFile: 'link-card/production.png',
     indexed: true,
   },
@@ -91,6 +95,18 @@ const meta = (attrs: Record<string, string>): HtmlTagDescriptor => ({
 export const headTags = (site: Site): HtmlTagDescriptor[] => [
   meta({ name: 'description', content: DESCRIPTION }),
   ...(site.indexed ? [] : [meta({ name: 'robots', content: 'noindex' })]),
+  // Every path serves this head, so every page's canonical is the root: only `/`
+  // is indexed. On production it makes the same build, served from the project's
+  // default address, point at the site that is meant to be found.
+  ...(site.indexed
+    ? [
+        {
+          tag: 'link',
+          attrs: { rel: 'canonical', href: `${site.origin}/` },
+          injectTo: 'head' as const,
+        },
+      ]
+    : []),
   meta({ property: 'og:title', content: TITLE }),
   meta({ property: 'og:description', content: DESCRIPTION }),
   meta({ property: 'og:type', content: 'website' }),

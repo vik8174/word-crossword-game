@@ -53,11 +53,11 @@ Neither is allowed to name a room. The id in `/room/<id>` is the whole access co
 Every look at the live app is taken from a fresh isolated browser profile, and each of those is a new anonymous sign-in and, to GA4, a new person: the first thirty days of production counted nine "users" of whom almost all were the same one. So a browser profile can be told to say it is not a player's:
 
 ```text
-https://word-crossword-game-prod.web.app/?internal=1     # mark this browser as mine
-https://word-crossword-game-prod.web.app/?internal=0     # unmark it again
+https://across-the-street.web.app/?internal=1     # mark this browser as mine
+https://across-the-street.web.app/?internal=0     # unmark it again
 ```
 
-Open either address once, on any page of the app. The answer is kept in that profile's `localStorage`, so it holds across reloads and navigation with the address never opened again, and the parameter is taken straight back out of the address bar. Every event from a marked profile then carries `traffic_type=internal`, which is what the GA4 filter matches on — see step 6 of [Standing up an environment](#standing-up-an-environment). Both halves are needed: the parameter alone is a label nothing acts on, and the filter alone has nothing to match.
+Open either address once, on any page of the app. The mark is per address: one set on `word-crossword-game-prod.web.app`, production's older default address, does not carry over to `across-the-street.web.app`. The answer is kept in that profile's `localStorage`, so it holds across reloads and navigation with the address never opened again, and the parameter is taken straight back out of the address bar. Every event from a marked profile then carries `traffic_type=internal`, which is what the GA4 filter matches on — see step 6 of [Standing up an environment](#standing-up-an-environment). Both halves are needed: the parameter alone is a label nothing acts on, and the filter alone has nothing to match.
 
 Worth knowing:
 
@@ -108,7 +108,11 @@ Two environments, and two Firebase projects that share nothing — not a databas
 | Environment  | Firebase project            | Address                                     | Deployed by           |
 | ------------ | --------------------------- | ------------------------------------------- | --------------------- |
 | `stage`      | `word-crossword-game-stage` | <https://word-crossword-game-stage.web.app> | every merge to `main` |
-| `production` | `word-crossword-game-prod`  | <https://word-crossword-game-prod.web.app>  | a `v*` release tag    |
+| `production` | `word-crossword-game-prod`  | <https://across-the-street.web.app>         | a `v*` release tag    |
+
+Production is served from two Hosting sites of its project. `across-the-street` (<https://across-the-street.web.app>) is the address the game is found at: the build names it in `og:url`, `robots.txt` and `sitemap.xml`, and in a `<link rel="canonical">`. The project's default site, `word-crossword-game-prod` (<https://word-crossword-game-prod.web.app>), cannot be renamed; it is kept so that links already shared keep working. It serves the same build, and the canonical in that build points at `across-the-street`. There is no redirect. Stage has one site and no canonical.
+
+The two sites are defined in `firebase.json` and `.firebaserc`. `hosting` has two entries with the same content, `app` and `legacy` (a test pins that they are equal apart from `target`), because one Firebase target can name only one site per project. In `.firebaserc`, production's `app` is `across-the-street` and its `legacy` is `word-crossword-game-prod`; stage has `app` only. A deploy always names its targets (see below): a bare `--only hosting` would resolve to both sites on production but fail on stage, which has no `legacy` target. `apps/web/build/hosting-targets.test.ts` runs the Firebase CLI's own resolution with the `--only` strings it reads from `deploy.yml`, and asserts the sites each environment publishes to.
 
 A release is what moves production, and the order it goes in — the version, the changelog, the tag, and what is checked before and after it — is in [`docs/releasing.md`](docs/releasing.md).
 
@@ -124,8 +128,10 @@ An invite link points straight at `/room/<id>`, a route that exists only in the 
 
 ```bash
 SENTRY_UPLOAD=1 pnpm build
-pnpm exec firebase deploy --only hosting,firestore:rules --project stage
+pnpm exec firebase deploy --only hosting:app,firestore:rules --project stage
 ```
+
+For production, the targets are `--only hosting:app,hosting:legacy,firestore:rules --project production`. Stage has no `legacy` target, and a deploy that names a target the project does not define fails. These are the strings in `.github/workflows/deploy.yml`.
 
 `SENTRY_UPLOAD=1` makes the build upload its source maps to Sentry, with the token from your own `apps/web/.env`, so a hand deploy still puts its maps in Sentry like every other deploy. Without it the build uploads nothing and the bundle you deploy has no maps anywhere ([Source maps](#source-maps)). With it and no token, the build fails.
 

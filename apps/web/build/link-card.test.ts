@@ -132,6 +132,28 @@ describe('link card, built', () => {
     expect(production.html).not.toMatch(/name="robots"/);
   });
 
+  it('production carries exactly one canonical, the root of across-the-street.web.app; stage none', () => {
+    const canonical = (html: string) => html.match(/<link rel="canonical"[^>]*>/g) ?? [];
+
+    expect(canonical(production.html)).toEqual([
+      '<link rel="canonical" href="https://across-the-street.web.app/">',
+    ]);
+    expect(canonical(stage.html)).toEqual([]);
+    expect(canonical(unset.html)).toEqual([]);
+  });
+
+  it('production names the across-the-street site and never the default one', () => {
+    expect(SITES.production.origin).toBe('https://across-the-street.web.app');
+
+    for (const text of [
+      production.html,
+      production.read('robots.txt'),
+      production.read('sitemap.xml'),
+    ]) {
+      expect(text).not.toContain('word-crossword-game-prod');
+    }
+  });
+
   it('a build that is neither is stage, so a stray build is never indexed', () => {
     expect(unset.html).toContain('<meta name="robots" content="noindex">');
     expect(contentOf(unset.html, 'property', 'og:url')).toBe(`${SITES.stage.origin}/`);
