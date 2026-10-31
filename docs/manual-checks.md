@@ -63,11 +63,11 @@ All three are taken in the host's profile, whose Network tab has been open since
 
 ## After the tag, on production
 
-<https://word-crossword-game-prod.web.app>.
+<https://across-the-street.web.app>. The older default address, <https://word-crossword-game-prod.web.app>, serves the same build; its canonical points at the first.
 
 ### Always
 
-1. **Mark the profile first, before anything else.** Open `https://word-crossword-game-prod.web.app/?internal=1` in the fresh profile as its very first visit. Every event before the mark is counted as a player forever, and nothing later takes it back. The mark belongs to that one profile and no other.
+1. **Mark the profile first, before anything else.** Open `https://across-the-street.web.app/?internal=1` in the fresh profile as its very first visit. Every event before the mark is counted as a player forever, and nothing later takes it back. The mark belongs to that one profile and no other.
 2. **The build that arrived is the one that was tagged.** Sentry > Releases holds a release named `X.Y.Z+<twelve characters of the commit>` for the commit the tag is on, with the source maps of this build under it.
 3. **An invite link opened cold is a room.** Paste `/room/<id>` into a fresh tab rather than following it from inside the app. A room, not a 404.
 4. **Play one game to the end on production**, two profiles, both marked.
