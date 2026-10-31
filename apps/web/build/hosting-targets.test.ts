@@ -67,6 +67,19 @@ const sitesOf = (environment: string): string[] =>
     .map((entry) => entry.site)
     .sort();
 
+describe('deploy.yml', () => {
+  it('runs one firebase deploy, and it passes the variable the case arms set', () => {
+    const workflow = read('.github/workflows/deploy.yml');
+    const invocations = workflow.match(/firebase deploy[^\n]*(\n\s+--[^\n]*)*/g) ?? [];
+
+    expect(invocations, 'deploy.yml must have exactly one `firebase deploy`').toHaveLength(1);
+    expect(
+      invocations[0],
+      'the deploy must pass `--only "$only"`, the variable the per-environment case sets',
+    ).toMatch(/--only "\$only"/);
+  });
+});
+
 describe('where a deploy publishes the app', () => {
   it('production publishes to across-the-street and to the default site', () => {
     expect(sitesOf('production')).toEqual(['across-the-street', 'word-crossword-game-prod']);
