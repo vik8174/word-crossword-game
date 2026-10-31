@@ -14,6 +14,12 @@ const codesOf = (text: string): WordListErrorCode[] =>
   validateWordList(text).errors.map((error) => error.code);
 
 describe('validateWordList', () => {
+  it('refuses a Greek or Cyrillic letter that looks Latin, as not Latin', () => {
+    for (const letter of ['β', 'Β', 'в', 'Р']) {
+      expect(codesOf(tenWordsWith(`ca${letter}e`))).toEqual(['word-not-latin']);
+    }
+  });
+
   describe('parsing', () => {
     it('splits words on commas', () => {
       expect(validateWordList('apple,bread,cheese').words).toEqual(['apple', 'bread', 'cheese']);

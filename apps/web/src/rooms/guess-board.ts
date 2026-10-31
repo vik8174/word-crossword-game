@@ -1,4 +1,4 @@
-import { type GridPosition, gridLettersOf, type WordOrientation } from 'shared';
+import { type GridPosition, gridLettersOf, isWordLetter, type WordOrientation } from 'shared';
 
 import {
   cellKey,
@@ -111,7 +111,9 @@ export const sourceOf = (content: GridCellContent, isOwn: boolean): CellSource =
  * as two characters. So the value is composed to NFC first, and the letter is
  * the last one of it. It is drawn as the grid draws every letter
  * ({@link gridLettersOf}): upper case, `é` as `É`, `ß` as `ẞ`. A letter that
- * would take more than one square (`ŉ`, a ligature) is not typing either.
+ * would take more than one square (`ŉ`, a ligature) is not typing either, and
+ * neither is a letter of another script, even one drawn like a Latin letter
+ * (Greek `β`, Cyrillic `Р`): a square takes what a word may hold ({@link isWordLetter}).
  *
  * @param value - What the square's input holds
  * @returns The letter for the square, or `''` when the value holds none
@@ -121,9 +123,9 @@ export const sourceOf = (content: GridCellContent, isOwn: boolean): CellSource =
  * letterTyped('ß'); // 'ẞ'
  */
 export const letterTyped = (value: string): string => {
-  const letter = gridLettersOf([...value.normalize('NFC')].at(-1) ?? '');
+  const typed = [...value.normalize('NFC')].at(-1) ?? '';
 
-  return /^\p{L}$/u.test(letter) ? letter : '';
+  return isWordLetter(typed) ? gridLettersOf(typed) : '';
 };
 
 /** The words this player still has to answer — solved ones are nobody's input. */

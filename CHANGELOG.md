@@ -9,6 +9,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 - Production moves to `https://across-the-street.web.app`, a second Hosting site of the production project, and is indexed there ([#366](https://github.com/vik8174/word-crossword-game/issues/366)). The build names the new address in `og:url`, the card's URLs, `robots.txt` and `sitemap.xml`, and the production head carries `<link rel="canonical">` to its root. `word-crossword-game-prod.web.app` keeps serving the game, with the same canonical, and is not redirected. `firebase.json` has two hosting entries (`app`, `legacy`), `.firebaserc` maps them to the sites, and `deploy.yml` deploys `hosting:app,hosting:legacy` on a tag and `hosting:app` on stage; a test resolves them with the Firebase CLI's own code. An `?internal=1` mark set on the old address does not carry over to the new one.
 - No line hangs from a lone neighbour's tin can ([#323](https://github.com/vik8174/word-crossword-game/issues/323)). While one person is on the street (the lobby waiting for the second player, the join form, connecting) the drawing shows no line; it appears when both balconies are taken, as before. The drawing's description no longer mentions a line in those states.
 
+### Fixed
+
+- A square takes only the letters a word may hold ([#362](https://github.com/vik8174/word-crossword-game/issues/362)). A Greek or Cyrillic letter that looks Latin (`β`, `Р`) used to fill a square and drew like a Latin one, but the word was then refused. Now the square stays as it was, by the same rule the word list uses.
+
 ### Added
 
 - In the lists beside the board the word stands at the row's right edge, with its state just before it, "✓ answered bread" ([#316](https://github.com/vik8174/word-crossword-game/issues/316)). The reference stays on the left; an empty state takes no space.

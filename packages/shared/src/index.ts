@@ -3,6 +3,7 @@
  * React or Firebase dependency (see PRD — GitHub issue #1).
  */
 export * from './board-letters';
+export * from './character-kind';
 export * from './crossword-generator';
 export * from './crossword-numbering';
 export * from './font-ranges';

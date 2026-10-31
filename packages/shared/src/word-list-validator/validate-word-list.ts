@@ -1,5 +1,5 @@
-import { boardFormOf, fitsOneSquare } from '../board-letters';
-import { LATIN_EXT_RANGE, LATIN_RANGE, parseUnicodeRange, spansContain } from '../font-ranges';
+import { boardFormOf } from '../board-letters';
+import { characterKindOf } from '../character-kind';
 import {
   MAX_WORDS,
   MAX_WORD_LENGTH,
@@ -11,38 +11,6 @@ import {
 
 /** Words are separated by commas or by any whitespace, in any combination. */
 const SEPARATORS = /[\s,]+/;
-
-/**
- * The alphabet: the letters Alegreya Sans is declared for, `LATIN_RANGE` and
- * `LATIN_EXT_RANGE` together. A letter is in it when it is a Latin letter and
- * lies in one of the two.
- *
- * Most of the letters that qualify are phonetic or medievalist, and the face
- * does not draw every one of them. A letter in the ranges that the face lacks is
- * accepted all the same and drawn in whatever face the reader's system falls
- * back to: checking each file's glyph table would need a font tool this project
- * does not have.
- */
-const ALPHABET = [...parseUnicodeRange(LATIN_RANGE), ...parseUnicodeRange(LATIN_EXT_RANGE)];
-
-/** What one character of a word is, as far as telling the owner what is wrong with it goes. */
-type CharacterKind = 'digit' | 'foreign' | 'symbol' | 'letter';
-
-/**
- * What one character is.
- *
- * A Latin letter that cannot fill one square (`ŉ`, `ǰ`, the ligatures) is
- * judged before the ranges, and as a symbol: it is Latin, so "not written in
- * Latin letters" would be untrue of it, and no square can hold it.
- */
-const kindOf = (character: string): CharacterKind => {
-  if (/^\p{Nd}$/u.test(character)) return 'digit';
-  if (!/^\p{L}$/u.test(character)) return 'symbol';
-  if (!/^\p{Script=Latin}$/u.test(character)) return 'foreign';
-  if (!fitsOneSquare(character)) return 'symbol';
-
-  return spansContain(ALPHABET, character.codePointAt(0) ?? 0) ? 'letter' : 'foreign';
-};
 
 /**
  * Splits the raw textarea text into words, dropping empty fragments left by
@@ -86,7 +54,7 @@ const countErrors = (words: readonly string[]): WordListError[] => {
  * digit, then a letter from another alphabet, then any other character.
  */
 const characterFault = (word: string): WordListError | null => {
-  const kinds = new Set([...word].map(kindOf));
+  const kinds = new Set([...word].map(characterKindOf));
 
   if (kinds.has('digit')) {
     return {
