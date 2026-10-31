@@ -3,6 +3,19 @@ import { describe, expect, it } from 'vitest';
 import { letterTyped } from './guess-board';
 
 describe('letterTyped', () => {
+  it('refuses a Greek or Cyrillic letter, even one drawn like a Latin letter', () => {
+    for (const value of ['β', 'Β', 'в', 'Р', 'Α', 'К']) {
+      expect(letterTyped(value)).toBe('');
+    }
+  });
+
+  it('still takes the Latin letters a word may hold', () => {
+    expect(letterTyped('b')).toBe('B');
+    expect(letterTyped('é')).toBe('É');
+    expect(letterTyped('ß')).toBe('ẞ');
+    expect(letterTyped('ı')).toBe('I');
+  });
+
   it('draws a letter upper case, as the grid does', () => {
     expect(letterTyped('a')).toBe('A');
     expect(letterTyped('A')).toBe('A');
