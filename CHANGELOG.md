@@ -4,6 +4,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versio
 
 ## [Unreleased]
 
+### Security
+
+- The production audit is clean again ([#379](https://github.com/vik8174/word-crossword-game/issues/379)). `re2js` is pinned to 2.9.1 (GHSA-gg6h-894w-4m9c, a quadratic-time denial of service in lookbehind matching, reachable from the `firebase` Firestore chunk the player loads), and the `@grpc/grpc-js` 1.9 line that `@firebase/firestore` asks for is replaced by 1.14.7 through an override scoped to `1.9`. No `firebase` upgrade.
+
 ### Changed
 
 - Production moves to `https://across-the-street.web.app`, a second Hosting site of the production project, and is indexed there ([#366](https://github.com/vik8174/word-crossword-game/issues/366)). The build names the new address in `og:url`, the card's URLs, `robots.txt` and `sitemap.xml`, and the production head carries `<link rel="canonical">` to its root. `word-crossword-game-prod.web.app` keeps serving the game, with the same canonical, and is not redirected. `firebase.json` has two hosting entries (`app`, `legacy`), `.firebaserc` maps them to the sites, and `deploy.yml` deploys `hosting:app,hosting:legacy` on a tag and `hosting:app` on stage; a test resolves them with the Firebase CLI's own code. An `?internal=1` mark set on the old address does not carry over to the new one.
