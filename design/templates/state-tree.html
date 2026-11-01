@@ -25,6 +25,10 @@
   - the consent bar: a strip in the window's flow at its foot, Accept and Decline of equal weight,
     on Home, Create, the join form and the game, and again from "Cookie settings"
 
+  Revision 4, 2026-11-01, for #373, #374 and #375 (group "The board window"):
+  - the board is a window onto the grid: no scroll, a 32 to 44 px square, drag, fades on hidden edges
+  - the chosen word brought into view, also above a phone's keyboard; pinch and wheel zoom to 44 px
+
   Query string:  ?state=<key> ?mode=pair|lesson ?role=host|guest ?size=few|many
                  ?width=all|1440|834|375 ?bare
   ?bare fills the window with the app alone, at the window's own size, for capture.
@@ -365,6 +369,24 @@ html.bare .dev-wrap{box-shadow:none}
 .device[data-layout="phone"] .consent-bar{flex-direction:column;align-items:stretch;gap:12px;padding:14px var(--pad) 16px}
 .device[data-layout="phone"] .consent-actions{margin-left:0}
 .device[data-layout="phone"] .consent-actions .btn{flex:1 1 0;min-width:0}
+
+/* ===================== the board window (#373, #374, #375) ===================== */
+.board-window{position:relative;overflow:hidden;touch-action:none;cursor:grab;user-select:none;height:var(--win-h)}
+.board-window.fits{cursor:default}
+.board-window.dragging{cursor:grabbing}
+.device[data-layout="wide"] .board-window{--win-h:calc(var(--device-h) - 250px)}
+.device[data-layout="tablet"] .board-window{--win-h:calc(var(--device-h) * .55)}
+.device[data-layout="phone"] .board-window{--win-h:calc(var(--device-h) * .6)}
+.board-window .grid{position:absolute;left:0;top:0}
+.board-window .grid.glide{transition:transform 200ms ease-out}
+@media (prefers-reduced-motion: reduce){.board-window .grid.glide{transition:none}}
+.board-window .fade{position:absolute;z-index:2;pointer-events:none;opacity:0}
+.board-window .fade.t{left:0;right:0;top:0;height:32px;background:linear-gradient(to bottom,var(--duck),rgba(230,238,236,0))}
+.board-window .fade.b{left:0;right:0;bottom:0;height:32px;background:linear-gradient(to top,var(--duck),rgba(230,238,236,0))}
+.board-window .fade.l{top:0;bottom:0;left:0;width:32px;background:linear-gradient(to right,var(--duck),rgba(230,238,236,0))}
+.board-window .fade.r{top:0;bottom:0;right:0;width:32px;background:linear-gradient(to left,var(--duck),rgba(230,238,236,0))}
+.board-window.more-t .fade.t,.board-window.more-b .fade.b,.board-window.more-l .fade.l,.board-window.more-r .fade.r{opacity:1}
+.tpl-kbd{position:absolute;left:0;right:0;bottom:0;z-index:30;height:290px;display:grid;place-items:center;background:repeating-linear-gradient(135deg,#D5DCDB 0 10px,#CBD3D2 10px 20px);border-top:1px dashed #8A9997;font:13px system-ui,sans-serif;color:#3D4A4F}
 .word-list .open .state{color:var(--ink);font-style:italic}
 .sum-head{display:flex;align-items:baseline;gap:8px;margin-top:18px}
 .sum-head h3{font-size:19px;font-weight:700}
@@ -811,6 +833,45 @@ html.bare .dev-wrap{box-shadow:none}
   };
   /* the word answered a moment ago, for playing/answered: its squares turn over and its card is pegged on the line */
   var JUST = null;
+  /* the board window of #373 to #375, while one of its states is drawn: { sq, place, target, kbd } */
+  var WIN = null;
+  /* the medium reference list of docs/manual-checks.md, laid out by the app's own generator
+     (generateCrossword on e777994): 31 rows by 24 columns, a board that does not fit any window */
+  var HEAVY = [
+    { r: 15, c: 17, dir: "down", text: "river", side: "explain" },
+    { r: 18, c: 13, dir: "across", text: "lantern", side: "guess" },
+    { r: 13, c: 13, dir: "across", text: "harbour", side: "explain", solved: true },
+    { r: 12, c: 22, dir: "down", text: "mountain", side: "guess" },
+    { r: 10, c: 13, dir: "across", text: "umbrella", side: "guess", solved: true },
+    { r: 8, c: 19, dir: "down", text: "celebration", side: "explain" },
+    { r: 11, c: 10, dir: "down", text: "wilderness", side: "guess", solved: true },
+    { r: 0, c: 17, dir: "down", text: "photographer", side: "explain" },
+    { r: 26, c: 11, dir: "across", text: "understanding", side: "guess" },
+    { r: 18, c: 15, dir: "down", text: "neighbourhood", side: "guess" },
+    { r: 8, c: 8, dir: "down", text: "conversation", side: "explain" },
+    { r: 6, c: 11, dir: "across", text: "thunderstorm", side: "guess" },
+    { r: 17, c: 0, dir: "across", text: "imagination", side: "explain" },
+    { r: 16, c: 10, dir: "across", text: "responsibility", side: "guess" },
+    { r: 24, c: 9, dir: "across", text: "transformation", side: "guess" }
+  ];
+  /* the heavy board with one word being filled: `typed` letters in, the cursor on the next square */
+  function heavyBoard(active, typed) {
+    var cursor = "";
+    var words = HEAVY.map(function (w) {
+      var o = Object.create(w);
+      if (w.text === active) {
+        o.play = typed;
+        cursor = (w.r + (w.dir === "down" ? typed.length : 0)) + "," + (w.c + (w.dir === "across" ? typed.length : 0));
+      }
+      return o;
+    });
+    return { rows: 31, cols: 24, cursor: { play: cursor }, words: words };
+  }
+  function cellsOf(text) {
+    var w = HEAVY.filter(function (x) { return x.text === text; })[0], out = [];
+    for (var i = 0; i < w.text.length; i++) { out.push((w.r + (w.dir === "down" ? i : 0)) + "," + (w.c + (w.dir === "across" ? i : 0))); }
+    return out.join(" ");
+  }
   function isAnswered(w) { return !!w.solved || w.text === JUST; }
   function boardWords() {
     var b = BOARDS[state.size], starts = {};
@@ -859,10 +920,18 @@ html.bare .dev-wrap{box-shadow:none}
       cells.push('<span class="cell ' + s.cls + (b.cursor[mode] === key && s.cls.indexOf("guessed") < 0 ? " cursor" : "") + '"' + (s.d !== undefined ? ' style="--d:' + s.d + '"' : '') + '>' +
         (numbers[key] ? '<span class="num">' + numbers[key] + '</span>' : '') + esc(s.ch) + '</span>');
     }
-    return '<div class="board-box"><div class="grid" role="img" aria-label="The crossword" style="--rows:' + b.rows + ';--cols:' + b.cols + ';--sq:' + sq + 'px;--gap:' + (sq >= 36 ? 4 : 3) + 'px">' + cells.join("") + '</div></div>';
+    var grid = '<div class="grid" role="img" aria-label="The crossword" style="--rows:' + b.rows + ';--cols:' + b.cols + ';--sq:' + sq + 'px;--gap:' + (sq >= 36 ? 4 : 3) + 'px">' + cells.join("") + '</div>';
+    if (WIN) {
+      /* the board window (#373): the grid moves inside a box that never scrolls */
+      return '<div class="board-window" data-rows="' + b.rows + '" data-cols="' + b.cols + '" data-sq="' + sq + '" data-gap="' + (sq >= 36 ? 4 : 3) + '"' +
+        ' data-place="' + WIN.place + '" data-target="' + esc(WIN.target || "") + '" data-kbd="' + (WIN.kbd || 0) + '">' + grid +
+        '<span class="fade t"></span><span class="fade r"></span><span class="fade b"></span><span class="fade l"></span></div>';
+    }
+    return '<div class="board-box">' + grid + '</div>';
   }
-  /* the square: between 20 and 44 px, from the space the board has (ADR 0029) */
+  /* the square: between 20 and 44 px, from the space the board has (ADR 0029); in the board window, between 32 and 44 (#373) */
   function squareSize(lay) {
+    if (WIN) { return WIN.sq; }
     var b = BOARDS[state.size], gap = 4;
     var room = { wide: [640, 400], tablet: [720, 520], phone: [ctx.w - 36, 900] }[lay];
     var fit = Math.floor(Math.min((room[0] - gap * (b.cols - 1)) / b.cols, (room[1] - gap * (b.rows - 1)) / b.rows));
@@ -871,6 +940,7 @@ html.bare .dev-wrap{box-shadow:none}
   function boardNotes(mode) {
     return '<div class="board-notes">' +
       (mode === "refused" ? '<p class="board-note refusal" role="status">' + esc(REFUSAL_LINE) + '</p>' : '') +
+      (WIN && WIN.hint ? '<p class="board-note">' + esc(DRAG_HINT) + '</p>' : '') +
       '<p class="board-note">' + esc(KEYBOARD_HINT) + '</p><p class="board-note">' + esc(CROSSING_HINT) + '</p></div>';
   }
   function teacherLegend() {
@@ -1241,6 +1311,81 @@ html.bare .dev-wrap{box-shadow:none}
         right: players() });
     } };
 
+  /* ---- the board window (#373 drag, #374 the chosen word in view, #375 pinch and wheel zoom) ---- */
+  var DRAG_HINT = "The board is bigger than its space: drag it to see the rest.";
+  function withWindow(win, active, typed, fn) {
+    var saved = state.size, few = !active;
+    if (!few) { BOARDS.heavy = heavyBoard(active, typed); state.size = "heavy"; }
+    WIN = win; WIN.hint = !few;
+    try { return fn(); } finally { WIN = null; state.size = saved; }
+  }
+  /* where the grid stands in its window: centred, at its top-left corner, or with a word in view */
+  function placeWindows() {
+    Array.prototype.forEach.call(stageEl.querySelectorAll(".board-window"), function (el) {
+      var grid = el.querySelector(".grid"), sq = +el.dataset.sq, gap = +el.dataset.gap, step = sq + gap;
+      var W = el.dataset.cols * step - gap, H = el.dataset.rows * step - gap, w = el.clientWidth, h = el.clientHeight;
+      var dev = el.closest(".device"), scale = parseFloat(dev.style.getPropertyValue("--device-scale")) || 1;
+      var top = (el.getBoundingClientRect().top - dev.getBoundingClientRect().top) / scale;
+      var seen = Math.max(step, Math.min(h, (dev.clientHeight - (+el.dataset.kbd)) - top));
+      function clampX(x) { return W <= w ? (w - W) / 2 : Math.min(0, Math.max(w - W, x)); }
+      function clampY(y) { return H <= h ? (h - H) / 2 : Math.min(0, Math.max(h - H, y)); }
+      function box(keys) {
+        var rc = keys.split(" ").map(function (k) { return k.split(",").map(Number); });
+        var rs = rc.map(function (p) { return p[0]; }), cs = rc.map(function (p) { return p[1]; });
+        return [Math.min.apply(null, cs) * step, Math.min.apply(null, rs) * step, (Math.max.apply(null, cs) + 1) * step - gap, (Math.max.apply(null, rs) + 1) * step - gap];
+      }
+      /* the smallest move that brings a word in view, a square of margin round it; a word longer than the window shows its start */
+      function bring(pos, b) {
+        var m = step, x = pos[0], y = pos[1];
+        if (b[2] - b[0] + 2 * m > w || b[0] - m < -x) { x = -(b[0] - m); } else if (b[2] + m > -x + w) { x = w - (b[2] + m); }
+        if (b[3] - b[1] + 2 * m > seen || b[1] - m < -y) { y = -(b[1] - m); } else if (b[3] + m > -y + seen) { y = seen - (b[3] + m); }
+        return [clampX(x), clampY(y)];
+      }
+      var pos = [clampX((w - W) / 2), clampY((h - H) / 2)];
+      if (el.dataset.place === "corner") { pos = [clampX(0), clampY(0)]; }
+      if (el.dataset.place === "word") {
+        el.dataset.target.split("|").forEach(function (keys) { pos = bring(pos, box(keys)); });
+      }
+      function show(p) {
+        grid.style.transform = "translate(" + p[0] + "px," + p[1] + "px)";
+        el.classList.toggle("fits", W <= w && H <= h);
+        el.classList.toggle("more-l", p[0] < -0.5); el.classList.toggle("more-r", p[0] + W > w + 0.5);
+        el.classList.toggle("more-t", p[1] < -0.5); el.classList.toggle("more-b", p[1] + H > h + 0.5);
+      }
+      show(pos);
+      /* the drawing can be dragged, so the feel of it can be judged; a move under 6 px is a tap (#373) */
+      var start = null;
+      el.addEventListener("pointerdown", function (e) { start = { x: e.clientX, y: e.clientY, p: pos.slice(), moved: false }; el.setPointerCapture(e.pointerId); });
+      el.addEventListener("pointermove", function (e) {
+        if (!start) { return; }
+        var dx = (e.clientX - start.x) / scale, dy = (e.clientY - start.y) / scale;
+        if (!start.moved && Math.hypot(dx, dy) < 6) { return; }
+        start.moved = true; el.classList.add("dragging");
+        pos = [clampX(start.p[0] + dx), clampY(start.p[1] + dy)]; show(pos);
+      });
+      el.addEventListener("pointerup", function () { start = null; el.classList.remove("dragging"); });
+    });
+  }
+  var WINDOW_NOTE = " The board is a window onto the grid (Viktor, 2026-11-01): it never scrolls and has no scrollbar. A square is never smaller than 32 px nor larger than 44; a grid that does not fit at 32 is clipped, and the player drags it with the mouse or a finger, never past its own edges. A soft fade of the ground colour, 32 px deep, marks every edge that hides part of the grid. A press that moves less than 6 px is a tap and chooses the square, as before. On a phone the word lists stay under the board and the page scrolls to them as it does today. The grid is the medium reference list of docs/manual-checks.md, laid out by the app's generator: 31 by 24 squares. Drag it here to feel it.";
+  S.board = { group: "The board window", label: "A board too big", note: "A player in the middle of a word, “mountain”, on a grid larger than any window. The grid stands so the word being filled is in view (#374); until #374 lands it opens centred." + WINDOW_NOTE,
+    render: function () { return withWindow({ sq: 32, place: "word", target: cellsOf("mountain") }, "mountain", "moun", function () { return playing("plain"); }); } };
+  S["board/dragged"] = { group: "The board window", sub: true, label: "…dragged to a corner", note: "Dragged as far as it goes up and to the left: the grid's top-left square sits at the window's corner and cannot be pulled further. Only the right and the bottom fade, because only they hide something." + WINDOW_NOTE,
+    render: function () { return withWindow({ sq: 32, place: "corner" }, "mountain", "moun", function () { return playing("plain"); }); } };
+  S["board/teacher"] = { group: "The board window", sub: true, label: "…the teacher's board", teacherOnly: true, note: "The teacher's board is the same window, opened centred, with the same drag and fades." + WINDOW_NOTE,
+    render: function () { return withWindow({ sq: 32, place: "center" }, "mountain", "", function () { return playing("plain"); }); } };
+  S["board/fits"] = { group: "The board window", sub: true, label: "…a board that fits", note: "A grid that fits at its size stands centred as today: no fade, nothing to drag, and the drag hint is not shown." + WINDOW_NOTE,
+    render: function () { return withWindow({ sq: 44, place: "center" }, "", "", function () { return playing("plain"); }); } };
+  var FOCUS_NOTE = " When a word is chosen (from a list, by a tap, by the keyboard) and it is not wholly in view, the board makes the smallest move that brings it in, with a square of margin, in 200 ms, or at once under reduced motion. A word already in view moves nothing. A word longer than the window shows its start (#374).";
+  S["board/choose"] = { group: "The board window", sub: true, label: "…a word chosen, before", note: "“transformation” has just been chosen in “You guess”, while the board still stands where “mountain” was filled: the word is not wholly in view." + FOCUS_NOTE,
+    render: function () { return withWindow({ sq: 32, place: "word", target: cellsOf("mountain") }, "transformation", "", function () { return playing("plain"); }); } };
+  S["board/chosen"] = { group: "The board window", sub: true, label: "…and after", note: "The same moment 200 ms later: the board has moved just far enough for “transformation” to be in view, or, on a phone, where it is longer than the window, for its start and the cursor to be." + FOCUS_NOTE,
+    render: function () { return withWindow({ sq: 32, place: "word", target: cellsOf("mountain") + "|" + cellsOf("transformation") }, "transformation", "", function () { return playing("plain"); }); } };
+  S["board/keyboard"] = { group: "The board window", sub: true, label: "…under the phone's keyboard", fixed: [375, 812], note: "On a phone the on-screen keyboard opens over the bottom of the page (hatched: it is the phone's, not the app's). The board moves again so the word being typed and its cursor stand above the keyboard (#374)." + FOCUS_NOTE,
+    render: function () { return withWindow({ sq: 32, place: "word", target: cellsOf("understanding"), kbd: 290 }, "understanding", "under", function () { return playing("plain"); }); },
+    after: function () { return '<div class="tpl-kbd" title="The phone\'s keyboard, not part of the app">the phone\'s keyboard</div>'; } };
+  S["board/zoomed"] = { group: "The board window", sub: true, label: "…zoomed in", note: "A two-finger pinch on the board, or Ctrl/⌘ + wheel or a trackpad pinch on a computer, scales the grid between the 32 px square and the 44 px one, around the point under the gesture; this is the largest. The page itself never zooms from a pinch on the board; outside the board a pinch is the browser's own. No zoom buttons, no mini-map (Viktor, 2026-11-01) (#375).",
+    render: function () { return withWindow({ sq: 44, place: "word", target: cellsOf("mountain") }, "mountain", "moun", function () { return playing("plain"); }); } };
+
   /* ============================ the map ============================ */
   var ORDER = ["home", "create", "create/errors", "create/nogrid", "create/unplaced", "create/creating", "create/failed",
     "connecting", "join", "join/joining", "join/failed",
@@ -1248,7 +1393,8 @@ html.bare .dev-wrap{box-shadow:none}
     "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/nostudent", "lobby/teacheraway",
     "playing", "playing/answered", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
     "finished", "closed-early", "link-card", "link-card/stage",
-    "legal/privacy", "legal/cookies", "legal/terms", "consent", "consent/create", "consent/join", "consent/playing", "consent/settings"];
+    "legal/privacy", "legal/cookies", "legal/terms", "consent", "consent/create", "consent/join", "consent/playing", "consent/settings",
+    "board", "board/dragged", "board/teacher", "board/fits", "board/choose", "board/chosen", "board/keyboard", "board/zoomed"];
   var mapEl = document.getElementById("map"), stageEl = document.getElementById("stage");
   var whereEl = document.getElementById("where"), noteEl = document.getElementById("stateNote");
   function buildMap() {
@@ -1274,7 +1420,7 @@ html.bare .dev-wrap{box-shadow:none}
   function windows() {
     if (isBare) { return [{ w: window.innerWidth, h: window.innerHeight, name: "" }]; }
     var fixed = (S[state.key] || {}).fixed;
-    if (fixed) { return [{ w: fixed[0], h: fixed[1], name: fixed[0] + " × " + fixed[1] + " (link card)" }]; }
+    if (fixed) { return [{ w: fixed[0], h: fixed[1], name: fixed[0] + " × " + fixed[1] }]; }
     var keys = state.width === "all" ? ["1440", "834", "375"] : [state.width];
     return keys.map(function (k) { return { w: WINDOWS[k][0], h: WINDOWS[k][1], name: k + " × " + WINDOWS[k][1] }; });
   }
@@ -1303,10 +1449,11 @@ html.bare .dev-wrap{box-shadow:none}
       var w = Math.round(win.w * scale), h = Math.round(win.h * scale);
       return '<figure class="frame"><figcaption>' + esc(win.name) + '</figcaption><div class="dev-wrap" style="width:' + w + 'px;height:' + h + 'px">' +
         '<div class="device' + (s.consent ? " consent" : "") + '" data-layout="' + ctx.layout + '" style="--device-w:' + win.w + 'px;--device-h:' + win.h + 'px;--device-scale:' + scale + '">' +
-        '<div class="screens"><div class="screen' + anim + '">' + s.render() + '</div></div>' + (s.consent ? s.consent() : "") + '</div></div></figure>';
+        '<div class="screens"><div class="screen' + anim + '">' + s.render() + '</div></div>' + (s.consent ? s.consent() : "") + (s.after ? s.after() : "") + '</div></div></figure>';
     }).join("");
     state.mode = saved.mode; state.role = saved.role;
     stageEl.innerHTML = html;
+    placeWindows();
     Array.prototype.forEach.call(stageEl.querySelectorAll(".screen"), function (el) {
       el.style.overflowY = el.querySelector(".modal-veil") ? "hidden" : "";
       ["header.app-head", ".zones > *", ".lobby-grid > *", ".column > .scene", ".column .stack > *", ".street > *", ".lobby-grid .stack > *"].forEach(function (sel) {
