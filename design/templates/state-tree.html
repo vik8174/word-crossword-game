@@ -20,6 +20,11 @@
   - the lesson (ADR 0037): a mode on /create, a teacher who deals and watches, the lesson summary
   - a wrong word list is said inside the field (option B of three, Viktor's choice)
 
+  Revision 3, 2026-11-01, for #370 and #371 (group "About the game"):
+  - /privacy, /cookies and /terms, one reading column, reached from a new foot on Home
+  - the consent bar: a strip in the window's flow at its foot, Accept and Decline of equal weight,
+    on Home, Create, the join form and the game, and again from "Cookie settings"
+
   Query string:  ?state=<key> ?mode=pair|lesson ?role=host|guest ?size=few|many
                  ?width=all|1440|834|375 ?bare
   ?bare fills the window with the app alone, at the window's own size, for capture.
@@ -318,6 +323,48 @@ html.bare .dev-wrap{box-shadow:none}
 .sw.a{background:var(--wash);box-shadow:inset 0 0 0 1.5px var(--ink)}
 .sw.b{background:var(--stone);outline:1.5px dotted var(--ink);outline-offset:-1.5px}
 .word-list .row{display:flex;align-items:baseline;gap:12px;width:100%;padding:10px 2px;min-height:44px}
+
+/* ===================== the legal pages and the consent bar (#370, #371) ===================== */
+.legal-foot{display:flex;flex-wrap:wrap;gap:4px 20px;margin:0;padding:0;list-style:none;position:absolute;right:var(--pad);bottom:44px;font-size:15px}
+.device[data-layout="tablet"] .legal-foot,.device[data-layout="phone"] .legal-foot{position:static}
+.legal-foot a,.legal-foot button{display:inline-flex;align-items:center;min-height:24px;padding:0;border:0;background:none;font:inherit;font-size:15px;color:var(--slate);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;cursor:pointer}
+.legal-foot a:focus-visible,.legal-foot button:focus-visible,.legal-nav a:focus-visible,.consent-text a:focus-visible{outline:3px solid var(--ochre);outline-offset:3px;border-radius:2px}
+.legal{max-width:680px;margin:0 auto;padding:40px var(--pad) 64px}
+.device[data-layout="phone"] .legal{padding-top:24px}
+.legal .legal-nav{display:flex;flex-wrap:wrap;gap:4px 20px;margin:0 0 28px;padding:0;list-style:none}
+.legal .legal-nav li{margin:0;font-size:16px;line-height:1.5}
+.legal-nav a{color:var(--slate);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.legal-nav a[aria-current="page"]{color:var(--ink);font-weight:700;text-decoration:none}
+.legal h1{font-size:56px;font-weight:700;line-height:1.05;letter-spacing:-.01em}
+.device[data-layout="phone"] .legal h1{font-size:34px}
+.legal .updated{margin-top:10px;font-size:16px;color:var(--slate)}
+.legal h2{margin-top:36px;font-size:22px;font-weight:700;line-height:1.3}
+.legal p,.legal li{font-size:18px;line-height:1.6}
+.legal p{margin-top:10px}
+.legal ul{margin:10px 0 0;padding-left:22px}
+.legal li+li{margin-top:6px}
+.legal a{color:var(--ink);text-underline-offset:3px}
+.legal code{font-family:ui-monospace,Menlo,monospace;font-size:15px;background:var(--tile);box-shadow:inset 0 0 0 1px var(--line);border-radius:4px;padding:1px 5px;overflow-wrap:anywhere}
+.legal .store{margin:14px 0 0;padding:0;list-style:none}
+.legal .store li{background:var(--tile);border-radius:12px;padding:14px 16px;box-shadow:0 0 0 1.5px var(--ink)}
+.legal .store li+li{margin-top:12px}
+.store dl{display:grid;grid-template-columns:48px minmax(0,1fr);gap:4px 12px;margin:8px 0 0;font-size:17px;line-height:1.45}
+.store dt{color:var(--slate)}
+.store dd{margin:0}
+.device.consent{display:flex;flex-direction:column}
+.device.consent .screens{position:relative;inset:auto;flex:1 1 auto;min-height:0}
+.consent-bar{flex:none;position:relative;z-index:6;display:flex;align-items:center;gap:28px;padding:16px var(--pad) 18px;background:var(--tile);border-top:1.5px solid var(--ink)}
+.consent-text{flex:1;min-width:0;max-width:780px}
+.consent-head{font-weight:700;font-size:18px;line-height:1.3}
+.consent-text p+p{margin-top:4px}
+.consent-text p:not(.consent-head){font-size:16px;line-height:1.45;color:var(--ink)}
+.consent-text .now{color:var(--slate)}
+.consent-text a{color:var(--ink);text-underline-offset:3px;text-decoration-thickness:1px}
+.consent-actions{display:flex;gap:10px;flex:none;margin-left:auto}
+.consent-actions .btn{min-width:128px}
+.device[data-layout="phone"] .consent-bar{flex-direction:column;align-items:stretch;gap:12px;padding:14px var(--pad) 16px}
+.device[data-layout="phone"] .consent-actions{margin-left:0}
+.device[data-layout="phone"] .consent-actions .btn{flex:1 1 0;min-width:0}
 .word-list .open .state{color:var(--ink);font-style:italic}
 .sum-head{display:flex;align-items:baseline;gap:8px;margin-top:18px}
 .sum-head h3{font-size:19px;font-weight:700}
@@ -856,8 +903,84 @@ html.bare .dev-wrap{box-shadow:none}
         '<p class="lede">A cooperative crossword. You explain your words out loud, your friend guesses them, and the board fills up between you.</p>' +
         '<div class="stack-tight"><div>' + go("Create a game", "create") + '</div><p class="hint">Teaching a language? Run it as a lesson for two of your students.</p></div></div>' +
         scene({ letters: ["r", "a", "d", "i", "o"], mood: "talk", teacher: "" }) +
-        '<ol class="steps"><li><b>1</b>Type 10 to 20 words</li><li><b>2</b>Send the link to one person</li><li><b>3</b>Explain and guess out loud</li></ol></div>';
+        '<ol class="steps"><li><b>1</b>Type 10 to 20 words</li><li><b>2</b>Send the link to one person</li><li><b>3</b>Explain and guess out loud</li></ol>' +
+        legalFoot() + '</div>';
     } };
+
+  /* ---- the legal pages and the consent bar (#370, #371) ---- */
+  function legalFoot() {
+    return '<ul class="legal-foot" aria-label="About this game">' +
+      '<li><a href="/privacy" data-go="legal/privacy">Privacy</a></li>' +
+      '<li><a href="/cookies" data-go="legal/cookies">Cookies</a></li>' +
+      '<li><a href="/terms" data-go="legal/terms">Terms</a></li>' +
+      '<li><button type="button" data-go="consent/settings">Cookie settings</button></li></ul>';
+  }
+  function consentBar(again) {
+    return '<section class="consent-bar" aria-label="Cookies"><div class="consent-text">' +
+      '<p class="consent-head">Can we count your visit?</p>' +
+      '<p>If you accept, Google Analytics cookies count visits and show where a game gets stuck. No ads. The game works the same if you decline. <a href="/cookies" data-go="legal/cookies">Cookie Policy</a></p>' +
+      (again ? '<p class="now">Your answer now: declined.</p>' : '') +
+      '</div><div class="consent-actions">' + btn("Accept", "quiet") + btn("Decline", "quiet") + '</div></section>';
+  }
+  var CONTACT = "[the address Viktor gives]";
+  function legalPage(key, title, body) {
+    function link(k, label) { return '<li><a href="/' + k + '" data-go="legal/' + k + '"' + (k === key ? ' aria-current="page"' : '') + '>' + label + '</a></li>'; }
+    return head({ home: true }) + '<main class="legal"><ul class="legal-nav" aria-label="About this game">' +
+      link("privacy", "Privacy Policy") + link("cookies", "Cookie Policy") + link("terms", "Terms of Use") + '</ul>' +
+      '<h1>' + title + '</h1><p class="updated">Last updated 1 November 2026</p>' + body + '</main>';
+  }
+  var LEGAL_NOTE = " The three pages share one layout: the header with the wordmark linking home, the three documents named at the top with the current one in bold, one reading column at most 680 px wide. They are reached from the foot of Home and from the consent bar, never from inside a live room. The text here is a draft for Viktor to approve; the crew checks every stored item against a running build.";
+  S["legal/privacy"] = { group: "About the game", label: "Privacy Policy", note: "/privacy." + LEGAL_NOTE,
+    render: function () {
+      return legalPage("privacy", "Privacy Policy",
+        '<h2>Who runs this game</h2><p>Across the Street is a free, non-commercial word game made by Viktor Kurysh. Questions about your data go to ' + esc(CONTACT) + '.</p>' +
+        '<h2>What the game keeps</h2><ul>' +
+        '<li><b>An anonymous player id.</b> Firebase Authentication makes one when you open the game. There is no email, no password and no name behind it.</li>' +
+        '<li><b>The name you type</b> when you join a room. It is kept in the room, and in your browser so the game can fill it in next time.</li>' +
+        '<li><b>The room</b>: its words, who answered what, and when. Anyone with the room\'s link can read it while it exists.</li></ul>' +
+        '<h2>How long</h2><p>A room expires 24 hours after its last move, and Firebase deletes expired rooms within about a day after that. Nothing about a room is kept once it is gone.</p>' +
+        '<h2>Counting visits</h2><p>Only if you accept cookies: Google Analytics counts visits and five moments of a game (a room created, a player joined, a game finished, a game ended early, a screen reached), with the number of words and players and the kind of game. Room links, names and words are never sent.</p>' +
+        '<h2>Errors</h2><p>When the game breaks, Sentry receives a report of what went wrong, in which browser and on which page, with the room\'s id taken out. Nothing records your screen.</p>' +
+        '<h2>Who handles it</h2><p>Google (Firebase Authentication, Firestore, Hosting and Analytics) and Functional Software, Inc. (Sentry). They may process data outside the EU, under their standard contractual clauses.</p>' +
+        '<h2>Your rights</h2><p>You can ask what is kept about you and ask for it to be removed: write to ' + esc(CONTACT) + '. Most of it removes itself within two days. Clearing this site\'s data in your browser removes your name and your anonymous id from your device.</p>' +
+        '<h2>Changes</h2><p>When this policy changes, the date at the top changes with it.</p>');
+    } };
+  function storeItem(name, rows) {
+    return '<li><code>' + esc(name) + '</code><dl>' + rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join("") + '</dl></li>';
+  }
+  S["legal/cookies"] = { group: "About the game", sub: true, label: "Cookie Policy", note: "/cookies. Every cookie and every key the game stores, one card each: a table would scroll sideways at 375. The list is the drawing's fixture: #370's crew measures it in a running build, and the page names what the build sets, no more and no less." + LEGAL_NOTE,
+    render: function () {
+      return legalPage("cookies", "Cookie Policy",
+        '<p>Everything the game stores in your browser. Only the first is a cookie, and it is set only after you press <b>Accept</b>. The rest keep the game working and never leave your device, except your player id, which Firebase checks when you play.</p>' +
+        '<h2>What is stored</h2><ul class="store">' +
+        storeItem("_ga, _ga_<id>", [["For", "Google Analytics, to tell one visit from another"], ["Kept", "2 years"], ["Set", "only after you accept"]]) +
+        storeItem("word-crossword-game:consent", [["For", "your answer to the cookie question"], ["Kept", "until you clear this site's data"], ["Set", "when you answer"]]) +
+        storeItem("word-crossword-game:nickname", [["For", "your name, filled in next time"], ["Kept", "until you clear this site's data"], ["Set", "when you join a room"]]) +
+        storeItem("firebaseLocalStorageDb", [["For", "your anonymous player id"], ["Kept", "until you clear this site's data"], ["Set", "when you open the game"]]) +
+        storeItem("word-crossword-game:traffic-type", [["For", "marks the maker's own visits, so they are not counted"], ["Kept", "until you clear this site's data"], ["Set", "only on a link with ?internal=1"]]) +
+        storeItem("the reload mark", [["For", "stops a broken update from reloading the page twice"], ["Kept", "until the tab is closed"], ["Set", "after an update fails to load"]]) +
+        '</ul><h2>Changing your answer</h2><p>Press <b>Cookie settings</b> at the foot of the home page. If you decline after accepting, the Analytics cookies are deleted and nothing more is sent.</p>');
+    } };
+  S["legal/terms"] = { group: "About the game", sub: true, label: "Terms of Use", note: "/terms." + LEGAL_NOTE,
+    render: function () {
+      return legalPage("terms", "Terms of Use",
+        '<h2>The game</h2><p>Across the Street is free and provided as it is, with no warranty. It may change, pause or stop at any time.</p>' +
+        '<h2>Your words</h2><p>Anyone with a room\'s link can read its words and names while the room exists, so put nothing in a room that you would not show the other player. Do not use the game for anything unlawful or abusive.</p>' +
+        '<h2>No accounts</h2><p>There are no accounts and no saved games. A room is gone about a day after its last move, and it cannot be brought back.</p>' +
+        '<h2>Responsibility</h2><p>As far as the law allows, the maker is not responsible for any loss that comes from using the game.</p>' +
+        '<h2>Contact</h2><p>' + esc(CONTACT) + '</p>');
+    } };
+  var CONSENT_NOTE = " The bar is a strip along the window's foot, in the page's flow rather than over it: the screen above it gets shorter and scrolls, so the bar never covers the board, a word list or a button. Accept and Decline have the same weight, and the bar does not go away until one is pressed. Analytics starts only after Accept. It shows on whatever page a first visit lands on.";
+  S.consent = { group: "About the game", label: "Consent · Home", note: "A first visit to Home." + CONSENT_NOTE + " Home also gains its foot: Privacy, Cookies and Terms (#370) and Cookie settings (#371), at the right of the steps on a wide window, under them otherwise.",
+    render: function () { return S.home.render(); }, consent: function () { return consentBar(false); } };
+  S["consent/create"] = { group: "About the game", sub: true, label: "…on Create", note: "A first visit that goes straight to /create." + CONSENT_NOTE,
+    render: function () { return createScreen("editing"); }, consent: function () { return consentBar(false); } };
+  S["consent/join"] = { group: "About the game", sub: true, label: "…at the door", guestOnly: true, note: "Most first visits are an invitation: the guest lands on the join form. The bar sits under the form, and “Join the game” stays in view." + CONSENT_NOTE,
+    render: function () { return joinScreen("plain"); }, consent: function () { return consentBar(false); } };
+  S["consent/playing"] = { group: "About the game", sub: true, label: "…in the game", guestOnly: true, note: "A guest who joined without answering. The bar is still there in the game, and the board's zone ends above it." + CONSENT_NOTE,
+    render: function () { return playing("plain"); }, consent: function () { return consentBar(false); } };
+  S["consent/settings"] = { group: "About the game", sub: true, label: "…from Cookie settings", note: "Cookie settings at the foot of Home brings the bar back, with the answer given before. Pressing the other button changes it at once, with no reload: a Decline after an Accept deletes the Analytics cookies and stops sending.",
+    render: function () { return S.home.render(); }, consent: function () { return consentBar(true); } };
 
   function linkCard(stage) {
     return '<div class="card">' +
@@ -1124,7 +1247,8 @@ html.bare .dev-wrap{box-shadow:none}
     "unavailable/missing", "unavailable/expired", "unavailable/started", "unavailable/finished", "unavailable/full", "unavailable/refused", "unavailable/connection", "reload", "crash",
     "lobby", "lobby/waiting", "lobby/copied", "lobby/copyfailed", "lobby/crowded", "lobby/starting", "lobby/failed", "lobby/away", "lobby/nostudent", "lobby/teacheraway",
     "playing", "playing/answered", "playing/leftout", "playing/refused", "playing/guessfail", "playing/away", "playing/teacheraway", "playing/confirm", "playing/ending", "playing/endfail",
-    "finished", "closed-early", "link-card", "link-card/stage"];
+    "finished", "closed-early", "link-card", "link-card/stage",
+    "legal/privacy", "legal/cookies", "legal/terms", "consent", "consent/create", "consent/join", "consent/playing", "consent/settings"];
   var mapEl = document.getElementById("map"), stageEl = document.getElementById("stage");
   var whereEl = document.getElementById("where"), noteEl = document.getElementById("stateNote");
   function buildMap() {
@@ -1171,14 +1295,15 @@ html.bare .dev-wrap{box-shadow:none}
     var s = S[state.key] || S.home, saved = { mode: state.mode, role: state.role };
     if (s.lessonOnly) { state.mode = "lesson"; state.role = "guest"; }
     if (s.teacherOnly) { state.mode = "lesson"; state.role = "host"; }
+    if (s.guestOnly) { state.role = "guest"; }
     var scr = state.key.split("/")[0], anim = lastScreen !== scr ? " enter" : "";
     var wins = windows(), scale = isBare ? 1 : Math.min(1, (stageEl.clientWidth - 2) / wins[0].w);
     var html = wins.map(function (win, i) {
       ctx = { w: win.w, h: win.h, layout: layoutFor(win.w), idx: i };
       var w = Math.round(win.w * scale), h = Math.round(win.h * scale);
       return '<figure class="frame"><figcaption>' + esc(win.name) + '</figcaption><div class="dev-wrap" style="width:' + w + 'px;height:' + h + 'px">' +
-        '<div class="device" data-layout="' + ctx.layout + '" style="--device-w:' + win.w + 'px;--device-h:' + win.h + 'px;--device-scale:' + scale + '">' +
-        '<div class="screens"><div class="screen' + anim + '">' + s.render() + '</div></div></div></div></figure>';
+        '<div class="device' + (s.consent ? " consent" : "") + '" data-layout="' + ctx.layout + '" style="--device-w:' + win.w + 'px;--device-h:' + win.h + 'px;--device-scale:' + scale + '">' +
+        '<div class="screens"><div class="screen' + anim + '">' + s.render() + '</div></div>' + (s.consent ? s.consent() : "") + '</div></div></figure>';
     }).join("");
     state.mode = saved.mode; state.role = saved.role;
     stageEl.innerHTML = html;
