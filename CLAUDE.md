@@ -99,6 +99,22 @@ refused for a pull request that is red, still running, draft, conflicting, or
 `gh pr update-branch <n>`, wait for the checks, merge. There is never another
 route to the same merge.
 
+### Release gates
+
+Three gates, **Quality, Security and Performance**, defined with Viktor on
+2026-11-01, are written in [`gates.conf`](gates.conf) and nowhere else; this
+section does not copy them. `scripts/release-gates.sh <version>` runs every
+check on a clean tree and writes `handoffs/gates/<version>.md`, ending in
+`GATES GREEN at <commit>` or `GATES RED at <commit>: ...`. A release is tagged
+only on a commit with GATES GREEN. `--pr` runs only the checks marked `pr`,
+which are the commands CI already runs as its jobs; `--validate` reads the file
+and runs nothing.
+
+Visual and Lighthouse are calibrated on CI and cannot be run locally, and CI
+runs on pull requests only, so their gate checks read them from the pull
+request that produced the commit (`scripts/gate-merged-pr-green.sh`), after
+checking that its head has the same tree as the commit.
+
 ### Ports
 
 They must not collide, because a crew and its Inspector run at the same time.
